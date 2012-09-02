@@ -36,11 +36,9 @@ dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, uns
     
     ctx->machine_is_twos_complement = READSTAT_MACHINE_IS_TWOS_COMPLEMENT;
 
-    if ((char)0xFF == (char)-1) {
-        ctx->machine_is_twos_complement = 1;
-    }
-
-    if (ds_format < 114) {
+    if (ds_format < 105) {
+        ctx->fmtlist_entry_len = 7;
+    } else if (ds_format < 114) {
         ctx->fmtlist_entry_len = 12;
     } else {
         ctx->fmtlist_entry_len = 49;
@@ -52,14 +50,20 @@ dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, uns
         ctx->typlist_is_char = 0;
     }
 
+    if (ds_format < 105) {
+        ctx->expansion_len_len = 0;
+    } else if (ds_format < 110) {
+        ctx->expansion_len_len = 2;
+    } else {
+        ctx->expansion_len_len = 4;
+    }
+    
     if (ds_format < 110) {
         ctx->lbllist_entry_len = 9;
         ctx->variable_name_len = 9;
-        ctx->expansion_len_len = 2;
     } else {
         ctx->lbllist_entry_len = 33;
         ctx->variable_name_len = 33;
-        ctx->expansion_len_len = 4;
     }
 
     if (ds_format < 108) {
@@ -68,6 +72,14 @@ dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, uns
     } else {
         ctx->variable_labels_entry_len = 81;
         ctx->data_label_len = 81;
+    }
+
+    if (ds_format < 105) {
+        ctx->time_stamp_len = 0;
+        ctx->value_label_table_len_len = 2;
+    } else {
+        ctx->time_stamp_len = 18;
+        ctx->value_label_table_len_len = 4;
     }
 
     ctx->typlist_len = ctx->nvar * sizeof(unsigned char);
@@ -187,6 +199,9 @@ static int dta_read_descriptors(int fd, dta_ctx_t *ctx) {
 }
 
 static int dta_skip_expansion_fields(int fd, dta_ctx_t *ctx) {
+    if (ctx->expansion_len_len == 0)
+        return 0;
+    
     while (1) {
         size_t len;
         char data_type;
@@ -266,9 +281,11 @@ int parse_dta(const char *filename, void *user_ctx,
         goto cleanup;
     }
     
-    if (lseek(fd, 18, SEEK_CUR) == -1) { /* time_stamp */
-        retval = READSTAT_ERROR_READ;
-        goto cleanup;
+    if (ctx->time_stamp_len) {
+        if (lseek(fd, ctx->time_stamp_len, SEEK_CUR) == -1) { /* time_stamp */
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
     }
 
     if (dta_read_descriptors(fd, ctx) != 0) {
@@ -396,62 +413,95 @@ int parse_dta(const char *filename, void *user_ctx,
     
     if (value_label_cb) {
         while (1) {
-            dta_value_label_table_header_t table_header;
-            if (read(fd, &table_header, sizeof(dta_value_label_table_header_t)) < sizeof(dta_value_label_table_header_t))
-                break;
-            
-            size_t len = table_header.len;
-            
-            if (ctx->machine_needs_byte_swap)
-                len = byteswap4(table_header.len);
-            
+            size_t len = 0;
             char *table_buffer;
+
+            if (ctx->value_label_table_len_len == 2) {
+                dta_short_value_label_table_header_t table_header;
+                if (read(fd, &table_header, sizeof(dta_short_value_label_table_header_t)) < 
+                        sizeof(dta_short_value_label_table_header_t))
+                    break;
+
+                len = table_header.len;
             
-            if ((table_buffer = malloc(len)) == NULL) {
-                retval = READSTAT_ERROR_MALLOC;
-                goto cleanup;
-            }
-            
-            if (read(fd, table_buffer, len) < len) {
-                free(table_buffer);
-                break;
-            }
-            
-            int32_t n = *(int32_t *)table_buffer;
-            int32_t txtlen = *((int32_t *)table_buffer+1);
-            if (ctx->machine_needs_byte_swap) {
-                n = byteswap4(n);
-                txtlen = byteswap4(txtlen);
-            }
-            
-            if (8*n + 8 > len || 8*n + 8 + txtlen > len || n < 0 || txtlen < 0) {
-                free(table_buffer);
-                break;
-            }
-            
-            int32_t *off = (int32_t *)table_buffer+2;
-            int32_t *val = (int32_t *)table_buffer+2+n;
-            char *txt = &table_buffer[8*n+8];
-            int i;
-            
-            if (ctx->machine_needs_byte_swap) {
-                for (i=0; i<n; i++) {
-                    off[i] = byteswap4(off[i]);
-                    val[i] = byteswap4(val[i]);
+                if (ctx->machine_needs_byte_swap)
+                    len = byteswap2(table_header.len);
+                
+                if ((table_buffer = malloc(8 * len)) == NULL) {
+                    retval = READSTAT_ERROR_MALLOC;
+                    goto cleanup;
                 }
-            }
-            if (ctx->machine_is_twos_complement) {
-                for (i=0; i<n; i++) {
-                    val[i] = ones_to_twos_complement4(val[i]);
+                
+                if (read(fd, table_buffer, 8 * len) < 8 * len) {
+                    free(table_buffer);
+                    break;
                 }
-            }
-            
-            for (i=0; i<n; i++) {
-                if (off[i] < txtlen) {
-                    if (value_label_cb(table_header.labname, &val[i], READSTAT_TYPE_INT32, &txt[off[i]], user_ctx)) {
+                
+                int32_t l;
+                for (l=0; l<len; l++) {
+                    if (value_label_cb(table_header.labname, &l, READSTAT_TYPE_INT32, table_buffer + 8 * l, user_ctx)) {
                         retval = READSTAT_ERROR_USER_ABORT;
                         free(table_buffer);
                         goto cleanup;
+                    }
+                }
+            } else {
+                dta_value_label_table_header_t table_header;
+                if (read(fd, &table_header, sizeof(dta_value_label_table_header_t)) < 
+                        sizeof(dta_value_label_table_header_t))
+                    break;
+            
+                len = table_header.len;
+            
+                if (ctx->machine_needs_byte_swap)
+                    len = byteswap4(table_header.len);
+                        
+                if ((table_buffer = malloc(len)) == NULL) {
+                    retval = READSTAT_ERROR_MALLOC;
+                    goto cleanup;
+                }
+                
+                if (read(fd, table_buffer, len) < len) {
+                    free(table_buffer);
+                    break;
+                }
+                
+                int32_t n = *(int32_t *)table_buffer;
+                int32_t txtlen = *((int32_t *)table_buffer+1);
+                if (ctx->machine_needs_byte_swap) {
+                    n = byteswap4(n);
+                    txtlen = byteswap4(txtlen);
+                }
+                
+                if (8*n + 8 > len || 8*n + 8 + txtlen > len || n < 0 || txtlen < 0) {
+                    free(table_buffer);
+                    break;
+                }
+                
+                int32_t *off = (int32_t *)table_buffer+2;
+                int32_t *val = (int32_t *)table_buffer+2+n;
+                char *txt = &table_buffer[8*n+8];
+                int i;
+                
+                if (ctx->machine_needs_byte_swap) {
+                    for (i=0; i<n; i++) {
+                        off[i] = byteswap4(off[i]);
+                        val[i] = byteswap4(val[i]);
+                    }
+                }
+                if (ctx->machine_is_twos_complement) {
+                    for (i=0; i<n; i++) {
+                        val[i] = ones_to_twos_complement4(val[i]);
+                    }
+                }
+                
+                for (i=0; i<n; i++) {
+                    if (off[i] < txtlen) {
+                        if (value_label_cb(table_header.labname, &val[i], READSTAT_TYPE_INT32, &txt[off[i]], user_ctx)) {
+                            retval = READSTAT_ERROR_USER_ABORT;
+                            free(table_buffer);
+                            goto cleanup;
+                        }
                     }
                 }
             }
