@@ -10,12 +10,12 @@
 int readstat_por_parse_double(const char *data, size_t len, double *result) {
     int retval = 0;
     double val = 0.0;
-    int num = 0;
-    int frac = 0;
-    int exp = 0;
+    long num = 0;
+    long frac = 0;
+    long exp = 0;
     
-    int temp_val = 0;
-    int frac_len = 0;
+    long temp_val = 0;
+    long frac_len = 0;
     
     const u_char *val_start = NULL;
     
@@ -36,14 +36,17 @@ int readstat_por_parse_double(const char *data, size_t len, double *result) {
         }
         
         value = [0-9A-T]+ >{ temp_val = 0; val_start = fpc; } $incr_val;
+
+        fraction = "." value %{ frac = temp_val; frac_len = (fpc - val_start); };
         
-        nonmissing_value = (("-" %{ is_negative = 1; })? value %{ num = temp_val; }
-                            ("." value %{ frac = temp_val; frac_len = (fpc - val_start); })?
+        nonmissing_value = (("-" %{ is_negative = 1; })? value %{ num = temp_val; } fraction?
                             ( ("+" | "-" %{ exp_is_negative = 1; }) value %{ exp = temp_val; })?) "/";
+
+        nonmissing_fraction = ("-" %{ is_negative = 1; })? fraction "/";
         
         missing_value = "*." %{ val = NAN; };
         
-        main := " "* (missing_value | nonmissing_value ) @{ success = 1; fbreak; };
+        main := " "* (missing_value | nonmissing_value | nonmissing_fraction ) @{ success = 1; fbreak; };
         
         write init;
         write exec noend;

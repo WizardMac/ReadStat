@@ -517,7 +517,8 @@ static int read_por_file_data(readstat_por_ctx_t *ctx, readstat_handle_value_cal
                 retval = read_string(ctx, string, sizeof(string));
                 if (i == 0 && retval == 1) {
                     return 0;
-                } else if (retval != 0) {
+                } else if (retval == -1) {
+                    printf("Error in %s\n", info->name);
                     return READSTAT_ERROR_PARSE;
                 }
 //                printf("String value: %s\n", string);
