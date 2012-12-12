@@ -305,14 +305,18 @@ int parse_dta(const char *filename, void *user_ctx,
         const char *variable_name = &ctx->varlist[ctx->variable_name_len*i];
         const char *variable_label = NULL;
         const char *value_labels = NULL;
+        const char *variable_format = NULL;
         
         if (ctx->variable_labels[ctx->variable_labels_entry_len*i])
             variable_label = &ctx->variable_labels[ctx->variable_labels_entry_len*i];
         if (ctx->lbllist[ctx->lbllist_entry_len*i])
             value_labels = &ctx->lbllist[ctx->lbllist_entry_len*i];
+        if (ctx->fmtlist[ctx->fmtlist_entry_len*i])
+            variable_format = &ctx->fmtlist[ctx->fmtlist_entry_len*i];
 
         if (variable_cb) {
-            if (variable_cb(i, variable_name, variable_label, value_labels, type, max_len, user_ctx)) {
+            if (variable_cb(i, variable_name, variable_format, variable_label, 
+                        value_labels, type, max_len, user_ctx)) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
             }

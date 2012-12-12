@@ -78,9 +78,11 @@ typedef struct dta_ctx_s {
 #define DTA_MAX_FLOAT  1.7e38f
 #define DTA_MAX_DOUBLE 8.9e307
 
-#define DTA_MISSING_CHAR         0x65
-#define DTA_MISSING_INT16      0x7FE5
-#define DTA_MISSING_INT32  0x7FFFFFE5
+#define DTA_MISSING_CHAR                 0x65
+#define DTA_MISSING_INT16              0x7FE5
+#define DTA_MISSING_INT32          0x7FFFFFE5UI
+#define DTA_MISSING_FLOAT          0x7F000000UI
+#define DTA_MISSING_DOUBLE 0x7FE0000000000000UL
 
 #define DTA_TYPE_CODE_CHAR   0xFB
 #define DTA_TYPE_CODE_INT16  0xFC

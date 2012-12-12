@@ -16,6 +16,7 @@
 #include <math.h>
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
+#include "readstat_spss.h"
 
 #define SAV_VARINFO_INITIAL_CAPACITY  512
 #define SAV_EIGHT_SPACES              "        "
@@ -94,6 +95,9 @@ int sav_read_variable_record(int fd, sav_ctx_t *ctx) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
+    variable.print = ctx->machine_needs_byte_swap ? byteswap4(variable.print) : variable.print;
+    variable.write = ctx->machine_needs_byte_swap ? byteswap4(variable.write) : variable.write;
+
     readstat_types_t dta_type = READSTAT_TYPE_DOUBLE;
     int32_t type = ctx->machine_needs_byte_swap ? byteswap4(variable.type) : variable.type;
     int i;
@@ -120,6 +124,14 @@ int sav_read_variable_record(int fd, sav_ctx_t *ctx) {
     unpad(info->name, 8);
     memcpy(info->longname, variable.name, 8);
     unpad(info->longname, 8);
+
+    info->print_format.decimal_places = (variable.print & 0x000000FF);
+    info->print_format.width = (variable.print & 0x0000FF00) >> 8;
+    info->print_format.type = (variable.print  & 0x00FF0000) >> 16;
+
+    info->write_format.decimal_places = (variable.write & 0x000000FF);
+    info->write_format.width = (variable.write & 0x0000FF00) >> 8;
+    info->write_format.type = (variable.write  & 0x00FF0000) >> 16;
     
     if (variable.has_var_label) {
         int32_t label_len;
@@ -673,7 +685,16 @@ int parse_sav(const char *filename, void *user_ctx,
             char label_name_buf[256];
             sav_varinfo_t *info = &ctx->varinfo[i];
             sprintf(label_name_buf, SAV_LABEL_NAME_PREFIX "%d", info->labels_index);
-            int cb_retval = variable_cb(info->index, info->longname, info->label, 
+
+            char *format = NULL;
+            char buf[80];
+            if (spss_format_is_date(info->print_format.type)) {
+                const char *fmt = spss_format(info->print_format.type);
+                sprintf(buf, "%%ts%s", fmt ? fmt : "");
+                format = buf;
+            }
+
+            int cb_retval = variable_cb(info->index, info->longname, format, info->label, 
                                         info->labels_index == -1 ? NULL : label_name_buf,
                                         info->type, 0, user_ctx);
             if (cb_retval) {

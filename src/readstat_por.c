@@ -17,6 +17,7 @@
 
 #include "readstat_por.h"
 #include "readstat_por_parse.h"
+#include "readstat_spss.h"
 #include "CKHashTable.h"
 
 #define POR_LINE_LENGTH 80
@@ -50,6 +51,13 @@ static uint16_t unicode_lookup[256] = {
     '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
     '0', '0', '0', '0', '0', '0' };
 
+
+typedef struct por_format_s {
+    int          type;
+    int          width;
+    int          decimal_places;
+} por_format_t;
+
 typedef struct por_varinfo_s {
     readstat_types_t type;
     int              labels_index;
@@ -59,6 +67,8 @@ typedef struct por_varinfo_s {
     double           missing_values[3];
     char             name[9];
     char             label[256];
+    por_format_t     print_format;
+    por_format_t     write_format;
 } por_varinfo_t;
 
 typedef struct readstat_por_ctx_s {
@@ -315,25 +325,43 @@ static int read_variable_record(readstat_por_ctx_t *ctx) {
     double value;
     int i;
     ctx->var_offset++;
+
+    por_varinfo_t *varinfo = &ctx->varinfo[ctx->var_offset];
+    por_format_t *formats[2] = { &varinfo->print_format, &varinfo->write_format };
+
     if (read_double(ctx, &value) == -1) {
         return READSTAT_ERROR_PARSE;
     }
-    ctx->varinfo[ctx->var_offset].labels_index = -1;
-    ctx->varinfo[ctx->var_offset].width = (int)value;
-    if (ctx->varinfo[ctx->var_offset].width == 0) {
-        ctx->varinfo[ctx->var_offset].type = READSTAT_TYPE_DOUBLE;
+    varinfo->labels_index = -1;
+    varinfo->width = (int)value;
+    if (varinfo->width == 0) {
+        varinfo->type = READSTAT_TYPE_DOUBLE;
     } else {
-        ctx->varinfo[ctx->var_offset].type = READSTAT_TYPE_STRING;
+        varinfo->type = READSTAT_TYPE_STRING;
     }
-    if (read_string(ctx, ctx->varinfo[ctx->var_offset].name, sizeof(ctx->varinfo[ctx->var_offset].name)) == -1) {
+    if (read_string(ctx, varinfo->name, sizeof(varinfo->name)) == -1) {
         return READSTAT_ERROR_PARSE;
     }
-    ck_str_hash_insert(ctx->varinfo[ctx->var_offset].name, &ctx->varinfo[ctx->var_offset], ctx->var_dict);
-    for (i=0; i<6; i++) { /* print format, write format */
+    ck_str_hash_insert(varinfo->name, varinfo, ctx->var_dict);
+
+    for (i=0; i<sizeof(formats)/sizeof(por_format_t *); i++) {
+        por_format_t *format = formats[i];
         if (read_double(ctx, &value) == -1) {
             return READSTAT_ERROR_PARSE;
         }
+        format->type = (int)value;
+
+        if (read_double(ctx, &value) == -1) {
+            return READSTAT_ERROR_PARSE;
+        }
+        format->width = (int)value;
+
+        if (read_double(ctx, &value) == -1) {
+            return READSTAT_ERROR_PARSE;
+        }
+        format->decimal_places = (int)value;
     }
+
     return 0;
 }
 
@@ -680,9 +708,19 @@ int parse_por(const char *filename, void *user_ctx,
                     char label_name_buf[256];
                     por_varinfo_t *info = &ctx->varinfo[i];
                     sprintf(label_name_buf, POR_LABEL_NAME_PREFIX "%d", info->labels_index);
-                    int cb_retval = variable_cb(i, info->name, info->label[0] == '\0' ? NULL : info->label,
-                                                info->labels_index == -1 ? NULL : label_name_buf,
-                                                info->type, 0, user_ctx);
+
+                    char *format = NULL;
+                    char buf[80];
+                    if (spss_format_is_date(info->print_format.type)) {
+                        const char *fmt = spss_format(info->print_format.type);
+                        sprintf(buf, "%%ts%s", fmt ? fmt : "");
+                        format = buf;
+                    }
+
+                    int cb_retval = variable_cb(i, info->name, format,
+                            info->label[0] == '\0' ? NULL : info->label,
+                            info->labels_index == -1 ? NULL : label_name_buf,
+                            info->type, 0, user_ctx);
                     if (cb_retval) {
                         retval = READSTAT_ERROR_USER_ABORT;
                         goto cleanup;

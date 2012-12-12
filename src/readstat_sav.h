@@ -67,6 +67,11 @@ typedef struct sav_dictionary_termination_record_s {
 
 #pragma pack(pop)
 
+typedef struct sav_format_s {
+    int    type;
+    int    width;
+    int    decimal_places;
+} sav_format_t;
 
 typedef struct sav_varinfo_s {
     readstat_types_t type;
@@ -75,6 +80,8 @@ typedef struct sav_varinfo_s {
     int              offset;
     int              width;
     int              string_length;
+    sav_format_t     print_format;
+    sav_format_t     write_format;
     int              n_segments;
     int              n_missing_values;
     int              missing_range;

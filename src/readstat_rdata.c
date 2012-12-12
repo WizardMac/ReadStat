@@ -300,6 +300,13 @@ static int handle_vector_attribute(char *key, rdata_sexptype_info_t val_info, rd
             return retval;
         
         retval = read_string_vector(length, ctx->handle_value_label, ctx);
+    } else if (strcmp(key, "class") == 0) {
+        char classname[RDATA_ATOM_LEN];
+        retval = read_character_string(classname, RDATA_ATOM_LEN, ctx);
+        if (retval != 0)
+            return retval;
+
+        /* TODO handle dates here (vectors in class POSIXct) */
     } else {
         retval = recursive_discard(val_info.header, ctx);
     }
