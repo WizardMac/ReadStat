@@ -6,7 +6,7 @@ all:
 	@mkdir -p obj
 	$(RAGEL) src/readstat_por_parse.rl -G2
 	$(RAGEL) src/readstat_sav_parse.rl -G2
-	$(CC) src/*.c -dynamiclib -o obj/libreadstat.dylib -Wall -Werror
+	$(CC) src/*.c -g -dynamiclib -o obj/libreadstat.dylib -Wall -Werror
 
 clean:
 	rm -f src/readstat_por_parse.c

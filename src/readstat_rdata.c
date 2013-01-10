@@ -36,6 +36,7 @@ typedef struct rdata_ctx_s {
     int                                  fd;
     
     rdata_atom_table_t                  *atom_table;
+    int                                  class_is_posixct;
 } rdata_ctx_t;
 
 static int atom_table_add(rdata_atom_table_t *table, char *key);
@@ -44,10 +45,8 @@ static char *atom_table_lookup(rdata_atom_table_t *table, int index);
 static int read_environment(char *table_name, rdata_ctx_t *ctx);
 static int read_sexptype_header(rdata_sexptype_info_t *header, rdata_ctx_t *ctx);
 static int read_length(int32_t *outLength, rdata_ctx_t *ctx);
-static int read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, rdata_ctx_t *ctx);
-static int read_logical_vector(char *name, rdata_ctx_t *ctx);
-static int read_integer_vector(char *name, rdata_ctx_t *ctx);
-static int read_real_vector(char *name, rdata_ctx_t *ctx);
+static int read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, 
+        void *callback_ctx, rdata_ctx_t *ctx);
 static int read_value_vector(rdata_sexptype_header_t header, char *name, rdata_ctx_t *ctx);
 static int read_character_string(char *key, size_t keylen, rdata_ctx_t *ctx);
 static int read_generic_list(int attributes, rdata_ctx_t *ctx);
@@ -192,12 +191,12 @@ static int read_environment(char *table_name, rdata_ctx_t *ctx) {
                 goto cleanup;
             
             if (ctx->handle_column) {
-                if (ctx->handle_column(key, READSTAT_TYPE_STRING, NULL, length, ctx->user_ctx)) {
+                if (ctx->handle_column(key, READSTAT_TYPE_STRING, NULL, NULL, length, ctx->user_ctx)) {
                     retval = READSTAT_ERROR_USER_ABORT;
                     goto cleanup;
                 }
             }
-            retval = read_string_vector(length, ctx->handle_text_value, ctx);
+            retval = read_string_vector(length, ctx->handle_text_value, ctx->user_ctx, ctx);
             if (retval != 0)
                 goto cleanup;
         } else if (sexptype_info.header.type == RDATA_SEXPTYPE_GENERIC_VECTOR &&
@@ -291,6 +290,12 @@ cleanup:
     return retval;
 }
 
+static int handle_class_name(char *buf, int i, void *ctx) {
+    int *class_is_posixct = (int *)ctx;
+    *class_is_posixct = (strcmp(buf, "POSIXct") == 0);
+    return 0;
+}
+
 static int handle_vector_attribute(char *key, rdata_sexptype_info_t val_info, rdata_ctx_t *ctx) {
     int retval = 0;
     if (strcmp(key, "levels") == 0) {
@@ -299,14 +304,17 @@ static int handle_vector_attribute(char *key, rdata_sexptype_info_t val_info, rd
         if (retval != 0)
             return retval;
         
-        retval = read_string_vector(length, ctx->handle_value_label, ctx);
+        retval = read_string_vector(length, ctx->handle_value_label, ctx->user_ctx, ctx);
     } else if (strcmp(key, "class") == 0) {
-        char classname[RDATA_ATOM_LEN];
-        retval = read_character_string(classname, RDATA_ATOM_LEN, ctx);
+        int32_t length;
+        retval = read_length(&length, ctx);
         if (retval != 0)
             return retval;
 
-        /* TODO handle dates here (vectors in class POSIXct) */
+        if (length != 1)
+            return READSTAT_ERROR_PARSE;
+
+        retval = read_string_vector(length, &handle_class_name, &ctx->class_is_posixct, ctx);
     } else {
         retval = recursive_discard(val_info.header, ctx);
     }
@@ -364,7 +372,7 @@ static int handle_data_frame_attribute(char *key, rdata_sexptype_info_t val_info
         if (retval != 0)
             return retval;
         
-        retval = read_string_vector(length, ctx->handle_column_name, ctx);
+        retval = read_string_vector(length, ctx->handle_column_name, ctx->user_ctx, ctx);
     } else {
         retval = recursive_discard(val_info.header, ctx);
     }
@@ -432,12 +440,12 @@ static int read_generic_list(int attributes, rdata_ctx_t *ctx) {
             if (retval != 0)
                 goto cleanup;
             if (ctx->handle_column) {
-                if (ctx->handle_column(NULL, READSTAT_TYPE_STRING, NULL, vec_length, ctx->user_ctx)) {
+                if (ctx->handle_column(NULL, READSTAT_TYPE_STRING, NULL, NULL, vec_length, ctx->user_ctx)) {
                     retval = READSTAT_ERROR_USER_ABORT;
                     goto cleanup;
                 }
             }
-            retval = read_string_vector(vec_length, ctx->handle_text_value, ctx);
+            retval = read_string_vector(vec_length, ctx->handle_text_value, ctx->user_ctx, ctx);
         } else {
             retval = read_value_vector(sexptype_info.header, NULL, ctx);
         }
@@ -476,7 +484,8 @@ cleanup:
     return retval;
 }
 
-static int read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, rdata_ctx_t *ctx) {
+static int read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, 
+        void *callback_ctx, rdata_ctx_t *ctx) {
     int32_t string_length;
     int retval = 0;
     rdata_sexptype_info_t info;
@@ -495,14 +504,10 @@ static int read_string_vector(int32_t length, readstat_handle_text_value_callbac
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
         }
-        
-        if (read(ctx->fd, &string_length, sizeof(string_length)) != sizeof(string_length)) {
-            retval = READSTAT_ERROR_READ;
+
+        retval = read_length(&string_length, ctx);
+        if (retval != 0)
             goto cleanup;
-        }
-        
-        if (ctx->machine_needs_byteswap)
-            string_length = byteswap4(string_length);
         
         if (string_length + 1 > buffer_size) {
             buffer = realloc(buffer, string_length + 1);
@@ -520,7 +525,7 @@ static int read_string_vector(int32_t length, readstat_handle_text_value_callbac
         buffer[string_length] = '\0';
         
         if (handle_text) {
-            if (handle_text(buffer, i, ctx->user_ctx)) {
+            if (handle_text(buffer, i, callback_ctx)) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
             }
@@ -537,171 +542,94 @@ cleanup:
 
 static int read_value_vector(rdata_sexptype_header_t header, char *name, rdata_ctx_t *ctx) {
     int retval = 0;
+    int32_t length;
+    size_t elem_size = 0;
+    void *vals = NULL;
+    size_t buf_len = 0;
+    int data_type;
+    int i;
+    
     switch (header.type) {
         case RDATA_SEXPTYPE_REAL_VECTOR:
-            retval = read_real_vector(name, ctx);
+            elem_size = sizeof(double);
+            data_type = READSTAT_TYPE_DOUBLE;
             break;
         case RDATA_SEXPTYPE_INTEGER_VECTOR:
-            retval = read_integer_vector(name, ctx);
+            elem_size = sizeof(int32_t);
+            data_type = READSTAT_TYPE_INT32;
             break;
         case RDATA_SEXPTYPE_LOGICAL_VECTOR:
-            retval = read_logical_vector(name, ctx);
+            elem_size = sizeof(int32_t);
+            data_type = READSTAT_TYPE_FLOAT;
             break;
         default:
             retval = READSTAT_ERROR_PARSE;
             break;
     }
-    
+
+    retval = read_length(&length, ctx);
     if (retval != 0)
         goto cleanup;
+
+    buf_len = length * elem_size;
     
+    vals = malloc(buf_len);
+    if (vals == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
+    
+    if (read(ctx->fd, vals, buf_len) != buf_len) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+    
+    if (ctx->machine_needs_byteswap) {
+        if (elem_size == sizeof(double)) {
+            double *d_vals = (double *)vals;
+            for (i=0; i<buf_len/sizeof(double); i++) {
+                d_vals[i] = byteswap_double(d_vals[i]);
+            }
+        } else {
+            uint32_t *i_vals = (uint32_t *)vals;
+            for (i=0; i<buf_len/sizeof(uint32_t); i++) {
+                i_vals[i] = byteswap4(i_vals[i]);
+            }
+        }
+    }
+    
+    ctx->class_is_posixct = 0;
     if (header.attributes) {
         retval = read_attributes(&handle_vector_attribute, ctx);
         if (retval != 0)
             goto cleanup;
     }
     
-cleanup:
-    
-    return retval;
-}
-
-static int read_logical_vector(char *name, rdata_ctx_t *ctx) {
-    int32_t length;
-    int retval = 0;
-    
-    int32_t *vals = NULL;
-    float *real_vals = NULL;
-
-    int i;
-    
-    retval = read_length(&length, ctx);
-    if (retval != 0)
-        goto cleanup;
-    
-    vals = malloc(length * sizeof(int32_t));
-    if (vals == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
-        goto cleanup;
-    }
-    
-    if (read(ctx->fd, vals, length * sizeof(int32_t)) != length * sizeof(int32_t)) {
-        retval = READSTAT_ERROR_READ;
-        goto cleanup;
-    }
-    
-    if (ctx->machine_needs_byteswap) {
-        for (i=0; i<length; i++) {
-            vals[i] = byteswap4(vals[i]);
-        }
-    }
-    
-    real_vals = malloc(length * sizeof(float));
-    for (i=0; i<length; i++) {
-        if (vals[i] == INT32_MIN) {
-            real_vals[i] = NAN;
+    if (ctx->handle_column) {
+        if (header.type == RDATA_SEXPTYPE_LOGICAL_VECTOR) {
+            float *real_vals = malloc(length * sizeof(float));
+            int32_t *i_vals = (int32_t *)vals;
+            for (i=0; i<length; i++) {
+                if (i_vals[i] == INT32_MIN) {
+                    real_vals[i] = NAN;
+                } else {
+                    real_vals[i] = i_vals[i];
+                }
+            }
+            if (ctx->handle_column(name, data_type, NULL, real_vals, length, ctx->user_ctx)) {
+                retval = READSTAT_ERROR_USER_ABORT;
+                goto cleanup;
+            }
+            free(real_vals);
         } else {
-            real_vals[i] = vals[i];
-        }
-    }
-    
-    if (ctx->handle_column) {
-        if (ctx->handle_column(name, READSTAT_TYPE_FLOAT, vals, length, ctx->user_ctx)) {
-            retval = READSTAT_ERROR_USER_ABORT;
-            goto cleanup;
-        }
-    }
-    
-cleanup:
-    if (vals)
-        free(vals);
-    if (real_vals)
-        free(real_vals);
-    
-    return retval;
-}
-
-static int read_integer_vector(char *name, rdata_ctx_t *ctx) {
-    int32_t length;
-    int retval = 0;
-    
-    int32_t *vals = NULL;
-    int i;
-    
-    retval = read_length(&length, ctx);
-    if (retval != 0)
-        goto cleanup;
-    
-    vals = malloc(length * sizeof(int32_t));
-    if (vals == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
-        goto cleanup;
-    }
-    
-    if (read(ctx->fd, vals, length * sizeof(int32_t)) != length * sizeof(int32_t)) {
-        retval = READSTAT_ERROR_READ;
-        goto cleanup;
-    }
-    
-    if (ctx->machine_needs_byteswap) {
-        for (i=0; i<length; i++) {
-            vals[i] = byteswap4(vals[i]);
-        }
-    }
-    
-    if (ctx->handle_column) {
-        if (ctx->handle_column(name, READSTAT_TYPE_INT32, vals, length, ctx->user_ctx)) {
-            retval = READSTAT_ERROR_USER_ABORT;
-            goto cleanup;
-        }
-    }
-    
-cleanup:
-    if (vals)
-        free(vals);
-    
-    return retval;
-}
-
-static int read_real_vector(char *name, rdata_ctx_t *ctx) {
-    int32_t length;
-    int retval = 0;
-    
-    double *vals = NULL;
-    int i;
-    
-    retval = read_length(&length, ctx);
-    if (retval != 0)
-        goto cleanup;
-    
-    vals = malloc(length * sizeof(double));
-    if (vals == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
-        goto cleanup;
-    }
-    
-    if (read(ctx->fd, vals, length * sizeof(double)) != length * sizeof(double)) {
-        retval = READSTAT_ERROR_READ;
-        goto cleanup;
-    }
-    
-    if (ctx->machine_needs_byteswap) {
-        for (i=0; i<length; i++) {
-            vals[i] = byteswap_double(vals[i]);
-        }
-    }
-    
-    if (ctx->handle_column) {
-        if (ctx->handle_column(name, READSTAT_TYPE_DOUBLE, vals, length, ctx->user_ctx)) {
-            retval = READSTAT_ERROR_USER_ABORT;
-            goto cleanup;
+            if (ctx->handle_column(name, data_type, ctx->class_is_posixct ? "%ts" : NULL, vals, length, ctx->user_ctx)) {
+                retval = READSTAT_ERROR_USER_ABORT;
+                goto cleanup;
+            }
         }
     }
 
-    
 cleanup:
-    if (vals)
-        free(vals);
     
     return retval;
 }

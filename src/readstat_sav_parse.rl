@@ -70,7 +70,8 @@ int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) 
     }%%
 
     if (cs < sav_long_variable_parse_first_final || p != pe) {
-        printf("Parse error around byte #%ld, character %d\n", p - (u_char *)data, *p);
+        printf("Error parsing string \"%s\" around byte #%ld, character %c\n", 
+                (char *)data, p - (u_char *)data, *p);
         retval = READSTAT_ERROR_PARSE;
     }
     

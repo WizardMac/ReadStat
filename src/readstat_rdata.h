@@ -82,7 +82,8 @@ typedef struct rdata_sexptype_info_s {
 #define RDATA_PSEUDO_SXP_EMPTY_ENVIRONMENT     242
 #define RDATA_PSEUDO_SXP_BASE_ENVIRONMENT      241
 
-typedef int (*readstat_handle_column_callback)(char *name, readstat_types_t type, void *data, long count, void *ctx);
+typedef int (*readstat_handle_column_callback)(char *name, readstat_types_t type, char *format, 
+        void *data, long count, void *ctx);
 typedef int (*readstat_handle_table_callback)(char *name, void *ctx);
 typedef int (*readstat_handle_text_value_callback)(char *value, int index, void *ctx);
 typedef readstat_handle_text_value_callback readstat_handle_column_name_callback;
