@@ -1,4 +1,4 @@
-ReadStat: Read files from popular stats packages
+ReadStat: Read data sets from R, Stata, and SPSS
 --
 
 ReadStat is a BSD-licensed C library for reading files from popular stats

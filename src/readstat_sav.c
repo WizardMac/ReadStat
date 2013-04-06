@@ -25,7 +25,7 @@
 void sav_ctx_free(sav_ctx_t *ctx);
 int sav_read_variable_record(int fd, sav_ctx_t *ctx);
 
-void unpad(char *string, size_t len) {
+static void unpad(char *string, size_t len) {
     string[len] = '\0';
     /* remove space padding */
     size_t i;

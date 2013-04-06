@@ -86,9 +86,8 @@ int parse_rdata(const char *filename, void *user_ctx,
     ctx->handle_value_label = handle_value_label;
     ctx->atom_table = atom_table;
     
-    int test_byte_order = 1;
     ctx->machine_needs_byteswap = 0;
-    if (((char *)&test_byte_order)[0]) {
+    if (machine_is_little_endian()) {
         ctx->machine_needs_byteswap = 1;
     }
     

@@ -21,9 +21,8 @@ dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, uns
     }
     memset(ctx, 0, sizeof(dta_ctx_t));
 
-    int test_byte_order = 1;
     int machine_byteorder = DTA_HILO;
-    if (((char *)&test_byte_order)[0]) {
+    if (machine_is_little_endian()) {
         machine_byteorder = DTA_LOHI;
     }
 

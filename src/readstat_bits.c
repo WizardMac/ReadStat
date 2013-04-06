@@ -11,6 +11,11 @@
 
 #include "readstat_bits.h"
 
+int machine_is_little_endian() {
+    int test_byte_order = 1;
+    return ((char *)&test_byte_order)[0];
+}
+
 char ones_to_twos_complement1(char num) {
     return num < 0 ? num+1 : num;
 }
