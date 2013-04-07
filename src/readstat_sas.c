@@ -186,14 +186,14 @@ static readstat_errors_t sas_read_header(int fd, sas_ctx_t *ctx) {
 
     if (ctx->u64) {
         uint64_t page_count;
-        if (read(fd, &page_size, sizeof(uint64_t)) < sizeof(uint64_t)) {
+        if (read(fd, &page_count, sizeof(uint64_t)) < sizeof(uint64_t)) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
         ctx->page_count = ctx->bswap ? byteswap8(page_count) : page_count;
     } else {
         uint32_t page_count;
-        if (read(fd, &page_size, sizeof(uint32_t)) < sizeof(uint32_t)) {
+        if (read(fd, &page_count, sizeof(uint32_t)) < sizeof(uint32_t)) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
@@ -225,7 +225,7 @@ static readstat_errors_t sas_parse_column_text_subheader(char *subheader, size_t
     if (ctx->bswap)
         remainder = byteswap2(remainder);
 
-    if (remainder != len - (8+signature_len)) {
+    if (remainder != len - (4+2*signature_len)) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -272,7 +272,7 @@ static readstat_errors_t sas_parse_row_size_subheader(char *subheader, size_t le
         uint64_t tmp_total_row_count, tmp_row_length, tmp_page_row_count;
         memcpy(&tmp_row_length, &subheader[40], 8);
         memcpy(&tmp_total_row_count, &subheader[48], 8);
-        memcpy(&tmp_page_row_count, &subheader[120], 4);
+        memcpy(&tmp_page_row_count, &subheader[120], 8);
         
         row_length = ctx->bswap ? byteswap8(tmp_row_length) : tmp_row_length;
         total_row_count = ctx->bswap ? byteswap8(tmp_total_row_count) : tmp_total_row_count;
@@ -354,7 +354,7 @@ static readstat_errors_t sas_parse_column_name_subheader(char *subheader, size_t
     if (ctx->bswap)
         remainder = byteswap2(remainder);
 
-    if (remainder != len - (8+signature_len)) {
+    if (remainder != len - (4+2*signature_len)) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -385,7 +385,7 @@ static readstat_errors_t sas_parse_column_attributes_subheader(char *subheader, 
     if (ctx->bswap)
         remainder = byteswap2(remainder);
 
-    if (remainder != len - (8+signature_len)) {
+    if (remainder != len - (4+2*signature_len)) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -466,18 +466,25 @@ static readstat_errors_t sas_parse_subheader(char *subheader, size_t len, sas_ct
         retval = sas_parse_row_size_subheader(subheader, len, ctx);
     } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE) {
         retval = sas_parse_column_size_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COUNTS) {
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
-        retval = sas_parse_column_text_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_NAME) {
-        retval = sas_parse_column_name_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_ATTRS) {
-        retval = sas_parse_column_attributes_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT) {
-        retval = sas_parse_column_format_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_LIST) {
     } else {
-        retval = READSTAT_ERROR_PARSE;
+        if (signature == -1 && ctx->u64) {
+            memcpy(&signature, &subheader[4], 4);
+            if (ctx->bswap)
+                signature = byteswap4(signature);
+        }
+        if (signature == SAS_SUBHEADER_SIGNATURE_COUNTS) {
+        } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
+            retval = sas_parse_column_text_subheader(subheader, len, ctx);
+        } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_NAME) {
+            retval = sas_parse_column_name_subheader(subheader, len, ctx);
+        } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_ATTRS) {
+            retval = sas_parse_column_attributes_subheader(subheader, len, ctx);
+        } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT) {
+            retval = sas_parse_column_format_subheader(subheader, len, ctx);
+        } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_LIST) {
+        } else {
+            retval = READSTAT_ERROR_PARSE;
+        }
     }
 
 cleanup:
@@ -550,10 +557,10 @@ static readstat_errors_t sas_parse_page(char *page, sas_ctx_t *ctx) {
     char *data = NULL;
 
     if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA) {
-        uint32_t row_count;
-        memcpy(&row_count, &page[off+18], 4);
+        uint16_t row_count;
+        memcpy(&row_count, &page[off+18], 2);
         if (ctx->bswap)
-            row_count = byteswap4(row_count);
+            row_count = byteswap2(row_count);
 
         ctx->page_row_count = row_count;
         data = &page[off+24];
@@ -604,12 +611,11 @@ static readstat_errors_t sas_parse_page(char *page, sas_ctx_t *ctx) {
                 compression = shp[8];
             }
 
-            if (compression != 0) { /* TODO */
-                retval = READSTAT_ERROR_PARSE;
-                goto cleanup;
-            }
-
             if (len > 0) {
+                if (compression != 0) { /* TODO */
+                    retval = READSTAT_ERROR_PARSE;
+                    goto cleanup;
+                }
                 if (offset > ctx->page_size || offset + len > ctx->page_size) {
                     retval = READSTAT_ERROR_PARSE;
                     goto cleanup;
