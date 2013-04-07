@@ -66,6 +66,7 @@ typedef struct sas_ctx_s {
     readstat_handle_variable_callback  variable_cb;
     readstat_handle_value_callback    value_cb;
     int           little_endian;
+    int           u64;
     void         *user_ctx;
     int32_t       header_size;
     int32_t       page_size;
@@ -76,8 +77,6 @@ typedef struct sas_ctx_s {
     int32_t       page_row_count;
     int32_t       parsed_row_count;
     int32_t       total_row_count;
-    int32_t       column_count1;
-    int32_t       column_count2;
     int32_t       column_count;
     int           text_blob_count;
     size_t       *text_blob_lengths;
@@ -121,8 +120,7 @@ static void sas_ctx_free(sas_ctx_t *ctx) {
 
 static readstat_errors_t sas_read_header(int fd, sas_ctx_t *ctx) {
     sas_header_start_t  header_start;
-    sas_header_middle_t header_middle;
-    sas_header_end_t    header_end;
+    sas_header_end_t        header_end;
     int retval = 0;
     size_t a1 = 0, a2 = 0;
     if (read(fd, &header_start, sizeof(sas_header_start_t)) < sizeof(sas_header_start_t)) {
@@ -142,8 +140,10 @@ static readstat_errors_t sas_read_header(int fd, sas_ctx_t *ctx) {
         goto cleanup;
     }
     if (header_start.a2 == SAS_ALIGNMENT2_OFFSET_0) {
+        ctx->u64 = 0;
         a2 = 0;
     } else if (header_start.a2 == SAS_ALIGNMENT2_OFFSET_4) {
+        ctx->u64 = 1;
         a2 = 4;
     } else {
         retval = READSTAT_ERROR_PARSE;
@@ -159,18 +159,46 @@ static readstat_errors_t sas_read_header(int fd, sas_ctx_t *ctx) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
-    if (lseek(fd, 40 + a2, SEEK_CUR) == -1) {
-        retval = READSTAT_ERROR_READ;
-        goto cleanup;
-    }
-    if (read(fd, &header_middle, sizeof(sas_header_middle_t)) < sizeof(sas_header_middle_t)) {
+    if (lseek(fd, 196 + a1, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
 
-    ctx->header_size = ctx->bswap ? byteswap4(header_middle.header_size) : header_middle.header_size;
-    ctx->page_size = ctx->bswap ? byteswap4(header_middle.page_size) : header_middle.page_size;
-    ctx->page_count = ctx->bswap ? byteswap4(header_middle.page_count) : header_middle.page_count;
+    uint32_t header_size, page_size;
+
+    if (read(fd, &header_size, sizeof(uint32_t)) < sizeof(uint32_t)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+    if (read(fd, &page_size, sizeof(uint32_t)) < sizeof(uint32_t)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+
+    ctx->header_size = ctx->bswap ? byteswap4(header_size) : header_size;
+    ctx->page_size = ctx->bswap ? byteswap4(page_size) : page_size;
+
+    if ((ctx->u64 && ctx->header_size != 8192) ||
+            (!ctx->u64 && ctx->header_size != 1024)) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
+    if (ctx->u64) {
+        uint64_t page_count;
+        if (read(fd, &page_size, sizeof(uint64_t)) < sizeof(uint64_t)) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+        ctx->page_count = ctx->bswap ? byteswap8(page_count) : page_count;
+    } else {
+        uint32_t page_count;
+        if (read(fd, &page_size, sizeof(uint32_t)) < sizeof(uint32_t)) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+        ctx->page_count = ctx->bswap ? byteswap4(page_count) : page_count;
+    }
     
     if (lseek(fd, 8 + a1, SEEK_CUR) == -1) {
         retval = READSTAT_ERROR_READ;
@@ -191,12 +219,13 @@ cleanup:
 
 static readstat_errors_t sas_parse_column_text_subheader(char *subheader, size_t len, sas_ctx_t *ctx) {
     readstat_errors_t retval = 0;
+    size_t signature_len = ctx->u64 ? 8 : 4;
     uint16_t remainder;
-    memcpy(&remainder, &subheader[4], 2);
+    memcpy(&remainder, &subheader[signature_len], 2);
     if (ctx->bswap)
         remainder = byteswap2(remainder);
 
-    if (remainder != len - 12) {
+    if (remainder != len - (8+signature_len)) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -205,44 +234,63 @@ static readstat_errors_t sas_parse_column_text_subheader(char *subheader, size_t
     ctx->text_blob_lengths = realloc(ctx->text_blob_lengths,
             ctx->text_blob_count * sizeof(ctx->text_blob_lengths[0]));
     /* TODO handle compression */
-    char *blob = malloc(len-4);
-    memcpy(blob, subheader+4, len-4);
-    ctx->text_blob_lengths[ctx->text_blob_count-1] = len-4;
+    char *blob = malloc(len-signature_len);
+    memcpy(blob, subheader+signature_len, len-signature_len);
+    ctx->text_blob_lengths[ctx->text_blob_count-1] = len-signature_len;
     ctx->text_blobs[ctx->text_blob_count-1] = blob;
 
 cleanup:
     return retval;
 }
 
+static readstat_errors_t sas_parse_column_size_subheader(char *subheader, size_t len, sas_ctx_t *ctx) {
+    readstat_errors_t retval = 0;
+
+    uint64_t col_count;
+
+    if (ctx->u64) {
+        uint64_t tmp_col_count;
+        memcpy(&tmp_col_count, &subheader[8], 8);
+        col_count = ctx->bswap ? byteswap8(tmp_col_count) : tmp_col_count;
+    } else {
+        uint32_t tmp_col_count;
+        memcpy(&tmp_col_count, &subheader[4], 4);
+        col_count = ctx->bswap ? byteswap4(tmp_col_count) : tmp_col_count;
+    }
+
+    ctx->column_count = col_count;
+
+    return retval;
+}
+
 static readstat_errors_t sas_parse_row_size_subheader(char *subheader, size_t len, sas_ctx_t *ctx) {
     readstat_errors_t retval = 0;
-    uint32_t total_row_count;
-    uint32_t row_length, page_row_count;
-    uint32_t cc1, cc2;
-    memcpy(&row_length, &subheader[20], 4);
-    if (ctx->bswap)
-        row_length = byteswap4(row_length);
-    memcpy(&total_row_count, &subheader[24], 4);
-    if (ctx->bswap)
-        total_row_count = byteswap4(total_row_count);
+    uint64_t total_row_count;
+    uint64_t row_length, page_row_count;
 
-    memcpy(&cc1, &subheader[36], 4);
-    if (ctx->bswap)
-        cc1 = byteswap4(cc1);
-    memcpy(&cc2, &subheader[40], 4);
-    if (ctx->bswap)
-        cc2 = byteswap4(cc2);
-
-    memcpy(&page_row_count, &subheader[60], 4);
-    if (ctx->bswap)
-        page_row_count = byteswap4(page_row_count);
+    if (ctx->u64) {
+        uint64_t tmp_total_row_count, tmp_row_length, tmp_page_row_count;
+        memcpy(&tmp_row_length, &subheader[40], 8);
+        memcpy(&tmp_total_row_count, &subheader[48], 8);
+        memcpy(&tmp_page_row_count, &subheader[120], 4);
+        
+        row_length = ctx->bswap ? byteswap8(tmp_row_length) : tmp_row_length;
+        total_row_count = ctx->bswap ? byteswap8(tmp_total_row_count) : tmp_total_row_count;
+        page_row_count = ctx->bswap ? byteswap8(tmp_page_row_count) : tmp_page_row_count;
+    } else {
+        uint32_t tmp_total_row_count, tmp_row_length, tmp_page_row_count;
+        memcpy(&tmp_row_length, &subheader[20], 4);
+        memcpy(&tmp_total_row_count, &subheader[24], 4);
+        memcpy(&tmp_page_row_count, &subheader[60], 4);
+        
+        row_length = ctx->bswap ? byteswap4(tmp_row_length) : tmp_row_length;
+        total_row_count = ctx->bswap ? byteswap4(tmp_total_row_count) : tmp_total_row_count;
+        page_row_count = ctx->bswap ? byteswap4(tmp_page_row_count) : tmp_page_row_count;
+    }
 
     ctx->row_length = row_length;
     ctx->page_row_count = page_row_count;
     ctx->total_row_count = total_row_count;
-    ctx->column_count1 = cc1;
-    ctx->column_count2 = cc2;
-    ctx->column_count = ctx->column_count1 + ctx->column_count2;
 
     return retval;
 }
@@ -297,15 +345,16 @@ static readstat_errors_t copy_text_ref(char *out_buffer, text_ref_t text_ref, si
 
 static readstat_errors_t sas_parse_column_name_subheader(char *subheader, size_t len, sas_ctx_t *ctx) {
     readstat_errors_t retval = 0;
-    int cmax = (len-12-8)/8;
+    size_t signature_len = ctx->u64 ? 8 : 4;
+    int cmax = ctx->u64 ? (len-28)/8 : (len-20)/8;
     int i;
-    char *cnp = &subheader[12];
+    char *cnp = &subheader[signature_len+8];
     uint16_t remainder;
-    memcpy(&remainder, &subheader[4], 2);
+    memcpy(&remainder, &subheader[signature_len], 2);
     if (ctx->bswap)
         remainder = byteswap2(remainder);
 
-    if (remainder != len - 12) {
+    if (remainder != len - (8+signature_len)) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -327,15 +376,16 @@ cleanup:
 
 static readstat_errors_t sas_parse_column_attributes_subheader(char *subheader, size_t len, sas_ctx_t *ctx) {
     readstat_errors_t retval = 0;
-    int cmax = (len-12-8)/12;
+    size_t signature_len = ctx->u64 ? 8 : 4;
+    int cmax = ctx->u64 ? (len-28)/16 : (len-20)/12;
     int i;
-    char *cap = &subheader[12];
+    char *cap = &subheader[signature_len+8];
     uint16_t remainder;
-    memcpy(&remainder, &subheader[4], 2);
+    memcpy(&remainder, &subheader[signature_len], 2);
     if (ctx->bswap)
         remainder = byteswap2(remainder);
 
-    if (remainder != len - 12) {
+    if (remainder != len - (8+signature_len)) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -345,27 +395,38 @@ static readstat_errors_t sas_parse_column_attributes_subheader(char *subheader, 
         ctx->col_info = realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
     }
     for (i=ctx->col_attrs_count-cmax; i<ctx->col_attrs_count; i++) {
-        uint32_t offset;
+        uint64_t offset;
         uint32_t width;
-        memcpy(&offset, &cap[0], 4);
-        if (ctx->bswap)
-            offset = byteswap4(offset);
 
-        memcpy(&width, &cap[4], 4);
+        if (ctx->u64) {
+            uint64_t tmp_offset;
+            memcpy(&tmp_offset, &cap[0], 8);
+            offset = ctx->bswap ? byteswap8(tmp_offset) : tmp_offset;
+        } else {
+            uint32_t tmp_offset;
+            memcpy(&tmp_offset, &cap[0], 4);
+            offset = ctx->bswap ? byteswap4(tmp_offset) : tmp_offset;
+        }
+
+        off_t off=4;
+        if (ctx->u64)
+            off=8;
+
+        memcpy(&width, &cap[off], 4);
         if (ctx->bswap)
             width = byteswap4(width);
 
         ctx->col_info[i].offset = offset;
         ctx->col_info[i].width = width;
-        if (cap[10] == SAS_COLUMN_TYPE_NUM) {
+        if (cap[off+6] == SAS_COLUMN_TYPE_NUM) {
             ctx->col_info[i].type = READSTAT_TYPE_DOUBLE;
-        } else if (cap[10] == SAS_COLUMN_TYPE_CHR) {
+        } else if (cap[off+6] == SAS_COLUMN_TYPE_CHR) {
             ctx->col_info[i].type = READSTAT_TYPE_STRING;
         } else {
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
         }
-        cap += 12;
+        cap += off+8;
     }
 
 cleanup:
@@ -381,8 +442,10 @@ static readstat_errors_t sas_parse_column_format_subheader(char *subheader, size
         ctx->col_info_count = ctx->col_formats_count;
     }
 
-    ctx->col_info[ctx->col_formats_count-1].format_ref = sas_parse_text_ref(&subheader[34], ctx);
-    ctx->col_info[ctx->col_formats_count-1].label_ref = sas_parse_text_ref(&subheader[40], ctx);
+    ctx->col_info[ctx->col_formats_count-1].format_ref = sas_parse_text_ref(
+            ctx->u64 ? &subheader[46] : &subheader[34], ctx);
+    ctx->col_info[ctx->col_formats_count-1].label_ref = sas_parse_text_ref(
+            ctx->u64 ? &subheader[52] : &subheader[40], ctx);
 
     return retval;
 }
@@ -402,6 +465,7 @@ static readstat_errors_t sas_parse_subheader(char *subheader, size_t len, sas_ct
     if (signature == SAS_SUBHEADER_SIGNATURE_ROW_SIZE) {
         retval = sas_parse_row_size_subheader(subheader, len, ctx);
     } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE) {
+        retval = sas_parse_column_size_subheader(subheader, len, ctx);
     } else if (signature == SAS_SUBHEADER_SIGNATURE_COUNTS) {
     } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
         retval = sas_parse_column_text_subheader(subheader, len, ctx);
@@ -474,7 +538,11 @@ static readstat_errors_t sas_parse_page(char *page, sas_ctx_t *ctx) {
 
     readstat_errors_t retval = 0;
 
-    memcpy(&page_type, &page[16], 2);
+    off_t off = 0;
+    if (ctx->u64)
+        off = 16;
+
+    memcpy(&page_type, &page[off+16], 2);
 
     if (ctx->bswap)
         page_type = byteswap2(page_type);
@@ -483,30 +551,63 @@ static readstat_errors_t sas_parse_page(char *page, sas_ctx_t *ctx) {
 
     if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA) {
         uint32_t row_count;
-        memcpy(&row_count, &page[18], 4);
+        memcpy(&row_count, &page[off+18], 4);
         if (ctx->bswap)
             row_count = byteswap4(row_count);
 
         ctx->page_row_count = row_count;
-        data = &page[24];
+        data = &page[off+24];
     } else { 
         uint16_t subheader_count;
-        memcpy(&subheader_count, &page[20], 2);
+        memcpy(&subheader_count, &page[off+20], 2);
         if (ctx->bswap)
             subheader_count = byteswap2(subheader_count);
 
         int i;
-        char *shp = &page[24];
+        char *shp = &page[off+24];
         for (i=0; i<subheader_count; i++) {
-            uint32_t offset, len;
+            uint64_t offset = 0, len = 0;
+            unsigned char compression = 0;
+            if (ctx->u64) {
+                uint64_t tmp_offset, tmp_len;
 
-            memcpy(&offset, &shp[0], 4);
-            if (ctx->bswap)
-                offset = byteswap4(offset);
+                memcpy(&tmp_offset, &shp[0], 8);
+                if (ctx->bswap) {
+                    offset = byteswap8(tmp_offset);
+                } else {
+                    offset = tmp_offset;
+                }
 
-            memcpy(&len, &shp[4], 4);
-            if (ctx->bswap)
-                len = byteswap4(len);
+                memcpy(&tmp_len, &shp[8], 8);
+                if (ctx->bswap) {
+                    len = byteswap8(tmp_len);
+                } else {
+                    len = tmp_len;
+                }
+                compression = shp[16];
+            } else {
+                uint32_t tmp_offset, tmp_len;
+
+                memcpy(&tmp_offset, &shp[0], 4);
+                if (ctx->bswap) {
+                    offset = byteswap4(tmp_offset);
+                } else {
+                    offset = tmp_offset;
+                }
+
+                memcpy(&tmp_len, &shp[4], 4);
+                if (ctx->bswap) {
+                    len = byteswap4(tmp_len);
+                } else {
+                    len = tmp_len;
+                }
+                compression = shp[8];
+            }
+
+            if (compression != 0) { /* TODO */
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
 
             if (len > 0) {
                 if (offset > ctx->page_size || offset + len > ctx->page_size) {
@@ -519,11 +620,10 @@ static readstat_errors_t sas_parse_page(char *page, sas_ctx_t *ctx) {
                 }
             }
 
-            shp += 12;
+            shp += ctx->u64 ? 24 : 12;
         }
 
-        if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_MIX &&
-            1 /* TODO - need a byte alignment flag or something? */) {
+        if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_MIX) {
             data = shp + ((shp-page)%8);
         }
     }

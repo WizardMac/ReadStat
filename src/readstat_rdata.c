@@ -1,4 +1,4 @@
-//
+ //
 //  readstat_rdata.c
 //  Wizard
 //
@@ -15,10 +15,13 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <math.h>
+#include <lzma.h>
 
 #include "readstat_rdata.h"
 
 #define RDATA_ATOM_LEN 128
+
+#define STREAM_BUFFER_SIZE   65536
 
 typedef struct rdata_atom_table_s {
     int   count;
@@ -33,6 +36,8 @@ typedef struct rdata_ctx_s {
     readstat_handle_text_value_callback  handle_text_value;
     readstat_handle_text_value_callback  handle_value_label;
     void                                *user_ctx;
+    lzma_stream                         *strm;
+    unsigned char                       *strm_buffer;
     int                                  fd;
     
     rdata_atom_table_t                  *atom_table;
@@ -65,6 +70,107 @@ static char *atom_table_lookup(rdata_atom_table_t *table, int index) {
     return &table->data[(index-1)*RDATA_ATOM_LEN];
 }
 
+static int read_st(rdata_ctx_t *ctx, void *buffer, size_t len) {
+    if (!ctx->strm)
+        return read(ctx->fd, buffer, len);
+
+    int bytes_written = 0;
+    int error = 0;
+    int result = LZMA_OK;
+    while (1) {
+        long start_out = ctx->strm->total_out;
+
+        ctx->strm->next_out = buffer + bytes_written;
+        ctx->strm->avail_out = len - bytes_written;
+
+        result = lzma_code(ctx->strm, LZMA_RUN);
+
+        if (result != LZMA_OK && result != LZMA_STREAM_END) {
+            error = -1;
+            break;
+        }
+
+        bytes_written += ctx->strm->total_out - start_out;
+        
+        if (result == LZMA_STREAM_END)
+            break;
+
+        if (ctx->strm->avail_in == 0) {
+            int bytes_read = 0;
+            bytes_read = read(ctx->fd, ctx->strm_buffer, STREAM_BUFFER_SIZE);
+            if (bytes_read < 0) {
+                error = bytes_read;
+                break;
+            }
+            if (bytes_read == 0)
+                break;
+
+            ctx->strm->next_in = ctx->strm_buffer;
+            ctx->strm->avail_in = bytes_read;
+        }
+        if (bytes_written == len)
+            break;
+    }
+
+    if (error != 0)
+        return error;
+
+    return bytes_written;
+}
+
+static int lseek_st(rdata_ctx_t *ctx, size_t len) {
+    if (!ctx->strm)
+        return lseek(ctx->fd, len, SEEK_CUR);
+
+    int retval = 0;
+    char *buf = malloc(len);
+    if (read_st(ctx, buf, len) != len)
+        retval = -1;
+    free(buf);
+    return retval;
+}
+
+static readstat_errors_t init_stream(rdata_ctx_t *ctx) {
+    readstat_errors_t retval = 0;
+    char header[5];
+    
+    if (read(ctx->fd, &header, sizeof(header)) != sizeof(header)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+
+    if (strncmp("\xFD" "7zXZ", header, sizeof(header)) == 0) {
+        ctx->strm = calloc(1, sizeof(lzma_stream));
+        ctx->strm_buffer = malloc(STREAM_BUFFER_SIZE);
+        if (lzma_stream_decoder(ctx->strm, UINT64_MAX, 0) != LZMA_OK) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        lseek(ctx->fd, 0, SEEK_SET);
+        int bytes_read = read(ctx->fd, ctx->strm_buffer, STREAM_BUFFER_SIZE);
+        if (bytes_read <= 0) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        ctx->strm->next_in = ctx->strm_buffer;
+        ctx->strm->avail_in = bytes_read;
+
+        if (read_st(ctx, &header, sizeof(header)) != sizeof(header)) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+    }
+
+    if (strncmp("RDX2\n", header, sizeof(header)) != 0) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    
+cleanup:
+    return retval;
+}
+
 int parse_rdata(const char *filename, void *user_ctx,
                 readstat_handle_table_callback handle_table,
                 readstat_handle_column_callback handle_column,
@@ -95,21 +201,13 @@ int parse_rdata(const char *filename, void *user_ctx,
         return READSTAT_ERROR_OPEN;
     }
     
-    char header[5];
-    
     rdata_v2_header_t v2_header;
-    
-    if (read(ctx->fd, &header, sizeof(header)) != sizeof(header)) {
-        retval = READSTAT_ERROR_READ;
+
+    if ((retval = init_stream(ctx)) != 0) {
         goto cleanup;
     }
     
-    if (strncmp("RDX2\n", header, sizeof(header)) != 0) {
-        retval = READSTAT_ERROR_PARSE;
-        goto cleanup;
-    }
-    
-    if (read(ctx->fd, &v2_header, sizeof(v2_header)) != sizeof(v2_header)) {
+    if (read_st(ctx, &v2_header, sizeof(v2_header)) != sizeof(v2_header)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -126,7 +224,7 @@ int parse_rdata(const char *filename, void *user_ctx,
     
     char test;
     
-    if (read(ctx->fd, &test, 1) == 1) {
+    if (read_st(ctx, &test, 1) == 1) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -134,6 +232,11 @@ int parse_rdata(const char *filename, void *user_ctx,
 cleanup:
     close(ctx->fd);
     free(ctx->atom_table);
+    if (ctx->strm) {
+        lzma_end(ctx->strm);
+        free(ctx->strm);
+        free(ctx->strm_buffer);
+    }
     free(ctx);
     
     return retval;
@@ -229,7 +332,7 @@ static int read_sexptype_header(rdata_sexptype_info_t *header_info, rdata_ctx_t 
     uint32_t sexptype;
     rdata_sexptype_header_t header;
     int retval = 0;
-    if (read(ctx->fd, &sexptype, sizeof(sexptype)) != sizeof(sexptype)) {
+    if (read_st(ctx, &sexptype, sizeof(sexptype)) != sizeof(sexptype)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -241,7 +344,7 @@ static int read_sexptype_header(rdata_sexptype_info_t *header_info, rdata_ctx_t 
 
     if (header.type == RDATA_SEXPTYPE_PAIRLIST) {
         if (header.attributes) {
-            if (read(ctx->fd, &attributes, sizeof(attributes)) != sizeof(attributes)) {
+            if (read_st(ctx, &attributes, sizeof(attributes)) != sizeof(attributes)) {
                 retval = READSTAT_ERROR_READ;
                 goto cleanup;
             }
@@ -249,7 +352,7 @@ static int read_sexptype_header(rdata_sexptype_info_t *header_info, rdata_ctx_t 
                 header_info->attributes = byteswap4(header_info->attributes);
         }
         if (header.tag) {
-            if (read(ctx->fd, &tag, sizeof(tag)) != sizeof(tag)) {
+            if (read_st(ctx, &tag, sizeof(tag)) != sizeof(tag)) {
                 retval = READSTAT_ERROR_READ;
                 goto cleanup;
             }
@@ -291,7 +394,7 @@ cleanup:
 
 static int handle_class_name(char *buf, int i, void *ctx) {
     int *class_is_posixct = (int *)ctx;
-    *class_is_posixct = (strcmp(buf, "POSIXct") == 0);
+    *class_is_posixct |= (strcmp(buf, "POSIXct") == 0);
     return 0;
 }
 
@@ -310,9 +413,7 @@ static int handle_vector_attribute(char *key, rdata_sexptype_info_t val_info, rd
         if (retval != 0)
             return retval;
 
-        if (length != 1)
-            return READSTAT_ERROR_PARSE;
-
+        ctx->class_is_posixct = 0;
         retval = read_string_vector(length, &handle_class_name, &ctx->class_is_posixct, ctx);
     } else {
         retval = recursive_discard(val_info.header, ctx);
@@ -324,7 +425,7 @@ static int read_character_string(char *key, size_t keylen, rdata_ctx_t *ctx) {
     uint32_t length;
     int retval = 0;
     
-    if (read(ctx->fd, &length, sizeof(length)) != sizeof(length)) {
+    if (read_st(ctx, &length, sizeof(length)) != sizeof(length)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -342,7 +443,7 @@ static int read_character_string(char *key, size_t keylen, rdata_ctx_t *ctx) {
         goto cleanup;
     }
     
-    if (read(ctx->fd, key, length) != length) {
+    if (read_st(ctx, key, length) != length) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -467,7 +568,7 @@ static int read_length(int32_t *outLength, rdata_ctx_t *ctx) {
     int32_t length;
     int retval = 0;
     
-    if (read(ctx->fd, &length, sizeof(length)) != sizeof(length)) {
+    if (read_st(ctx, &length, sizeof(length)) != sizeof(length)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -516,7 +617,7 @@ static int read_string_vector(int32_t length, readstat_handle_text_value_callbac
             }
         }
         
-        if (read(ctx->fd, buffer, string_length) != string_length) {
+        if (read_st(ctx, buffer, string_length) != string_length) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
@@ -578,7 +679,7 @@ static int read_value_vector(rdata_sexptype_header_t header, char *name, rdata_c
         goto cleanup;
     }
     
-    if (read(ctx->fd, vals, buf_len) != buf_len) {
+    if (read_st(ctx, vals, buf_len) != buf_len) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -642,7 +743,7 @@ static int discard_vector(rdata_sexptype_header_t sexptype_header, size_t elemen
         goto cleanup;
     
     if (length > 0) {
-        if (lseek(ctx->fd, length * element_size, SEEK_CUR) == -1) {
+        if (lseek_st(ctx, length * element_size) == -1) {
             return READSTAT_ERROR_READ;
         }
     } else {
@@ -665,7 +766,7 @@ cleanup:
 
 static int discard_character_string(int add_to_table, rdata_ctx_t *ctx) {
     int retval = 0;
-    char key[128];
+    char key[RDATA_ATOM_LEN];
     
     retval = read_character_string(key, RDATA_ATOM_LEN, ctx);
     if (retval != 0)
@@ -780,7 +881,7 @@ static int recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_
             error = discard_vector(sexptype_header, 16, ctx);
             break;
         case RDATA_SEXPTYPE_CHARACTER_VECTOR:
-            if (read(ctx->fd, &length, sizeof(length)) != sizeof(length)) {
+            if (read_st(ctx, &length, sizeof(length)) != sizeof(length)) {
                 return READSTAT_ERROR_READ;
             }
             if (ctx->machine_needs_byteswap)
@@ -802,7 +903,7 @@ static int recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_
             break;
         case RDATA_SEXPTYPE_GENERIC_VECTOR:
         case RDATA_SEXPTYPE_EXPRESSION_VECTOR:
-            if (read(ctx->fd, &length, sizeof(length)) != sizeof(length)) {
+            if (read_st(ctx, &length, sizeof(length)) != sizeof(length)) {
                 return READSTAT_ERROR_READ;
             }
             if (ctx->machine_needs_byteswap)
@@ -866,7 +967,7 @@ static int recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_
             break;
         case RDATA_SEXPTYPE_ENVIRONMENT:
             /* locked */
-            if (lseek(ctx->fd, sizeof(uint32_t), SEEK_CUR) == -1) {
+            if (lseek_st(ctx, sizeof(uint32_t)) == -1) {
                 return READSTAT_ERROR_READ;
             }
             
