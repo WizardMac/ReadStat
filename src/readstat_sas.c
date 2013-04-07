@@ -36,14 +36,14 @@ static char sas_magic_number[32] = {
     0x09, 0xc7, 0x31, 0x8c,   0x18, 0x1f, 0x10, 0x11
 };
 
-static char subheader_signature_row_size[4] = { 0xf7, 0xf7, 0xf7, 0xf7 };
-static char subheader_signature_column_size[4] = { 0xf6, 0xf6, 0xf6, 0xf6 };
-static char subheader_signature_counts[4] = { 0x00, 0xfc, 0xff, 0xff };
-static char subheader_signature_column_text[4] = { 0xfd, 0xff, 0xff, 0xff };
-static char subheader_signature_column_name[4] = { 0xff, 0xff, 0xff, 0xff };
-static char subheader_signature_column_attributes[4] = { 0xfc, 0xff, 0xff, 0xff };
-static char subheader_signature_column_format[4] = { 0xfe, 0xfb, 0xff, 0xff };
-static char subheader_signature_column_list[4] = { 0xfe, 0xff, 0xff, 0xff };
+#define SAS_SUBHEADER_SIGNATURE_ROW_SIZE       0xF7F7F7F7
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE    0xF6F6F6F6
+#define SAS_SUBHEADER_SIGNATURE_COUNTS         0xFFFFFC00
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT  0xFFFFFBFE
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_ATTRS   0xFFFFFFFC
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT    0xFFFFFFFD
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_LIST    0xFFFFFFFE
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_NAME    0xFFFFFFFF
 
 typedef struct text_ref_s {
     int    index;
@@ -65,6 +65,7 @@ typedef struct sas_ctx_s {
     readstat_handle_info_callback      info_cb;
     readstat_handle_variable_callback  variable_cb;
     readstat_handle_value_callback    value_cb;
+    int           little_endian;
     void         *user_ctx;
     int32_t       header_size;
     int32_t       page_size;
@@ -149,8 +150,10 @@ static readstat_errors_t sas_read_header(int fd, sas_ctx_t *ctx) {
         goto cleanup;
     }
     if (header_start.endian == SAS_ENDIAN_BIG) {
+        ctx->little_endian = 0;
         ctx->bswap = machine_is_little_endian();
     } else if (header_start.endian == SAS_ENDIAN_LITTLE) {
+        ctx->little_endian = 1;
         ctx->bswap = !machine_is_little_endian();
     } else {
         retval = READSTAT_ERROR_PARSE;
@@ -181,6 +184,31 @@ static readstat_errors_t sas_read_header(int fd, sas_ctx_t *ctx) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
+
+cleanup:
+    return retval;
+}
+
+static readstat_errors_t sas_parse_column_text_subheader(char *subheader, size_t len, sas_ctx_t *ctx) {
+    readstat_errors_t retval = 0;
+    uint16_t remainder;
+    memcpy(&remainder, &subheader[4], 2);
+    if (ctx->bswap)
+        remainder = byteswap2(remainder);
+
+    if (remainder != len - 12) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    ctx->text_blob_count++;
+    ctx->text_blobs = realloc(ctx->text_blobs, ctx->text_blob_count * sizeof(char *));
+    ctx->text_blob_lengths = realloc(ctx->text_blob_lengths,
+            ctx->text_blob_count * sizeof(ctx->text_blob_lengths[0]));
+    /* TODO handle compression */
+    char *blob = malloc(len-4);
+    memcpy(blob, subheader+4, len-4);
+    ctx->text_blob_lengths[ctx->text_blob_count-1] = len-4;
+    ctx->text_blobs[ctx->text_blob_count-1] = blob;
 
 cleanup:
     return retval;
@@ -272,6 +300,16 @@ static readstat_errors_t sas_parse_column_name_subheader(char *subheader, size_t
     int cmax = (len-12-8)/8;
     int i;
     char *cnp = &subheader[12];
+    uint16_t remainder;
+    memcpy(&remainder, &subheader[4], 2);
+    if (ctx->bswap)
+        remainder = byteswap2(remainder);
+
+    if (remainder != len - 12) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
     ctx->col_names_count += cmax;
     if (ctx->col_info_count < ctx->col_names_count) {
         ctx->col_info_count = ctx->col_names_count;
@@ -282,6 +320,8 @@ static readstat_errors_t sas_parse_column_name_subheader(char *subheader, size_t
         cnp += 8;
     }
 
+cleanup:
+
     return retval;
 }
 
@@ -290,16 +330,26 @@ static readstat_errors_t sas_parse_column_attributes_subheader(char *subheader, 
     int cmax = (len-12-8)/12;
     int i;
     char *cap = &subheader[12];
+    uint16_t remainder;
+    memcpy(&remainder, &subheader[4], 2);
+    if (ctx->bswap)
+        remainder = byteswap2(remainder);
+
+    if (remainder != len - 12) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
     ctx->col_attrs_count += cmax;
     if (ctx->col_info_count < ctx->col_attrs_count) {
         ctx->col_info_count = ctx->col_attrs_count;
         ctx->col_info = realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
     }
     for (i=ctx->col_attrs_count-cmax; i<ctx->col_attrs_count; i++) {
-        uint32_t offset, width;
+        uint32_t offset;
+        uint32_t width;
         memcpy(&offset, &cap[0], 4);
         if (ctx->bswap)
-            offset = byteswap4(width);
+            offset = byteswap4(offset);
 
         memcpy(&width, &cap[4], 4);
         if (ctx->bswap)
@@ -340,32 +390,28 @@ static readstat_errors_t sas_parse_column_format_subheader(char *subheader, size
 static readstat_errors_t sas_parse_subheader(char *subheader, size_t len, sas_ctx_t *ctx) {
     readstat_errors_t retval = 0;
 
-    if (len < 4) {
+    if (len < 6) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
+    uint32_t signature;
+    memcpy(&signature, subheader, 4);
+    if (ctx->bswap)
+        signature = byteswap4(signature);
 
-    if (memcmp(subheader, subheader_signature_row_size, 4) == 0) {
+    if (signature == SAS_SUBHEADER_SIGNATURE_ROW_SIZE) {
         retval = sas_parse_row_size_subheader(subheader, len, ctx);
-    } else if (memcmp(subheader, subheader_signature_column_size, 4) == 0) {
-    } else if (memcmp(subheader, subheader_signature_counts, 4) == 0) {
-    } else if (memcmp(subheader, subheader_signature_column_text, 4) == 0) {
-        ctx->text_blob_count++;
-        ctx->text_blobs = realloc(ctx->text_blobs, ctx->text_blob_count * sizeof(char *));
-        ctx->text_blob_lengths = realloc(ctx->text_blob_lengths,
-                                         ctx->text_blob_count * sizeof(ctx->text_blob_lengths[0]));
-        /* TODO handle compression */
-        char *blob = malloc(len-4);
-        memcpy(blob, subheader+4, len-4);
-        ctx->text_blob_lengths[ctx->text_blob_count-1] = len-4;
-        ctx->text_blobs[ctx->text_blob_count-1] = blob;
-    } else if (memcmp(subheader, subheader_signature_column_name, 4) == 0) {
+    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE) {
+    } else if (signature == SAS_SUBHEADER_SIGNATURE_COUNTS) {
+    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
+        retval = sas_parse_column_text_subheader(subheader, len, ctx);
+    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_NAME) {
         retval = sas_parse_column_name_subheader(subheader, len, ctx);
-    } else if (memcmp(subheader, subheader_signature_column_attributes, 4) == 0) {
+    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_ATTRS) {
         retval = sas_parse_column_attributes_subheader(subheader, len, ctx);
-    } else if (memcmp(subheader, subheader_signature_column_format, 4) == 0) {
+    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT) {
         retval = sas_parse_column_format_subheader(subheader, len, ctx);
-    } else if (memcmp(subheader, subheader_signature_column_list, 4) == 0) {
+    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_LIST) {
     } else {
         retval = READSTAT_ERROR_PARSE;
     }
@@ -385,7 +431,7 @@ static readstat_errors_t sas_parse_rows(char *data, sas_ctx_t *ctx) {
         for (j=0; j<ctx->column_count; j++) {
             int cb_retval = 0;
             col_info_t *col_info = &ctx->col_info[j];
-            char *col_data = &data[row_offset+col_info->offset];
+            unsigned char *col_data = (unsigned char *)&data[row_offset+col_info->offset];
             if (col_info->type == READSTAT_TYPE_STRING) {
                 memcpy(string_buf, col_data, col_info->width);
                 unpad(string_buf, col_info->width);
@@ -393,10 +439,19 @@ static readstat_errors_t sas_parse_rows(char *data, sas_ctx_t *ctx) {
                         READSTAT_TYPE_STRING, ctx->user_ctx);
             } else if (col_info->type == READSTAT_TYPE_DOUBLE) {
                 uint64_t  val = 0;
-                memcpy(&val + 8 - col_info->width, col_data, col_info->width);
-                if (ctx->bswap)
-                    val = byteswap8(val);
-
+                if (ctx->little_endian) {
+                    int k;
+                    for (k=0; k<col_info->width; k++) {
+                        val = (val << 8) | col_data[col_info->width-1-k];
+                    }
+                } else {
+                    int k;
+                    for (k=0; k<col_info->width; k++) {
+                        val = (val << 8) | col_data[k];
+                    }
+                }
+                val <<= (8-col_info->width)*8;
+                
                 cb_retval = ctx->value_cb(ctx->parsed_row_count, j, (double *)&val,
                         READSTAT_TYPE_DOUBLE, ctx->user_ctx);
             }
@@ -495,7 +550,13 @@ static readstat_errors_t sas_parse_page(char *page, sas_ctx_t *ctx) {
                     if ((retval = copy_text_ref(label_buf, ctx->col_info[i].label_ref, sizeof(label_buf), ctx)) != 0) {
                         goto cleanup;
                     }
-                    int cb_retval = ctx->variable_cb(i, name_buf, format_buf, label_buf, NULL, ctx->col_info[i].type, 
+                    char *stata_format = NULL;
+                    if (strcmp(format_buf, "DATE") == 0) {
+                        stata_format = "%td";
+                    } else if (strcmp(format_buf, "DATETIME") == 0) {
+                        stata_format = "%ts";
+                    }
+                    int cb_retval = ctx->variable_cb(i, name_buf, stata_format, label_buf, NULL, ctx->col_info[i].type, 
                             ctx->col_info[i].type == READSTAT_TYPE_DOUBLE ? 8 : ctx->col_info[i].width, 
                             ctx->user_ctx);
                     if (cb_retval) {
