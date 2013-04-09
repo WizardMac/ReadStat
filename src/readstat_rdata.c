@@ -178,7 +178,7 @@ int parse_rdata(const char *filename, void *user_ctx,
                 readstat_handle_text_value_callback handle_text_value,
                 readstat_handle_text_value_callback handle_value_label) {
     int retval = 1;
-    rdata_ctx_t *ctx = malloc(sizeof(rdata_ctx_t));
+    rdata_ctx_t *ctx = calloc(1, sizeof(rdata_ctx_t));
     rdata_atom_table_t *atom_table = malloc(sizeof(rdata_atom_table_t));
     
     atom_table->count = 0;
