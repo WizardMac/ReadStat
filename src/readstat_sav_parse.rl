@@ -23,6 +23,7 @@ static int compare_varlookups(const void *elem1, const void *elem2) {
 %%{
     machine sav_long_variable_parse;
     write data;
+    alphtype unsigned char;
 }%%
 
 int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) {
@@ -57,9 +58,11 @@ int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) 
             }
         }
         
-        key = ( [A-Z@] [A-Z0-9@#$_\.]{0,7} )  >{ key_offset = 0; } ${ temp_key[key_offset++] = fc; } %{ temp_key[key_offset++] = '\0'; };
+# 0xC0 - 0xDF are non-ASCII capital letters in Windows-1252
+        key = ( [A-Z@] ( ( 0xC0 .. 0xDF ) | [A-Z0-9@#$_\.] ){0,7} )  >{ key_offset = 0; } ${ temp_key[key_offset++] = fc; } %{ temp_key[key_offset++] = '\0'; };
         
-        value = graph{1,64} >{ val_offset = 0; } ${ temp_val[val_offset++] = fc; } %{ temp_val[val_offset++] = '\0'; };
+# 0xC0 - 0xFF are non-ASCII letters in Windows-1252
+        value = ( ( 0xC0 .. 0xFF ) | graph ){1,64} >{ val_offset = 0; } ${ temp_val[val_offset++] = fc; } %{ temp_val[val_offset++] = '\0'; };
         
         keyval = ( key "=" value ) %set_long_name;
         
@@ -83,6 +86,7 @@ int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) 
 %%{
     machine sav_very_long_string_parse;
     write data;
+    alphtype unsigned char;
 }%%
 
 int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
@@ -119,7 +123,7 @@ int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
             }
         }
         
-        key = ( [A-Z@] [A-Z0-9@#$_\.]{0,7} )  >{ key_offset = 0; } ${ temp_key[key_offset++] = fc; } %{ temp_key[key_offset++] = '\0'; };
+        key = ( [A-Z@] ( ( 0xC0 - 0xDF ) | [A-Z0-9@#$_\.] ){0,7} )  >{ key_offset = 0; } ${ temp_key[key_offset++] = fc; } %{ temp_key[key_offset++] = '\0'; };
         
         value = [0-9]+ >{ temp_val = 0; } $incr_val;
         
