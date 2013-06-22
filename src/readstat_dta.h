@@ -37,13 +37,22 @@ typedef struct dta_value_label_table_header_s {
     char             padding[3];
 } dta_value_label_table_header_t;
 
+typedef struct dta_gso_header_s {
+    char             gso[3];
+    uint32_t         v;
+    uint32_t         o;
+    unsigned char    t;
+    int32_t          len;
+} dta_gso_header_t;
+
 #pragma pack(pop)
 
 typedef struct dta_ctx_s {
     size_t         data_label_len;
     size_t         time_stamp_len;
-    char           typlist_is_char;
-    unsigned char *typlist;
+    char           typlist_version;
+    size_t         typlist_entry_len;
+    uint16_t      *typlist;
     size_t         typlist_len;
     char          *varlist;
     size_t         varlist_len;
@@ -63,10 +72,15 @@ typedef struct dta_ctx_s {
     size_t         expansion_len_len;
     size_t         value_label_table_len_len;
 
+    off_t          data_offset;
+    off_t          strls_offset;
+    off_t          value_labels_offset;
+
     int            nvar;
     int            nobs;
     int            machine_needs_byte_swap:1;
     int            machine_is_twos_complement:1;
+    int            file_is_xmlish:1;
 } dta_ctx_t;
 
 #define DTA_HILO  0x01
@@ -84,17 +98,27 @@ typedef struct dta_ctx_s {
 #define DTA_MISSING_FLOAT          0x7F000000UI
 #define DTA_MISSING_DOUBLE 0x7FE0000000000000UL
 
-#define DTA_TYPE_CODE_CHAR   0xFB
-#define DTA_TYPE_CODE_INT16  0xFC
-#define DTA_TYPE_CODE_INT32  0xFD
-#define DTA_TYPE_CODE_FLOAT  0xFE
-#define DTA_TYPE_CODE_DOUBLE 0xFF
+#define DTA_GSO_TYPE_BINARY        0x81
+#define DTA_GSO_TYPE_ASCII         0x82
 
-#define DTA_OLD_TYPE_CODE_CHAR   'b'
-#define DTA_OLD_TYPE_CODE_INT16  'i'
-#define DTA_OLD_TYPE_CODE_INT32  'l'
-#define DTA_OLD_TYPE_CODE_FLOAT  'f'
-#define DTA_OLD_TYPE_CODE_DOUBLE 'd'
+#define DTA_117_TYPE_CODE_CHAR     0xFFFA
+#define DTA_117_TYPE_CODE_INT16    0xFFF9
+#define DTA_117_TYPE_CODE_INT32    0xFFF8
+#define DTA_117_TYPE_CODE_FLOAT    0xFFF7
+#define DTA_117_TYPE_CODE_DOUBLE   0xFFF6
+#define DTA_117_TYPE_CODE_STRL     0x8000
+
+#define DTA_111_TYPE_CODE_CHAR     0xFB
+#define DTA_111_TYPE_CODE_INT16    0xFC
+#define DTA_111_TYPE_CODE_INT32    0xFD
+#define DTA_111_TYPE_CODE_FLOAT    0xFE
+#define DTA_111_TYPE_CODE_DOUBLE   0xFF
+
+#define DTA_OLD_TYPE_CODE_CHAR     'b'
+#define DTA_OLD_TYPE_CODE_INT16    'i'
+#define DTA_OLD_TYPE_CODE_INT32    'l'
+#define DTA_OLD_TYPE_CODE_FLOAT    'f'
+#define DTA_OLD_TYPE_CODE_DOUBLE   'd'
 
 dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, unsigned char ds_format);
 void dta_ctx_free(dta_ctx_t *ctx);

@@ -23,7 +23,8 @@ typedef enum readstat_types_e {
     READSTAT_TYPE_INT16,
     READSTAT_TYPE_INT32,
     READSTAT_TYPE_FLOAT,
-    READSTAT_TYPE_DOUBLE
+    READSTAT_TYPE_DOUBLE,
+    READSTAT_TYPE_LONG_STRING
 } readstat_types_t;
 
 typedef enum readstat_errors_e {
