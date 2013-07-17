@@ -14,7 +14,6 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <math.h>
-#include <iconv.h>
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
 #include "readstat_spss.h"
@@ -542,7 +541,6 @@ int parse_sav(const char *filename, void *user_ctx,
     sav_ctx_t *ctx = NULL;
     void *data_buf = NULL;
     size_t data_buf_capacity = 4096;
-    iconv_t converter = (iconv_t)-1;
     
     if ((fd = open(filename, O_RDONLY)) == -1) {
         return READSTAT_ERROR_OPEN;
@@ -683,12 +681,6 @@ int parse_sav(const char *filename, void *user_ctx,
         }
     }
     if (variable_cb) {
-        converter = iconv_open("UTF-8", "WINDOWS-1252");
-        if (converter == (iconv_t)-1) {
-            retval = READSTAT_ERROR_MALLOC;
-            goto cleanup;
-        }
-
         for (i=0; i<ctx->var_index;) {
             char label_name_buf[256];
             sav_varinfo_t *info = &ctx->varinfo[i];
@@ -702,18 +694,7 @@ int parse_sav(const char *filename, void *user_ctx,
                 format = buf;
             }
 
-            char varname_buf[256];
-
-            char *inbuf = info->longname;
-            size_t inbytesleft = strlen(info->longname) + 1;
-            char *outbuf = varname_buf;
-            size_t outbytesleft = sizeof(varname_buf);
-            if (iconv(converter, &inbuf, &inbytesleft, &outbuf, &outbytesleft) == (size_t)-1) {
-                retval = READSTAT_ERROR_PARSE;
-                goto cleanup;
-            }
-
-            int cb_retval = variable_cb(info->index, varname_buf, format, info->label, 
+            int cb_retval = variable_cb(info->index, info->longname, format, info->label, 
                                         info->labels_index == -1 ? NULL : label_name_buf,
                                         info->type, 0, user_ctx);
             if (cb_retval) {
@@ -729,8 +710,6 @@ int parse_sav(const char *filename, void *user_ctx,
     }
     
 cleanup:
-    if (converter != (iconv_t)-1)
-        iconv_close(converter);
     if (fd > 0)
         close(fd);
     if (data_buf)
