@@ -127,6 +127,9 @@ typedef struct sav_ctx_s {
 #define SAV_CHARACTER_CODE_8_BIT_ASCII   3
 #define SAV_CHARACTER_CODE_DEC_KANJI     4
 
+#define SAV_HIGHEST_DOUBLE   0x7FEFFFFFFFFFFFFFUL
+#define SAV_MISSING_DOUBLE   0xFFEFFFFFFFFFFFFFUL
+#define SAV_LOWEST_DOUBLE    0xFFEFFFFFFFFFFFFEUL
 
 int parse_sav(const char *filename, void *user_ctx,
               readstat_handle_info_callback info_cb, 

@@ -337,6 +337,12 @@ double handle_missing_double(double fp_value, sav_varinfo_t *info) {
     if (info->n_missing_values == 3 && fp_value == info->missing_values[2]) {
         return NAN;
     }
+    if (*(uint64_t *)&fp_value == SAV_MISSING_DOUBLE)
+        return NAN;
+    if (*(uint64_t *)&fp_value == SAV_LOWEST_DOUBLE)
+        return NAN;
+    if (*(uint64_t *)&fp_value == SAV_HIGHEST_DOUBLE)
+        return NAN;
     
     return fp_value;
 }
