@@ -501,7 +501,7 @@ int parse_dta(const char *filename, void *user_ctx,
     int retval = 0;
     int i;
     size_t  record_len = 0;
-    int fd;
+    int fd = -1;
     char *buf = NULL;
     dta_header_t  header;
     dta_ctx_t    *ctx = NULL;
@@ -509,7 +509,8 @@ int parse_dta(const char *filename, void *user_ctx,
     char *long_string = NULL;
 
     if ((fd = open(filename, O_RDONLY)) == -1) {
-        return READSTAT_ERROR_OPEN;
+        retval = READSTAT_ERROR_OPEN;
+        goto cleanup;
     }
 
     char magic[4];
@@ -884,7 +885,7 @@ int parse_dta(const char *filename, void *user_ctx,
     }
 
 cleanup:
-    if (fd)
+    if (fd != -1)
         close(fd);
     if (ctx)
         dta_ctx_free(ctx);

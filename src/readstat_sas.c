@@ -696,7 +696,7 @@ int parse_sas7bdat(const char *filename, void *user_ctx,
         readstat_handle_info_callback info_cb, 
         readstat_handle_variable_callback variable_cb,
         readstat_handle_value_callback value_cb) {
-    int fd;
+    int fd = -1;
     readstat_errors_t retval = 0;
 
     sas_ctx_t  *ctx = calloc(1, sizeof(sas_ctx_t));
@@ -748,6 +748,8 @@ int parse_sas7bdat(const char *filename, void *user_ctx,
 cleanup:
     if (ctx)
         sas_ctx_free(ctx);
+    if (fd != -1)
+        close(fd);
     if (hinfo)
         free(hinfo);
 
@@ -756,7 +758,7 @@ cleanup:
 
 int parse_sas7bcat(const char *filename, void *user_ctx,
         readstat_handle_value_label_callback value_label_cb) {
-    int fd;
+    int fd = -1;
     readstat_errors_t retval = 0;
 
     sas_catalog_ctx_t *ctx = calloc(1, sizeof(sas_catalog_ctx_t));
@@ -804,6 +806,8 @@ int parse_sas7bcat(const char *filename, void *user_ctx,
 cleanup:
     if (ctx)
         free(ctx);
+    if (fd != -1)
+        close(fd);
     if (hinfo)
         free(hinfo);
 
