@@ -1,5 +1,5 @@
 
-CC=clang
+CC=cc
 PREFIX=/usr/local
 RAGEL=/usr/local/bin/ragel
 DYLIB=obj/libreadstat.dylib
@@ -17,6 +17,4 @@ install: all
 	@cp src/readstat.h $(PREFIX)/include/
 
 clean:
-	[ -x $(RAGEL) ] && rm -f src/readstat_por_parse.c
-	[ -x $(RAGEL) ] && rm -f src/readstat_sav_parse.c
 	rm -rf obj
