@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <math.h>
 
-#include "readstat_por.h"
+#include "readstat.h"
 #include "readstat_por_parse.h"
 #include "readstat_spss.h"
 #include "CKHashTable.h"

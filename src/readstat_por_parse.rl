@@ -1,5 +1,5 @@
 
-#include "readstat_por.h"
+#include "readstat.h"
 #include "readstat_por_parse.h"
 
 %%{

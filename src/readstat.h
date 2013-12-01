@@ -15,8 +15,6 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "readstat_bits.h"
-
 typedef enum readstat_types_e {
     READSTAT_TYPE_STRING,
     READSTAT_TYPE_CHAR,
@@ -36,9 +34,51 @@ typedef enum readstat_errors_e {
 } readstat_errors_t;
 
 typedef int (*readstat_handle_info_callback)(int obs_count, int var_count, void *ctx);
-typedef int (*readstat_handle_variable_callback)(int index, const char *var_name, const char *var_format, 
-        const char *var_label, const char *val_labels, readstat_types_t type, size_t max_len, void *ctx);
-typedef int (*readstat_handle_value_callback)(int obs_index, int var_index, void *value, readstat_types_t type, void *ctx);
-typedef int (*readstat_handle_value_label_callback)(const char *val_labels, void *value, readstat_types_t type, const char *label, void *ctx);
+typedef int (*readstat_handle_variable_callback)(int index, const char *var_name, 
+        const char *var_format, const char *var_label, const char *val_labels, 
+        readstat_types_t type, size_t max_len, void *ctx);
+typedef int (*readstat_handle_value_callback)(int obs_index, int var_index, void *value, 
+        readstat_types_t type, void *ctx);
+typedef int (*readstat_handle_value_label_callback)(const char *val_labels, void *value, 
+        readstat_types_t type, const char *label, void *ctx);
+
+int parse_dta(const char *filename, void *user_ctx, 
+              readstat_handle_info_callback info_cb, 
+              readstat_handle_variable_callback variable_cb,
+              readstat_handle_value_callback value_cb, 
+              readstat_handle_value_label_callback value_label_cb);
+
+int parse_por(const char *filename, void *user_ctx,
+              readstat_handle_info_callback info_cb, 
+              readstat_handle_variable_callback variable_cb,
+              readstat_handle_value_callback value_cb, 
+              readstat_handle_value_label_callback value_label_cb);
+
+int parse_sav(const char *filename, void *user_ctx,
+              readstat_handle_info_callback info_cb, 
+              readstat_handle_variable_callback variable_cb,
+              readstat_handle_value_callback value_cb, 
+              readstat_handle_value_label_callback value_label_cb);
+
+int parse_sas7bdat(const char *filename, void *user_ctx, 
+        readstat_handle_info_callback info_cb, 
+        readstat_handle_variable_callback variable_cb,
+        readstat_handle_value_callback value_cb);
+
+int parse_sas7bcat(const char *filename, void *user_ctx,
+        readstat_handle_value_label_callback value_label_cb);
+
+typedef int (*readstat_handle_column_callback)(char *name, readstat_types_t type, char *format, 
+        void *data, long count, void *ctx);
+typedef int (*readstat_handle_table_callback)(char *name, void *ctx);
+typedef int (*readstat_handle_text_value_callback)(char *value, int index, void *ctx);
+typedef readstat_handle_text_value_callback readstat_handle_column_name_callback;
+
+int parse_rdata(const char *filename, void *user_ctx, 
+                readstat_handle_table_callback handle_table,
+                readstat_handle_column_callback handle_column,
+                readstat_handle_column_name_callback handle_column_name,
+                readstat_handle_text_value_callback handle_text_value,
+                readstat_handle_text_value_callback handle_value_label);
 
 #endif

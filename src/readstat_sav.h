@@ -7,6 +7,7 @@
 //
 
 #include "readstat.h"
+#include "readstat_bits.h"
 
 #pragma pack(push, 1)
 
@@ -130,9 +131,3 @@ typedef struct sav_ctx_s {
 #define SAV_HIGHEST_DOUBLE   0x7FEFFFFFFFFFFFFFUL
 #define SAV_MISSING_DOUBLE   0xFFEFFFFFFFFFFFFFUL
 #define SAV_LOWEST_DOUBLE    0xFFEFFFFFFFFFFFFEUL
-
-int parse_sav(const char *filename, void *user_ctx,
-              readstat_handle_info_callback info_cb, 
-              readstat_handle_variable_callback variable_cb,
-              readstat_handle_value_callback value_cb, 
-              readstat_handle_value_label_callback value_label_cb);

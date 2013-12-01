@@ -1,4 +1,5 @@
 #include "readstat.h"
+#include "readstat_bits.h"
 
 #pragma pack(push, 1)
 
@@ -122,8 +123,3 @@ typedef struct dta_ctx_s {
 
 dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, unsigned char ds_format);
 void dta_ctx_free(dta_ctx_t *ctx);
-
-int parse_dta(const char *filename, void *user_ctx, 
-              readstat_handle_info_callback info_cb, readstat_handle_variable_callback variable_cb,
-              readstat_handle_value_callback value_cb, readstat_handle_value_label_callback value_label_cb);
-
