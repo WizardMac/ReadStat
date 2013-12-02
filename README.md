@@ -17,8 +17,8 @@ Installation
 
 Tweak the Makefile and then:
 
-   make
-   sudo make install
+    make
+    sudo make install
 
 
 Usage
