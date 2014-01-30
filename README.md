@@ -51,7 +51,7 @@ Example: Return the number of records in a DTA file.
             return 1;
         }
         int my_count = 0;
-        int error = parse_dta(argv[1], &my_count, &handle_info, NULL, NULL, NULL):
+        int error = parse_dta(argv[1], &my_count, &handle_info, NULL, NULL, NULL);
         if (error != 0) {
             printf("Error processing %s: %d\n", argv[1], error);
             return 1;
@@ -116,7 +116,7 @@ Example: Convert a DTA to a tab-separated file.
             return 1;
         }
         int my_var_count = 0;
-        int error = parse_dta(argv[1], &my_count, &handle_info, &handle_variable, &handle_value, NULL):
+        int error = parse_dta(argv[1], &my_count, &handle_info, &handle_variable, &handle_value, NULL);
         if (error != 0) {
             printf("Error processing %s: %d\n", argv[1], error);
             return 1;
