@@ -108,6 +108,8 @@ Example: Convert a DTA to a tab-separated file.
         } else {
             printf("\t");
         }
+
+        return 0;
     }
 
     int main(int argc, char *argv[]) {
@@ -116,7 +118,7 @@ Example: Convert a DTA to a tab-separated file.
             return 1;
         }
         int my_var_count = 0;
-        int error = parse_dta(argv[1], &my_count, &handle_info, &handle_variable, &handle_value, NULL);
+        int error = parse_dta(argv[1], &my_var_count, &handle_info, &handle_variable, &handle_value, NULL);
         if (error != 0) {
             printf("Error processing %s: %d\n", argv[1], error);
             return 1;
