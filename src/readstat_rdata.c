@@ -747,7 +747,7 @@ static int discard_vector(rdata_sexptype_header_t sexptype_header, size_t elemen
             return READSTAT_ERROR_READ;
         }
     } else {
-        printf("Vector with non-positive length: %d\n", length);
+        dprintf(STDERR_FILENO, "Vector with non-positive length: %d\n", length);
     }
     
     if (sexptype_header.attributes) {
@@ -773,7 +773,7 @@ static int discard_character_string(int add_to_table, rdata_ctx_t *ctx) {
         goto cleanup;
     
     if (strlen(key) == 0) {
-        printf("String with non-positive length: %ld\n", strlen(key));
+        dprintf(STDERR_FILENO, "String with non-positive length: %ld\n", strlen(key));
         
         /*
          rdata_sexptype_info_t temp_info;

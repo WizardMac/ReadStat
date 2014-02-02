@@ -2,6 +2,7 @@
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
 #include <stdlib.h>
+#include <unistd.h>
 
 typedef struct varlookup {
     char      name[9];
@@ -54,7 +55,7 @@ int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) 
             if (found) {
                 memcpy(ctx->varinfo[found->index].longname, temp_val, val_offset);
             } else {
-                printf("Failed to find %s\n", temp_key);
+                dprintf(STDERR_FILENO, "Failed to find %s\n", temp_key);
             }
         }
 
@@ -74,7 +75,7 @@ int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) 
     }%%
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
-        printf("Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
+        dprintf(STDERR_FILENO, "Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
                 (char *)data, p - (u_char *)data, count, *p);
         retval = READSTAT_ERROR_PARSE;
     }
@@ -137,8 +138,8 @@ int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
     }%%
     
     if (cs < %%{ write first_final; }%% || p != pe) {
-        printf("Parsed %ld of %ld bytes\n", p - (u_char *)data, pe - (u_char *)data);
-        printf("Remaining bytes: %s\n", p);
+        dprintf(STDERR_FILENO, "Parsed %ld of %ld bytes\n", p - (u_char *)data, pe - (u_char *)data);
+        dprintf(STDERR_FILENO, "Remaining bytes: %s\n", p);
         retval = READSTAT_ERROR_PARSE;
     }
     

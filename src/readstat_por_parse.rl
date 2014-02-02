@@ -1,6 +1,7 @@
 
 #include "readstat.h"
 #include "readstat_por_parse.h"
+#include <unistd.h>
 
 %%{
     machine por_field_parse;
@@ -65,7 +66,7 @@ int readstat_por_parse_double(const char *data, size_t len, double *result) {
     
     if (!success) {
         retval = -1;
-        printf("Read bytes: %ld Ending state: %d\n", (p - (u_char *)data), cs);
+        dprintf(STDERR_FILENO, "Read bytes: %ld Ending state: %d\n", (p - (u_char *)data), cs);
     }
     
     if (retval == 0) {
