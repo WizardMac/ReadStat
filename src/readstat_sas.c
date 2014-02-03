@@ -26,6 +26,22 @@
 #define SAS_COLUMN_TYPE_NUM  0x01
 #define SAS_COLUMN_TYPE_CHR  0x02
 
+#define SAS_COMPRESSION_NONE   0x00
+#define SAS_COMPRESSION_TRUNC  0x01
+#define SAS_COMPRESSION_RLE    0x04
+
+#define SAS_RLE_COMMAND_COPY64          0
+#define SAS_RLE_COMMAND_INSERT_BLANK17  6
+#define SAS_RLE_COMMAND_INSERT_ZERO17   7
+#define SAS_RLE_COMMAND_COPY1           8
+#define SAS_RLE_COMMAND_COPY17          9
+#define SAS_RLE_COMMAND_COPY33         10
+#define SAS_RLE_COMMAND_COPY49         11
+#define SAS_RLE_COMMAND_INSERT_BYTE3   12
+#define SAS_RLE_COMMAND_INSERT_AT2     13
+#define SAS_RLE_COMMAND_INSERT_BLANK2  14
+#define SAS_RLE_COMMAND_INSERT_ZERO2   15
+
 static char sas7bdat_magic_number[32] = {
     0x00, 0x00, 0x00, 0x00,   0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00,   0xc2, 0xea, 0x81, 0x60,
@@ -60,6 +76,7 @@ typedef struct col_info_s {
     text_ref_t  format_ref;
     text_ref_t  label_ref;
 
+    int    index;
     int    offset;
     int    width;
     int    type;
@@ -409,6 +426,7 @@ static readstat_errors_t sas_parse_column_attributes_subheader(const char *subhe
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
         }
+        ctx->col_info[i].index = i;
         cap += off+8;
     }
 
@@ -429,6 +447,143 @@ static readstat_errors_t sas_parse_column_format_subheader(const char *subheader
             ctx->u64 ? &subheader[46] : &subheader[34], ctx);
     ctx->col_info[ctx->col_formats_count-1].label_ref = sas_parse_text_ref(
             ctx->u64 ? &subheader[52] : &subheader[40], ctx);
+
+    return retval;
+}
+
+static int handle_data_value(const unsigned char *col_data, col_info_t *col_info, sas_ctx_t *ctx) {
+    char  string_buf[1024];
+    int cb_retval = 0;
+    if (col_info->type == READSTAT_TYPE_STRING) {
+        memcpy(string_buf, col_data, col_info->width);
+        unpad(string_buf, col_info->width);
+        cb_retval = ctx->value_cb(ctx->parsed_row_count, col_info->index, 
+                string_buf, READSTAT_TYPE_STRING, ctx->user_ctx);
+    } else if (col_info->type == READSTAT_TYPE_DOUBLE) {
+        uint64_t  val = 0;
+        if (ctx->little_endian) {
+            int k;
+            for (k=0; k<col_info->width; k++) {
+                val = (val << 8) | col_data[col_info->width-1-k];
+            }
+        } else {
+            int k;
+            for (k=0; k<col_info->width; k++) {
+                val = (val << 8) | col_data[k];
+            }
+        }
+        val <<= (8-col_info->width)*8;
+
+        cb_retval = ctx->value_cb(ctx->parsed_row_count, col_info->index, 
+                (double *)&val, READSTAT_TYPE_DOUBLE, ctx->user_ctx);
+    }
+    return cb_retval;
+}
+
+static readstat_errors_t sas_parse_single_row(const char *data, sas_ctx_t *ctx) {
+    readstat_errors_t retval = 0;
+    int j;
+    for (j=0; j<ctx->column_count; j++) {
+        col_info_t *col_info = &ctx->col_info[j];
+        int cb_retval = handle_data_value((const unsigned char *)&data[col_info->offset],
+                col_info, ctx);
+        if (cb_retval) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+    }
+    ctx->parsed_row_count++;
+
+cleanup:
+    return retval;
+}
+
+static readstat_errors_t sas_parse_rows(const char *data, sas_ctx_t *ctx) {
+    readstat_errors_t retval = 0;
+    int i;
+    size_t row_offset=0;
+    for (i=0; i<ctx->page_row_count; i++) {
+        if ((retval = sas_parse_single_row(&data[row_offset], ctx)) != 0)
+            goto cleanup;
+
+        row_offset += ctx->row_length;
+    }
+
+cleanup:
+    return retval;
+}
+
+static readstat_errors_t sas_parse_subheader_rle(const char *subheader, size_t len, sas_ctx_t *ctx) {
+    /* TODO bounds checking */
+    readstat_errors_t retval = 0;
+    const char *input = subheader;
+    char *buffer = malloc(ctx->row_length);
+    char *output = buffer;
+    while (input < subheader + len) {
+        unsigned char control = input[0];
+        unsigned char command = (control & 0xF0) >> 4;
+        unsigned char length = (control & 0x0F);
+        int copy_len = 0;
+        int insert_len = 0;
+        char insert_byte = '\0';
+        input++;
+        switch (command) {
+            case SAS_RLE_COMMAND_COPY64:
+                copy_len = (unsigned char)input[0] + 64;
+                input++;
+                break;
+            case SAS_RLE_COMMAND_INSERT_BLANK17:
+                insert_len = (unsigned char)input[0] + 17;
+                insert_byte = ' ';
+                input++;
+                break;
+            case SAS_RLE_COMMAND_INSERT_ZERO17:
+                insert_len = (unsigned char)input[0] + 17;
+                insert_byte = '\0';
+                input++;
+                break;
+            case SAS_RLE_COMMAND_COPY1:  copy_len = length + 1; break;
+            case SAS_RLE_COMMAND_COPY17: copy_len = length + 17; break;
+            case SAS_RLE_COMMAND_COPY33: copy_len = length + 33; break;
+            case SAS_RLE_COMMAND_COPY49: copy_len = length + 49; break;
+            case SAS_RLE_COMMAND_INSERT_BYTE3:
+                insert_byte = input[0];
+                insert_len = length + 3;
+                input++;
+                break;
+            case SAS_RLE_COMMAND_INSERT_AT2:
+                insert_byte = '@';
+                insert_len = length + 2;
+                break;
+            case SAS_RLE_COMMAND_INSERT_BLANK2:
+                insert_byte = ' ';
+                insert_len = length + 2;
+                break;
+            case SAS_RLE_COMMAND_INSERT_ZERO2:
+                insert_byte = '\0';
+                insert_len = length + 2;
+                break;
+            default:
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+        }
+        if (copy_len) {
+            memcpy(output, input, copy_len);
+            input += copy_len;
+            output += copy_len;
+        }
+        if (insert_len) {
+            memset(output, insert_byte, insert_len);
+            output += insert_len;
+        }
+    }
+    if (output - buffer != ctx->row_length) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    retval = sas_parse_single_row(buffer, ctx);
+cleanup:
+    free(buffer);
 
     return retval;
 }
@@ -463,54 +618,6 @@ static readstat_errors_t sas_parse_subheader(const char *subheader, size_t len, 
         } else {
             retval = READSTAT_ERROR_PARSE;
         }
-    }
-
-cleanup:
-
-    return retval;
-}
-
-static readstat_errors_t sas_parse_rows(const char *data, sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
-
-    int i, j;
-    size_t row_offset=0;
-    char  string_buf[1024];
-    for (i=0; i<ctx->page_row_count; i++) {
-        for (j=0; j<ctx->column_count; j++) {
-            int cb_retval = 0;
-            col_info_t *col_info = &ctx->col_info[j];
-            unsigned char *col_data = (unsigned char *)&data[row_offset+col_info->offset];
-            if (col_info->type == READSTAT_TYPE_STRING) {
-                memcpy(string_buf, col_data, col_info->width);
-                unpad(string_buf, col_info->width);
-                cb_retval = ctx->value_cb(ctx->parsed_row_count, j, string_buf,
-                        READSTAT_TYPE_STRING, ctx->user_ctx);
-            } else if (col_info->type == READSTAT_TYPE_DOUBLE) {
-                uint64_t  val = 0;
-                if (ctx->little_endian) {
-                    int k;
-                    for (k=0; k<col_info->width; k++) {
-                        val = (val << 8) | col_data[col_info->width-1-k];
-                    }
-                } else {
-                    int k;
-                    for (k=0; k<col_info->width; k++) {
-                        val = (val << 8) | col_data[k];
-                    }
-                }
-                val <<= (8-col_info->width)*8;
-                
-                cb_retval = ctx->value_cb(ctx->parsed_row_count, j, (double *)&val,
-                        READSTAT_TYPE_DOUBLE, ctx->user_ctx);
-            }
-            if (cb_retval) {
-                retval = READSTAT_ERROR_USER_ABORT;
-                goto cleanup;
-            }
-        }
-        ctx->parsed_row_count++;
-        row_offset += ctx->row_length;
     }
 
 cleanup:
@@ -581,6 +688,52 @@ cleanup:
     return retval;
 }
 
+static readstat_errors_t submit_columns(sas_ctx_t *ctx) {
+    readstat_errors_t retval = 0;
+    if (ctx->info_cb) {
+        if (ctx->info_cb(ctx->total_row_count, ctx->column_count, ctx->user_ctx)) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+    }
+    if (ctx->variable_cb) {
+        int i;
+        char name_buf[1024];
+        char format_buf[1024];
+        char label_buf[1024];
+        for (i=0; i<ctx->column_count; i++) {
+            if ((retval = copy_text_ref(name_buf, ctx->col_info[i].name_ref, sizeof(name_buf), ctx)) != 0) {
+                goto cleanup;
+            }
+            if ((retval = copy_text_ref(format_buf, ctx->col_info[i].format_ref, sizeof(format_buf), ctx)) != 0) {
+                goto cleanup;
+            }
+            if ((retval = copy_text_ref(label_buf, ctx->col_info[i].label_ref, sizeof(label_buf), ctx)) != 0) {
+                goto cleanup;
+            }
+            char *stata_format = NULL;
+            char *label_set = NULL;
+            if (strcmp(format_buf, "DATE") == 0) {
+                stata_format = "%td";
+            } else if (strcmp(format_buf, "DATETIME") == 0) {
+                stata_format = "%ts";
+            } else if (format_buf[0] != '\0') {
+                label_set = format_buf;
+                dprintf(STDERR_FILENO,  "Unknown format: %s\n", format_buf);
+            }
+            int cb_retval = ctx->variable_cb(i, name_buf, stata_format, label_buf, label_set, ctx->col_info[i].type,
+                    ctx->col_info[i].type == READSTAT_TYPE_DOUBLE ? 8 : ctx->col_info[i].width, 
+                    ctx->user_ctx);
+            if (cb_retval) {
+                retval = READSTAT_ERROR_USER_ABORT;
+                goto cleanup;
+            }
+        }
+    }
+cleanup:
+    return retval;
+}
+
 static readstat_errors_t sas_parse_page(const char *page, size_t page_size, sas_ctx_t *ctx) {
     uint16_t page_type;
 
@@ -615,17 +768,27 @@ static readstat_errors_t sas_parse_page(const char *page, size_t page_size, sas_
                 compression = shp[8];
             }
 
-            if (len > 0 && compression != 1) {
-                if (compression != 0) { /* TODO */
-                    retval = READSTAT_ERROR_PARSE;
-                    goto cleanup;
-                }
+            if (len > 0 && compression != SAS_COMPRESSION_TRUNC) {
                 if (offset > page_size || offset + len > page_size) {
                     retval = READSTAT_ERROR_PARSE;
                     goto cleanup;
                 }
-
-                if ((retval = sas_parse_subheader(page + offset, len, ctx)) != 0) {
+                if (compression == SAS_COMPRESSION_NONE) { 
+                    if ((retval = sas_parse_subheader(page + offset, len, ctx)) != 0) {
+                        goto cleanup;
+                    }
+                } else if (compression == SAS_COMPRESSION_RLE) {
+                    if (!ctx->did_submit_columns) {
+                        if ((retval = submit_columns(ctx)) != 0) {
+                            goto cleanup;
+                        }
+                        ctx->did_submit_columns = 1;
+                    }
+                    if ((retval = sas_parse_subheader_rle(page + offset, len, ctx)) != 0) {
+                        goto cleanup;
+                    }
+                } else {
+                    retval = READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
                     goto cleanup;
                 }
             }
@@ -639,45 +802,8 @@ static readstat_errors_t sas_parse_page(const char *page, size_t page_size, sas_
     }
     if (data) {
         if (!ctx->did_submit_columns) {
-            if (ctx->info_cb) {
-                if (ctx->info_cb(ctx->total_row_count, ctx->column_count, ctx->user_ctx)) {
-                    retval = READSTAT_ERROR_USER_ABORT;
-                    goto cleanup;
-                }
-            }
-            if (ctx->variable_cb) {
-                int i;
-                char name_buf[1024];
-                char format_buf[1024];
-                char label_buf[1024];
-                for (i=0; i<ctx->column_count; i++) {
-                    if ((retval = copy_text_ref(name_buf, ctx->col_info[i].name_ref, sizeof(name_buf), ctx)) != 0) {
-                        goto cleanup;
-                    }
-                    if ((retval = copy_text_ref(format_buf, ctx->col_info[i].format_ref, sizeof(format_buf), ctx)) != 0) {
-                        goto cleanup;
-                    }
-                    if ((retval = copy_text_ref(label_buf, ctx->col_info[i].label_ref, sizeof(label_buf), ctx)) != 0) {
-                        goto cleanup;
-                    }
-                    char *stata_format = NULL;
-                    char *label_set = NULL;
-                    if (strcmp(format_buf, "DATE") == 0) {
-                        stata_format = "%td";
-                    } else if (strcmp(format_buf, "DATETIME") == 0) {
-                        stata_format = "%ts";
-                    } else if (format_buf[0] != '\0') {
-                        label_set = format_buf;
-                        dprintf(STDERR_FILENO,  "Unknown format: %s\n", format_buf);
-                    }
-                    int cb_retval = ctx->variable_cb(i, name_buf, stata_format, label_buf, label_set, ctx->col_info[i].type,
-                            ctx->col_info[i].type == READSTAT_TYPE_DOUBLE ? 8 : ctx->col_info[i].width, 
-                            ctx->user_ctx);
-                    if (cb_retval) {
-                        retval = READSTAT_ERROR_USER_ABORT;
-                        goto cleanup;
-                    }
-                }
+            if ((retval = submit_columns(ctx)) != 0) {
+                goto cleanup;
             }
             ctx->did_submit_columns = 1;
         }
