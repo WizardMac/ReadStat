@@ -21,7 +21,10 @@
 #define SAS_PAGE_TYPE_DATA   0x0100
 #define SAS_PAGE_TYPE_MIX    0x0200
 #define SAS_PAGE_TYPE_AMD    0x0400
-#define SAS_PAGE_TYPE_MASK   0x0700
+#define SAS_PAGE_TYPE_MASK   0x0F00
+
+#define SAS_PAGE_TYPE_META2  0x4000
+#define SAS_PAGE_TYPE_COMP   0x9000
 
 #define SAS_COLUMN_TYPE_NUM  0x01
 #define SAS_COLUMN_TYPE_CHR  0x02
@@ -758,22 +761,29 @@ static readstat_errors_t sas_parse_page(const char *page, size_t page_size, sas_
         for (i=0; i<subheader_count; i++) {
             uint64_t offset = 0, len = 0;
             unsigned char compression = 0;
+            unsigned char subheader_type = 0;
+            int lshp = 0;
             if (ctx->u64) {
                 offset = read8(&shp[0], ctx->bswap);
                 len = read8(&shp[8], ctx->bswap);
                 compression = shp[16];
+                subheader_type = shp[17];
+                lshp = 24;
             } else {
                 offset = read4(&shp[0], ctx->bswap);
                 len = read4(&shp[4], ctx->bswap);
                 compression = shp[8];
+                subheader_type = shp[9];
+                lshp = 12;
             }
 
             if (len > 0 && compression != SAS_COMPRESSION_TRUNC) {
-                if (offset > page_size || offset + len > page_size) {
+                if (offset > page_size || offset + len > page_size ||
+                    offset < off+24+subheader_count*lshp) {
                     retval = READSTAT_ERROR_PARSE;
                     goto cleanup;
                 }
-                if (compression == SAS_COMPRESSION_NONE) { 
+                if (compression == SAS_COMPRESSION_NONE) {
                     if ((retval = sas_parse_subheader(page + offset, len, ctx)) != 0) {
                         goto cleanup;
                     }
