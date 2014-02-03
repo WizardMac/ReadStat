@@ -803,7 +803,7 @@ static readstat_errors_t sas_parse_page(const char *page, size_t page_size, sas_
                 }
             }
 
-            shp += ctx->u64 ? 24 : 12;
+            shp += lshp;
         }
 
         if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_MIX) {
@@ -868,6 +868,13 @@ int parse_sas7bdat(const char *filename, void *user_ctx,
         }
     }
     free(page);
+    
+    if (!ctx->did_submit_columns) {
+        if ((retval = submit_columns(ctx)) != 0) {
+            goto cleanup;
+        }
+        ctx->did_submit_columns = 1;
+    }
 
     if (ctx->parsed_row_count != ctx->total_row_count) {
         retval = READSTAT_ERROR_PARSE;
