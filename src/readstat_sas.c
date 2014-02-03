@@ -212,8 +212,7 @@ static readstat_errors_t sas_read_header(int fd, sas_header_info_t *ctx) {
 
     ctx->page_size = bswap ? byteswap4(page_size) : page_size;
 
-    if ((ctx->u64 && header_size != 8192) ||
-            (!ctx->u64 && header_size != 1024)) {
+    if (header_size != 8192 && header_size != 1024) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
