@@ -6,7 +6,6 @@
 //  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
 //
 
-#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -17,6 +16,7 @@
 #include <math.h>
 #include <lzma.h>
 
+#include "readstat_io.h"
 #include "readstat_rdata.h"
 
 #define RDATA_ATOM_LEN 128
@@ -197,7 +197,7 @@ int parse_rdata(const char *filename, void *user_ctx,
         ctx->machine_needs_byteswap = 1;
     }
     
-    if ((ctx->fd = open(filename, O_RDONLY)) == -1) {
+    if ((ctx->fd = readstat_open(filename)) == -1) {
         return READSTAT_ERROR_OPEN;
     }
     
@@ -230,7 +230,7 @@ int parse_rdata(const char *filename, void *user_ctx,
     }
     
 cleanup:
-    close(ctx->fd);
+    readstat_close(ctx->fd);
     free(ctx->atom_table);
     if (ctx->strm) {
         lzma_end(ctx->strm);

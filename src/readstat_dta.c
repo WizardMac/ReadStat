@@ -1,4 +1,3 @@
-#include <fcntl.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
@@ -7,6 +6,7 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
+#include "readstat_io.h"
 #include "readstat_dta.h"
 
 static inline readstat_types_t dta_type_info(uint16_t typecode, size_t *max_len, dta_ctx_t *ctx);
@@ -508,7 +508,7 @@ int parse_dta(const char *filename, void *user_ctx,
     char  str_buf[2048];
     char *long_string = NULL;
 
-    if ((fd = open(filename, O_RDONLY)) == -1) {
+    if ((fd = readstat_open(filename)) == -1) {
         retval = READSTAT_ERROR_OPEN;
         goto cleanup;
     }
@@ -886,7 +886,7 @@ int parse_dta(const char *filename, void *user_ctx,
 
 cleanup:
     if (fd != -1)
-        close(fd);
+        readstat_close(fd);
     if (ctx)
         dta_ctx_free(ctx);
     if (buf)

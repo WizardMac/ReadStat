@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <math.h>
+#include "readstat_io.h"
 #include "readstat_sas.h"
 
 
@@ -842,7 +842,7 @@ int parse_sas7bdat(const char *filename, void *user_ctx,
     ctx->value_cb = value_cb;
     ctx->user_ctx = user_ctx;
 
-    if ((fd = open(filename, O_RDONLY)) == -1) {
+    if ((fd = readstat_open(filename)) == -1) {
         retval = READSTAT_ERROR_OPEN;
         goto cleanup;
     }
@@ -891,7 +891,7 @@ cleanup:
     if (ctx)
         sas_ctx_free(ctx);
     if (fd != -1)
-        close(fd);
+        readstat_close(fd);
     if (hinfo)
         free(hinfo);
 
@@ -909,7 +909,7 @@ int parse_sas7bcat(const char *filename, void *user_ctx,
     ctx->value_label_cb = value_label_cb;
     ctx->user_ctx = user_ctx;
 
-    if ((fd = open(filename, O_RDONLY)) == -1) {
+    if ((fd = readstat_open(filename)) == -1) {
         retval = READSTAT_ERROR_OPEN;
         goto cleanup;
     }
@@ -949,7 +949,7 @@ cleanup:
     if (ctx)
         free(ctx);
     if (fd != -1)
-        close(fd);
+        readstat_close(fd);
     if (hinfo)
         free(hinfo);
 

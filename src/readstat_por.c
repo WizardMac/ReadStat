@@ -6,7 +6,6 @@
 //  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
 //
 
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +15,7 @@
 #include <math.h>
 
 #include "readstat.h"
+#include "readstat_io.h"
 #include "readstat_por_parse.h"
 #include "readstat_spss.h"
 #include "CKHashTable.h"
@@ -576,7 +576,7 @@ int parse_por(const char *filename, void *user_ctx,
     ctx->var_dict = ck_hash_table_init(1024);
     int retval = 0;
     
-    if ((ctx->fd = open(filename, O_RDONLY)) == -1) {
+    if ((ctx->fd = readstat_open(filename)) == -1) {
         free(ctx);
         return READSTAT_ERROR_OPEN;
     }
@@ -747,7 +747,7 @@ int parse_por(const char *filename, void *user_ctx,
     }
     
 cleanup:
-    close(ctx->fd);
+    readstat_close(ctx->fd);
     if (ctx->string_buffer)
         free(ctx->string_buffer);
     if (ctx->varinfo)

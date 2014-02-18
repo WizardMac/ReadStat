@@ -6,7 +6,6 @@
 //  Copyright (c) 2011 __MyCompanyName__. All rights reserved.
 //
 
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +13,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <math.h>
+#include "readstat_io.h"
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
 #include "readstat_spss.h"
@@ -548,7 +548,7 @@ int parse_sav(const char *filename, void *user_ctx,
     void *data_buf = NULL;
     size_t data_buf_capacity = 4096;
     
-    if ((fd = open(filename, O_RDONLY)) == -1) {
+    if ((fd = readstat_open(filename)) == -1) {
         return READSTAT_ERROR_OPEN;
     }
     
@@ -717,7 +717,7 @@ int parse_sav(const char *filename, void *user_ctx,
     
 cleanup:
     if (fd > 0)
-        close(fd);
+        readstat_close(fd);
     if (data_buf)
         free(data_buf);
     if (ctx)
