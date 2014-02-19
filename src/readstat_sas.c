@@ -121,6 +121,9 @@ typedef struct sas_ctx_s {
     int           col_attrs_count;
     int           col_formats_count;
 
+    int           max_col_width;
+    char         *scratch_buffer;
+
     int           col_info_count;
     col_info_t   *col_info;
 } sas_ctx_t;
@@ -176,6 +179,9 @@ static void sas_ctx_free(sas_ctx_t *ctx) {
     }
     if (ctx->col_info)
         free(ctx->col_info);
+
+    if (ctx->scratch_buffer)
+        free(ctx->scratch_buffer);
 
     free(ctx);
 }
@@ -421,6 +427,9 @@ static readstat_errors_t sas_parse_column_attributes_subheader(const char *subhe
             off=8;
 
         ctx->col_info[i].width = read4(&cap[off], ctx->bswap);
+        if (ctx->col_info[i].width > ctx->max_col_width)
+            ctx->max_col_width = ctx->col_info[i].width;
+
         if (cap[off+6] == SAS_COLUMN_TYPE_NUM) {
             ctx->col_info[i].type = READSTAT_TYPE_DOUBLE;
         } else if (cap[off+6] == SAS_COLUMN_TYPE_CHR) {
@@ -455,13 +464,12 @@ static readstat_errors_t sas_parse_column_format_subheader(const char *subheader
 }
 
 static int handle_data_value(const unsigned char *col_data, col_info_t *col_info, sas_ctx_t *ctx) {
-    char  string_buf[1024];
     int cb_retval = 0;
     if (col_info->type == READSTAT_TYPE_STRING) {
-        memcpy(string_buf, col_data, col_info->width);
-        unpad(string_buf, col_info->width);
+        memcpy(ctx->scratch_buffer, col_data, col_info->width);
+        unpad(ctx->scratch_buffer, col_info->width);
         cb_retval = ctx->value_cb(ctx->parsed_row_count, col_info->index, 
-                string_buf, READSTAT_TYPE_STRING, ctx->user_ctx);
+                ctx->scratch_buffer, READSTAT_TYPE_STRING, ctx->user_ctx);
     } else if (col_info->type == READSTAT_TYPE_DOUBLE) {
         uint64_t  val = 0;
         if (ctx->little_endian) {
@@ -486,6 +494,7 @@ static int handle_data_value(const unsigned char *col_data, col_info_t *col_info
 static readstat_errors_t sas_parse_single_row(const char *data, sas_ctx_t *ctx) {
     readstat_errors_t retval = 0;
     int j;
+    ctx->scratch_buffer = realloc(ctx->scratch_buffer, ctx->max_col_width + 1);
     for (j=0; j<ctx->column_count; j++) {
         col_info_t *col_info = &ctx->col_info[j];
         int cb_retval = handle_data_value((const unsigned char *)&data[col_info->offset],
