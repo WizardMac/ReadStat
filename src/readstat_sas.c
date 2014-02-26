@@ -514,7 +514,7 @@ static readstat_errors_t sas_parse_rows(const char *data, sas_ctx_t *ctx) {
     readstat_errors_t retval = 0;
     int i;
     size_t row_offset=0;
-    for (i=0; i<ctx->page_row_count; i++) {
+    for (i=0; i<ctx->page_row_count && ctx->parsed_row_count < ctx->total_row_count; i++) {
         if ((retval = sas_parse_single_row(&data[row_offset], ctx)) != 0)
             goto cleanup;
 
