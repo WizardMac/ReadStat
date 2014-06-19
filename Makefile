@@ -8,7 +8,7 @@ all:
 	@mkdir -p obj
 	[ -x $(RAGEL) ] && $(RAGEL) src/readstat_por_parse.rl -G2
 	[ -x $(RAGEL) ] && $(RAGEL) src/readstat_sav_parse.rl -G2
-	$(CC) -Os src/*.c -dynamiclib -o $(DYLIB) -llzma -Wall -Wno-multichar -Werror
+	$(CC) -Os src/*.c -dynamiclib -o $(DYLIB) -llzma -Wall -Wno-multichar -Wno-unused-const-variable -Werror
 
 install: all
 	@mkdir -p $(PREFIX)/lib

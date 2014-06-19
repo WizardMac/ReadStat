@@ -222,12 +222,14 @@ int parse_rdata(const char *filename, void *user_ctx,
     if (retval != 0)
         goto cleanup;
     
+    /*
     char test;
     
     if (read_st(ctx, &test, 1) == 1) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
+    */
     
 cleanup:
     readstat_close(ctx->fd);
