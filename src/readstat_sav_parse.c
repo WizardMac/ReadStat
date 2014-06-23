@@ -284,7 +284,7 @@ st10:
 		goto _test_eof10;
 case 10:
 #line 287 "src/readstat_sav_parse.c"
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -303,7 +303,7 @@ case 11:
 #line 304 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -344,7 +344,7 @@ case 13:
 #line 345 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -361,7 +361,7 @@ case 14:
 #line 362 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -378,7 +378,7 @@ case 15:
 #line 379 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -395,7 +395,7 @@ case 16:
 #line 396 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -412,7 +412,7 @@ case 17:
 #line 413 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -429,7 +429,7 @@ case 18:
 #line 430 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -446,7 +446,7 @@ case 19:
 #line 447 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -463,7 +463,7 @@ case 20:
 #line 464 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -480,7 +480,7 @@ case 21:
 #line 481 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -497,7 +497,7 @@ case 22:
 #line 498 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -514,7 +514,7 @@ case 23:
 #line 515 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -531,7 +531,7 @@ case 24:
 #line 532 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -548,7 +548,7 @@ case 25:
 #line 549 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -565,7 +565,7 @@ case 26:
 #line 566 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -582,7 +582,7 @@ case 27:
 #line 583 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -599,7 +599,7 @@ case 28:
 #line 600 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -616,7 +616,7 @@ case 29:
 #line 617 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -633,7 +633,7 @@ case 30:
 #line 634 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -650,7 +650,7 @@ case 31:
 #line 651 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -667,7 +667,7 @@ case 32:
 #line 668 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -684,7 +684,7 @@ case 33:
 #line 685 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -701,7 +701,7 @@ case 34:
 #line 702 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -718,7 +718,7 @@ case 35:
 #line 719 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -735,7 +735,7 @@ case 36:
 #line 736 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -752,7 +752,7 @@ case 37:
 #line 753 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -769,7 +769,7 @@ case 38:
 #line 770 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -786,7 +786,7 @@ case 39:
 #line 787 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -803,7 +803,7 @@ case 40:
 #line 804 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -820,7 +820,7 @@ case 41:
 #line 821 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -837,7 +837,7 @@ case 42:
 #line 838 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -854,7 +854,7 @@ case 43:
 #line 855 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -871,7 +871,7 @@ case 44:
 #line 872 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -888,7 +888,7 @@ case 45:
 #line 889 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -905,7 +905,7 @@ case 46:
 #line 906 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -922,7 +922,7 @@ case 47:
 #line 923 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -939,7 +939,7 @@ case 48:
 #line 940 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -956,7 +956,7 @@ case 49:
 #line 957 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -973,7 +973,7 @@ case 50:
 #line 974 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -990,7 +990,7 @@ case 51:
 #line 991 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1007,7 +1007,7 @@ case 52:
 #line 1008 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1024,7 +1024,7 @@ case 53:
 #line 1025 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1041,7 +1041,7 @@ case 54:
 #line 1042 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1058,7 +1058,7 @@ case 55:
 #line 1059 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1075,7 +1075,7 @@ case 56:
 #line 1076 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1092,7 +1092,7 @@ case 57:
 #line 1093 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1109,7 +1109,7 @@ case 58:
 #line 1110 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1126,7 +1126,7 @@ case 59:
 #line 1127 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1143,7 +1143,7 @@ case 60:
 #line 1144 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1160,7 +1160,7 @@ case 61:
 #line 1161 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1177,7 +1177,7 @@ case 62:
 #line 1178 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1194,7 +1194,7 @@ case 63:
 #line 1195 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1211,7 +1211,7 @@ case 64:
 #line 1212 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1228,7 +1228,7 @@ case 65:
 #line 1229 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1245,7 +1245,7 @@ case 66:
 #line 1246 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1262,7 +1262,7 @@ case 67:
 #line 1263 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1279,7 +1279,7 @@ case 68:
 #line 1280 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1296,7 +1296,7 @@ case 69:
 #line 1297 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1313,7 +1313,7 @@ case 70:
 #line 1314 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1330,7 +1330,7 @@ case 71:
 #line 1331 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1347,7 +1347,7 @@ case 72:
 #line 1348 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1364,7 +1364,7 @@ case 73:
 #line 1365 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1381,7 +1381,7 @@ case 74:
 #line 1382 "src/readstat_sav_parse.c"
 	if ( (*p) == 9u )
 		goto tr11;
-	if ( (*p) > 32u ) {
+	if ( (*p) > 31u ) {
 		if ( 127u <= (*p) && (*p) <= 191u )
 			goto st0;
 	} else
@@ -1625,208 +1625,225 @@ int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
 	switch ( cs )
 	{
 case 1:
-	if ( 64u <= (*p) && (*p) <= 90u )
+	if ( (*p) > 90u ) {
+		if ( 192u <= (*p) && (*p) <= 223u )
+			goto tr0;
+	} else if ( (*p) >= 64u )
 		goto tr0;
 	goto st0;
 st0:
 cs = 0;
 	goto _out;
 tr0:
-#line 128 "src/readstat_sav_parse.rl"
+#line 131 "src/readstat_sav_parse.rl"
 	{ key_offset = 0; }
-#line 128 "src/readstat_sav_parse.rl"
+#line 131 "src/readstat_sav_parse.rl"
 	{ temp_key[key_offset++] = (*p); }
 	goto st2;
 st2:
 	if ( ++p == pe )
 		goto _test_eof2;
 case 2:
-#line 1645 "src/readstat_sav_parse.c"
+#line 1648 "src/readstat_sav_parse.c"
 	switch( (*p) ) {
 		case 46u: goto tr2;
 		case 61u: goto tr3;
 		case 95u: goto tr2;
-		case 192u: goto tr2;
 	}
 	if ( (*p) < 48u ) {
 		if ( 35u <= (*p) && (*p) <= 36u )
 			goto tr2;
 	} else if ( (*p) > 57u ) {
-		if ( 64u <= (*p) && (*p) <= 90u )
+		if ( (*p) > 90u ) {
+			if ( 192u <= (*p) && (*p) <= 223u )
+				goto tr2;
+		} else if ( (*p) >= 64u )
 			goto tr2;
 	} else
 		goto tr2;
 	goto st0;
 tr2:
-#line 128 "src/readstat_sav_parse.rl"
+#line 131 "src/readstat_sav_parse.rl"
 	{ temp_key[key_offset++] = (*p); }
 	goto st3;
 st3:
 	if ( ++p == pe )
 		goto _test_eof3;
 case 3:
-#line 1669 "src/readstat_sav_parse.c"
+#line 1674 "src/readstat_sav_parse.c"
 	switch( (*p) ) {
 		case 46u: goto tr4;
 		case 61u: goto tr3;
 		case 95u: goto tr4;
-		case 192u: goto tr4;
 	}
 	if ( (*p) < 48u ) {
 		if ( 35u <= (*p) && (*p) <= 36u )
 			goto tr4;
 	} else if ( (*p) > 57u ) {
-		if ( 64u <= (*p) && (*p) <= 90u )
+		if ( (*p) > 90u ) {
+			if ( 192u <= (*p) && (*p) <= 223u )
+				goto tr4;
+		} else if ( (*p) >= 64u )
 			goto tr4;
 	} else
 		goto tr4;
 	goto st0;
 tr4:
-#line 128 "src/readstat_sav_parse.rl"
+#line 131 "src/readstat_sav_parse.rl"
 	{ temp_key[key_offset++] = (*p); }
 	goto st4;
 st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 1693 "src/readstat_sav_parse.c"
+#line 1700 "src/readstat_sav_parse.c"
 	switch( (*p) ) {
 		case 46u: goto tr5;
 		case 61u: goto tr3;
 		case 95u: goto tr5;
-		case 192u: goto tr5;
 	}
 	if ( (*p) < 48u ) {
 		if ( 35u <= (*p) && (*p) <= 36u )
 			goto tr5;
 	} else if ( (*p) > 57u ) {
-		if ( 64u <= (*p) && (*p) <= 90u )
+		if ( (*p) > 90u ) {
+			if ( 192u <= (*p) && (*p) <= 223u )
+				goto tr5;
+		} else if ( (*p) >= 64u )
 			goto tr5;
 	} else
 		goto tr5;
 	goto st0;
 tr5:
-#line 128 "src/readstat_sav_parse.rl"
+#line 131 "src/readstat_sav_parse.rl"
 	{ temp_key[key_offset++] = (*p); }
 	goto st5;
 st5:
 	if ( ++p == pe )
 		goto _test_eof5;
 case 5:
-#line 1717 "src/readstat_sav_parse.c"
+#line 1726 "src/readstat_sav_parse.c"
 	switch( (*p) ) {
 		case 46u: goto tr6;
 		case 61u: goto tr3;
 		case 95u: goto tr6;
-		case 192u: goto tr6;
 	}
 	if ( (*p) < 48u ) {
 		if ( 35u <= (*p) && (*p) <= 36u )
 			goto tr6;
 	} else if ( (*p) > 57u ) {
-		if ( 64u <= (*p) && (*p) <= 90u )
+		if ( (*p) > 90u ) {
+			if ( 192u <= (*p) && (*p) <= 223u )
+				goto tr6;
+		} else if ( (*p) >= 64u )
 			goto tr6;
 	} else
 		goto tr6;
 	goto st0;
 tr6:
-#line 128 "src/readstat_sav_parse.rl"
+#line 131 "src/readstat_sav_parse.rl"
 	{ temp_key[key_offset++] = (*p); }
 	goto st6;
 st6:
 	if ( ++p == pe )
 		goto _test_eof6;
 case 6:
-#line 1741 "src/readstat_sav_parse.c"
+#line 1752 "src/readstat_sav_parse.c"
 	switch( (*p) ) {
 		case 46u: goto tr7;
 		case 61u: goto tr3;
 		case 95u: goto tr7;
-		case 192u: goto tr7;
 	}
 	if ( (*p) < 48u ) {
 		if ( 35u <= (*p) && (*p) <= 36u )
 			goto tr7;
 	} else if ( (*p) > 57u ) {
-		if ( 64u <= (*p) && (*p) <= 90u )
+		if ( (*p) > 90u ) {
+			if ( 192u <= (*p) && (*p) <= 223u )
+				goto tr7;
+		} else if ( (*p) >= 64u )
 			goto tr7;
 	} else
 		goto tr7;
 	goto st0;
 tr7:
-#line 128 "src/readstat_sav_parse.rl"
+#line 131 "src/readstat_sav_parse.rl"
 	{ temp_key[key_offset++] = (*p); }
 	goto st7;
 st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-#line 1765 "src/readstat_sav_parse.c"
+#line 1778 "src/readstat_sav_parse.c"
 	switch( (*p) ) {
 		case 46u: goto tr8;
 		case 61u: goto tr3;
 		case 95u: goto tr8;
-		case 192u: goto tr8;
 	}
 	if ( (*p) < 48u ) {
 		if ( 35u <= (*p) && (*p) <= 36u )
 			goto tr8;
 	} else if ( (*p) > 57u ) {
-		if ( 64u <= (*p) && (*p) <= 90u )
+		if ( (*p) > 90u ) {
+			if ( 192u <= (*p) && (*p) <= 223u )
+				goto tr8;
+		} else if ( (*p) >= 64u )
 			goto tr8;
 	} else
 		goto tr8;
 	goto st0;
 tr8:
-#line 128 "src/readstat_sav_parse.rl"
+#line 131 "src/readstat_sav_parse.rl"
 	{ temp_key[key_offset++] = (*p); }
 	goto st8;
 st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 1789 "src/readstat_sav_parse.c"
+#line 1804 "src/readstat_sav_parse.c"
 	switch( (*p) ) {
 		case 46u: goto tr9;
 		case 61u: goto tr3;
 		case 95u: goto tr9;
-		case 192u: goto tr9;
 	}
 	if ( (*p) < 48u ) {
 		if ( 35u <= (*p) && (*p) <= 36u )
 			goto tr9;
 	} else if ( (*p) > 57u ) {
-		if ( 64u <= (*p) && (*p) <= 90u )
+		if ( (*p) > 90u ) {
+			if ( 192u <= (*p) && (*p) <= 223u )
+				goto tr9;
+		} else if ( (*p) >= 64u )
 			goto tr9;
 	} else
 		goto tr9;
 	goto st0;
 tr9:
-#line 128 "src/readstat_sav_parse.rl"
+#line 131 "src/readstat_sav_parse.rl"
 	{ temp_key[key_offset++] = (*p); }
 	goto st9;
 st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-#line 1813 "src/readstat_sav_parse.c"
+#line 1830 "src/readstat_sav_parse.c"
 	if ( (*p) == 61u )
 		goto tr3;
 	goto st0;
 tr3:
-#line 128 "src/readstat_sav_parse.rl"
+#line 131 "src/readstat_sav_parse.rl"
 	{ temp_key[key_offset++] = '\0'; }
 	goto st10;
 st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 1825 "src/readstat_sav_parse.c"
+#line 1842 "src/readstat_sav_parse.c"
 	if ( 48u <= (*p) && (*p) <= 57u )
 		goto tr10;
 	goto st0;
 tr10:
-#line 130 "src/readstat_sav_parse.rl"
+#line 133 "src/readstat_sav_parse.rl"
 	{ temp_val = 0; }
 #line 122 "src/readstat_sav_parse.rl"
 	{
@@ -1847,7 +1864,7 @@ st11:
 	if ( ++p == pe )
 		goto _test_eof11;
 case 11:
-#line 1851 "src/readstat_sav_parse.c"
+#line 1868 "src/readstat_sav_parse.c"
 	if ( (*p) == 0u )
 		goto tr11;
 	if ( 48u <= (*p) && (*p) <= 57u )
@@ -1866,7 +1883,7 @@ st12:
 	if ( ++p == pe )
 		goto _test_eof12;
 case 12:
-#line 1870 "src/readstat_sav_parse.c"
+#line 1887 "src/readstat_sav_parse.c"
 	switch( (*p) ) {
 		case 0u: goto st12;
 		case 9u: goto st13;
@@ -1876,7 +1893,10 @@ st13:
 	if ( ++p == pe )
 		goto _test_eof13;
 case 13:
-	if ( 64u <= (*p) && (*p) <= 90u )
+	if ( (*p) > 90u ) {
+		if ( 192u <= (*p) && (*p) <= 223u )
+			goto tr0;
+	} else if ( (*p) >= 64u )
 		goto tr0;
 	goto st0;
 	}
@@ -1897,13 +1917,13 @@ case 13:
 	_out: {}
 	}
 
-#line 138 "src/readstat_sav_parse.rl"
+#line 141 "src/readstat_sav_parse.rl"
 
     
     if (cs < 
-#line 1905 "src/readstat_sav_parse.c"
+#line 1925 "src/readstat_sav_parse.c"
 12
-#line 140 "src/readstat_sav_parse.rl"
+#line 143 "src/readstat_sav_parse.rl"
  || p != pe) {
         dprintf(STDERR_FILENO, "Parsed %ld of %ld bytes\n", p - (u_char *)data, pe - (u_char *)data);
         dprintf(STDERR_FILENO, "Remaining bytes: %s\n", p);

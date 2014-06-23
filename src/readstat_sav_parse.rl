@@ -64,7 +64,7 @@ int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) 
         
         key = ( ( non_ascii_capital_letter | [A-Z@] ) ( non_ascii_capital_letter | [A-Z0-9@#$_\.] ){0,7} )  >{ key_offset = 0; } ${ temp_key[key_offset++] = fc; } %{ temp_key[key_offset++] = '\0'; };
         
-        value = ( ( 0xC0 .. 0xFF ) | graph ){1,64} >{ val_offset = 0; } ${ temp_val[val_offset++] = fc; } %{ temp_val[val_offset++] = '\0'; };
+        value = ( ( 0xC0 .. 0xFF ) | print ){1,64} >{ val_offset = 0; } ${ temp_val[val_offset++] = fc; } %{ temp_val[val_offset++] = '\0'; };
         
         keyval = ( key "=" value ) %set_long_name;
         
@@ -125,7 +125,10 @@ int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
             }
         }
         
-        key = ( [A-Z@] ( ( 0xC0 - 0xDF ) | [A-Z0-9@#$_\.] ){0,7} )  >{ key_offset = 0; } ${ temp_key[key_offset++] = fc; } %{ temp_key[key_offset++] = '\0'; };
+# 0xC0 - 0xFF are non-ASCII letters in Windows-1252
+        non_ascii_capital_letter = 0xC0 .. 0xDF;
+
+        key = ( ( non_ascii_capital_letter | [A-Z@] ) ( non_ascii_capital_letter | [A-Z0-9@#$_\.] ){0,7} )  >{ key_offset = 0; } ${ temp_key[key_offset++] = fc; } %{ temp_key[key_offset++] = '\0'; };
         
         value = [0-9]+ >{ temp_val = 0; } $incr_val;
         
