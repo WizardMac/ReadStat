@@ -47,12 +47,13 @@ typedef struct rdata_ctx_s {
 static int atom_table_add(rdata_atom_table_t *table, char *key);
 static char *atom_table_lookup(rdata_atom_table_t *table, int index);
 
-static int read_environment(char *table_name, rdata_ctx_t *ctx);
+static int read_environment(const char *table_name, rdata_ctx_t *ctx);
+static int read_toplevel_object(const char *table_name, const char *key, rdata_ctx_t *ctx);
 static int read_sexptype_header(rdata_sexptype_info_t *header, rdata_ctx_t *ctx);
 static int read_length(int32_t *outLength, rdata_ctx_t *ctx);
 static int read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, 
         void *callback_ctx, rdata_ctx_t *ctx);
-static int read_value_vector(rdata_sexptype_header_t header, char *name, rdata_ctx_t *ctx);
+static int read_value_vector(rdata_sexptype_header_t header, const char *name, rdata_ctx_t *ctx);
 static int read_character_string(char *key, size_t keylen, rdata_ctx_t *ctx);
 static int read_generic_list(int attributes, rdata_ctx_t *ctx);
 static int read_attributes(int (*handle_attribute)(char *key, rdata_sexptype_info_t val_info, rdata_ctx_t *ctx),
@@ -155,56 +156,84 @@ static readstat_errors_t init_stream(rdata_ctx_t *ctx) {
 
         ctx->strm->next_in = ctx->strm_buffer;
         ctx->strm->avail_in = bytes_read;
-
-        if (read_st(ctx, &header, sizeof(header)) != sizeof(header)) {
-            retval = READSTAT_ERROR_READ;
-            goto cleanup;
-        }
+    } else {
+        lseek(ctx->fd, 0, SEEK_SET);
     }
 
-    if (strncmp("RDX2\n", header, sizeof(header)) != 0) {
-        retval = READSTAT_ERROR_PARSE;
-        goto cleanup;
-    }
-    
 cleanup:
     return retval;
 }
 
-int parse_rdata(const char *filename, void *user_ctx,
+rdata_ctx_t *init_rdata_ctx(const char *filename) {
+    int fd = readstat_open(filename);
+    if (fd == -1) {
+        return NULL;
+    }
+    rdata_ctx_t *ctx = calloc(1, sizeof(rdata_ctx_t));
+    rdata_atom_table_t *atom_table = malloc(sizeof(rdata_atom_table_t));
+    
+    atom_table->count = 0;
+    atom_table->data = NULL;
+
+    ctx->atom_table = atom_table;
+
+    ctx->machine_needs_byteswap = 0;
+    if (machine_is_little_endian()) {
+        ctx->machine_needs_byteswap = 1;
+    }
+
+    ctx->fd = fd;
+    
+    return ctx;
+}
+
+void free_rdata_ctx(rdata_ctx_t *ctx) {
+    readstat_close(ctx->fd);
+    free(ctx->atom_table);
+    if (ctx->strm) {
+        lzma_end(ctx->strm);
+        free(ctx->strm);
+        free(ctx->strm_buffer);
+    }
+    free(ctx);
+}
+
+int parse_internal(const char *filename, int is_rdata, void *user_ctx,
                 readstat_handle_table_callback handle_table,
                 readstat_handle_column_callback handle_column,
                 readstat_handle_column_name_callback handle_column_name,
                 readstat_handle_text_value_callback handle_text_value,
                 readstat_handle_text_value_callback handle_value_label) {
     int retval = 1;
-    rdata_ctx_t *ctx = calloc(1, sizeof(rdata_ctx_t));
-    rdata_atom_table_t *atom_table = malloc(sizeof(rdata_atom_table_t));
-    
-    atom_table->count = 0;
-    atom_table->data = NULL;
-    
+    rdata_v2_header_t v2_header;
+    rdata_ctx_t *ctx = init_rdata_ctx(filename);
+
+    if (ctx == NULL) {
+        retval = READSTAT_ERROR_OPEN;
+        goto cleanup;
+    }
+
     ctx->user_ctx = user_ctx;
     ctx->handle_table = handle_table;
     ctx->handle_column = handle_column;
     ctx->handle_column_name = handle_column_name;
     ctx->handle_text_value = handle_text_value;
     ctx->handle_value_label = handle_value_label;
-    ctx->atom_table = atom_table;
     
-    ctx->machine_needs_byteswap = 0;
-    if (machine_is_little_endian()) {
-        ctx->machine_needs_byteswap = 1;
-    }
-    
-    if ((ctx->fd = readstat_open(filename)) == -1) {
-        return READSTAT_ERROR_OPEN;
-    }
-    
-    rdata_v2_header_t v2_header;
-
     if ((retval = init_stream(ctx)) != 0) {
         goto cleanup;
+    }
+
+    if (is_rdata) {
+        char header_line[5];
+        if (read_st(ctx, &header_line, sizeof(header_line)) != sizeof(header_line)) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+        if (strncmp("RDX2\n", header_line, sizeof(header_line)) != 0) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
     }
     
     if (read_st(ctx, &v2_header, sizeof(v2_header)) != sizeof(v2_header)) {
@@ -218,7 +247,11 @@ int parse_rdata(const char *filename, void *user_ctx,
         v2_header.reader_version = byteswap4(v2_header.reader_version);
     }
     
-    retval = read_environment(NULL, ctx);
+    if (is_rdata) {
+        retval = read_environment(NULL, ctx);
+    } else {
+        retval = read_toplevel_object(NULL, NULL, ctx);
+    }
     if (retval != 0)
         goto cleanup;
     
@@ -230,19 +263,98 @@ int parse_rdata(const char *filename, void *user_ctx,
     }
     
 cleanup:
-    readstat_close(ctx->fd);
-    free(ctx->atom_table);
-    if (ctx->strm) {
-        lzma_end(ctx->strm);
-        free(ctx->strm);
-        free(ctx->strm_buffer);
+    if (ctx) {
+        free_rdata_ctx(ctx);
     }
-    free(ctx);
     
     return retval;
 }
 
-static int read_environment(char *table_name, rdata_ctx_t *ctx) {
+int parse_rds(const char *filename, void *user_ctx,
+        readstat_handle_column_callback handle_column,
+        readstat_handle_column_name_callback handle_column_name,
+        readstat_handle_text_value_callback handle_text_value,
+        readstat_handle_text_value_callback handle_value_label) {
+    return parse_internal(filename, 0, user_ctx, NULL, handle_column, handle_column_name,
+            handle_text_value, handle_value_label);
+}
+
+int parse_rdata(const char *filename, void *user_ctx,
+                readstat_handle_table_callback handle_table,
+                readstat_handle_column_callback handle_column,
+                readstat_handle_column_name_callback handle_column_name,
+                readstat_handle_text_value_callback handle_text_value,
+                readstat_handle_text_value_callback handle_value_label) {
+    return parse_internal(filename, 1, user_ctx, handle_table, handle_column, handle_column_name,
+            handle_text_value, handle_value_label);
+}
+
+static int read_toplevel_object(const char *table_name, const char *key, rdata_ctx_t *ctx) {
+    rdata_sexptype_info_t sexptype_info;
+    int retval = read_sexptype_header(&sexptype_info, ctx);
+    if (retval != 0)
+        goto cleanup;
+
+    if (sexptype_info.header.type == RDATA_SEXPTYPE_REAL_VECTOR ||
+            sexptype_info.header.type == RDATA_SEXPTYPE_INTEGER_VECTOR ||
+            sexptype_info.header.type == RDATA_SEXPTYPE_LOGICAL_VECTOR) {
+        if (table_name == NULL && ctx->handle_table) {
+            if (ctx->handle_table(key, ctx->user_ctx)) {
+                retval = READSTAT_ERROR_USER_ABORT;
+                goto cleanup;
+            }   
+        }
+        retval = read_value_vector(sexptype_info.header, key, ctx);
+        if (retval != 0)
+            goto cleanup;
+    } else if (sexptype_info.header.type == RDATA_SEXPTYPE_CHARACTER_VECTOR) {
+        if (table_name == NULL && ctx->handle_table) {
+            if (ctx->handle_table(key, ctx->user_ctx)) {
+                retval = READSTAT_ERROR_USER_ABORT;
+                goto cleanup;
+            }   
+        }
+        int32_t length;
+        retval = read_length(&length, ctx);
+        if (retval != 0)
+            goto cleanup;
+
+        if (ctx->handle_column) {
+            if (ctx->handle_column(key, READSTAT_TYPE_STRING, NULL, NULL, length, ctx->user_ctx)) {
+                retval = READSTAT_ERROR_USER_ABORT;
+                goto cleanup;
+            }
+        }
+        retval = read_string_vector(length, ctx->handle_text_value, ctx->user_ctx, ctx);
+        if (retval != 0)
+            goto cleanup;
+    } else if (sexptype_info.header.type == RDATA_SEXPTYPE_GENERIC_VECTOR &&
+            sexptype_info.header.object && sexptype_info.header.attributes) {
+        if (table_name != NULL) {
+            retval = recursive_discard(sexptype_info.header, ctx);
+        } else {
+            if (ctx->handle_table) {
+                if (ctx->handle_table(key, ctx->user_ctx)) {
+                    retval = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
+                }
+            }
+            retval = read_generic_list(sexptype_info.header.attributes, ctx);
+        }
+        if (retval != 0)
+            goto cleanup;
+    } else {
+        retval = recursive_discard(sexptype_info.header, ctx);
+        if (retval != 0)
+            goto cleanup;
+    }
+
+cleanup:
+
+    return retval;
+}
+
+static int read_environment(const char *table_name, rdata_ctx_t *ctx) {
     int retval = 0;
     
     while (1) {
@@ -264,63 +376,9 @@ static int read_environment(char *table_name, rdata_ctx_t *ctx) {
         
         char *key = atom_table_lookup(ctx->atom_table, sexptype_info.ref);
         
-        retval = read_sexptype_header(&sexptype_info, ctx);
+        retval = read_toplevel_object(table_name, key, ctx);
         if (retval != 0)
             goto cleanup;
-        
-        if (sexptype_info.header.type == RDATA_SEXPTYPE_REAL_VECTOR ||
-            sexptype_info.header.type == RDATA_SEXPTYPE_INTEGER_VECTOR ||
-            sexptype_info.header.type == RDATA_SEXPTYPE_LOGICAL_VECTOR) {
-            if (table_name == NULL && ctx->handle_table) {
-                if (ctx->handle_table(key, ctx->user_ctx)) {
-                    retval = READSTAT_ERROR_USER_ABORT;
-                    goto cleanup;
-                }   
-            }
-            retval = read_value_vector(sexptype_info.header, key, ctx);
-            if (retval != 0)
-                goto cleanup;
-        } else if (sexptype_info.header.type == RDATA_SEXPTYPE_CHARACTER_VECTOR) {
-            if (table_name == NULL && ctx->handle_table) {
-                if (ctx->handle_table(key, ctx->user_ctx)) {
-                    retval = READSTAT_ERROR_USER_ABORT;
-                    goto cleanup;
-                }   
-            }
-            int32_t length;
-            retval = read_length(&length, ctx);
-            if (retval != 0)
-                goto cleanup;
-            
-            if (ctx->handle_column) {
-                if (ctx->handle_column(key, READSTAT_TYPE_STRING, NULL, NULL, length, ctx->user_ctx)) {
-                    retval = READSTAT_ERROR_USER_ABORT;
-                    goto cleanup;
-                }
-            }
-            retval = read_string_vector(length, ctx->handle_text_value, ctx->user_ctx, ctx);
-            if (retval != 0)
-                goto cleanup;
-        } else if (sexptype_info.header.type == RDATA_SEXPTYPE_GENERIC_VECTOR &&
-                   sexptype_info.header.object && sexptype_info.header.attributes) {
-            if (table_name != NULL) {
-                retval = recursive_discard(sexptype_info.header, ctx);
-            } else {
-                if (ctx->handle_table) {
-                    if (ctx->handle_table(key, ctx->user_ctx)) {
-                        retval = READSTAT_ERROR_USER_ABORT;
-                        goto cleanup;
-                    }
-                }
-                retval = read_generic_list(sexptype_info.header.attributes, ctx);
-            }
-            if (retval != 0)
-                goto cleanup;
-        } else {
-            retval = recursive_discard(sexptype_info.header, ctx);
-            if (retval != 0)
-                goto cleanup;
-        }
     }
     
 cleanup:
@@ -392,7 +450,7 @@ cleanup:
     return retval;
 }
 
-static int handle_class_name(char *buf, int i, void *ctx) {
+static int handle_class_name(const char *buf, int i, void *ctx) {
     int *class_is_posixct = (int *)ctx;
     *class_is_posixct |= (strcmp(buf, "POSIXct") == 0);
     return 0;
@@ -632,7 +690,7 @@ cleanup:
 }
 
 
-static int read_value_vector(rdata_sexptype_header_t header, char *name, rdata_ctx_t *ctx) {
+static int read_value_vector(rdata_sexptype_header_t header, const char *name, rdata_ctx_t *ctx) {
     int retval = 0;
     int32_t length;
     size_t elem_size = 0;

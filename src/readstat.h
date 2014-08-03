@@ -70,12 +70,17 @@ int parse_sas7bdat(const char *filename, void *user_ctx,
 int parse_sas7bcat(const char *filename, void *user_ctx,
         readstat_handle_value_label_callback value_label_cb);
 
-typedef int (*readstat_handle_column_callback)(char *name, readstat_types_t type, char *format, 
+typedef int (*readstat_handle_column_callback)(const char *name, readstat_types_t type, char *format, 
         void *data, long count, void *ctx);
-typedef int (*readstat_handle_table_callback)(char *name, void *ctx);
-typedef int (*readstat_handle_text_value_callback)(char *value, int index, void *ctx);
+typedef int (*readstat_handle_table_callback)(const char *name, void *ctx);
+typedef int (*readstat_handle_text_value_callback)(const char *value, int index, void *ctx);
 typedef readstat_handle_text_value_callback readstat_handle_column_name_callback;
 
+int parse_rds(const char *filename, void *user_ctx,
+        readstat_handle_column_callback handle_column,
+        readstat_handle_column_name_callback handle_column_name,
+        readstat_handle_text_value_callback handle_text_value,
+        readstat_handle_text_value_callback handle_value_label);
 int parse_rdata(const char *filename, void *user_ctx, 
                 readstat_handle_table_callback handle_table,
                 readstat_handle_column_callback handle_column,
