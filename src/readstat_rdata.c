@@ -764,21 +764,7 @@ static int discard_character_string(int add_to_table, rdata_ctx_t *ctx) {
     if (retval != 0)
         goto cleanup;
     
-    if (strlen(key) == 0) {
-        dprintf(STDERR_FILENO, "String with non-positive length: %ld\n", strlen(key));
-        
-        /*
-         rdata_sexptype_info_t temp_info;
-         retval = read_sexptype_header(&temp_info, ctx);
-         if (retval != 0)
-         goto cleanup;
-         
-         if (temp_info.header.type != RDATA_PSEUDO_SXP_NIL) {
-         retval = READSTAT_ERROR_PARSE;
-         goto cleanup;
-         }
-         */
-    } else if (add_to_table) {
+    if (strlen(key) > 0 && add_to_table) {
         atom_table_add(ctx->atom_table, key);
     }
     
