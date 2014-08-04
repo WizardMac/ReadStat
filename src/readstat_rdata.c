@@ -693,35 +693,37 @@ cleanup:
 static int read_value_vector(rdata_sexptype_header_t header, const char *name, rdata_ctx_t *ctx) {
     int retval = 0;
     int32_t length;
-    size_t elem_size = 0;
+    size_t input_elem_size = 0;
     void *vals = NULL;
     size_t buf_len = 0;
-    int data_type;
+    int output_data_type;
     int i;
     
     switch (header.type) {
         case RDATA_SEXPTYPE_REAL_VECTOR:
-            elem_size = sizeof(double);
-            data_type = READSTAT_TYPE_DOUBLE;
+            input_elem_size = sizeof(double);
+            output_data_type = READSTAT_TYPE_DOUBLE;
             break;
         case RDATA_SEXPTYPE_INTEGER_VECTOR:
-            elem_size = sizeof(int32_t);
-            data_type = READSTAT_TYPE_INT32;
+            input_elem_size = sizeof(int32_t);
+            output_data_type = READSTAT_TYPE_INT32;
             break;
         case RDATA_SEXPTYPE_LOGICAL_VECTOR:
-            elem_size = sizeof(int32_t);
-            data_type = READSTAT_TYPE_FLOAT;
+            input_elem_size = sizeof(int32_t);
+            output_data_type = READSTAT_TYPE_DOUBLE;
             break;
         default:
             retval = READSTAT_ERROR_PARSE;
             break;
     }
+    if (retval != 0)
+        goto cleanup;
 
     retval = read_length(&length, ctx);
     if (retval != 0)
         goto cleanup;
 
-    buf_len = length * elem_size;
+    buf_len = length * input_elem_size;
     
     vals = malloc(buf_len);
     if (vals == NULL) {
@@ -735,7 +737,7 @@ static int read_value_vector(rdata_sexptype_header_t header, const char *name, r
     }
     
     if (ctx->machine_needs_byteswap) {
-        if (elem_size == sizeof(double)) {
+        if (input_elem_size == sizeof(double)) {
             double *d_vals = (double *)vals;
             for (i=0; i<buf_len/sizeof(double); i++) {
                 d_vals[i] = byteswap_double(d_vals[i]);
@@ -757,7 +759,7 @@ static int read_value_vector(rdata_sexptype_header_t header, const char *name, r
     
     if (ctx->handle_column) {
         if (header.type == RDATA_SEXPTYPE_LOGICAL_VECTOR) {
-            float *real_vals = malloc(length * sizeof(float));
+            double *real_vals = malloc(length * sizeof(double));
             int32_t *i_vals = (int32_t *)vals;
             for (i=0; i<length; i++) {
                 if (i_vals[i] == INT32_MIN) {
@@ -766,13 +768,13 @@ static int read_value_vector(rdata_sexptype_header_t header, const char *name, r
                     real_vals[i] = i_vals[i];
                 }
             }
-            if (ctx->handle_column(name, data_type, NULL, real_vals, length, ctx->user_ctx)) {
+            if (ctx->handle_column(name, output_data_type, NULL, real_vals, length, ctx->user_ctx)) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
             }
             free(real_vals);
         } else {
-            if (ctx->handle_column(name, data_type, ctx->class_is_posixct ? "%ts" : NULL, vals, length, ctx->user_ctx)) {
+            if (ctx->handle_column(name, output_data_type, ctx->class_is_posixct ? "%ts" : NULL, vals, length, ctx->user_ctx)) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
             }
