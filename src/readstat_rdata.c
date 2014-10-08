@@ -706,7 +706,7 @@ static int read_value_vector(rdata_sexptype_header_t header, const char *name, r
             break;
         case RDATA_SEXPTYPE_INTEGER_VECTOR:
             input_elem_size = sizeof(int32_t);
-            output_data_type = READSTAT_TYPE_INT32;
+            output_data_type = READSTAT_TYPE_DOUBLE;
             break;
         case RDATA_SEXPTYPE_LOGICAL_VECTOR:
             input_elem_size = sizeof(int32_t);
@@ -758,7 +758,8 @@ static int read_value_vector(rdata_sexptype_header_t header, const char *name, r
     }
     
     if (ctx->handle_column) {
-        if (header.type == RDATA_SEXPTYPE_LOGICAL_VECTOR) {
+        if (header.type == RDATA_SEXPTYPE_LOGICAL_VECTOR ||
+                header.type == RDATA_SEXPTYPE_INTEGER_VECTOR) {
             double *real_vals = malloc(length * sizeof(double));
             int32_t *i_vals = (int32_t *)vals;
             for (i=0; i<length; i++) {
