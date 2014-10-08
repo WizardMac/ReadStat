@@ -1,8 +1,9 @@
 
-#include "readstat_sav.h"
-#include "readstat_sav_parse.h"
 #include <stdlib.h>
 #include <unistd.h>
+#include <iconv.h>
+#include "readstat_sav.h"
+#include "readstat_sav_parse.h"
 
 typedef struct varlookup {
     char      name[9];
@@ -38,13 +39,28 @@ int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) 
     }
     qsort(table, var_count, sizeof(varlookup_t), &compare_varlookups);
         
-    char temp_key[9];
-    char temp_val[65];
-    int key_offset = 0;
-    int val_offset = 0;
+    char temp_key[4*8+1];
+    char temp_val[4*64+1];
+    u_char *str_start = NULL;
+    size_t str_len = 0;
     
-    u_char *p = (u_char *)data;
-    u_char *pe = (u_char *)data + count;
+    u_char *p = NULL;
+    u_char *pe = NULL;
+    if (ctx->converter) {
+        size_t input_len = count;
+        size_t output_len = input_len * 4;
+        p = malloc(output_len);
+        pe = p;
+        size_t status = iconv(ctx->converter, (char **)&data, &input_len,
+                (char **)&pe, &output_len);
+        if (status == (size_t)-1) {
+            free(p);
+            return READSTAT_ERROR_PARSE;
+        }
+    } else {
+        p = (u_char *)data;
+        pe = (u_char *)data + count;
+    }
     u_char *eof = pe;
 
     int cs;
@@ -53,20 +69,33 @@ int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) 
         action set_long_name {
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
-                memcpy(ctx->varinfo[found->index].longname, temp_val, val_offset);
+                memcpy(ctx->varinfo[found->index].longname, temp_val, str_len);
             } else {
                 dprintf(STDERR_FILENO, "Failed to find %s\n", temp_key);
             }
         }
 
-# 0xC0 - 0xFF are non-ASCII letters in Windows-1252
-        non_ascii_capital_letter = 0xC0 .. 0xDF;
+        action copy_key {
+            memcpy(temp_key, str_start, str_len);
+            temp_key[str_len] = '\0';
+        }
+
+        action copy_value {
+            memcpy(temp_val, str_start, str_len);
+            temp_val[str_len] = '\0';
+        }
+
+        non_ascii_character = ( # UTF-8 byte sequences
+                0xC0..0xDF 0x80..0xBF | 
+                0xE0..0xEF (0x80..0xBF){2} |
+                0xF0..0xF7 (0x80..0xBF){3}
+                );
         
-        key = ( ( non_ascii_capital_letter | [A-Z@] ) ( non_ascii_capital_letter | [A-Z0-9@#$_\.] ){0,7} )  >{ key_offset = 0; } ${ temp_key[key_offset++] = fc; } %{ temp_key[key_offset++] = '\0'; };
+        key = ( ( non_ascii_character | [A-Z@] ) ( non_ascii_character | [A-Z0-9@#$_\.] ){0,7} ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
         
-        value = ( ( 0xC0 .. 0xFF ) | print ){1,64} >{ val_offset = 0; } ${ temp_val[val_offset++] = fc; } %{ temp_val[val_offset++] = '\0'; };
+        value = ( non_ascii_character | print ){1,64} >{ str_start = fpc; } %{ str_len = fpc - str_start; };
         
-        keyval = ( key "=" value ) %set_long_name;
+        keyval = ( key %copy_key "=" value %copy_value ) %set_long_name;
         
         main := keyval ("\t" keyval)*  "\t"?;
         
@@ -102,12 +131,28 @@ int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
     }
     qsort(table, var_count, sizeof(varlookup_t), &compare_varlookups);
     
-    char temp_key[9];
+    char temp_key[8*4+1];
     int temp_val;
-    int key_offset = 0;
-    
-    u_char *p = (u_char *)data;
-    u_char *pe = (u_char *)data + count;
+    u_char *str_start = NULL;
+    size_t str_len = 0;
+
+    u_char *p = NULL;
+    u_char *pe = NULL;
+    if (ctx->converter) {
+        size_t input_len = count;
+        size_t output_len = input_len * 4;
+        p = malloc(output_len);
+        pe = p;
+        size_t status = iconv(ctx->converter, (char **)&data, &input_len,
+                (char **)&pe, &output_len);
+        if (status == (size_t)-1) {
+            free(p);
+            return READSTAT_ERROR_PARSE;
+        }
+    } else {
+        p = (u_char *)data;
+        pe = (u_char *)data + count;
+    }
     
     int cs;
     
@@ -118,6 +163,11 @@ int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
                 ctx->varinfo[found->index].string_length = temp_val;
             }
         }
+
+        action copy_key {
+            memcpy(temp_key, str_start, str_len);
+            temp_key[str_len] = '\0';
+        }
         
         action incr_val {
             if (fc != '\0') { 
@@ -125,14 +175,17 @@ int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
             }
         }
         
-# 0xC0 - 0xFF are non-ASCII letters in Windows-1252
-        non_ascii_capital_letter = 0xC0 .. 0xDF;
+        non_ascii_character = ( # UTF-8 byte sequences
+                0xC0..0xDF 0x80..0xBF | 
+                0xE0..0xEF (0x80..0xBF){2} |
+                0xF0..0xF7 (0x80..0xBF){3}
+                );
 
-        key = ( ( non_ascii_capital_letter | [A-Z@] ) ( non_ascii_capital_letter | [A-Z0-9@#$_\.] ){0,7} )  >{ key_offset = 0; } ${ temp_key[key_offset++] = fc; } %{ temp_key[key_offset++] = '\0'; };
+        key = ( ( non_ascii_character | [A-Z@] ) ( non_ascii_character | [A-Z0-9@#$_\.] ){0,7} ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
         
         value = [0-9]+ >{ temp_val = 0; } $incr_val;
         
-        keyval = ( key "=" value ) %set_width;
+        keyval = ( key %copy_key "=" value ) %set_width;
         
         main := keyval ("\0"+ "\t" keyval)* "\0"+ "\t"?;
         
@@ -148,5 +201,7 @@ int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
     
     if (table)
         free(table);
+    if (ctx->converter)
+        free(p);
     return retval;
 }

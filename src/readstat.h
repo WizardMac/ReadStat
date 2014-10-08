@@ -32,7 +32,8 @@ typedef enum readstat_errors_e {
     READSTAT_ERROR_USER_ABORT,
     READSTAT_ERROR_PARSE,
     READSTAT_ERROR_UNSUPPORTED_COMPRESSION,
-    READSTAT_ERROR_ROW_COUNT_MISMATCH
+    READSTAT_ERROR_ROW_COUNT_MISMATCH,
+    READSTAT_ERROR_UNSUPPORTED_CHARSET
 } readstat_errors_t;
 
 typedef int (*readstat_handle_info_callback)(int obs_count, int var_count, void *ctx);

@@ -13,10 +13,105 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <math.h>
+#include <iconv.h>
+
 #include "readstat_io.h"
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
 #include "readstat_spss.h"
+
+#define SAV_CHARSET_EBCDIC                1
+#define SAV_CHARSET_7_BIT_ASCII           2
+#define SAV_CHARSET_8_BIT_ASCII           3
+#define SAV_CHARSET_DEC_KANJI             4
+#define SAV_CHARSET_UTF8              65001
+/* Others defined in table below */
+
+typedef struct sav_charset_entry_s {
+    int     code;
+    char    name[32];
+} sav_charset_entry_t;
+
+/* See http://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx */
+static sav_charset_entry_t _charset_table[] = { 
+    { .code = 2,     .name = "ASCII" },
+    { .code = 4,     .name = "DEC-KANJI" },
+    { .code = 437,   .name = "CP437" },
+    { .code = 708,   .name = "ASMO-708" },
+    { .code = 737,   .name = "CP737" },
+    { .code = 775,   .name = "CP775" },
+    { .code = 850,   .name = "CP850" },
+    { .code = 852,   .name = "CP852" },
+    { .code = 855,   .name = "CP855" },
+    { .code = 857,   .name = "CP857" },
+    { .code = 858,   .name = "CP858" },
+    { .code = 860,   .name = "CP860" },
+    { .code = 861,   .name = "CP861" },
+    { .code = 862,   .name = "CP862" },
+    { .code = 863,   .name = "CP863" },
+    { .code = 864,   .name = "CP864" },
+    { .code = 865,   .name = "CP865" },
+    { .code = 866,   .name = "CP866" },
+    { .code = 869,   .name = "CP869" },
+    { .code = 874,   .name = "CP874" },
+    { .code = 932,   .name = "SHIFT-JIS" },
+    { .code = 936,   .name = "ISO-IR-58" },
+    { .code = 949,   .name = "ISO-IR-149" },
+    { .code = 950,   .name = "BIG-5" },
+    { .code = 1200,  .name = "UTF-16LE" },
+    { .code = 1201,  .name = "UTF-16BE" },
+    { .code = 1250,  .name = "WINDOWS-1250" },
+    { .code = 1251,  .name = "WINDOWS-1251" },
+    { .code = 1252,  .name = "WINDOWS-1252" },
+    { .code = 1253,  .name = "WINDOWS-1253" },
+    { .code = 1254,  .name = "WINDOWS-1254" },
+    { .code = 1255,  .name = "WINDOWS-1255" },
+    { .code = 1256,  .name = "WINDOWS-1256" },
+    { .code = 1257,  .name = "WINDOWS-1257" },
+    { .code = 1258,  .name = "WINDOWS-1258" },
+    { .code = 1361,  .name = "CP1361" },
+    { .code = 10000, .name = "MACROMAN" },
+    { .code = 10004, .name = "MACARABIC" },
+    { .code = 10005, .name = "MACHEBREW" },
+    { .code = 10006, .name = "MACGREEK" },
+    { .code = 10007, .name = "MACCYRILLIC" },
+    { .code = 10010, .name = "MACROMANIA" },
+    { .code = 10017, .name = "MACUKRAINE" },
+    { .code = 10021, .name = "MACTHAI" },
+    { .code = 10029, .name = "MACCENTRALEUROPE" },
+    { .code = 10079, .name = "MACICELAND" },
+    { .code = 10081, .name = "MACTURKISH" },
+    { .code = 10082, .name = "MACCROATIAN" },
+    { .code = 12000, .name = "UTF-32LE" },
+    { .code = 12001, .name = "UTF-32BE" },
+    { .code = 20127, .name = "US-ASCII" },
+    { .code = 20866, .name = "KOI8-R" },
+    { .code = 20932, .name = "EUC-JP" },
+    { .code = 21866, .name = "KOI8-U" },
+    { .code = 28591, .name = "ISO-8859-1" },
+    { .code = 28592, .name = "ISO-8859-2" },
+    { .code = 28593, .name = "ISO-8859-3" },
+    { .code = 28594, .name = "ISO-8859-4" },
+    { .code = 28595, .name = "ISO-8859-5" },
+    { .code = 28596, .name = "ISO-8859-6" },
+    { .code = 28597, .name = "ISO-8859-7" },
+    { .code = 28598, .name = "ISO-8859-8" },
+    { .code = 28599, .name = "ISO-8859-9" },
+    { .code = 28603, .name = "ISO-8859-13" },
+    { .code = 28605, .name = "ISO-8859-15" },
+    { .code = 50220, .name = "ISO-2022-JP" },
+    { .code = 50221, .name = "ISO-2022-JP" }, // same as above?
+    { .code = 50222, .name = "ISO-2022-JP" }, // same as above?
+    { .code = 50225, .name = "ISO-2022-KR" },
+    { .code = 50229, .name = "ISO-2022-CN" },
+    { .code = 51932, .name = "EUC-JP" },
+    { .code = 51936, .name = "EUC-CN" },
+    { .code = 51949, .name = "EUC-KR" },
+    { .code = 52936, .name = "HZ-GB-2312" },
+    { .code = 54936, .name = "GB18030" },
+    { .code = 65000, .name = "UTF-7" },
+    { .code = 65001, .name = "UTF-8" }
+};
 
 #define SAV_VARINFO_INITIAL_CAPACITY  512
 #define SAV_EIGHT_SPACES              "        "
@@ -38,6 +133,21 @@ static void unpad(char *string, size_t len) {
     }
 }
                                 
+static readstat_errors_t convert(char *dst, size_t dst_len, char *src, size_t src_len, sav_ctx_t *ctx) {
+    if (ctx->converter) {
+        size_t dst_left = dst_len;
+        size_t status = iconv(ctx->converter, (char **)&src, &src_len, &dst, &dst_left);
+        if (status == (size_t)-1) {
+            return READSTAT_ERROR_PARSE;
+        }
+        unpad(dst, dst_len - dst_left);
+    } else {
+        memcpy(dst, src, src_len);
+        unpad(dst, src_len);
+    }
+    return 0;
+}
+
 sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header) {
     sav_ctx_t *ctx = NULL;
     if ((ctx = malloc(sizeof(sav_ctx_t))) == NULL) {
@@ -78,6 +188,9 @@ void sav_ctx_free(sav_ctx_t *ctx) {
             free(ctx->varinfo[i].label);
         }
         free(ctx->varinfo);
+    }
+    if (ctx->converter) {
+        iconv_close(ctx->converter);
     }
     free(ctx);
 }
@@ -120,10 +233,14 @@ int sav_read_variable_record(int fd, sav_ctx_t *ctx) {
     info->index = ctx->var_index;
     info->offset = ctx->var_offset;
     info->type = dta_type;
-    memcpy(info->name, variable.name, 8);
-    unpad(info->name, 8);
-    memcpy(info->longname, variable.name, 8);
-    unpad(info->longname, 8);
+
+    retval = convert(info->name, sizeof(info->name), variable.name, 8, ctx);
+    if (retval != 0)
+        goto cleanup;
+
+    retval = convert(info->longname, sizeof(info->longname), variable.name, 8, ctx);
+    if (retval != 0)
+        goto cleanup;
 
     info->print_format.decimal_places = (variable.print & 0x000000FF);
     info->print_format.width = (variable.print & 0x0000FF00) >> 8;
@@ -141,17 +258,23 @@ int sav_read_variable_record(int fd, sav_ctx_t *ctx) {
         }
         label_len = ctx->machine_needs_byte_swap ? byteswap4(label_len) : label_len;
         int32_t label_capacity = (label_len + 3) / 4 * 4;
-        if ((info->label = malloc(label_capacity + 1)) == NULL) {
+        char *label_buf = malloc(label_capacity);
+        info->label = malloc(label_len*4+1);
+        if (label_buf == NULL || info->label == NULL) {
             retval = READSTAT_ERROR_MALLOC;
             goto cleanup;
         }
-        if (read(fd, info->label, label_capacity) < label_capacity) {
+        if (read(fd, label_buf, label_capacity) < label_capacity) {
             retval = READSTAT_ERROR_READ;
+            free(label_buf);
             free(info->label);
             info->label = NULL;
             goto cleanup;
         }
-        unpad(info->label, label_len);
+        retval = convert(info->label, label_len*4+1, label_buf, label_len, ctx);
+        free(label_buf);
+        if (retval != 0)
+            goto cleanup;
     }
     
     ctx->varinfo[ctx->var_index].labels_index = -1;
@@ -195,10 +318,11 @@ int sav_read_value_label_record(int fd, sav_ctx_t *ctx, readstat_handle_value_la
     int32_t var_count;
     readstat_types_t value_type = READSTAT_TYPE_STRING;
     char label_name_buf[256];
+    char label_buf[256];
     typedef struct value_label_s {
         char          value[8];
         unsigned char label_len;
-        char          label[256];
+        char          label[256*4+1];
     } value_label_t;
     value_label_t *value_labels = NULL;
 
@@ -223,11 +347,13 @@ int sav_read_value_label_record(int fd, sav_ctx_t *ctx, readstat_handle_value_la
             goto cleanup;
         }
         size_t label_len = (vlabel->label_len + 8) / 8 * 8 - 1;
-        if (read(fd, vlabel->label, label_len) < label_len) {
+        if (read(fd, label_buf, label_len) < label_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
-        unpad(vlabel->label, vlabel->label_len);
+        retval = convert(vlabel->label, sizeof(vlabel->label), label_buf, label_len, ctx);
+        if (retval != 0)
+            goto cleanup;
     }
 
     if (read(fd, &rec_type, sizeof(int32_t)) < sizeof(int32_t)) {
@@ -279,9 +405,10 @@ int sav_read_value_label_record(int fd, sav_ctx_t *ctx, readstat_handle_value_la
                 val_d = byteswap_double(val_d);
             value_label_cb(label_name_buf, &val_d, value_type, vlabel->label, user_ctx);
         } else {
-            char unpadded_val[9];
-            memcpy(unpadded_val, vlabel->value, 8);
-            unpad(unpadded_val, 8);
+            char unpadded_val[8*4+1];
+            retval = convert(unpadded_val, sizeof(unpadded_val), vlabel->value, 8, ctx);
+            if (retval != 0)
+                break;
             value_label_cb(label_name_buf, unpadded_val, value_type, vlabel->label, user_ctx);
         }
     }
@@ -349,7 +476,8 @@ double handle_missing_double(double fp_value, sav_varinfo_t *info) {
 
 readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_callback value_cb, void *user_ctx) {
     unsigned char value[8];
-    char *str_value = NULL;
+    char *raw_str_value = NULL;
+    char *utf8_str_value = NULL;
     unsigned char uncompressed_value[8];
     int offset = 0;
     int segment_offset = 0;
@@ -358,13 +486,19 @@ readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_ca
     int i;
     double fp_value;
     int longest_string = 256;
+    size_t utf8_str_value_len;
     for (i=0; i<ctx->var_count; i++) {
         sav_varinfo_t *info = &ctx->varinfo[i];
         if (info->string_length > longest_string) {
             longest_string = info->string_length;
         }
     }
-    if ((str_value = malloc(longest_string + 1)) == NULL) {
+    if ((raw_str_value = malloc(longest_string)) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto done;
+    }
+    utf8_str_value_len = longest_string*4+1;
+    if ((utf8_str_value = malloc(utf8_str_value_len)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto done;
     }
@@ -394,13 +528,16 @@ readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_ca
                             goto done;
                         }
                         if (var_info->type == READSTAT_TYPE_STRING) {
-                            memcpy(str_value + segment_offset * 255 + offset * 8, uncompressed_value, 8);
+                            memcpy(raw_str_value + segment_offset * 255 + offset * 8, uncompressed_value, 8);
                             offset++;
                             if (offset == col_info->width) {
                                 segment_offset++;
                                 if (segment_offset == var_info->n_segments) {
-                                    unpad(str_value, (segment_offset-1) * 255 + offset * 8);
-                                    if (value_cb(row, var_info->index, str_value, READSTAT_TYPE_STRING, user_ctx)) {
+                                    retval = convert(utf8_str_value, utf8_str_value_len, 
+                                            raw_str_value, (segment_offset-1) * 255 + offset * 8, ctx);
+                                    if (retval != 0)
+                                        goto done;
+                                    if (value_cb(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
                                         retval = READSTAT_ERROR_USER_ABORT;
                                         goto done;
                                     }
@@ -426,13 +563,16 @@ readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_ca
                         break;
                     case 254:
                         if (var_info->type == READSTAT_TYPE_STRING) {
-                            memcpy(str_value + segment_offset * 255 + offset * 8, SAV_EIGHT_SPACES, 8);
+                            memcpy(raw_str_value + segment_offset * 255 + offset * 8, SAV_EIGHT_SPACES, 8);
                             offset++;
                             if (offset == col_info->width) {
                                 segment_offset++;
                                 if (segment_offset == var_info->n_segments) {
-                                    unpad(str_value, (segment_offset-1) * 255 + offset * 8);
-                                    if (value_cb(row, var_info->index, str_value, READSTAT_TYPE_STRING, user_ctx)) {
+                                    retval = convert(utf8_str_value, utf8_str_value_len, 
+                                            raw_str_value, (segment_offset-1) * 255 + offset * 8, ctx);
+                                    if (retval != 0)
+                                        goto done;
+                                    if (value_cb(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
                                         retval = READSTAT_ERROR_USER_ABORT;
                                         goto done;
                                     }
@@ -479,13 +619,16 @@ readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_ca
                 goto done;
             }
             if (var_info->type == READSTAT_TYPE_STRING) {
-                memcpy(str_value + segment_offset * 255 + offset * 8, value, 8);
+                memcpy(raw_str_value + segment_offset * 255 + offset * 8, value, 8);
                 offset++;
                 if (offset == col_info->width) {
                     segment_offset++;
                     if (segment_offset == var_info->n_segments) {
-                        unpad(str_value, (segment_offset-1) * 255 + offset * 8);
-                        if (value_cb(row, var_info->index, str_value, READSTAT_TYPE_STRING, user_ctx)) {
+                        retval = convert(utf8_str_value, utf8_str_value_len, 
+                                raw_str_value, (segment_offset-1) * 255 + offset * 8, ctx);
+                        if (retval != 0)
+                            goto done;
+                        if (value_cb(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
                             retval = READSTAT_ERROR_USER_ABORT;
                             goto done;
                         }
@@ -520,13 +663,44 @@ readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_ca
     }
 done:
     
-    if (str_value)
-        free(str_value);
+    if (raw_str_value)
+        free(raw_str_value);
+    if (utf8_str_value)
+        free(utf8_str_value);
     
     return retval;
 }
 
-int sav_parse_machine_integer_info_record(void *data, sav_ctx_t *ctx) {
+int sav_parse_machine_integer_info_record(void *data, size_t data_len, sav_ctx_t *ctx) {
+    if (data_len != 32)
+        return READSTAT_ERROR_PARSE;
+
+    char *src_charset = NULL;
+    int32_t character_code = ((int32_t *)data)[7];
+    if (ctx->machine_needs_byte_swap) {
+        character_code = byteswap4(character_code);
+    }
+    if (character_code == SAV_CHARSET_7_BIT_ASCII || character_code == SAV_CHARSET_UTF8) {
+        /* do nothing */
+    } else {
+        int i;
+        for (i=0; i<sizeof(_charset_table)/sizeof(_charset_table[0]); i++) {
+            if (character_code  == _charset_table[i].code) {
+                src_charset = _charset_table[i].name;
+                break;
+            }
+        }
+        if (src_charset == NULL) {
+            dprintf(STDERR_FILENO, "Unsupported character set: %d\n", character_code);
+            return READSTAT_ERROR_UNSUPPORTED_CHARSET;
+        }
+    }
+    if (src_charset) {
+        ctx->converter = iconv_open("UTF-8", src_charset);
+        if (ctx->converter == (iconv_t)-1) {
+            return READSTAT_ERROR_UNSUPPORTED_CHARSET;
+        }
+    }
     return 0;
 }
 
@@ -631,7 +805,7 @@ int parse_sav(const char *filename, void *user_ctx,
                 
                 switch (subtype) {
                     case SAV_RECORD_SUBTYPE_INTEGER_INFO:
-                        retval = sav_parse_machine_integer_info_record(data_buf, ctx);
+                        retval = sav_parse_machine_integer_info_record(data_buf, data_len, ctx);
                         if (retval)
                             goto cleanup;
                         break;
