@@ -136,7 +136,8 @@ static void unpad(char *string, size_t len) {
 static readstat_errors_t convert(char *dst, size_t dst_len, char *src, size_t src_len, sav_ctx_t *ctx) {
     if (ctx->converter) {
         size_t dst_left = dst_len;
-        size_t status = iconv(ctx->converter, (char **)&src, &src_len, &dst, &dst_left);
+        char *dst_end = dst;
+        size_t status = iconv(ctx->converter, (char **)&src, &src_len, &dst_end, &dst_left);
         if (status == (size_t)-1) {
             return READSTAT_ERROR_PARSE;
         }
@@ -486,6 +487,7 @@ readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_ca
     int i;
     double fp_value;
     int longest_string = 256;
+    int raw_str_used = 0;
     size_t utf8_str_value_len;
     for (i=0; i<ctx->var_count; i++) {
         sav_varinfo_t *info = &ctx->varinfo[i];
@@ -528,19 +530,23 @@ readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_ca
                             goto done;
                         }
                         if (var_info->type == READSTAT_TYPE_STRING) {
-                            memcpy(raw_str_value + segment_offset * 255 + offset * 8, uncompressed_value, 8);
+                            if (raw_str_used + 8 <= longest_string) {
+                                memcpy(raw_str_value + raw_str_used, uncompressed_value, 8);
+                                raw_str_used += 8;
+                            }
                             offset++;
                             if (offset == col_info->width) {
                                 segment_offset++;
                                 if (segment_offset == var_info->n_segments) {
                                     retval = convert(utf8_str_value, utf8_str_value_len, 
-                                            raw_str_value, (segment_offset-1) * 255 + offset * 8, ctx);
+                                            raw_str_value, raw_str_used, ctx);
                                     if (retval != 0)
                                         goto done;
                                     if (value_cb(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
                                         retval = READSTAT_ERROR_USER_ABORT;
                                         goto done;
                                     }
+                                    raw_str_used = 0;
                                     segment_offset = 0;
                                     var_index += var_info->n_segments;
                                 }
@@ -563,19 +569,23 @@ readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_ca
                         break;
                     case 254:
                         if (var_info->type == READSTAT_TYPE_STRING) {
-                            memcpy(raw_str_value + segment_offset * 255 + offset * 8, SAV_EIGHT_SPACES, 8);
+                            if (raw_str_used + 8 <= longest_string) {
+                                memcpy(raw_str_value + raw_str_used, SAV_EIGHT_SPACES, 8);
+                                raw_str_used += 8;
+                            }
                             offset++;
                             if (offset == col_info->width) {
                                 segment_offset++;
                                 if (segment_offset == var_info->n_segments) {
                                     retval = convert(utf8_str_value, utf8_str_value_len, 
-                                            raw_str_value, (segment_offset-1) * 255 + offset * 8, ctx);
+                                            raw_str_value, raw_str_used, ctx);
                                     if (retval != 0)
                                         goto done;
                                     if (value_cb(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
                                         retval = READSTAT_ERROR_USER_ABORT;
                                         goto done;
                                     }
+                                    raw_str_used = 0;
                                     segment_offset = 0;
                                     var_index += var_info->n_segments;
                                 }
@@ -619,19 +629,23 @@ readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_ca
                 goto done;
             }
             if (var_info->type == READSTAT_TYPE_STRING) {
-                memcpy(raw_str_value + segment_offset * 255 + offset * 8, value, 8);
+                if (raw_str_used + 8 <= longest_string) {
+                    memcpy(raw_str_value + raw_str_used, value, 8);
+                    raw_str_used += 8;
+                }
                 offset++;
                 if (offset == col_info->width) {
                     segment_offset++;
                     if (segment_offset == var_info->n_segments) {
                         retval = convert(utf8_str_value, utf8_str_value_len, 
-                                raw_str_value, (segment_offset-1) * 255 + offset * 8, ctx);
+                                raw_str_value, raw_str_used, ctx);
                         if (retval != 0)
                             goto done;
                         if (value_cb(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
                             retval = READSTAT_ERROR_USER_ABORT;
                             goto done;
                         }
+                        raw_str_used = 0;
                         segment_offset = 0;
                         var_index += var_info->n_segments;
                     }

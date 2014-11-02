@@ -46,15 +46,15 @@ int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) 
     
     u_char *p = NULL;
     u_char *pe = NULL;
+    u_char *output_buffer = NULL;
     if (ctx->converter) {
         size_t input_len = count;
         size_t output_len = input_len * 4;
-        p = malloc(output_len);
-        pe = p;
+        pe = p = output_buffer = malloc(output_len);
         size_t status = iconv(ctx->converter, (char **)&data, &input_len,
                 (char **)&pe, &output_len);
         if (status == (size_t)-1) {
-            free(p);
+            free(output_buffer);
             return READSTAT_ERROR_PARSE;
         }
     } else {
@@ -111,6 +111,8 @@ int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) 
     
     if (table)
         free(table);
+    if (output_buffer)
+        free(output_buffer);
     return retval;
 }
 
@@ -138,15 +140,18 @@ int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
 
     u_char *p = NULL;
     u_char *pe = NULL;
+
+    u_char *output_buffer = NULL;
     if (ctx->converter) {
         size_t input_len = count;
         size_t output_len = input_len * 4;
-        p = malloc(output_len);
-        pe = p;
+
+        pe = p = output_buffer = malloc(output_len);
+
         size_t status = iconv(ctx->converter, (char **)&data, &input_len,
                 (char **)&pe, &output_len);
         if (status == (size_t)-1) {
-            free(p);
+            free(output_buffer);
             return READSTAT_ERROR_PARSE;
         }
     } else {
@@ -201,7 +206,7 @@ int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
     
     if (table)
         free(table);
-    if (ctx->converter)
-        free(p);
+    if (output_buffer)
+        free(output_buffer);
     return retval;
 }
