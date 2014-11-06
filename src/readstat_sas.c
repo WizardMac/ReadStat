@@ -818,8 +818,9 @@ static readstat_errors_t sas_parse_page(const char *page, size_t page_size, sas_
         if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_MIX) {
             /* HACK - this is supposed to obey 8-byte boundaries but
              * some files in the wild don't. So verify that the
-             * padding is { 0, 0, 0, 0 } before skipping it */
-            if ((shp-page)%8 == 4 && *(uint32_t *)shp == 0) {
+             * padding is { 0, 0, 0, 0 } or { ' ', ' ', ' ', ' ' }
+             * before skipping it */
+            if ((shp-page)%8 == 4 && (*(uint32_t *)shp == 0 || *(uint32_t *)shp == 0x20202020)) {
                 data = shp + 4;
             } else {
                 data = shp;
