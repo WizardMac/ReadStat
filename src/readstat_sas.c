@@ -820,7 +820,8 @@ static readstat_errors_t sas_parse_page(const char *page, size_t page_size, sas_
              * some files in the wild don't. So verify that the
              * padding is { 0, 0, 0, 0 } or { ' ', ' ', ' ', ' ' }
              * before skipping it */
-            if ((shp-page)%8 == 4 && (*(uint32_t *)shp == 0 || *(uint32_t *)shp == 0x20202020)) {
+            if ((shp-page)%8 == 4 && (*(uint32_t *)shp == 0x00000000 ||
+                                      *(uint32_t *)shp == 0x20202020)) {
                 data = shp + 4;
             } else {
                 data = shp;
