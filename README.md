@@ -4,7 +4,7 @@ ReadStat: Read data sets from R, SAS, Stata, and SPSS
 ReadStat is an MIT-licensed C library for reading files from popular stats
 packages. Supported formats include:
 
-* R: RData
+* R: RData and RDS
 * SAS: SAS7BDAT and SAS7BCAT
 * Stata: DTA
 * SPSS: POR and SAV
