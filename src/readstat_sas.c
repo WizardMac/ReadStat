@@ -68,6 +68,11 @@ static char sas7bcat_magic_number[32] = {
 #define SAS_SUBHEADER_SIGNATURE_COLUMN_LIST    0xFFFFFFFE
 #define SAS_SUBHEADER_SIGNATURE_COLUMN_NAME    0xFFFFFFFF
 
+enum {
+    READSTAT_VENDOR_STAT_TRANSFER,
+    READSTAT_VENDOR_SAS
+};
+
 typedef struct text_ref_s {
     int    index;
     int    offset;
@@ -88,6 +93,7 @@ typedef struct col_info_s {
 typedef struct sas_header_info_s {
     int      little_endian;
     int      u64;
+    int      vendor;
     int      page_size;
     int      page_count;
 } sas_header_info_t;
@@ -105,6 +111,7 @@ typedef struct sas_ctx_s {
     readstat_handle_value_callback    value_cb;
     int           little_endian;
     int           u64;
+    int           vendor;
     void         *user_ctx;
     int           bswap;
     int           did_submit_columns;
@@ -259,13 +266,19 @@ static readstat_errors_t sas_read_header(int fd, sas_header_info_t *ctx) {
         ctx->page_count = bswap ? byteswap4(page_count) : page_count;
     }
     
-    if (lseek(fd, 8 + a1, SEEK_CUR) == -1) {
+    if (lseek(fd, 8, SEEK_CUR) == -1) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
     if (read(fd, &header_end, sizeof(sas_header_end_t)) < sizeof(sas_header_end_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
+    }
+    if (strncmp(header_end.release, "9.0000M0", sizeof(header_end.release)) == 0) {
+        /* A bit of a hack, but most SAS installations are running a minor update */
+        ctx->vendor = READSTAT_VENDOR_STAT_TRANSFER;
+    } else {
+        ctx->vendor = READSTAT_VENDOR_SAS;
     }
     if (lseek(fd, header_size, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_READ;
@@ -817,11 +830,13 @@ static readstat_errors_t sas_parse_page(const char *page, size_t page_size, sas_
 
         if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_MIX) {
             /* HACK - this is supposed to obey 8-byte boundaries but
-             * some files in the wild don't. So verify that the
-             * padding is { 0, 0, 0, 0 } or { ' ', ' ', ' ', ' ' }
-             * before skipping it */
-            if ((shp-page)%8 == 4 && (*(uint32_t *)shp == 0x00000000 ||
-                                      *(uint32_t *)shp == 0x20202020)) {
+             * some files created by Stat/Transfer don't. So verify that the
+             * padding is { 0, 0, 0, 0 } or { ' ', ' ', ' ', ' ' } (or that
+             * the file is not from Stat/Transfer) before skipping it */
+            if ((shp-page)%8 == 4 && 
+                    (*(uint32_t *)shp == 0x00000000 ||
+                     *(uint32_t *)shp == 0x20202020 ||
+                     ctx->vendor != READSTAT_VENDOR_STAT_TRANSFER)) {
                 data = shp + 4;
             } else {
                 data = shp;
@@ -871,6 +886,7 @@ int parse_sas7bdat(const char *filename, void *user_ctx,
 
     ctx->u64 = hinfo->u64;
     ctx->little_endian = hinfo->little_endian;
+    ctx->vendor = hinfo->vendor;
     ctx->bswap = machine_is_little_endian() ^ hinfo->little_endian;
 
     int i;
