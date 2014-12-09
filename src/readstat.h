@@ -26,6 +26,7 @@ typedef enum readstat_types_e {
 } readstat_types_t;
 
 typedef enum readstat_errors_e {
+    READSTAT_OK,
     READSTAT_ERROR_OPEN = 1,
     READSTAT_ERROR_READ,
     READSTAT_ERROR_MALLOC,

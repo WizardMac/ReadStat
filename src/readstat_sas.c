@@ -775,7 +775,10 @@ static readstat_errors_t sas_parse_page(const char *page, size_t page_size, sas_
     if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA) {
         ctx->page_row_count = read2(&page[off+18], ctx->bswap);
         data = &page[off+24];
-    } else { 
+    } else if (page_type == SAS_PAGE_TYPE_COMP) { 
+        retval = READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
+        goto cleanup;
+    } else {
         uint16_t subheader_count = read2(&page[off+20], ctx->bswap);
 
         int i;
