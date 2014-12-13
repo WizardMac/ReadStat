@@ -768,9 +768,7 @@ static readstat_errors_t sas_parse_page_pass1(const char *page, size_t page_size
 
     page_type = read2(&page[off+16], ctx->bswap);
 
-    if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA) {
-        goto cleanup;
-    } else if (page_type == SAS_PAGE_TYPE_COMP) {
+    if (page_type == SAS_PAGE_TYPE_COMP) {
         retval = READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
         goto cleanup;
     } else {
@@ -975,7 +973,27 @@ int parse_sas7bdat(const char *filename, void *user_ctx,
     char *page = malloc(hinfo->page_size);
     off_t start_pos = lseek(fd, 0, SEEK_CUR);
     for (i=0; i<hinfo->page_count; i++) {
-        if (read(fd, page, hinfo->page_size) < hinfo->page_size) {
+        lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET);
+
+        off_t off = 0;
+        if (ctx->u64)
+            off = 16;
+
+        size_t head_len = off + 16 + 2;
+        size_t tail_len = hinfo->page_size - head_len;
+
+        if (read(fd, page, head_len) < head_len) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        uint16_t page_type = read2(&page[off+16], ctx->bswap);
+
+        if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA) {
+            continue;
+        }
+
+        if (read(fd, page + head_len, tail_len) < tail_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
