@@ -9,7 +9,7 @@
 #ifndef Wizard_sav_parse_h
 #define Wizard_sav_parse_h
 
-int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx);
-int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx);
+readstat_errors_t sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx);
+readstat_errors_t sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx);
 
 #endif

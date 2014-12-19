@@ -36,10 +36,10 @@ static const int sav_long_variable_parse_en_main = 1;
 #line 29 "src/readstat_sav_parse.rl"
 
 
-int sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) {
+readstat_errors_t sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) {
     varlookup_t *table = malloc(ctx->var_index * sizeof(varlookup_t));
     int i;
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     int var_count = ctx->var_index;
     for (i=0; i<var_count; i++) {
         memcpy(table[i].name, ctx->varinfo[i].name, 9);
@@ -3463,10 +3463,10 @@ static const int sav_very_long_string_parse_en_main = 1;
 #line 123 "src/readstat_sav_parse.rl"
 
 
-int sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
+readstat_errors_t sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
     varlookup_t *table = malloc(ctx->var_index * sizeof(varlookup_t));
     int i;
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     int var_count = ctx->var_index;
     for (i=0; i<var_count; i++) {
         memcpy(table[i].name, ctx->varinfo[i].name, 9);

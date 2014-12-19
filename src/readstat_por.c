@@ -574,7 +574,7 @@ int parse_por(const char *filename, void *user_ctx,
     readstat_por_ctx_t *ctx = calloc(1, sizeof(readstat_por_ctx_t));
     ctx->space = ' ';
     ctx->var_dict = ck_hash_table_init(1024);
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     
     if ((ctx->fd = readstat_open(filename)) == -1) {
         free(ctx);

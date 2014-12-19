@@ -47,18 +47,18 @@ typedef struct rdata_ctx_s {
 static int atom_table_add(rdata_atom_table_t *table, char *key);
 static char *atom_table_lookup(rdata_atom_table_t *table, int index);
 
-static int read_environment(const char *table_name, rdata_ctx_t *ctx);
-static int read_toplevel_object(const char *table_name, const char *key, rdata_ctx_t *ctx);
-static int read_sexptype_header(rdata_sexptype_info_t *header, rdata_ctx_t *ctx);
-static int read_length(int32_t *outLength, rdata_ctx_t *ctx);
-static int read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, 
+static readstat_errors_t read_environment(const char *table_name, rdata_ctx_t *ctx);
+static readstat_errors_t read_toplevel_object(const char *table_name, const char *key, rdata_ctx_t *ctx);
+static readstat_errors_t read_sexptype_header(rdata_sexptype_info_t *header, rdata_ctx_t *ctx);
+static readstat_errors_t read_length(int32_t *outLength, rdata_ctx_t *ctx);
+static readstat_errors_t read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, 
         void *callback_ctx, rdata_ctx_t *ctx);
-static int read_value_vector(rdata_sexptype_header_t header, const char *name, rdata_ctx_t *ctx);
-static int read_character_string(char *key, size_t keylen, rdata_ctx_t *ctx);
-static int read_generic_list(int attributes, rdata_ctx_t *ctx);
-static int read_attributes(int (*handle_attribute)(char *key, rdata_sexptype_info_t val_info, rdata_ctx_t *ctx),
+static readstat_errors_t read_value_vector(rdata_sexptype_header_t header, const char *name, rdata_ctx_t *ctx);
+static readstat_errors_t read_character_string(char *key, size_t keylen, rdata_ctx_t *ctx);
+static readstat_errors_t read_generic_list(int attributes, rdata_ctx_t *ctx);
+static readstat_errors_t read_attributes(int (*handle_attribute)(char *key, rdata_sexptype_info_t val_info, rdata_ctx_t *ctx),
                            rdata_ctx_t *ctx);
-static int recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_t *ctx);
+static readstat_errors_t recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_t *ctx);
 
 static int atom_table_add(rdata_atom_table_t *table, char *key) {
     table->data = realloc(table->data, RDATA_ATOM_LEN * (table->count + 1));
@@ -132,7 +132,7 @@ static int lseek_st(rdata_ctx_t *ctx, size_t len) {
 }
 
 static readstat_errors_t init_stream(rdata_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     char header[5];
     
     if (read(ctx->fd, &header, sizeof(header)) != sizeof(header)) {
@@ -198,13 +198,13 @@ void free_rdata_ctx(rdata_ctx_t *ctx) {
     free(ctx);
 }
 
-int parse_internal(const char *filename, int is_rdata, void *user_ctx,
+readstat_errors_t parse_internal(const char *filename, int is_rdata, void *user_ctx,
                 readstat_handle_table_callback handle_table,
                 readstat_handle_column_callback handle_column,
                 readstat_handle_column_name_callback handle_column_name,
                 readstat_handle_text_value_callback handle_text_value,
                 readstat_handle_text_value_callback handle_value_label) {
-    int retval = 1;
+    readstat_errors_t retval = READSTAT_OK;
     rdata_v2_header_t v2_header;
     rdata_ctx_t *ctx = init_rdata_ctx(filename);
 
@@ -220,7 +220,7 @@ int parse_internal(const char *filename, int is_rdata, void *user_ctx,
     ctx->handle_text_value = handle_text_value;
     ctx->handle_value_label = handle_value_label;
     
-    if ((retval = init_stream(ctx)) != 0) {
+    if ((retval = init_stream(ctx)) != READSTAT_OK) {
         goto cleanup;
     }
 
@@ -252,7 +252,7 @@ int parse_internal(const char *filename, int is_rdata, void *user_ctx,
     } else {
         retval = read_toplevel_object(NULL, NULL, ctx);
     }
-    if (retval != 0)
+    if (retval != READSTAT_OK)
         goto cleanup;
     
     char test;
@@ -289,10 +289,11 @@ int parse_rdata(const char *filename, void *user_ctx,
             handle_text_value, handle_value_label);
 }
 
-static int read_toplevel_object(const char *table_name, const char *key, rdata_ctx_t *ctx) {
+static readstat_errors_t read_toplevel_object(const char *table_name, const char *key, rdata_ctx_t *ctx) {
     rdata_sexptype_info_t sexptype_info;
-    int retval = read_sexptype_header(&sexptype_info, ctx);
-    if (retval != 0)
+    readstat_errors_t retval = READSTAT_OK;
+    
+    if ((retval = read_sexptype_header(&sexptype_info, ctx)) != READSTAT_OK)
         goto cleanup;
 
     if (sexptype_info.header.type == RDATA_SEXPTYPE_REAL_VECTOR ||
@@ -304,8 +305,8 @@ static int read_toplevel_object(const char *table_name, const char *key, rdata_c
                 goto cleanup;
             }   
         }
-        retval = read_value_vector(sexptype_info.header, key, ctx);
-        if (retval != 0)
+        
+        if ((retval = read_value_vector(sexptype_info.header, key, ctx)) != READSTAT_OK)
             goto cleanup;
     } else if (sexptype_info.header.type == RDATA_SEXPTYPE_CHARACTER_VECTOR) {
         if (table_name == NULL && ctx->handle_table) {
@@ -315,8 +316,8 @@ static int read_toplevel_object(const char *table_name, const char *key, rdata_c
             }   
         }
         int32_t length;
-        retval = read_length(&length, ctx);
-        if (retval != 0)
+        
+        if ((retval = read_length(&length, ctx)) != READSTAT_OK)
             goto cleanup;
 
         if (ctx->handle_column) {
@@ -325,8 +326,8 @@ static int read_toplevel_object(const char *table_name, const char *key, rdata_c
                 goto cleanup;
             }
         }
-        retval = read_string_vector(length, ctx->handle_text_value, ctx->user_ctx, ctx);
-        if (retval != 0)
+        
+        if ((retval = read_string_vector(length, ctx->handle_text_value, ctx->user_ctx, ctx)) != READSTAT_OK)
             goto cleanup;
     } else if (sexptype_info.header.type == RDATA_SEXPTYPE_GENERIC_VECTOR &&
             sexptype_info.header.object && sexptype_info.header.attributes) {
@@ -341,11 +342,10 @@ static int read_toplevel_object(const char *table_name, const char *key, rdata_c
             }
             retval = read_generic_list(sexptype_info.header.attributes, ctx);
         }
-        if (retval != 0)
+        if (retval != READSTAT_OK)
             goto cleanup;
     } else {
-        retval = recursive_discard(sexptype_info.header, ctx);
-        if (retval != 0)
+        if ((retval = recursive_discard(sexptype_info.header, ctx)) != READSTAT_OK)
             goto cleanup;
     }
 
@@ -354,30 +354,27 @@ cleanup:
     return retval;
 }
 
-static int read_environment(const char *table_name, rdata_ctx_t *ctx) {
-    int retval = 0;
+static readstat_errors_t read_environment(const char *table_name, rdata_ctx_t *ctx) {
+    readstat_errors_t retval = READSTAT_OK;
     
     while (1) {
         rdata_sexptype_info_t sexptype_info;
         
-        retval = read_sexptype_header(&sexptype_info, ctx);
-        if (retval != 0)
+        if ((retval = read_sexptype_header(&sexptype_info, ctx)) != READSTAT_OK)
             goto cleanup;
         
         if (sexptype_info.header.type == RDATA_PSEUDO_SXP_NIL)
             break;
         
         if (sexptype_info.header.type != RDATA_SEXPTYPE_PAIRLIST) {
-            retval = recursive_discard(sexptype_info.header, ctx);
-            if (retval != 0)
+            if ((retval = recursive_discard(sexptype_info.header, ctx)) != READSTAT_OK)
                 goto cleanup;
             continue;
         }
         
         char *key = atom_table_lookup(ctx->atom_table, sexptype_info.ref);
         
-        retval = read_toplevel_object(table_name, key, ctx);
-        if (retval != 0)
+        if ((retval = read_toplevel_object(table_name, key, ctx)) != READSTAT_OK)
             goto cleanup;
     }
     
@@ -386,10 +383,10 @@ cleanup:
     return retval;
 }
 
-static int read_sexptype_header(rdata_sexptype_info_t *header_info, rdata_ctx_t *ctx) {
+static readstat_errors_t read_sexptype_header(rdata_sexptype_info_t *header_info, rdata_ctx_t *ctx) {
     uint32_t sexptype;
     rdata_sexptype_header_t header;
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     if (read_st(ctx, &sexptype, sizeof(sexptype)) != sizeof(sexptype)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
@@ -420,8 +417,8 @@ static int read_sexptype_header(rdata_sexptype_info_t *header_info, rdata_ctx_t 
         
         if (tag == 1) {
             rdata_sexptype_info_t key_info;
-            retval = read_sexptype_header(&key_info, ctx);
-            if (retval != 0)
+            
+            if ((retval = read_sexptype_header(&key_info, ctx)) != READSTAT_OK)
                 goto cleanup;
             
             if (key_info.header.type != RDATA_SEXPTYPE_CHARACTER_STRING) {
@@ -430,8 +427,8 @@ static int read_sexptype_header(rdata_sexptype_info_t *header_info, rdata_ctx_t 
             }
                         
             char key[RDATA_ATOM_LEN];
-            retval = read_character_string(key, RDATA_ATOM_LEN, ctx);
-            if (retval != 0)
+            
+            if ((retval = read_character_string(key, RDATA_ATOM_LEN, ctx)) != READSTAT_OK)
                 goto cleanup;
 
             ref = atom_table_add(ctx->atom_table, key);
@@ -453,22 +450,22 @@ cleanup:
 static int handle_class_name(const char *buf, int i, void *ctx) {
     int *class_is_posixct = (int *)ctx;
     *class_is_posixct |= (strcmp(buf, "POSIXct") == 0);
-    return 0;
+    return READSTAT_OK;
 }
 
 static int handle_vector_attribute(char *key, rdata_sexptype_info_t val_info, rdata_ctx_t *ctx) {
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     if (strcmp(key, "levels") == 0) {
         int32_t length;
-        retval = read_length(&length, ctx);
-        if (retval != 0)
+        
+        if ((retval = read_length(&length, ctx)) != READSTAT_OK)
             return retval;
         
         retval = read_string_vector(length, ctx->handle_value_label, ctx->user_ctx, ctx);
     } else if (strcmp(key, "class") == 0) {
         int32_t length;
-        retval = read_length(&length, ctx);
-        if (retval != 0)
+        
+        if ((retval = read_length(&length, ctx)) != READSTAT_OK)
             return retval;
 
         ctx->class_is_posixct = 0;
@@ -479,9 +476,9 @@ static int handle_vector_attribute(char *key, rdata_sexptype_info_t val_info, rd
     return retval;
 }
 
-static int read_character_string(char *key, size_t keylen, rdata_ctx_t *ctx) {
+static readstat_errors_t read_character_string(char *key, size_t keylen, rdata_ctx_t *ctx) {
     uint32_t length;
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     
     if (read_st(ctx, &length, sizeof(length)) != sizeof(length)) {
         retval = READSTAT_ERROR_READ;
@@ -514,12 +511,12 @@ cleanup:
 }
 
 static int handle_data_frame_attribute(char *key, rdata_sexptype_info_t val_info, rdata_ctx_t *ctx) {
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     
     if (strcmp(key, "names") == 0 && val_info.header.type == RDATA_SEXPTYPE_CHARACTER_VECTOR) {
         int32_t length;
-        retval = read_length(&length, ctx);
-        if (retval != 0)
+        
+        if ((retval = read_length(&length, ctx)) != READSTAT_OK)
             return retval;
         
         retval = read_string_vector(length, ctx->handle_column_name, ctx->user_ctx, ctx);
@@ -532,35 +529,31 @@ static int handle_data_frame_attribute(char *key, rdata_sexptype_info_t val_info
     return retval;
 }
 
-static int read_attributes(int (*handle_attribute)(char *key, rdata_sexptype_info_t val_info, rdata_ctx_t *ctx),
+static readstat_errors_t read_attributes(int (*handle_attribute)(char *key, rdata_sexptype_info_t val_info, rdata_ctx_t *ctx),
                            rdata_ctx_t *ctx) {
     rdata_sexptype_info_t pairlist_info, val_info;
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     
     retval = read_sexptype_header(&pairlist_info, ctx);
-    if (retval != 0)
+    if (retval != READSTAT_OK)
         goto cleanup;
     
     while (pairlist_info.header.type == RDATA_SEXPTYPE_PAIRLIST) {
         /* value */
-        retval = read_sexptype_header(&val_info, ctx);
-        if (retval != 0)
+        if ((retval = read_sexptype_header(&val_info, ctx)) != READSTAT_OK)
             goto cleanup;
         
         if (handle_attribute) {
             char *key = atom_table_lookup(ctx->atom_table, pairlist_info.ref);
-            retval = handle_attribute(key, val_info, ctx);
-            if (retval != 0)
+            if ((retval = handle_attribute(key, val_info, ctx)) != READSTAT_OK)
                 goto cleanup;
         } else {
-            retval = recursive_discard(val_info.header, ctx);
-            if (retval != 0)
+            if ((retval = recursive_discard(val_info.header, ctx)) != READSTAT_OK)
                 goto cleanup;
         }
         
         /* next */
-        retval = read_sexptype_header(&pairlist_info, ctx);
-        if (retval != 0)
+        if ((retval = read_sexptype_header(&pairlist_info, ctx)) != READSTAT_OK)
             goto cleanup;
     }
 
@@ -569,25 +562,24 @@ cleanup:
     return retval;
 }
 
-static int read_generic_list(int attributes, rdata_ctx_t *ctx) {
-    int retval = 0;
+static readstat_errors_t read_generic_list(int attributes, rdata_ctx_t *ctx) {
+    readstat_errors_t retval = READSTAT_OK;
     int32_t length;
     int i;
     rdata_sexptype_info_t sexptype_info;
     
-    retval = read_length(&length, ctx);
-    if (retval != 0)
+    
+    if ((retval = read_length(&length, ctx)) != READSTAT_OK)
         goto cleanup;
     
     for (i=0; i<length; i++) {        
-        retval = read_sexptype_header(&sexptype_info, ctx);
-        if (retval != 0)
+        if ((retval = read_sexptype_header(&sexptype_info, ctx)) != READSTAT_OK)
             goto cleanup;
         
         if (sexptype_info.header.type == RDATA_SEXPTYPE_CHARACTER_VECTOR) {
             int32_t vec_length;
-            retval = read_length(&vec_length, ctx);
-            if (retval != 0)
+            
+            if ((retval = read_length(&vec_length, ctx)) != READSTAT_OK)
                 goto cleanup;
             if (ctx->handle_column) {
                 if (ctx->handle_column(NULL, READSTAT_TYPE_STRING, NULL, NULL, vec_length, ctx->user_ctx)) {
@@ -599,13 +591,12 @@ static int read_generic_list(int attributes, rdata_ctx_t *ctx) {
         } else {
             retval = read_value_vector(sexptype_info.header, NULL, ctx);
         }
-        if (retval != 0)
+        if (retval != READSTAT_OK)
             goto cleanup;
     }
     
     if (attributes) {
-        retval = read_attributes(&handle_data_frame_attribute, ctx);
-        if (retval != 0)
+        if ((retval = read_attributes(&handle_data_frame_attribute, ctx)) != READSTAT_OK)
             goto cleanup;
     }
     
@@ -614,9 +605,9 @@ cleanup:
     return retval;
 }
 
-static int read_length(int32_t *outLength, rdata_ctx_t *ctx) {
+static readstat_errors_t read_length(int32_t *outLength, rdata_ctx_t *ctx) {
     int32_t length;
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     
     if (read_st(ctx, &length, sizeof(length)) != sizeof(length)) {
         retval = READSTAT_ERROR_READ;
@@ -634,10 +625,10 @@ cleanup:
     return retval;
 }
 
-static int read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, 
+static readstat_errors_t read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, 
         void *callback_ctx, rdata_ctx_t *ctx) {
     int32_t string_length;
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     rdata_sexptype_info_t info;
     size_t buffer_size = 4096;
     char *buffer = NULL;
@@ -646,8 +637,7 @@ static int read_string_vector(int32_t length, readstat_handle_text_value_callbac
     buffer = malloc(buffer_size);
     
     for (i=0; i<length; i++) {
-        retval = read_sexptype_header(&info, ctx);
-        if (retval != 0)
+        if ((retval = read_sexptype_header(&info, ctx)) != READSTAT_OK)
             goto cleanup;
         
         if (info.header.type != RDATA_SEXPTYPE_CHARACTER_STRING) {
@@ -655,8 +645,7 @@ static int read_string_vector(int32_t length, readstat_handle_text_value_callbac
             goto cleanup;
         }
 
-        retval = read_length(&string_length, ctx);
-        if (retval != 0)
+        if ((retval = read_length(&string_length, ctx)) != READSTAT_OK)
             goto cleanup;
         
         if (string_length + 1 > buffer_size) {
@@ -690,8 +679,8 @@ cleanup:
 }
 
 
-static int read_value_vector(rdata_sexptype_header_t header, const char *name, rdata_ctx_t *ctx) {
-    int retval = 0;
+static readstat_errors_t read_value_vector(rdata_sexptype_header_t header, const char *name, rdata_ctx_t *ctx) {
+    readstat_errors_t retval = READSTAT_OK;
     int32_t length;
     size_t input_elem_size = 0;
     void *vals = NULL;
@@ -716,11 +705,10 @@ static int read_value_vector(rdata_sexptype_header_t header, const char *name, r
             retval = READSTAT_ERROR_PARSE;
             break;
     }
-    if (retval != 0)
+    if (retval != READSTAT_OK)
         goto cleanup;
 
-    retval = read_length(&length, ctx);
-    if (retval != 0)
+    if ((retval = read_length(&length, ctx)) != READSTAT_OK)
         goto cleanup;
 
     buf_len = length * input_elem_size;
@@ -752,8 +740,7 @@ static int read_value_vector(rdata_sexptype_header_t header, const char *name, r
     
     ctx->class_is_posixct = 0;
     if (header.attributes) {
-        retval = read_attributes(&handle_vector_attribute, ctx);
-        if (retval != 0)
+        if ((retval = read_attributes(&handle_vector_attribute, ctx)) != READSTAT_OK)
             goto cleanup;
     }
     
@@ -787,12 +774,11 @@ cleanup:
     return retval;
 }
 
-static int discard_vector(rdata_sexptype_header_t sexptype_header, size_t element_size, rdata_ctx_t *ctx) {
+static readstat_errors_t discard_vector(rdata_sexptype_header_t sexptype_header, size_t element_size, rdata_ctx_t *ctx) {
     int32_t length;
-    int retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     
-    retval = read_length(&length, ctx);
-    if (retval != 0)
+    if ((retval = read_length(&length, ctx)) != READSTAT_OK)
         goto cleanup;
     
     if (length > 0) {
@@ -805,8 +791,7 @@ static int discard_vector(rdata_sexptype_header_t sexptype_header, size_t elemen
     
     if (sexptype_header.attributes) {
         rdata_sexptype_info_t temp_info;
-        retval = read_sexptype_header(&temp_info, ctx);
-        if (retval != 0)
+        if ((retval = read_sexptype_header(&temp_info, ctx)) != READSTAT_OK)
             goto cleanup;
         
         retval = recursive_discard(temp_info.header, ctx);
@@ -817,12 +802,11 @@ cleanup:
     return retval;
 }
 
-static int discard_character_string(int add_to_table, rdata_ctx_t *ctx) {
-    int retval = 0;
+static readstat_errors_t discard_character_string(int add_to_table, rdata_ctx_t *ctx) {
+    readstat_errors_t retval = READSTAT_OK;
     char key[RDATA_ATOM_LEN];
     
-    retval = read_character_string(key, RDATA_ATOM_LEN, ctx);
-    if (retval != 0)
+    if ((retval = read_character_string(key, RDATA_ATOM_LEN, ctx)) != READSTAT_OK)
         goto cleanup;
     
     if (strlen(key) > 0 && add_to_table) {
@@ -834,23 +818,20 @@ cleanup:
     return retval;
 }
 
-static int discard_pairlist(rdata_sexptype_header_t sexptype_header, rdata_ctx_t *ctx) {
+static readstat_errors_t discard_pairlist(rdata_sexptype_header_t sexptype_header, rdata_ctx_t *ctx) {
     rdata_sexptype_info_t temp_info;
-    int error = 0;
+    readstat_errors_t error = 0;
     while (1) {
         switch (sexptype_header.type) {
             case RDATA_SEXPTYPE_PAIRLIST:                
                 /* value */
-                error = read_sexptype_header(&temp_info, ctx);
-                if (error != 0)
+                if ((error = read_sexptype_header(&temp_info, ctx)) != READSTAT_OK)
                     return error;
-                error = recursive_discard(temp_info.header, ctx);
-                if (error != 0)
+                if ((error = recursive_discard(temp_info.header, ctx)) != READSTAT_OK)
                     return error;
                 
                 /* tail */
-                error = read_sexptype_header(&temp_info, ctx);
-                if (error != 0)
+                if ((error = read_sexptype_header(&temp_info, ctx)) != READSTAT_OK)
                     return error;
                 sexptype_header = temp_info.header;
                 break;
@@ -865,33 +846,29 @@ done:
     return 0;
 }
 
-static int recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_t *ctx) {
+static readstat_errors_t recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_t *ctx) {
     uint32_t length;
     rdata_sexptype_info_t info;
     rdata_sexptype_info_t prot, tag;
     
-    int error = 0;
+    readstat_errors_t error = 0;
     int i;
 
     switch (sexptype_header.type) {
         case RDATA_SEXPTYPE_SYMBOL:
-            error = read_sexptype_header(&info, ctx);
-            if (error != 0)
+            if ((error = read_sexptype_header(&info, ctx)) != READSTAT_OK)
                 goto cleanup;
             
-            error = recursive_discard(info.header, ctx);
-            if (error != 0)
+            if ((error = recursive_discard(info.header, ctx)) != READSTAT_OK)
                 goto cleanup;
             break;
         case RDATA_PSEUDO_SXP_PERSIST:
         case RDATA_PSEUDO_SXP_NAMESPACE:
         case RDATA_PSEUDO_SXP_PACKAGE:
-            error = read_sexptype_header(&info, ctx);
-            if (error != 0)
+            if ((error = read_sexptype_header(&info, ctx)) != READSTAT_OK)
                 goto cleanup;
             
-            error = recursive_discard(info.header, ctx);
-            if (error != 0)
+            if ((error = recursive_discard(info.header, ctx)) != READSTAT_OK)
                 goto cleanup;
             break;
         case RDATA_SEXPTYPE_BUILTIN_FUNCTION:
@@ -928,7 +905,7 @@ static int recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_
             
             for (i=0; i<length; i++) {
                 error = read_sexptype_header(&info, ctx);
-                if (error != 0)
+                if (error != READSTAT_OK)
                     goto cleanup;
                 if (info.header.type != RDATA_SEXPTYPE_CHARACTER_STRING) {
                     error = READSTAT_ERROR_PARSE;
@@ -936,7 +913,7 @@ static int recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_
                 }
                 
                 error = discard_character_string(0, ctx);
-                if (error != 0)
+                if (error != READSTAT_OK)
                     goto cleanup;
             }
             break;
@@ -949,16 +926,13 @@ static int recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_
                 length = byteswap4(length);
             
             for (i=0; i<length; i++) {
-                error = read_sexptype_header(&info, ctx);
-                if (error != 0)
+                if ((error = read_sexptype_header(&info, ctx)) != READSTAT_OK)
                     goto cleanup;
-                error = recursive_discard(info.header, ctx);
-                if (error != 0)
+                if ((error = recursive_discard(info.header, ctx)) != READSTAT_OK)
                     goto cleanup;
             }
             if (sexptype_header.attributes) {
-                error = read_attributes(NULL, ctx);
-                if (error != 0)
+                if ((error = read_attributes(NULL, ctx)) != READSTAT_OK)
                     goto cleanup;
             }
             break;
@@ -967,39 +941,31 @@ static int recursive_discard(rdata_sexptype_header_t sexptype_header, rdata_ctx_
         case RDATA_SEXPTYPE_LANGUAGE_OBJECT: 
         case RDATA_SEXPTYPE_CLOSURE:
             if (sexptype_header.attributes) {
-                error = read_sexptype_header(&info, ctx);
-                if (error != 0)
+                if ((error = read_sexptype_header(&info, ctx)) != READSTAT_OK)
                     goto cleanup;
                 
-                error = recursive_discard(info.header, ctx);
-                if (error != 0)
+                if ((error = recursive_discard(info.header, ctx)) != READSTAT_OK)
                     goto cleanup;
             }
             if (sexptype_header.tag) {
-                error = read_sexptype_header(&info, ctx);
-                if (error != 0)
+                if ((error = read_sexptype_header(&info, ctx)) != READSTAT_OK)
                     goto cleanup;
                 
-                error = recursive_discard(info.header, ctx);
-                if (error != 0)
+                if ((error = recursive_discard(info.header, ctx)) != READSTAT_OK)
                     goto cleanup;
             }
             /* CAR */
-            error = read_sexptype_header(&info, ctx);
-            if (error != 0)
+            if ((error = read_sexptype_header(&info, ctx)) != READSTAT_OK)
                 goto cleanup;
             
-            error = recursive_discard(info.header, ctx);
-            if (error != 0)
+            if ((error = recursive_discard(info.header, ctx)) != READSTAT_OK)
                 goto cleanup;
             
             /* CDR */
-            error = read_sexptype_header(&info, ctx);
-            if (error != 0)
+            if ((error = read_sexptype_header(&info, ctx)) != READSTAT_OK)
                 goto cleanup;
             
-            error = recursive_discard(info.header, ctx);
-            if (error != 0)
+            if ((error = recursive_discard(info.header, ctx)) != READSTAT_OK)
                 goto cleanup;
             break;
         case RDATA_SEXPTYPE_EXTERNAL_POINTER:

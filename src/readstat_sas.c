@@ -196,7 +196,7 @@ static void sas_ctx_free(sas_ctx_t *ctx) {
 static readstat_errors_t sas_read_header(int fd, sas_header_info_t *ctx) {
     sas_header_start_t  header_start;
     sas_header_end_t    header_end;
-    int retval = 0;
+    int retval = READSTAT_OK;
     size_t a1 = 0, a2 = 0;
     if (read(fd, &header_start, sizeof(sas_header_start_t)) < sizeof(sas_header_start_t)) {
         retval = READSTAT_ERROR_READ;
@@ -290,7 +290,7 @@ cleanup:
 }
 
 static readstat_errors_t sas_parse_column_text_subheader(const char *subheader, size_t len, sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     size_t signature_len = ctx->u64 ? 8 : 4;
     uint16_t remainder = read2(&subheader[signature_len], ctx->bswap);
     if (remainder != len - (4+2*signature_len)) {
@@ -311,7 +311,7 @@ cleanup:
 }
 
 static readstat_errors_t sas_parse_column_size_subheader(const char *subheader, size_t len, sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
 
     uint64_t col_count;
 
@@ -327,7 +327,7 @@ static readstat_errors_t sas_parse_column_size_subheader(const char *subheader, 
 }
 
 static readstat_errors_t sas_parse_row_size_subheader(const char *subheader, size_t len, sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     uint64_t total_row_count;
     uint64_t row_length, page_row_count;
 
@@ -386,7 +386,7 @@ static readstat_errors_t copy_text_ref(char *out_buffer, text_ref_t text_ref, si
 }
 
 static readstat_errors_t sas_parse_column_name_subheader(const char *subheader, size_t len, sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     size_t signature_len = ctx->u64 ? 8 : 4;
     int cmax = ctx->u64 ? (len-28)/8 : (len-20)/8;
     int i;
@@ -414,7 +414,7 @@ cleanup:
 }
 
 static readstat_errors_t sas_parse_column_attributes_subheader(const char *subheader, size_t len, sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     size_t signature_len = ctx->u64 ? 8 : 4;
     int cmax = ctx->u64 ? (len-28)/16 : (len-20)/12;
     int i;
@@ -463,7 +463,7 @@ cleanup:
 }
 
 static readstat_errors_t sas_parse_column_format_subheader(const char *subheader, size_t len, sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
 
     ctx->col_formats_count++;
     if (ctx->col_info_count < ctx->col_formats_count) {
@@ -507,7 +507,7 @@ static int handle_data_value(const unsigned char *col_data, col_info_t *col_info
 }
 
 static readstat_errors_t sas_parse_single_row(const char *data, sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     int j;
     ctx->scratch_buffer = realloc(ctx->scratch_buffer, ctx->max_col_width + 1);
     for (j=0; j<ctx->column_count; j++) {
@@ -526,7 +526,7 @@ cleanup:
 }
 
 static readstat_errors_t sas_parse_rows(const char *data, sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     int i;
     size_t row_offset=0;
     for (i=0; i<ctx->page_row_count && ctx->parsed_row_count < ctx->total_row_count; i++) {
@@ -542,7 +542,7 @@ cleanup:
 
 static readstat_errors_t sas_parse_subheader_rle(const char *subheader, size_t len, sas_ctx_t *ctx) {
     /* TODO bounds checking */
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     const char *input = subheader;
     char *buffer = malloc(ctx->row_length);
     char *output = buffer;
@@ -616,7 +616,7 @@ cleanup:
 }
 
 static readstat_errors_t sas_parse_subheader(uint32_t signature, const char *subheader, size_t len, sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
 
     if (len < 6) {
         retval = READSTAT_ERROR_PARSE;
@@ -648,7 +648,7 @@ cleanup:
 }
 
 static readstat_errors_t sas_parse_catalog_page(const char *page, size_t page_size, sas_catalog_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     if (ctx->u64)
         retval = READSTAT_ERROR_PARSE;
 
@@ -711,7 +711,7 @@ cleanup:
 }
 
 static readstat_errors_t submit_columns(sas_ctx_t *ctx) {
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
     if (ctx->info_cb) {
         if (ctx->info_cb(ctx->total_row_count, ctx->column_count, ctx->user_ctx)) {
             retval = READSTAT_ERROR_USER_ABORT;
@@ -936,7 +936,7 @@ int parse_sas7bdat(const char *filename, void *user_ctx,
         readstat_handle_variable_callback variable_cb,
         readstat_handle_value_callback value_cb) {
     int fd = -1;
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
 
     sas_ctx_t  *ctx = calloc(1, sizeof(sas_ctx_t));
     sas_header_info_t  *hinfo = calloc(1, sizeof(sas_header_info_t));
@@ -1041,7 +1041,7 @@ cleanup:
 int parse_sas7bcat(const char *filename, void *user_ctx,
         readstat_handle_value_label_callback value_label_cb) {
     int fd = -1;
-    readstat_errors_t retval = 0;
+    readstat_errors_t retval = READSTAT_OK;
 
     sas_catalog_ctx_t *ctx = calloc(1, sizeof(sas_catalog_ctx_t));
     sas_header_info_t *hinfo = calloc(1, sizeof(sas_header_info_t));
