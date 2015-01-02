@@ -118,14 +118,14 @@ static sav_charset_entry_t _charset_table[] = {
 #define SAV_LABEL_NAME_PREFIX         "labels"
 
 static void sav_ctx_free(sav_ctx_t *ctx);
-static readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_callback value_cb, void *user_ctx);
-static readstat_errors_t sav_read_variable_record(int fd, sav_ctx_t *ctx);
-static readstat_errors_t sav_read_document_record(int fd, sav_ctx_t *ctx);
-static readstat_errors_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, readstat_handle_value_label_callback value_label_cb, void *user_ctx);
-static readstat_errors_t sav_read_dictionary_termination_record(int fd, sav_ctx_t *ctx);
-static readstat_errors_t sav_parse_machine_floating_point_record(void *data, sav_ctx_t *ctx);
-static readstat_errors_t sav_parse_variable_display_parameter_record(void *data, sav_ctx_t *ctx);
-static readstat_errors_t sav_parse_machine_integer_info_record(void *data, size_t data_len, sav_ctx_t *ctx);
+static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_callback value_cb, void *user_ctx);
+static readstat_error_t sav_read_variable_record(int fd, sav_ctx_t *ctx);
+static readstat_error_t sav_read_document_record(int fd, sav_ctx_t *ctx);
+static readstat_error_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, readstat_handle_value_label_callback value_label_cb, void *user_ctx);
+static readstat_error_t sav_read_dictionary_termination_record(int fd, sav_ctx_t *ctx);
+static readstat_error_t sav_parse_machine_floating_point_record(void *data, sav_ctx_t *ctx);
+static readstat_error_t sav_parse_variable_display_parameter_record(void *data, sav_ctx_t *ctx);
+static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t data_len, sav_ctx_t *ctx);
 
 static void unpad(char *string, size_t len) {
     string[len] = '\0';
@@ -140,7 +140,7 @@ static void unpad(char *string, size_t len) {
     }
 }
                                 
-static readstat_errors_t convert(char *dst, size_t dst_len, char *src, size_t src_len, sav_ctx_t *ctx) {
+static readstat_error_t convert(char *dst, size_t dst_len, char *src, size_t src_len, sav_ctx_t *ctx) {
     if (ctx->converter) {
         size_t dst_left = dst_len;
         char *dst_end = dst;
@@ -203,9 +203,9 @@ static void sav_ctx_free(sav_ctx_t *ctx) {
     free(ctx);
 }
 
-static readstat_errors_t sav_read_variable_record(int fd, sav_ctx_t *ctx) {
+static readstat_error_t sav_read_variable_record(int fd, sav_ctx_t *ctx) {
     sav_variable_record_t variable;
-    readstat_errors_t retval = READSTAT_OK;
+    readstat_error_t retval = READSTAT_OK;
     if (ctx->var_index == ctx->varinfo_capacity) {
         if ((ctx->varinfo = realloc(ctx->varinfo, (ctx->varinfo_capacity *= 2) * sizeof(sav_varinfo_t))) == NULL) {
             retval = READSTAT_ERROR_MALLOC;
@@ -318,9 +318,9 @@ cleanup:
     return retval;
 }
 
-static readstat_errors_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, readstat_handle_value_label_callback value_label_cb, void *user_ctx) {
+static readstat_error_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, readstat_handle_value_label_callback value_label_cb, void *user_ctx) {
     int32_t label_count;
-    readstat_errors_t retval = READSTAT_OK;
+    readstat_error_t retval = READSTAT_OK;
     int32_t *vars = NULL;
     int32_t rec_type;
     int32_t var_count;
@@ -430,9 +430,9 @@ cleanup:
     return retval;
 }
 
-static readstat_errors_t sav_read_document_record(int fd, sav_ctx_t *ctx) {
+static readstat_error_t sav_read_document_record(int fd, sav_ctx_t *ctx) {
     int32_t n_lines;
-    readstat_errors_t retval = READSTAT_OK;
+    readstat_error_t retval = READSTAT_OK;
     if (read(fd, &n_lines, sizeof(int32_t)) < sizeof(int32_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
@@ -448,9 +448,9 @@ cleanup:
     return retval;
 }
 
-static readstat_errors_t sav_read_dictionary_termination_record(int fd, sav_ctx_t *ctx) {
+static readstat_error_t sav_read_dictionary_termination_record(int fd, sav_ctx_t *ctx) {
     int32_t filler;
-    readstat_errors_t retval = READSTAT_OK;
+    readstat_error_t retval = READSTAT_OK;
     if (read(fd, &filler, sizeof(int32_t)) < sizeof(int32_t)) {
         retval = READSTAT_ERROR_READ;
     }
@@ -482,7 +482,7 @@ double handle_missing_double(double fp_value, sav_varinfo_t *info) {
     return fp_value;
 }
 
-static readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_callback value_cb, void *user_ctx) {
+static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_value_callback value_cb, void *user_ctx) {
     unsigned char value[8];
     char *raw_str_value = NULL;
     char *utf8_str_value = NULL;
@@ -490,7 +490,7 @@ static readstat_errors_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_v
     int offset = 0;
     int segment_offset = 0;
     int row = 0, var_index = 0, col = 0;
-    readstat_errors_t retval = READSTAT_OK;
+    readstat_error_t retval = READSTAT_OK;
     int i;
     double fp_value;
     int longest_string = 256;
@@ -692,7 +692,7 @@ done:
     return retval;
 }
 
-static readstat_errors_t sav_parse_machine_integer_info_record(void *data, size_t data_len, sav_ctx_t *ctx) {
+static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t data_len, sav_ctx_t *ctx) {
     if (data_len != 32)
         return READSTAT_ERROR_PARSE;
 
@@ -725,11 +725,11 @@ static readstat_errors_t sav_parse_machine_integer_info_record(void *data, size_
     return READSTAT_OK;
 }
 
-static readstat_errors_t sav_parse_machine_floating_point_record(void *data, sav_ctx_t *ctx) {
+static readstat_error_t sav_parse_machine_floating_point_record(void *data, sav_ctx_t *ctx) {
     return READSTAT_OK;
 }
 
-static readstat_errors_t sav_parse_variable_display_parameter_record(void *data, sav_ctx_t *ctx) {
+static readstat_error_t sav_parse_variable_display_parameter_record(void *data, sav_ctx_t *ctx) {
     return READSTAT_OK;
 }
 
@@ -737,7 +737,7 @@ int parse_sav(const char *filename, void *user_ctx,
               readstat_handle_info_callback info_cb, readstat_handle_variable_callback variable_cb,
               readstat_handle_value_callback value_cb, readstat_handle_value_label_callback value_label_cb) {
     int fd;
-    readstat_errors_t retval = READSTAT_OK;
+    readstat_error_t retval = READSTAT_OK;
     sav_file_header_record_t header;
     sav_ctx_t *ctx = NULL;
     void *data_buf = NULL;

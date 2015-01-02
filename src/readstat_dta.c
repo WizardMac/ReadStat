@@ -10,9 +10,9 @@
 #include "readstat_dta.h"
 
 static inline readstat_types_t dta_type_info(uint16_t typecode, size_t *max_len, dta_ctx_t *ctx);
-static readstat_errors_t dta_read_descriptors(int fd, dta_ctx_t *ctx);
-static readstat_errors_t dta_read_tag(int fd, dta_ctx_t *ctx, const char *tag);
-static readstat_errors_t dta_read_long_string(int fd, dta_ctx_t *ctx, int v, int o, char **long_string_out);
+static readstat_error_t dta_read_descriptors(int fd, dta_ctx_t *ctx);
+static readstat_error_t dta_read_tag(int fd, dta_ctx_t *ctx, const char *tag);
+static readstat_error_t dta_read_long_string(int fd, dta_ctx_t *ctx, int v, int o, char **long_string_out);
 static int dta_skip_expansion_fields(int fd, dta_ctx_t *ctx);
 
 
@@ -201,11 +201,11 @@ static inline readstat_types_t dta_type_info(uint16_t typecode, size_t *max_len,
     return type;
 }
 
-static readstat_errors_t dta_read_map(int fd, dta_ctx_t *ctx) {
+static readstat_error_t dta_read_map(int fd, dta_ctx_t *ctx) {
     if (!ctx->file_is_xmlish)
         return 0;
 
-    readstat_errors_t retval = READSTAT_OK;
+    readstat_error_t retval = READSTAT_OK;
     if ((retval = dta_read_tag(fd, ctx, "<map>")) != READSTAT_OK) {
         goto cleanup;
     }
@@ -229,7 +229,7 @@ cleanup:
     return retval;
 }
 
-static readstat_errors_t dta_read_descriptors(int fd, dta_ctx_t *ctx) {
+static readstat_error_t dta_read_descriptors(int fd, dta_ctx_t *ctx) {
     if (dta_read_tag(fd, ctx, "<variable_types>") != READSTAT_OK)
         return -1;
 
@@ -337,8 +337,8 @@ static int dta_skip_expansion_fields(int fd, dta_ctx_t *ctx) {
     return -1;
 }
 
-static readstat_errors_t dta_read_tag(int fd, dta_ctx_t *ctx, const char *tag) {
-    readstat_errors_t retval = READSTAT_OK;
+static readstat_error_t dta_read_tag(int fd, dta_ctx_t *ctx, const char *tag) {
+    readstat_error_t retval = READSTAT_OK;
     if (ctx != NULL && !ctx->file_is_xmlish)
         return retval;
 
@@ -356,8 +356,8 @@ cleanup:
     return retval;
 }
 
-static readstat_errors_t dta_read_long_string(int fd, dta_ctx_t *ctx, int v, int o, char **long_string_out) {
-    readstat_errors_t retval = READSTAT_OK;
+static readstat_error_t dta_read_long_string(int fd, dta_ctx_t *ctx, int v, int o, char **long_string_out) {
+    readstat_error_t retval = READSTAT_OK;
     if (lseek(fd, ctx->strls_offset, SEEK_SET) != ctx->strls_offset) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
@@ -418,8 +418,8 @@ cleanup:
     return retval;
 }
 
-readstat_errors_t dta_read_xmlish_preamble(int fd, dta_ctx_t *ctx, dta_header_t *header) {
-    readstat_errors_t retval = READSTAT_OK;
+readstat_error_t dta_read_xmlish_preamble(int fd, dta_ctx_t *ctx, dta_header_t *header) {
+    readstat_error_t retval = READSTAT_OK;
     
     if ((retval = dta_read_tag(fd, ctx, "<stata_dta>")) != READSTAT_OK) {
         goto cleanup;

@@ -28,10 +28,10 @@ static int compare_varlookups(const void *elem1, const void *elem2) {
     alphtype unsigned char;
 }%%
 
-readstat_errors_t sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) {
+readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) {
     varlookup_t *table = malloc(ctx->var_index * sizeof(varlookup_t));
     int i;
-    readstat_errors_t retval = READSTAT_OK;
+    readstat_error_t retval = READSTAT_OK;
     int var_count = ctx->var_index;
     for (i=0; i<var_count; i++) {
         memcpy(table[i].name, ctx->varinfo[i].name, 9);
@@ -122,10 +122,10 @@ readstat_errors_t sav_parse_long_variable_names_record(void *data, int count, sa
     alphtype unsigned char;
 }%%
 
-readstat_errors_t sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
+readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
     varlookup_t *table = malloc(ctx->var_index * sizeof(varlookup_t));
     int i;
-    readstat_errors_t retval = READSTAT_OK;
+    readstat_error_t retval = READSTAT_OK;
     int var_count = ctx->var_index;
     for (i=0; i<var_count; i++) {
         memcpy(table[i].name, ctx->varinfo[i].name, 9);

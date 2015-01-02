@@ -25,7 +25,7 @@ typedef enum readstat_types_e {
     READSTAT_TYPE_LONG_STRING
 } readstat_types_t;
 
-typedef enum readstat_errors_e {
+typedef enum readstat_error_e {
     READSTAT_OK,
     READSTAT_ERROR_OPEN = 1,
     READSTAT_ERROR_READ,
@@ -33,9 +33,10 @@ typedef enum readstat_errors_e {
     READSTAT_ERROR_USER_ABORT,
     READSTAT_ERROR_PARSE,
     READSTAT_ERROR_UNSUPPORTED_COMPRESSION,
+    READSTAT_ERROR_UNSUPPORTED_CHARSET,
     READSTAT_ERROR_ROW_COUNT_MISMATCH,
-    READSTAT_ERROR_UNSUPPORTED_CHARSET
-} readstat_errors_t;
+    READSTAT_ERROR_ROW_WIDTH_MISMATCH
+} readstat_error_t;
 
 typedef int (*readstat_handle_info_callback)(int obs_count, int var_count, void *ctx);
 typedef int (*readstat_handle_variable_callback)(int index, const char *var_name, 
@@ -89,5 +90,7 @@ int parse_rdata(const char *filename, void *user_ctx,
                 readstat_handle_column_name_callback handle_column_name,
                 readstat_handle_text_value_callback handle_text_value,
                 readstat_handle_text_value_callback handle_value_label);
+
+const char *readstat_error_message(readstat_error_t error_code);
 
 #endif
