@@ -19,6 +19,7 @@
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
 #include "readstat_spss.h"
+#include "readstat_convert.h"
 
 #define SAV_CHARSET_EBCDIC                1
 #define SAV_CHARSET_7_BIT_ASCII           2
@@ -127,35 +128,6 @@ static readstat_error_t sav_parse_machine_floating_point_record(void *data, sav_
 static readstat_error_t sav_parse_variable_display_parameter_record(void *data, sav_ctx_t *ctx);
 static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t data_len, sav_ctx_t *ctx);
 
-static void unpad(char *string, size_t len) {
-    string[len] = '\0';
-    /* remove space padding */
-    size_t i;
-    for (i=len-1; i>0; i--) {
-        if (string[i] == ' ') {
-            string[i] = '\0';
-        } else {
-            break;
-        }
-    }
-}
-                                
-static readstat_error_t convert(char *dst, size_t dst_len, char *src, size_t src_len, sav_ctx_t *ctx) {
-    if (ctx->converter) {
-        size_t dst_left = dst_len;
-        char *dst_end = dst;
-        size_t status = iconv(ctx->converter, (char **)&src, &src_len, &dst_end, &dst_left);
-        if (status == (size_t)-1) {
-            return READSTAT_ERROR_PARSE;
-        }
-        unpad(dst, dst_len - dst_left);
-    } else {
-        memcpy(dst, src, src_len);
-        unpad(dst, src_len);
-    }
-    return READSTAT_OK;
-}
-
 sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header) {
     sav_ctx_t *ctx = NULL;
     if ((ctx = malloc(sizeof(sav_ctx_t))) == NULL) {
@@ -242,11 +214,11 @@ static readstat_error_t sav_read_variable_record(int fd, sav_ctx_t *ctx) {
     info->offset = ctx->var_offset;
     info->type = dta_type;
 
-    retval = convert(info->name, sizeof(info->name), variable.name, 8, ctx);
+    retval = readstat_convert(info->name, sizeof(info->name), variable.name, 8, ctx->converter);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    retval = convert(info->longname, sizeof(info->longname), variable.name, 8, ctx);
+    retval = readstat_convert(info->longname, sizeof(info->longname), variable.name, 8, ctx->converter);
     if (retval != READSTAT_OK)
         goto cleanup;
 
@@ -267,7 +239,8 @@ static readstat_error_t sav_read_variable_record(int fd, sav_ctx_t *ctx) {
         label_len = ctx->machine_needs_byte_swap ? byteswap4(label_len) : label_len;
         int32_t label_capacity = (label_len + 3) / 4 * 4;
         char *label_buf = malloc(label_capacity);
-        info->label = malloc(label_len*4+1);
+        size_t out_label_len = label_len*4+1;
+        info->label = malloc(out_label_len);
         if (label_buf == NULL || info->label == NULL) {
             retval = READSTAT_ERROR_MALLOC;
             goto cleanup;
@@ -279,7 +252,7 @@ static readstat_error_t sav_read_variable_record(int fd, sav_ctx_t *ctx) {
             info->label = NULL;
             goto cleanup;
         }
-        retval = convert(info->label, label_len*4+1, label_buf, label_len, ctx);
+        retval = readstat_convert(info->label, out_label_len, label_buf, label_len, ctx->converter);
         free(label_buf);
         if (retval != READSTAT_OK)
             goto cleanup;
@@ -359,7 +332,7 @@ static readstat_error_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, read
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
-        retval = convert(vlabel->label, sizeof(vlabel->label), label_buf, label_len, ctx);
+        retval = readstat_convert(vlabel->label, sizeof(vlabel->label), label_buf, label_len, ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
     }
@@ -414,7 +387,7 @@ static readstat_error_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, read
             value_label_cb(label_name_buf, &val_d, value_type, vlabel->label, user_ctx);
         } else {
             char unpadded_val[8*4+1];
-            retval = convert(unpadded_val, sizeof(unpadded_val), vlabel->value, 8, ctx);
+            retval = readstat_convert(unpadded_val, sizeof(unpadded_val), vlabel->value, 8, ctx->converter);
             if (retval != READSTAT_OK)
                 break;
             value_label_cb(label_name_buf, unpadded_val, value_type, vlabel->label, user_ctx);
@@ -545,8 +518,8 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_va
                             if (offset == col_info->width) {
                                 segment_offset++;
                                 if (segment_offset == var_info->n_segments) {
-                                    retval = convert(utf8_str_value, utf8_str_value_len, 
-                                            raw_str_value, raw_str_used, ctx);
+                                    retval = readstat_convert(utf8_str_value, utf8_str_value_len, 
+                                            raw_str_value, raw_str_used, ctx->converter);
                                     if (retval != READSTAT_OK)
                                         goto done;
                                     if (value_cb(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
@@ -584,7 +557,7 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_va
                             if (offset == col_info->width) {
                                 segment_offset++;
                                 if (segment_offset == var_info->n_segments) {
-                                    retval = convert(utf8_str_value, utf8_str_value_len, 
+                                    retval = readstat_convert(utf8_str_value, utf8_str_value_len, 
                                             raw_str_value, raw_str_used, ctx);
                                     if (retval != READSTAT_OK)
                                         goto done;
@@ -644,8 +617,8 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_va
                 if (offset == col_info->width) {
                     segment_offset++;
                     if (segment_offset == var_info->n_segments) {
-                        retval = convert(utf8_str_value, utf8_str_value_len, 
-                                raw_str_value, raw_str_used, ctx);
+                        retval = readstat_convert(utf8_str_value, utf8_str_value_len, 
+                                raw_str_value, raw_str_used, ctx->converter);
                         if (retval != READSTAT_OK)
                             goto done;
                         if (value_cb(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {

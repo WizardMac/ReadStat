@@ -5,9 +5,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
+#include <iconv.h>
 #include "readstat_io.h"
 #include "readstat_sas.h"
+#include "readstat_convert.h"
 
+#define SAS_STRING_ENCODING "WINDOWS-1252"
 
 #define SAS_ALIGNMENT_OFFSET_4  0x33
 
@@ -103,6 +106,7 @@ typedef struct sas_catalog_ctx_s {
     void         *user_ctx;
     int           u64;
     int           bswap;
+    iconv_t       converter;
 } sas_catalog_ctx_t;
 
 typedef struct sas_ctx_s {
@@ -130,9 +134,12 @@ typedef struct sas_ctx_s {
 
     int           max_col_width;
     char         *scratch_buffer;
+    size_t        scratch_buffer_len;
 
     int           col_info_count;
     col_info_t   *col_info;
+
+    iconv_t       converter;
 } sas_ctx_t;
 
 typedef struct cat_ctx_s {
@@ -143,19 +150,6 @@ typedef struct cat_ctx_s {
     int32_t    page_size;
     int32_t    page_count;
 } cat_ctx_t;
-
-static void unpad(char *string, size_t len) {
-    string[len] = '\0';
-    /* remove space padding */
-    size_t i;
-    for (i=len-1; i>0; i--) {
-        if (string[i] == ' ') {
-            string[i] = '\0';
-        } else {
-            break;
-        }
-    }
-}
 
 static uint64_t read8(const char *data, int bswap) {
     uint64_t tmp;
@@ -189,6 +183,16 @@ static void sas_ctx_free(sas_ctx_t *ctx) {
 
     if (ctx->scratch_buffer)
         free(ctx->scratch_buffer);
+
+    if (ctx->converter)
+        iconv_close(ctx->converter);
+
+    free(ctx);
+}
+
+static void sas_catalog_ctx_free(sas_catalog_ctx_t *ctx) {
+    if (ctx->converter)
+        iconv_close(ctx->converter);
 
     free(ctx);
 }
@@ -358,17 +362,16 @@ static text_ref_t sas_parse_text_ref(const char *data, sas_ctx_t *ctx) {
     return ref;
 }
 
-static readstat_error_t copy_text_ref(char *out_buffer, text_ref_t text_ref, size_t len, sas_ctx_t *ctx) {
+static readstat_error_t copy_text_ref(char *out_buffer, size_t out_buffer_len, text_ref_t text_ref, sas_ctx_t *ctx) {
     if (text_ref.index < 0 || text_ref.index >= ctx->text_blob_count)
         return READSTAT_ERROR_PARSE;
     
     if (text_ref.length == 0) {
         out_buffer[0] = '\0';
-        return 0;
+        return READSTAT_OK;
     }
 
     char *blob = ctx->text_blobs[text_ref.index];
-    size_t out_len = len-1;
 
     if (text_ref.offset < 0 || text_ref.length < 0)
         return READSTAT_ERROR_PARSE;
@@ -376,13 +379,8 @@ static readstat_error_t copy_text_ref(char *out_buffer, text_ref_t text_ref, siz
     if (text_ref.offset + text_ref.length > ctx->text_blob_lengths[text_ref.index])
         return READSTAT_ERROR_PARSE;
 
-    if (text_ref.length < out_len)
-        out_len = text_ref.length;
-
-    memcpy(out_buffer, &blob[text_ref.offset], out_len);
-    out_buffer[out_len] = '\0';
-
-    return 0;
+    return readstat_convert(out_buffer, out_buffer_len, &blob[text_ref.offset], text_ref.length,
+            ctx->converter);
 }
 
 static readstat_error_t sas_parse_column_name_subheader(const char *subheader, size_t len, sas_ctx_t *ctx) {
@@ -478,11 +476,15 @@ static readstat_error_t sas_parse_column_format_subheader(const char *subheader,
     return retval;
 }
 
-static int handle_data_value(const unsigned char *col_data, col_info_t *col_info, sas_ctx_t *ctx) {
+static readstat_error_t handle_data_value(const char *col_data, col_info_t *col_info, sas_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
     int cb_retval = 0;
     if (col_info->type == READSTAT_TYPE_STRING) {
-        memcpy(ctx->scratch_buffer, col_data, col_info->width);
-        unpad(ctx->scratch_buffer, col_info->width);
+        retval = readstat_convert(ctx->scratch_buffer, ctx->scratch_buffer_len,
+                col_data, col_info->width, ctx->converter);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+
         cb_retval = ctx->value_cb(ctx->parsed_row_count, col_info->index, 
                 ctx->scratch_buffer, READSTAT_TYPE_STRING, ctx->user_ctx);
     } else if (col_info->type == READSTAT_TYPE_DOUBLE) {
@@ -503,19 +505,23 @@ static int handle_data_value(const unsigned char *col_data, col_info_t *col_info
         cb_retval = ctx->value_cb(ctx->parsed_row_count, col_info->index, 
                 (double *)&val, READSTAT_TYPE_DOUBLE, ctx->user_ctx);
     }
-    return cb_retval;
+
+    if (cb_retval)
+        retval = READSTAT_ERROR_USER_ABORT;
+
+cleanup:
+    return retval;
 }
 
 static readstat_error_t sas_parse_single_row(const char *data, sas_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     int j;
-    ctx->scratch_buffer = realloc(ctx->scratch_buffer, ctx->max_col_width + 1);
+    ctx->scratch_buffer_len = 4*ctx->max_col_width+1;
+    ctx->scratch_buffer = realloc(ctx->scratch_buffer, ctx->scratch_buffer_len);
     for (j=0; j<ctx->column_count; j++) {
         col_info_t *col_info = &ctx->col_info[j];
-        int cb_retval = handle_data_value((const unsigned char *)&data[col_info->offset],
-                col_info, ctx);
-        if (cb_retval) {
-            retval = READSTAT_ERROR_USER_ABORT;
+        retval = handle_data_value(&data[col_info->offset], col_info, ctx);
+        if (retval != READSTAT_OK) {
             goto cleanup;
         }
     }
@@ -666,10 +672,11 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
         size_t block_size = 255 * (1+lsp[9]);
         int label_count1 = read4(&lsp[48], ctx->bswap);
         int label_count2 = read4(&lsp[52], ctx->bswap);
-        char name[9];
+        char name[4*8+1];
 
-        memcpy(name, &lsp[18], 8);
-        unpad(name, 8);
+        retval = readstat_convert(name, sizeof(name), &lsp[18], 8, ctx->converter);
+        if (retval != READSTAT_OK)
+            goto cleanup;
         
         int is_string = 0;
         size_t md_len = 46;
@@ -685,9 +692,11 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
             size_t len = read2(&lbp2[8], ctx->bswap);
             const char *label = &lbp2[10];
             if (is_string) {
-                char val[17];
-                memcpy(val, &lbp1[14], 16);
-                unpad(val, 16);
+                char val[4*16+1];
+                retval = readstat_convert(val, sizeof(val), &lbp1[14], 16, ctx->converter);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
                 if (ctx->value_label_cb)
                     ctx->value_label_cb(name, val, READSTAT_TYPE_STRING, label, ctx->user_ctx);
             } else {
@@ -724,13 +733,13 @@ static readstat_error_t submit_columns(sas_ctx_t *ctx) {
         char format_buf[1024];
         char label_buf[1024];
         for (i=0; i<ctx->column_count; i++) {
-            if ((retval = copy_text_ref(name_buf, ctx->col_info[i].name_ref, sizeof(name_buf), ctx)) != 0) {
+            if ((retval = copy_text_ref(name_buf, sizeof(name_buf), ctx->col_info[i].name_ref, ctx)) != 0) {
                 goto cleanup;
             }
-            if ((retval = copy_text_ref(format_buf, ctx->col_info[i].format_ref, sizeof(format_buf), ctx)) != 0) {
+            if ((retval = copy_text_ref(format_buf, sizeof(format_buf), ctx->col_info[i].format_ref, ctx)) != 0) {
                 goto cleanup;
             }
-            if ((retval = copy_text_ref(label_buf, ctx->col_info[i].label_ref, sizeof(label_buf), ctx)) != 0) {
+            if ((retval = copy_text_ref(label_buf, sizeof(label_buf), ctx->col_info[i].label_ref, ctx)) != 0) {
                 goto cleanup;
             }
             char *stata_format = NULL;
@@ -959,6 +968,7 @@ int parse_sas7bdat(const char *filename, void *user_ctx,
     ctx->little_endian = hinfo->little_endian;
     ctx->vendor = hinfo->vendor;
     ctx->bswap = machine_is_little_endian() ^ hinfo->little_endian;
+    ctx->converter = iconv_open("UTF-8", SAS_STRING_ENCODING);
 
     int i;
     char *page = malloc(hinfo->page_size);
@@ -1048,6 +1058,7 @@ int parse_sas7bcat(const char *filename, void *user_ctx,
 
     ctx->value_label_cb = value_label_cb;
     ctx->user_ctx = user_ctx;
+    ctx->converter = iconv_open("UTF-8", SAS_STRING_ENCODING);
 
     if ((fd = readstat_open(filename)) == -1) {
         retval = READSTAT_ERROR_OPEN;
@@ -1087,7 +1098,7 @@ int parse_sas7bcat(const char *filename, void *user_ctx,
 
 cleanup:
     if (ctx)
-        free(ctx);
+        sas_catalog_ctx_free(ctx);
     if (fd != -1)
         readstat_close(fd);
     if (hinfo)
