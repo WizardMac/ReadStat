@@ -492,12 +492,12 @@ static readstat_error_t handle_data_value(const char *col_data, col_info_t *col_
         if (ctx->little_endian) {
             int k;
             for (k=0; k<col_info->width; k++) {
-                val = (val << 8) | col_data[col_info->width-1-k];
+                val = (val << 8) | (unsigned char)col_data[col_info->width-1-k];
             }
         } else {
             int k;
             for (k=0; k<col_info->width; k++) {
-                val = (val << 8) | col_data[k];
+                val = (val << 8) | (unsigned char)col_data[k];
             }
         }
         val <<= (8-col_info->width)*8;
