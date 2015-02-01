@@ -558,7 +558,7 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_va
                                 segment_offset++;
                                 if (segment_offset == var_info->n_segments) {
                                     retval = readstat_convert(utf8_str_value, utf8_str_value_len, 
-                                            raw_str_value, raw_str_used, ctx);
+                                            raw_str_value, raw_str_used, ctx->converter);
                                     if (retval != READSTAT_OK)
                                         goto done;
                                     if (value_cb(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
