@@ -1024,7 +1024,7 @@ int parse_sas7bdat(const char *filename, void *user_ctx,
         ctx->did_submit_columns = 1;
     }
 
-    if (ctx->parsed_row_count != ctx->total_row_count) {
+    if (ctx->value_cb && ctx->parsed_row_count != ctx->total_row_count) {
         retval = READSTAT_ERROR_ROW_COUNT_MISMATCH;
         dprintf(STDERR_FILENO, "ReadStat: Expected %d rows in file, found %d\n",
                 ctx->total_row_count, ctx->parsed_row_count);
