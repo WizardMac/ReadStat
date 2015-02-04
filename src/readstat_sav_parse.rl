@@ -72,7 +72,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
             if (found) {
                 memcpy(ctx->varinfo[found->index].longname, temp_val, str_len);
             } else {
-                dprintf(STDERR_FILENO, "Failed to find %s\n", temp_key);
+                fprintf(stderr, "Failed to find %s\n", temp_key);
             }
         }
 
@@ -105,7 +105,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
     }%%
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
-        dprintf(STDERR_FILENO, "Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
+        fprintf(stderr, "Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
                 (char *)data, p - c_data, count, *p);
         retval = READSTAT_ERROR_PARSE;
     }
@@ -201,8 +201,8 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     }%%
     
     if (cs < %%{ write first_final; }%% || p != pe) {
-        dprintf(STDERR_FILENO, "Parsed %ld of %ld bytes\n", p - c_data, pe - c_data);
-        dprintf(STDERR_FILENO, "Remaining bytes: %s\n", p);
+        fprintf(stderr, "Parsed %ld of %ld bytes\n", p - c_data, pe - c_data);
+        fprintf(stderr, "Remaining bytes: %s\n", p);
         retval = READSTAT_ERROR_PARSE;
     }
     

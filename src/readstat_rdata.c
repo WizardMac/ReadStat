@@ -785,7 +785,7 @@ static readstat_error_t discard_vector(rdata_sexptype_header_t sexptype_header, 
             return READSTAT_ERROR_READ;
         }
     } else {
-        dprintf(STDERR_FILENO, "Vector with non-positive length: %d\n", length);
+        fprintf(stderr, "Vector with non-positive length: %d\n", length);
     }
     
     if (sexptype_header.attributes) {

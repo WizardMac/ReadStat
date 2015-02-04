@@ -66,7 +66,7 @@ int readstat_por_parse_double(const char *data, size_t len, double *result) {
     
     if (!success) {
         retval = -1;
-        dprintf(STDERR_FILENO, "Read bytes: %ld Ending state: %d\n", (p - (const unsigned char *)data), cs);
+        fprintf(stderr, "Read bytes: %ld Ending state: %d\n", (p - (const unsigned char *)data), cs);
     }
     
     if (retval == 0) {
