@@ -291,6 +291,14 @@ cleanup:
     return retval;
 }
 
+static int sav_varinfo_compare(const void *elem1, const void *elem2) {
+    int offset = *(int *)elem1;
+    const sav_varinfo_t *v = (const sav_varinfo_t *)elem2;
+    if (offset < v->offset)
+        return -1;
+    return (offset > v->offset);
+}
+
 static readstat_error_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, readstat_handle_value_label_callback value_label_cb, void *user_ctx) {
     int32_t label_count;
     readstat_error_t retval = READSTAT_OK;
@@ -366,13 +374,8 @@ static readstat_error_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, read
     }
     for (i=0; i<var_count; i++) {
         int var_offset = vars[i]-1; // Why subtract 1????
-        sav_varinfo_t *var = bsearch_b(&var_offset, ctx->varinfo, ctx->var_index, sizeof(sav_varinfo_t), ^(const void *elem1, const void *elem2) {
-            int offset = *(int *)elem1;
-            const sav_varinfo_t *v = (const sav_varinfo_t *)elem2;
-            if (offset < v->offset)
-                return -1;
-            return (offset > v->offset);
-        });
+        sav_varinfo_t *var = bsearch(&var_offset, ctx->varinfo, ctx->var_index, sizeof(sav_varinfo_t),
+                &sav_varinfo_compare);
         if (var) {
             value_type = var->type;
             var->labels_index = ctx->value_labels_count;
