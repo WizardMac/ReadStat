@@ -641,7 +641,7 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, readstat_handle_va
                     fp_value = byteswap_double(fp_value);
                 }
                 fp_value = handle_missing_double(fp_value, var_info);
-                if (value_cb(row, var_info->index, &fp_value, READSTAT_TYPE_DOUBLE, user_ctx)) {
+                if (value_cb(row, var_info->index, isnan(fp_value) ? NULL : &fp_value, READSTAT_TYPE_DOUBLE, user_ctx)) {
                     retval = READSTAT_ERROR_USER_ABORT;
                     goto done;
                 }
