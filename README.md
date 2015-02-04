@@ -86,21 +86,21 @@ Example: Convert a DTA to a tab-separated file.
         return 0;
     }
 
-    int handle_value(int obs_index, int var_index, void *value, readstat_types_t type, void *ctx) {
+    int handle_value(int obs_index, int var_index, readstat_value_t value, readstat_types_t type, void *ctx) {
         int *my_var_count = (int *)ctx;
-        if (value != NULL) {
+        if (!readstat_value_is_missing(value)) {
             if (type == READSTAT_TYPE_STRING) {
-                printf("%s", (char *)value);
+                printf("%s", readstat_string_value(value));
             } else if (type == READSTAT_TYPE_CHAR) {
-                printf("%hhd", *(char *)value);
+                printf("%hhd", readstat_char_value(value));
             } else if (type == READSTAT_TYPE_INT16) {
-                printf("%hd", *(short *)value);
+                printf("%hd", readstat_int16_value(value));
             } else if (type == READSTAT_TYPE_INT32) {
-                printf("%d", *(int *)value);
+                printf("%d", readstat_int32_value(value));
             } else if (type == READSTAT_TYPE_FLOAT) {
-                printf("%f", *(float *)value);
+                printf("%f", readstat_float_value(value));
             } else if (type == READSTAT_TYPE_DOUBLE) {
-                printf("%lf", *(double *)value);
+                printf("%lf", readstat_double_value(value));
             }
         }
         if (var_index == *my_var_count - 1) {

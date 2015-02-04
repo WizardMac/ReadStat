@@ -38,15 +38,25 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_ROW_WIDTH_MISMATCH
 } readstat_error_t;
 
+typedef void * readstat_value_t;
+
+int readstat_value_is_missing(readstat_value_t value);
+char readstat_char_value(readstat_value_t value);
+int16_t readstat_int16_value(readstat_value_t value);
+int32_t readstat_int32_value(readstat_value_t value);
+float readstat_float_value(readstat_value_t value);
+double readstat_double_value(readstat_value_t value);
+char *readstat_string_value(readstat_value_t value);
+
 /* Callbacks should return 0 on success and non-zero to abort */
 typedef int (*readstat_handle_info_callback)(int obs_count, int var_count, void *ctx);
 typedef int (*readstat_handle_variable_callback)(int index, const char *var_name, 
         const char *var_format, const char *var_label, const char *val_labels, 
         readstat_types_t type, size_t max_len, void *ctx);
-typedef int (*readstat_handle_value_callback)(int obs_index, int var_index, void *value, 
-        readstat_types_t type, void *ctx);
-typedef int (*readstat_handle_value_label_callback)(const char *val_labels, void *value, 
-        readstat_types_t type, const char *label, void *ctx);
+typedef int (*readstat_handle_value_callback)(int obs_index, int var_index, 
+        readstat_value_t value, readstat_types_t type, void *ctx);
+typedef int (*readstat_handle_value_label_callback)(const char *val_labels, 
+        readstat_value_t value, readstat_types_t type, const char *label, void *ctx);
 
 readstat_error_t parse_dta(const char *filename, void *user_ctx, 
         readstat_handle_info_callback info_cb, 
