@@ -29,6 +29,7 @@ static int compare_varlookups(const void *elem1, const void *elem2) {
 }%%
 
 readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) {
+    unsigned char *c_data = (unsigned char *)data;
     varlookup_t *table = malloc(ctx->var_index * sizeof(varlookup_t));
     int i;
     readstat_error_t retval = READSTAT_OK;
@@ -41,12 +42,12 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
         
     char temp_key[4*8+1];
     char temp_val[4*64+1];
-    u_char *str_start = NULL;
+    unsigned char *str_start = NULL;
     size_t str_len = 0;
     
-    u_char *p = NULL;
-    u_char *pe = NULL;
-    u_char *output_buffer = NULL;
+    unsigned char *p = NULL;
+    unsigned char *pe = NULL;
+    unsigned char *output_buffer = NULL;
     if (ctx->converter) {
         size_t input_len = count;
         size_t output_len = input_len * 4;
@@ -58,10 +59,10 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
             return READSTAT_ERROR_PARSE;
         }
     } else {
-        p = (u_char *)data;
-        pe = (u_char *)data + count;
+        p = c_data;
+        pe = c_data + count;
     }
-    u_char *eof = pe;
+    unsigned char *eof = pe;
 
     int cs;
 
@@ -105,7 +106,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
         dprintf(STDERR_FILENO, "Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
-                (char *)data, p - (u_char *)data, count, *p);
+                (char *)data, p - c_data, count, *p);
         retval = READSTAT_ERROR_PARSE;
     }
     
@@ -123,6 +124,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
 }%%
 
 readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
+    unsigned char *c_data = (unsigned char *)data;
     varlookup_t *table = malloc(ctx->var_index * sizeof(varlookup_t));
     int i;
     readstat_error_t retval = READSTAT_OK;
@@ -135,13 +137,13 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     
     char temp_key[8*4+1];
     int temp_val;
-    u_char *str_start = NULL;
+    unsigned char *str_start = NULL;
     size_t str_len = 0;
 
-    u_char *p = NULL;
-    u_char *pe = NULL;
+    unsigned char *p = NULL;
+    unsigned char *pe = NULL;
 
-    u_char *output_buffer = NULL;
+    unsigned char *output_buffer = NULL;
     if (ctx->converter) {
         size_t input_len = count;
         size_t output_len = input_len * 4;
@@ -155,8 +157,8 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
             return READSTAT_ERROR_PARSE;
         }
     } else {
-        p = (u_char *)data;
-        pe = (u_char *)data + count;
+        p = c_data;
+        pe = c_data + count;
     }
     
     int cs;
@@ -199,7 +201,7 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     }%%
     
     if (cs < %%{ write first_final; }%% || p != pe) {
-        dprintf(STDERR_FILENO, "Parsed %ld of %ld bytes\n", p - (u_char *)data, pe - (u_char *)data);
+        dprintf(STDERR_FILENO, "Parsed %ld of %ld bytes\n", p - c_data, pe - c_data);
         dprintf(STDERR_FILENO, "Remaining bytes: %s\n", p);
         retval = READSTAT_ERROR_PARSE;
     }
