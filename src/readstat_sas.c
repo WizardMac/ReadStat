@@ -940,7 +940,7 @@ cleanup:
     return retval;
 }
 
-int parse_sas7bdat(const char *filename, void *user_ctx,
+readstat_error_t parse_sas7bdat(const char *filename, void *user_ctx,
         readstat_handle_info_callback info_cb, 
         readstat_handle_variable_callback variable_cb,
         readstat_handle_value_callback value_cb) {
@@ -1048,7 +1048,7 @@ cleanup:
     return retval;
 }
 
-int parse_sas7bcat(const char *filename, void *user_ctx,
+readstat_error_t parse_sas7bcat(const char *filename, void *user_ctx,
         readstat_handle_value_label_callback value_label_cb) {
     int fd = -1;
     readstat_error_t retval = READSTAT_OK;

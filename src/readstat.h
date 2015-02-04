@@ -48,30 +48,30 @@ typedef int (*readstat_handle_value_callback)(int obs_index, int var_index, void
 typedef int (*readstat_handle_value_label_callback)(const char *val_labels, void *value, 
         readstat_types_t type, const char *label, void *ctx);
 
-int parse_dta(const char *filename, void *user_ctx, 
-              readstat_handle_info_callback info_cb, 
-              readstat_handle_variable_callback variable_cb,
-              readstat_handle_value_callback value_cb, 
-              readstat_handle_value_label_callback value_label_cb);
+readstat_error_t parse_dta(const char *filename, void *user_ctx, 
+        readstat_handle_info_callback info_cb, 
+        readstat_handle_variable_callback variable_cb,
+        readstat_handle_value_callback value_cb, 
+        readstat_handle_value_label_callback value_label_cb);
 
-int parse_por(const char *filename, void *user_ctx,
-              readstat_handle_info_callback info_cb, 
-              readstat_handle_variable_callback variable_cb,
-              readstat_handle_value_callback value_cb, 
-              readstat_handle_value_label_callback value_label_cb);
+readstat_error_t parse_por(const char *filename, void *user_ctx,
+        readstat_handle_info_callback info_cb, 
+        readstat_handle_variable_callback variable_cb,
+        readstat_handle_value_callback value_cb, 
+        readstat_handle_value_label_callback value_label_cb);
 
-int parse_sav(const char *filename, void *user_ctx,
-              readstat_handle_info_callback info_cb, 
-              readstat_handle_variable_callback variable_cb,
-              readstat_handle_value_callback value_cb, 
-              readstat_handle_value_label_callback value_label_cb);
+readstat_error_t parse_sav(const char *filename, void *user_ctx,
+        readstat_handle_info_callback info_cb, 
+        readstat_handle_variable_callback variable_cb,
+        readstat_handle_value_callback value_cb, 
+        readstat_handle_value_label_callback value_label_cb);
 
-int parse_sas7bdat(const char *filename, void *user_ctx, 
+readstat_error_t parse_sas7bdat(const char *filename, void *user_ctx, 
         readstat_handle_info_callback info_cb, 
         readstat_handle_variable_callback variable_cb,
         readstat_handle_value_callback value_cb);
 
-int parse_sas7bcat(const char *filename, void *user_ctx,
+readstat_error_t parse_sas7bcat(const char *filename, void *user_ctx,
         readstat_handle_value_label_callback value_label_cb);
 
 typedef int (*readstat_handle_column_callback)(const char *name, readstat_types_t type, char *format, 
@@ -80,17 +80,17 @@ typedef int (*readstat_handle_table_callback)(const char *name, void *ctx);
 typedef int (*readstat_handle_text_value_callback)(const char *value, int index, void *ctx);
 typedef readstat_handle_text_value_callback readstat_handle_column_name_callback;
 
-int parse_rds(const char *filename, void *user_ctx,
+readstat_error_t parse_rds(const char *filename, void *user_ctx,
         readstat_handle_column_callback handle_column,
         readstat_handle_column_name_callback handle_column_name,
         readstat_handle_text_value_callback handle_text_value,
         readstat_handle_text_value_callback handle_value_label);
-int parse_rdata(const char *filename, void *user_ctx, 
-                readstat_handle_table_callback handle_table,
-                readstat_handle_column_callback handle_column,
-                readstat_handle_column_name_callback handle_column_name,
-                readstat_handle_text_value_callback handle_text_value,
-                readstat_handle_text_value_callback handle_value_label);
+readstat_error_t parse_rdata(const char *filename, void *user_ctx, 
+        readstat_handle_table_callback handle_table,
+        readstat_handle_column_callback handle_column,
+        readstat_handle_column_name_callback handle_column_name,
+        readstat_handle_text_value_callback handle_text_value,
+        readstat_handle_text_value_callback handle_value_label);
 
 const char *readstat_error_message(readstat_error_t error_code);
 

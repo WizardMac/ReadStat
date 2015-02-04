@@ -709,7 +709,7 @@ static readstat_error_t sav_parse_variable_display_parameter_record(void *data, 
     return READSTAT_OK;
 }
 
-int parse_sav(const char *filename, void *user_ctx,
+readstat_error_t parse_sav(const char *filename, void *user_ctx,
               readstat_handle_info_callback info_cb, readstat_handle_variable_callback variable_cb,
               readstat_handle_value_callback value_cb, readstat_handle_value_label_callback value_label_cb) {
     int fd;
