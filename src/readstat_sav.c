@@ -13,7 +13,6 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <math.h>
-#include <iconv.h>
 
 #include "readstat_io.h"
 #include "readstat_sav.h"

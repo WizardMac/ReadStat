@@ -5,9 +5,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include <iconv.h>
 #include "readstat_io.h"
 #include "readstat_sas.h"
+#include "readstat_iconv.h"
 #include "readstat_convert.h"
 
 #define SAS_STRING_ENCODING "WINDOWS-1252"

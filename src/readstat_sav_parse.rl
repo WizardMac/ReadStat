@@ -1,7 +1,6 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-#include <iconv.h>
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
 
@@ -52,7 +51,8 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
         size_t input_len = count;
         size_t output_len = input_len * 4;
         pe = p = output_buffer = malloc(output_len);
-        size_t status = iconv(ctx->converter, (char **)&data, &input_len,
+        size_t status = iconv(ctx->converter, 
+                (readstat_iconv_inbuf_t)&data, &input_len,
                 (char **)&pe, &output_len);
         if (status == (size_t)-1) {
             free(output_buffer);
@@ -150,7 +150,8 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
 
         pe = p = output_buffer = malloc(output_len);
 
-        size_t status = iconv(ctx->converter, (char **)&data, &input_len,
+        size_t status = iconv(ctx->converter, 
+                (readstat_iconv_inbuf_t)&data, &input_len,
                 (char **)&pe, &output_len);
         if (status == (size_t)-1) {
             free(output_buffer);
