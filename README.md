@@ -54,8 +54,15 @@ Example: Return the number of records in a DTA file.
             return 1;
         }
         int my_count = 0;
-        int error = parse_dta(argv[1], &my_count, &handle_info, NULL, NULL, NULL);
-        if (error != 0) {
+        readstat_error_t error = READSTAT_OK;
+        readstat_parser_t *parser = readstat_parser_init();
+        readstat_set_info_handler(parser, &handle_info);
+
+        error = readstat_parse_dta(parser, argv[1], &my_count);
+
+        readstat_parser_free(parser);
+
+        if (error != READSTAT_OK) {
             printf("Error processing %s: %d\n", argv[1], error);
             return 1;
         }
@@ -76,7 +83,7 @@ Example: Convert a DTA to a tab-separated file.
     }
 
     int handle_variable(int index, const char *var_name, const char *var_format, const char *var_label, 
-        const char *val_labels, readstat_types_t type, size_t max_len, void *ctx) {
+        const char *val_labels, readstat_types_t type, void *ctx) {
         int *my_var_count = (int *)ctx;
 
         printf("%s", var_name);
@@ -121,8 +128,17 @@ Example: Convert a DTA to a tab-separated file.
             return 1;
         }
         int my_var_count = 0;
-        int error = parse_dta(argv[1], &my_var_count, &handle_info, &handle_variable, &handle_value, NULL);
-        if (error != 0) {
+        readstat_error_t error = READSTAT_OK;
+        readstat_parser_t *parser = readstat_parser_init();
+        readstat_set_info_handler(parser, &handle_info);
+        readstat_set_variable_handler(parser, &handle_variable);
+        readstat_set_value_handler(parser, &handle_value);
+
+        error = readstat_parse_dta(parser, argv[1], &my_var_count);
+
+        readstat_parser_free(parser);
+
+        if (error != READSTAT_OK) {
             printf("Error processing %s: %d\n", argv[1], error);
             return 1;
         }

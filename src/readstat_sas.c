@@ -112,7 +112,8 @@ typedef struct sas_catalog_ctx_s {
 typedef struct sas_ctx_s {
     readstat_handle_info_callback      info_cb;
     readstat_handle_variable_callback  variable_cb;
-    readstat_handle_value_callback    value_cb;
+    readstat_handle_value_callback     value_cb;
+    readstat_handle_error_callback     error_cb;
     int           little_endian;
     int           u64;
     int           vendor;
@@ -755,7 +756,6 @@ static readstat_error_t submit_columns(sas_ctx_t *ctx) {
                 // fprintf(stderr,  "Unknown format: %s\n", format_buf);
             }
             int cb_retval = ctx->variable_cb(i, name_buf, stata_format, label_buf, label_set, ctx->col_info[i].type,
-                    ctx->col_info[i].type == READSTAT_TYPE_DOUBLE ? 8 : ctx->col_info[i].width, 
                     ctx->user_ctx);
             if (cb_retval) {
                 retval = READSTAT_ERROR_USER_ABORT;
@@ -932,19 +932,17 @@ cleanup:
     return retval;
 }
 
-readstat_error_t parse_sas7bdat(const char *filename, void *user_ctx,
-        readstat_handle_info_callback info_cb, 
-        readstat_handle_variable_callback variable_cb,
-        readstat_handle_value_callback value_cb) {
+readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *filename, void *user_ctx) {
     int fd = -1;
     readstat_error_t retval = READSTAT_OK;
 
     sas_ctx_t  *ctx = calloc(1, sizeof(sas_ctx_t));
     sas_header_info_t  *hinfo = calloc(1, sizeof(sas_header_info_t));
 
-    ctx->info_cb = info_cb;
-    ctx->variable_cb = variable_cb;
-    ctx->value_cb = value_cb;
+    ctx->info_cb = parser->info_cb;
+    ctx->variable_cb = parser->variable_cb;
+    ctx->value_cb = parser->value_cb;
+    ctx->error_cb = parser->error_cb;
     ctx->user_ctx = user_ctx;
 
     if ((fd = readstat_open(filename)) == -1) {
@@ -1018,8 +1016,12 @@ readstat_error_t parse_sas7bdat(const char *filename, void *user_ctx,
 
     if (ctx->value_cb && ctx->parsed_row_count != ctx->total_row_count) {
         retval = READSTAT_ERROR_ROW_COUNT_MISMATCH;
-        fprintf(stderr, "ReadStat: Expected %d rows in file, found %d\n",
-                ctx->total_row_count, ctx->parsed_row_count);
+        if (ctx->error_cb) {
+            char error_buf[1024];
+            sprintf(error_buf, "ReadStat: Expected %d rows in file, found %d\n",
+                    ctx->total_row_count, ctx->parsed_row_count);
+            ctx->error_cb(error_buf);
+        }
         goto cleanup;
     }
 
@@ -1040,15 +1042,14 @@ cleanup:
     return retval;
 }
 
-readstat_error_t parse_sas7bcat(const char *filename, void *user_ctx,
-        readstat_handle_value_label_callback value_label_cb) {
+readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *filename, void *user_ctx) {
     int fd = -1;
     readstat_error_t retval = READSTAT_OK;
 
     sas_catalog_ctx_t *ctx = calloc(1, sizeof(sas_catalog_ctx_t));
     sas_header_info_t *hinfo = calloc(1, sizeof(sas_header_info_t));
 
-    ctx->value_label_cb = value_label_cb;
+    ctx->value_label_cb = parser->value_label_cb;
     ctx->user_ctx = user_ctx;
     ctx->converter = iconv_open("UTF-8", SAS_STRING_ENCODING);
 

@@ -44,6 +44,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
     unsigned char *str_start = NULL;
     size_t str_len = 0;
     
+    char error_buf[1024];
     unsigned char *p = NULL;
     unsigned char *pe = NULL;
     unsigned char *output_buffer = NULL;
@@ -71,8 +72,9 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
                 memcpy(ctx->varinfo[found->index].longname, temp_val, str_len);
-            } else {
-                fprintf(stderr, "Failed to find %s\n", temp_key);
+            } else if (ctx->handle_error) {
+                snprintf(error_buf, sizeof(error_buf), "Failed to find %s\n", temp_key);
+                ctx->handle_error(error_buf);
             }
         }
 
@@ -105,8 +107,11 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
     }%%
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
-        fprintf(stderr, "Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
-                (char *)data, (long)(p - c_data), count, *p);
+        if (ctx->handle_error) {
+            snprintf(error_buf, sizeof(error_buf), "Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
+                    (char *)data, (long)(p - c_data), count, *p);
+            ctx->handle_error(error_buf);
+        }
         retval = READSTAT_ERROR_PARSE;
     }
     
@@ -140,6 +145,8 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     unsigned char *str_start = NULL;
     size_t str_len = 0;
 
+    size_t error_buf_len = 1024 + count;
+    char *error_buf = malloc(error_buf_len);
     unsigned char *p = NULL;
     unsigned char *pe = NULL;
 
@@ -202,8 +209,10 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     }%%
     
     if (cs < %%{ write first_final; }%% || p != pe) {
-        fprintf(stderr, "Parsed %ld of %ld bytes\n", (long)(p - c_data), (long)(pe - c_data));
-        fprintf(stderr, "Remaining bytes: %s\n", p);
+        if (ctx->handle_error) {
+            snprintf(error_buf, error_buf_len, "Parsed %ld of %ld bytes\nRemaining bytes: %s\n", (long)(p - c_data), (long)(pe - c_data), p);
+            ctx->handle_error(error_buf);
+        }
         retval = READSTAT_ERROR_PARSE;
     }
     
@@ -211,5 +220,7 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
         free(table);
     if (output_buffer)
         free(output_buffer);
+    if (error_buf)
+        free(error_buf);
     return retval;
 }

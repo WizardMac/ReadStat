@@ -33,11 +33,12 @@ typedef struct rdata_atom_table_s {
 
 typedef struct rdata_ctx_s {
     int                                  machine_needs_byteswap;
-    readstat_handle_table_callback       handle_table;
-    readstat_handle_column_callback      handle_column;
-    readstat_handle_column_name_callback handle_column_name;
-    readstat_handle_text_value_callback  handle_text_value;
-    readstat_handle_text_value_callback  handle_value_label;
+    rdata_handle_table_callback          handle_table;
+    rdata_handle_column_callback         handle_column;
+    rdata_handle_column_name_callback    handle_column_name;
+    rdata_handle_text_value_callback     handle_text_value;
+    rdata_handle_text_value_callback     handle_value_label;
+    readstat_handle_error_callback       handle_error;
     void                                *user_ctx;
 #ifdef HAVE_LZMA
     lzma_stream                         *lzma_strm;
@@ -57,7 +58,7 @@ static readstat_error_t read_environment(const char *table_name, rdata_ctx_t *ct
 static readstat_error_t read_toplevel_object(const char *table_name, const char *key, rdata_ctx_t *ctx);
 static readstat_error_t read_sexptype_header(rdata_sexptype_info_t *header, rdata_ctx_t *ctx);
 static readstat_error_t read_length(int32_t *outLength, rdata_ctx_t *ctx);
-static readstat_error_t read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, 
+static readstat_error_t read_string_vector(int32_t length, rdata_handle_text_value_callback handle_text, 
         void *callback_ctx, rdata_ctx_t *ctx);
 static readstat_error_t read_value_vector(rdata_sexptype_header_t header, const char *name, rdata_ctx_t *ctx);
 static readstat_error_t read_character_string(char *key, size_t keylen, rdata_ctx_t *ctx);
@@ -265,6 +266,24 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t reset_stream(rdata_ctx_t *ctx) {
+    if (ctx->z_strm) {
+        inflateEnd(ctx->z_strm);
+        free(ctx->z_strm);
+        ctx->z_strm = NULL;
+    }
+#ifdef HAVE_LZMA
+    if (ctx->lzma_strm) {
+        lzma_end(ctx->lzma_strm);
+        free(ctx->lzma_strm);
+        ctx->lzma_strm = NULL;
+    }
+#endif
+
+    lseek(ctx->fd, 0, SEEK_SET);
+    return init_stream(ctx);
+}
+
 rdata_ctx_t *init_rdata_ctx(const char *filename) {
     int fd = readstat_open(filename);
     if (fd == -1) {
@@ -307,12 +326,8 @@ void free_rdata_ctx(rdata_ctx_t *ctx) {
     free(ctx);
 }
 
-readstat_error_t parse_internal(const char *filename, int is_rdata, void *user_ctx,
-                readstat_handle_table_callback handle_table,
-                readstat_handle_column_callback handle_column,
-                readstat_handle_column_name_callback handle_column_name,
-                readstat_handle_text_value_callback handle_text_value,
-                readstat_handle_text_value_callback handle_value_label) {
+readstat_error_t rdata_parse(rdata_parser_t *parser, const char *filename, void *user_ctx) {
+    int is_rdata = 0;
     readstat_error_t retval = READSTAT_OK;
     rdata_v2_header_t v2_header;
     rdata_ctx_t *ctx = init_rdata_ctx(filename);
@@ -323,28 +338,28 @@ readstat_error_t parse_internal(const char *filename, int is_rdata, void *user_c
     }
 
     ctx->user_ctx = user_ctx;
-    ctx->handle_table = handle_table;
-    ctx->handle_column = handle_column;
-    ctx->handle_column_name = handle_column_name;
-    ctx->handle_text_value = handle_text_value;
-    ctx->handle_value_label = handle_value_label;
+    ctx->handle_table = parser->table_cb;
+    ctx->handle_column = parser->column_cb;
+    ctx->handle_column_name = parser->column_name_cb;
+    ctx->handle_text_value = parser->text_value_cb;
+    ctx->handle_value_label = parser->value_label_cb;
+    ctx->handle_error = parser->error_cb;
     
     if ((retval = init_stream(ctx)) != READSTAT_OK) {
         goto cleanup;
     }
 
-    if (is_rdata) {
-        char header_line[5];
-        if (read_st(ctx, &header_line, sizeof(header_line)) != sizeof(header_line)) {
-            retval = READSTAT_ERROR_READ;
-            goto cleanup;
-        }
-        if (strncmp("RDX2\n", header_line, sizeof(header_line)) != 0) {
-            retval = READSTAT_ERROR_PARSE;
-            goto cleanup;
-        }
+    char header_line[5];
+    if (read_st(ctx, &header_line, sizeof(header_line)) != sizeof(header_line)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
     }
-    
+    if (strncmp("RDX2\n", header_line, sizeof(header_line)) == 0) {
+        is_rdata = 1;
+    } else {
+        reset_stream(ctx);
+    }
+
     if (read_st(ctx, &v2_header, sizeof(v2_header)) != sizeof(v2_header)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
@@ -377,25 +392,6 @@ cleanup:
     }
     
     return retval;
-}
-
-readstat_error_t parse_rds(const char *filename, void *user_ctx,
-        readstat_handle_column_callback handle_column,
-        readstat_handle_column_name_callback handle_column_name,
-        readstat_handle_text_value_callback handle_text_value,
-        readstat_handle_text_value_callback handle_value_label) {
-    return parse_internal(filename, 0, user_ctx, NULL, handle_column, handle_column_name,
-            handle_text_value, handle_value_label);
-}
-
-readstat_error_t parse_rdata(const char *filename, void *user_ctx,
-                readstat_handle_table_callback handle_table,
-                readstat_handle_column_callback handle_column,
-                readstat_handle_column_name_callback handle_column_name,
-                readstat_handle_text_value_callback handle_text_value,
-                readstat_handle_text_value_callback handle_value_label) {
-    return parse_internal(filename, 1, user_ctx, handle_table, handle_column, handle_column_name,
-            handle_text_value, handle_value_label);
 }
 
 static readstat_error_t read_toplevel_object(const char *table_name, const char *key, rdata_ctx_t *ctx) {
@@ -734,7 +730,7 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t read_string_vector(int32_t length, readstat_handle_text_value_callback handle_text, 
+static readstat_error_t read_string_vector(int32_t length, rdata_handle_text_value_callback handle_text, 
         void *callback_ctx, rdata_ctx_t *ctx) {
     int32_t string_length;
     readstat_error_t retval = READSTAT_OK;
@@ -894,8 +890,10 @@ static readstat_error_t discard_vector(rdata_sexptype_header_t sexptype_header, 
         if (lseek_st(ctx, length * element_size) == -1) {
             return READSTAT_ERROR_READ;
         }
-    } else {
-        fprintf(stderr, "Vector with non-positive length: %d\n", length);
+    } else if (ctx->handle_error) {
+        char error_buf[1024];
+        snprintf(error_buf, sizeof(error_buf), "Vector with non-positive length: %d\n", length);
+        ctx->handle_error(error_buf);
     }
     
     if (sexptype_header.attributes) {
