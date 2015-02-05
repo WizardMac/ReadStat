@@ -113,6 +113,8 @@ readstat_error_t rdata_set_column_name_handler(rdata_parser_t *parser, rdata_han
 readstat_error_t rdata_set_text_value_handler(rdata_parser_t *parser, rdata_handle_text_value_callback text_value_cb);
 readstat_error_t rdata_set_value_label_handler(rdata_parser_t *parser, rdata_handle_text_value_callback value_label_cb);
 readstat_error_t rdata_set_error_handler(rdata_parser_t *parser, readstat_handle_error_callback error_cb);
+/* rdata_parse works on RData and RDS. The table handler will be called once
+ * per data frame in RData files, and zero times on RDS files. */
 readstat_error_t rdata_parse(rdata_parser_t *parser, const char *filename, void *user_ctx);
 
 #ifdef __cplusplus
