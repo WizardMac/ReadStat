@@ -94,9 +94,9 @@ typedef struct sav_varinfo_s {
 } sav_varinfo_t;
 
 typedef struct sav_ctx_s {
-    readstat_handle_error_callback  handle_error;
-    readstat_handle_value_callback  handle_value;
-    readstat_handle_value_label_callback handle_value_label;
+    readstat_error_handler          error_handler;
+    readstat_value_handler          value_handler;
+    readstat_value_label_handler    value_label_handler;
     sav_varinfo_t *varinfo;
     size_t         varinfo_capacity;
     iconv_t        converter;

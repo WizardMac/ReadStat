@@ -17,7 +17,7 @@ static const int por_field_parse_en_main = 1;
 #line 9 "src/readstat_por_parse.rl"
 
 
-int readstat_por_parse_double(const char *data, size_t len, double *result, readstat_handle_error_callback error_cb) {
+int readstat_por_parse_double(const char *data, size_t len, double *result, readstat_error_handler error_cb) {
     int retval = 0;
     double val = 0.0;
     long num = 0;

@@ -72,11 +72,11 @@ typedef struct por_varinfo_s {
 } por_varinfo_t;
 
 typedef struct readstat_por_ctx_s {
-    readstat_handle_info_callback           info_cb;
-    readstat_handle_variable_callback       variable_cb;
-    readstat_handle_value_callback          value_cb;
-    readstat_handle_value_label_callback    value_label_cb;
-    readstat_handle_error_callback          error_cb;
+    readstat_info_handler           info_handler;
+    readstat_variable_handler       variable_handler;
+    readstat_value_handler          value_handler;
+    readstat_value_label_handler    value_label_handler;
+    readstat_error_handler          error_handler;
     int            pos;
     int            fd;
     unsigned char  buf[100];
@@ -224,7 +224,7 @@ static int read_double(readstat_por_ctx_t *ctx, double *out_double) {
         return 1;
     
     double value;
-    bytes_read = readstat_por_parse_double(utf8_buffer, len, &value, ctx->error_cb);
+    bytes_read = readstat_por_parse_double(utf8_buffer, len, &value, ctx->error_handler);
     if (bytes_read == -1) {
         return -1;
     }
@@ -503,7 +503,7 @@ static int read_value_label_record(readstat_por_ctx_t *ctx, void *user_ctx) {
             if (read_string(ctx, label_buf, sizeof(label_buf)) == -1) {
                 return READSTAT_ERROR_PARSE;
             }
-            ctx->value_label_cb(label_name_buf, string, value_type, label_buf, user_ctx);
+            ctx->value_label_handler(label_name_buf, string, value_type, label_buf, user_ctx);
         } else {
             if (read_double(ctx, &value) == -1) {
                 return READSTAT_ERROR_PARSE;
@@ -511,7 +511,7 @@ static int read_value_label_record(readstat_por_ctx_t *ctx, void *user_ctx) {
             if (read_string(ctx, label_buf, sizeof(label_buf)) == -1) {
                 return READSTAT_ERROR_PARSE;
             }
-            ctx->value_label_cb(label_name_buf, &value, value_type, label_buf, user_ctx);
+            ctx->value_label_handler(label_name_buf, &value, value_type, label_buf, user_ctx);
         }
     }
     ctx->labels_offset++;
@@ -552,27 +552,27 @@ static int read_por_file_data(readstat_por_ctx_t *ctx, void *user_ctx) {
                 if (i == 0 && retval == 1) {
                     return 0;
                 } else if (retval == -1) {
-                    if (ctx->error_cb) {
+                    if (ctx->error_handler) {
                         snprintf(error_buf, sizeof(error_buf), "Error in %s\n", info->name);
-                        ctx->error_cb(error_buf);
+                        ctx->error_handler(error_buf);
                     }
                     return READSTAT_ERROR_PARSE;
                 }
 //                printf("String value: %s\n", string);
-                ctx->value_cb(ctx->obs_count, i, string, READSTAT_TYPE_STRING, user_ctx);
+                ctx->value_handler(ctx->obs_count, i, string, READSTAT_TYPE_STRING, user_ctx);
             } else if (info->type == READSTAT_TYPE_DOUBLE) {
                 retval = read_double(ctx, &value);
                 if (i == 0 && retval == 1) {
                     return 0;
                 } else if (retval != 0) {
-                    if (ctx->error_cb) {
+                    if (ctx->error_handler) {
                         snprintf(error_buf, sizeof(error_buf), "Error in %s\n", info->name);
-                        ctx->error_cb(error_buf);
+                        ctx->error_handler(error_buf);
                     }
                     return READSTAT_ERROR_PARSE;
                 }
                 value = handle_missing_double(value, info);
-                ctx->value_cb(ctx->obs_count, i, isnan(value) ? NULL : &value, READSTAT_TYPE_DOUBLE, user_ctx);
+                ctx->value_handler(ctx->obs_count, i, isnan(value) ? NULL : &value, READSTAT_TYPE_DOUBLE, user_ctx);
             }
         }
         ctx->obs_count++;
@@ -584,11 +584,11 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *filen
     readstat_por_ctx_t *ctx = calloc(1, sizeof(readstat_por_ctx_t));
     ctx->space = ' ';
     ctx->var_dict = ck_hash_table_init(1024);
-    ctx->info_cb = parser->info_cb;
-    ctx->variable_cb = parser->variable_cb;
-    ctx->value_cb = parser->value_cb;
-    ctx->value_label_cb = parser->value_label_cb;
-    ctx->error_cb = parser->error_cb;
+    ctx->info_handler = parser->info_handler;
+    ctx->variable_handler = parser->variable_handler;
+    ctx->value_handler = parser->value_handler;
+    ctx->value_label_handler = parser->value_label_handler;
+    ctx->error_handler = parser->error_handler;
 
     readstat_error_t retval = READSTAT_OK;
     
@@ -733,7 +733,7 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *filen
                         format = buf;
                     }
 
-                    int cb_retval = ctx->variable_cb(i, info->name, format,
+                    int cb_retval = ctx->variable_handler(i, info->name, format,
                             info->label[0] == '\0' ? NULL : info->label,
                             info->labels_index == -1 ? NULL : label_name_buf,
                             info->type, user_ctx);
@@ -746,8 +746,8 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *filen
                 if (retval != 0)
                     goto cleanup;
                 
-                if (parser->info_cb) {
-                    if (parser->info_cb(ctx->obs_count, ctx->var_count, user_ctx)) {
+                if (parser->info_handler) {
+                    if (parser->info_handler(ctx->obs_count, ctx->var_count, user_ctx)) {
                         retval = READSTAT_ERROR_USER_ABORT;
                     }
                 }

@@ -12,28 +12,28 @@ void readstat_parser_free(readstat_parser_t *parser) {
         free(parser);
 }
 
-readstat_error_t readstat_set_info_handler(readstat_parser_t *parser, readstat_handle_info_callback info_cb) {
-    parser->info_cb = info_cb;
+readstat_error_t readstat_set_info_handler(readstat_parser_t *parser, readstat_info_handler info_handler) {
+    parser->info_handler = info_handler;
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_variable_handler(readstat_parser_t *parser, readstat_handle_variable_callback variable_cb) {
-    parser->variable_cb = variable_cb;
+readstat_error_t readstat_set_variable_handler(readstat_parser_t *parser, readstat_variable_handler variable_handler) {
+    parser->variable_handler = variable_handler;
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_value_handler(readstat_parser_t *parser, readstat_handle_value_callback value_cb) {
-    parser->value_cb = value_cb;
+readstat_error_t readstat_set_value_handler(readstat_parser_t *parser, readstat_value_handler value_handler) {
+    parser->value_handler = value_handler;
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_value_label_handler(readstat_parser_t *parser, readstat_handle_value_label_callback label_cb) {
-    parser->value_label_cb = label_cb;
+readstat_error_t readstat_set_value_label_handler(readstat_parser_t *parser, readstat_value_label_handler label_handler) {
+    parser->value_label_handler = label_handler;
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_error_handler(readstat_parser_t *parser, readstat_handle_error_callback error_cb) {
-    parser->error_cb = error_cb;
+readstat_error_t readstat_set_error_handler(readstat_parser_t *parser, readstat_error_handler error_handler) {
+    parser->error_handler = error_handler;
     return READSTAT_OK;
 }
 
@@ -47,32 +47,32 @@ void rdata_parser_free(rdata_parser_t *parser) {
         free(parser);
 }
 
-readstat_error_t rdata_set_table_handler(rdata_parser_t *parser, rdata_handle_table_callback table_cb) {
-    parser->table_cb = table_cb;
+readstat_error_t rdata_set_table_handler(rdata_parser_t *parser, rdata_table_handler table_handler) {
+    parser->table_handler = table_handler;
     return READSTAT_OK;
 }
 
-readstat_error_t rdata_set_column_handler(rdata_parser_t *parser, rdata_handle_column_callback column_cb) {
-    parser->column_cb = column_cb;
+readstat_error_t rdata_set_column_handler(rdata_parser_t *parser, rdata_column_handler column_handler) {
+    parser->column_handler = column_handler;
     return READSTAT_OK;
 }
 
-readstat_error_t rdata_set_column_name_handler(rdata_parser_t *parser, rdata_handle_column_name_callback column_name_cb) {
-    parser->column_name_cb = column_name_cb;
+readstat_error_t rdata_set_column_name_handler(rdata_parser_t *parser, rdata_column_name_handler column_name_handler) {
+    parser->column_name_handler = column_name_handler;
     return READSTAT_OK;
 }
 
-readstat_error_t rdata_set_text_value_handler(rdata_parser_t *parser, rdata_handle_text_value_callback text_value_cb) {
-    parser->text_value_cb = text_value_cb;
+readstat_error_t rdata_set_text_value_handler(rdata_parser_t *parser, rdata_text_value_handler text_value_handler) {
+    parser->text_value_handler = text_value_handler;
     return READSTAT_OK;
 }
 
-readstat_error_t rdata_set_value_label_handler(rdata_parser_t *parser, rdata_handle_text_value_callback value_label_cb) {
-    parser->value_label_cb = value_label_cb;
+readstat_error_t rdata_set_value_label_handler(rdata_parser_t *parser, rdata_text_value_handler value_label_handler) {
+    parser->value_label_handler = value_label_handler;
     return READSTAT_OK;
 }
 
-readstat_error_t rdata_set_error_handler(rdata_parser_t *parser, readstat_handle_error_callback error_cb) {
-    parser->error_cb = error_cb;
+readstat_error_t rdata_set_error_handler(rdata_parser_t *parser, readstat_error_handler error_handler) {
+    parser->error_handler = error_handler;
     return READSTAT_OK;
 }

@@ -387,13 +387,13 @@ static readstat_error_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, void
             memcpy(&val_d, vlabel->value, 8);
             if (ctx->machine_needs_byte_swap)
                 val_d = byteswap_double(val_d);
-            ctx->handle_value_label(label_name_buf, &val_d, value_type, vlabel->label, user_ctx);
+            ctx->value_label_handler(label_name_buf, &val_d, value_type, vlabel->label, user_ctx);
         } else {
             char unpadded_val[8*4+1];
             retval = readstat_convert(unpadded_val, sizeof(unpadded_val), vlabel->value, 8, ctx->converter);
             if (retval != READSTAT_OK)
                 break;
-            ctx->handle_value_label(label_name_buf, unpadded_val, value_type, vlabel->label, user_ctx);
+            ctx->value_label_handler(label_name_buf, unpadded_val, value_type, vlabel->label, user_ctx);
         }
     }
     ctx->value_labels_count++;
@@ -527,7 +527,7 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
                                             raw_str_value, raw_str_used, ctx->converter);
                                     if (retval != READSTAT_OK)
                                         goto done;
-                                    if (ctx->handle_value(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
+                                    if (ctx->value_handler(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
                                         retval = READSTAT_ERROR_USER_ABORT;
                                         goto done;
                                     }
@@ -544,7 +544,7 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
                                 fp_value = byteswap_double(fp_value);
                             }
                             fp_value = handle_missing_double(fp_value, var_info);
-                            if (ctx->handle_value(row, var_info->index, &fp_value, READSTAT_TYPE_DOUBLE, user_ctx)) {
+                            if (ctx->value_handler(row, var_info->index, &fp_value, READSTAT_TYPE_DOUBLE, user_ctx)) {
                                 retval = READSTAT_ERROR_USER_ABORT;
                                 goto done;
                             }
@@ -566,7 +566,7 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
                                             raw_str_value, raw_str_used, ctx->converter);
                                     if (retval != READSTAT_OK)
                                         goto done;
-                                    if (ctx->handle_value(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
+                                    if (ctx->value_handler(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
                                         retval = READSTAT_ERROR_USER_ABORT;
                                         goto done;
                                     }
@@ -584,7 +584,7 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
                         break;
                     case 255:
                         fp_value = NAN;
-                        if (ctx->handle_value(row, var_info->index, &fp_value, var_info->type, user_ctx)) {
+                        if (ctx->value_handler(row, var_info->index, &fp_value, var_info->type, user_ctx)) {
                             retval = READSTAT_ERROR_USER_ABORT;
                             goto done;
                         }
@@ -594,7 +594,7 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
                     default:
                         fp_value = value[i] - 100.0;
                         fp_value = handle_missing_double(fp_value, var_info);
-                        if (ctx->handle_value(row, var_info->index, &fp_value, var_info->type, user_ctx)) {
+                        if (ctx->value_handler(row, var_info->index, &fp_value, var_info->type, user_ctx)) {
                             retval = READSTAT_ERROR_USER_ABORT;
                             goto done;
                         }
@@ -626,7 +626,7 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
                                 raw_str_value, raw_str_used, ctx->converter);
                         if (retval != READSTAT_OK)
                             goto done;
-                        if (ctx->handle_value(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
+                        if (ctx->value_handler(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
                             retval = READSTAT_ERROR_USER_ABORT;
                             goto done;
                         }
@@ -643,7 +643,7 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
                     fp_value = byteswap_double(fp_value);
                 }
                 fp_value = handle_missing_double(fp_value, var_info);
-                if (ctx->handle_value(row, var_info->index, isnan(fp_value) ? NULL : &fp_value, READSTAT_TYPE_DOUBLE, user_ctx)) {
+                if (ctx->value_handler(row, var_info->index, isnan(fp_value) ? NULL : &fp_value, READSTAT_TYPE_DOUBLE, user_ctx)) {
                     retval = READSTAT_ERROR_USER_ABORT;
                     goto done;
                 }
@@ -690,10 +690,10 @@ static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t
             }
         }
         if (src_charset == NULL) {
-            if (ctx->handle_error) {
+            if (ctx->error_handler) {
                 char error_buf[1024];
                 snprintf(error_buf, sizeof(error_buf), "Unsupported character set: %d\n", character_code);
-                ctx->handle_error(error_buf);
+                ctx->error_handler(error_buf);
             }
             return READSTAT_ERROR_UNSUPPORTED_CHARSET;
         }
@@ -738,9 +738,9 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *filen
         goto cleanup;
     }
 
-    ctx->handle_error = parser->error_cb;
-    ctx->handle_value = parser->value_cb;
-    ctx->handle_value_label = parser->value_label_cb;
+    ctx->error_handler = parser->error_handler;
+    ctx->value_handler = parser->value_handler;
+    ctx->value_label_handler = parser->value_label_handler;
     
     if ((data_buf = malloc(data_buf_capacity)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
@@ -859,13 +859,13 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *filen
         i += info->n_segments;
     }
     
-    if (parser->info_cb) {
-        if (parser->info_cb(ctx->record_count, ctx->var_count, user_ctx)) {
+    if (parser->info_handler) {
+        if (parser->info_handler(ctx->record_count, ctx->var_count, user_ctx)) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
     }
-    if (parser->variable_cb) {
+    if (parser->variable_handler) {
         for (i=0; i<ctx->var_index;) {
             char label_name_buf[256];
             sav_varinfo_t *info = &ctx->varinfo[i];
@@ -879,7 +879,7 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *filen
                 format = buf;
             }
 
-            int cb_retval = parser->variable_cb(info->index, info->longname, format, info->label, 
+            int cb_retval = parser->variable_handler(info->index, info->longname, format, info->label, 
                                         info->labels_index == -1 ? NULL : label_name_buf,
                                         info->type, user_ctx);
             if (cb_retval) {
@@ -890,7 +890,7 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *filen
         }
     }
     
-    if (ctx->handle_value) {
+    if (ctx->value_handler) {
         retval = sav_read_data(fd, ctx, user_ctx);
     }
     

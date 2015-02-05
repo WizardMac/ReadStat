@@ -526,8 +526,8 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *filen
         goto cleanup;
     }
     
-    if (parser->info_cb) {
-        if (parser->info_cb(ctx->nobs, ctx->nvar, user_ctx)) {
+    if (parser->info_handler) {
+        if (parser->info_handler(ctx->nobs, ctx->nvar, user_ctx)) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
@@ -620,8 +620,8 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *filen
         if (ctx->fmtlist[ctx->fmtlist_entry_len*i])
             variable_format = &ctx->fmtlist[ctx->fmtlist_entry_len*i];
 
-        if (parser->variable_cb) {
-            if (parser->variable_cb(i, variable_name, variable_format, variable_label, 
+        if (parser->variable_handler) {
+            if (parser->variable_handler(i, variable_name, variable_format, variable_label, 
                         value_labels, type, user_ctx)) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
@@ -737,8 +737,8 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *filen
                 value = num <= DTA_MAX_DOUBLE ? &num : NULL;
             }
 
-            if (parser->value_cb) {
-                if (parser->value_cb(i, j, value, type, user_ctx)) {
+            if (parser->value_handler) {
+                if (parser->value_handler(i, j, value, type, user_ctx)) {
                     retval = READSTAT_ERROR_USER_ABORT;
                     goto cleanup;
                 }
@@ -767,7 +767,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *filen
         }
     }
     
-    if (parser->value_label_cb) {
+    if (parser->value_label_handler) {
         while (1) {
             size_t len = 0;
             char *table_buffer;
@@ -795,7 +795,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *filen
                 
                 int32_t l;
                 for (l=0; l<len; l++) {
-                    if (parser->value_label_cb(table_header.labname, &l, READSTAT_TYPE_INT32, table_buffer + 8 * l, user_ctx)) {
+                    if (parser->value_label_handler(table_header.labname, &l, READSTAT_TYPE_INT32, table_buffer + 8 * l, user_ctx)) {
                         retval = READSTAT_ERROR_USER_ABORT;
                         free(table_buffer);
                         goto cleanup;
@@ -862,7 +862,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *filen
                 
                 for (i=0; i<n; i++) {
                     if (off[i] < txtlen) {
-                        if (parser->value_label_cb(table_header.labname, &val[i], READSTAT_TYPE_INT32, &txt[off[i]], user_ctx)) {
+                        if (parser->value_label_handler(table_header.labname, &val[i], READSTAT_TYPE_INT32, &txt[off[i]], user_ctx)) {
                             retval = READSTAT_ERROR_USER_ABORT;
                             free(table_buffer);
                             goto cleanup;

@@ -72,9 +72,9 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
                 memcpy(ctx->varinfo[found->index].longname, temp_val, str_len);
-            } else if (ctx->handle_error) {
+            } else if (ctx->error_handler) {
                 snprintf(error_buf, sizeof(error_buf), "Failed to find %s\n", temp_key);
-                ctx->handle_error(error_buf);
+                ctx->error_handler(error_buf);
             }
         }
 
@@ -107,10 +107,10 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
     }%%
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
-        if (ctx->handle_error) {
+        if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
                     (char *)data, (long)(p - c_data), count, *p);
-            ctx->handle_error(error_buf);
+            ctx->error_handler(error_buf);
         }
         retval = READSTAT_ERROR_PARSE;
     }
@@ -209,9 +209,9 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     }%%
     
     if (cs < %%{ write first_final; }%% || p != pe) {
-        if (ctx->handle_error) {
+        if (ctx->error_handler) {
             snprintf(error_buf, error_buf_len, "Parsed %ld of %ld bytes\nRemaining bytes: %s\n", (long)(p - c_data), (long)(pe - c_data), p);
-            ctx->handle_error(error_buf);
+            ctx->error_handler(error_buf);
         }
         retval = READSTAT_ERROR_PARSE;
     }
