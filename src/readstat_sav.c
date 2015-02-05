@@ -20,6 +20,8 @@
 #include "readstat_spss.h"
 #include "readstat_convert.h"
 
+#define DATA_BUFFER_SIZE              65536
+
 #define SAV_CHARSET_EBCDIC                1
 #define SAV_CHARSET_7_BIT_ASCII           2
 #define SAV_CHARSET_8_BIT_ASCII           3
@@ -119,10 +121,10 @@ static sav_charset_entry_t _charset_table[] = {
 
 static void sav_ctx_free(sav_ctx_t *ctx);
 static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx);
-static readstat_error_t sav_read_compressed_data(const unsigned char *data, size_t data_len,
-        size_t longest_string, sav_ctx_t *ctx, void *user_ctx, int *out_rows);
-static readstat_error_t sav_read_uncompressed_data(const unsigned char *data, size_t data_len,
-        size_t longest_string, sav_ctx_t *ctx, void *user_ctx, int *out_rows);
+static readstat_error_t sav_read_compressed_data(int fd, size_t longest_string, 
+        sav_ctx_t *ctx, void *user_ctx, int *out_rows);
+static readstat_error_t sav_read_uncompressed_data(int fd, size_t longest_string, 
+        sav_ctx_t *ctx, void *user_ctx, int *out_rows);
 static readstat_error_t sav_read_variable_record(int fd, sav_ctx_t *ctx);
 static readstat_error_t sav_read_document_record(int fd, sav_ctx_t *ctx);
 static readstat_error_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, void *user_ctx);
@@ -469,25 +471,6 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
     int longest_string = 256;
     int rows = 0;
     int i;
-    off_t current_offset = 0;
-    off_t end_offset = 0;
-    size_t data_len = 0;
-    unsigned char *data = NULL;
-    if ((current_offset = lseek(fd, 0, SEEK_CUR)) == -1) {
-        retval = READSTAT_ERROR_READ;
-        goto done;
-    }
-    if ((end_offset = lseek(fd, 0, SEEK_END)) == -1) {
-        retval = READSTAT_ERROR_READ;
-        goto done;
-    }
-    if (lseek(fd, current_offset, SEEK_SET) == -1) {
-        retval = READSTAT_ERROR_READ;
-        goto done;
-    }
-
-    data_len = (end_offset - current_offset);
-    data = malloc(data_len);
 
     for (i=0; i<ctx->var_count; i++) {
         sav_varinfo_t *info = &ctx->varinfo[i];
@@ -495,14 +478,10 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
             longest_string = info->string_length;
         }
     }
-    if (read(fd, data, data_len) < data_len) {
-        retval = READSTAT_ERROR_READ;
-        goto done;
-    }
     if (ctx->data_is_compressed) {
-        retval = sav_read_compressed_data(data, data_len, longest_string, ctx, user_ctx, &rows);
+        retval = sav_read_compressed_data(fd, longest_string, ctx, user_ctx, &rows);
     } else {
-        retval = sav_read_uncompressed_data(data, data_len, longest_string, ctx, user_ctx, &rows);
+        retval = sav_read_uncompressed_data(fd, longest_string, ctx, user_ctx, &rows);
     }
     if (retval != READSTAT_OK)
         goto done;
@@ -512,14 +491,11 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
     }
 done:
     
-    if (data)
-        free(data);
-    
     return retval;
 }
 
-static readstat_error_t sav_read_uncompressed_data(const unsigned char *data, size_t data_len,
-        size_t longest_string, sav_ctx_t *ctx, void *user_ctx, int *out_rows) {
+static readstat_error_t sav_read_uncompressed_data(int fd, size_t longest_string, 
+        sav_ctx_t *ctx, void *user_ctx, int *out_rows) {
     readstat_error_t retval = READSTAT_OK;
     int segment_offset = 0;
     int row = 0, var_index = 0, col = 0;
@@ -530,6 +506,8 @@ static readstat_error_t sav_read_uncompressed_data(const unsigned char *data, si
     char *raw_str_value = NULL;
     char *utf8_str_value = NULL;
     size_t utf8_str_value_len = 0;
+    unsigned char buffer[DATA_BUFFER_SIZE];
+    int buffer_used = 0;
 
     if ((raw_str_value = malloc(longest_string)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
@@ -541,8 +519,13 @@ static readstat_error_t sav_read_uncompressed_data(const unsigned char *data, si
         goto done;
     }
     while (1) {
-        if (data_offset >= data_len)
-            break;
+        if (data_offset >= buffer_used) {
+            if ((buffer_used = read(fd, buffer, sizeof(buffer))) == -1 ||
+                buffer_used == 0 || (buffer_used % 8) != 0)
+                goto done;
+
+            data_offset = 0;
+        }
 
         sav_varinfo_t *col_info = &ctx->varinfo[col];
         sav_varinfo_t *var_info = &ctx->varinfo[var_index];
@@ -552,7 +535,7 @@ static readstat_error_t sav_read_uncompressed_data(const unsigned char *data, si
         }
         if (var_info->type == READSTAT_TYPE_STRING) {
             if (raw_str_used + 8 <= longest_string) {
-                memcpy(raw_str_value + raw_str_used, &data[data_offset], 8);
+                memcpy(raw_str_value + raw_str_used, &buffer[data_offset], 8);
                 raw_str_used += 8;
             }
             offset++;
@@ -575,7 +558,7 @@ static readstat_error_t sav_read_uncompressed_data(const unsigned char *data, si
                 col++;
             }
         } else if (var_info->type == READSTAT_TYPE_DOUBLE) {
-            memcpy(&fp_value, &data[data_offset], 8);
+            memcpy(&fp_value, &buffer[data_offset], 8);
             if (ctx->machine_needs_byte_swap) {
                 fp_value = byteswap_double(fp_value);
             }
@@ -607,7 +590,7 @@ done:
     return retval;
 }
 
-static readstat_error_t sav_read_compressed_data(const unsigned char *data, size_t data_len,
+static readstat_error_t sav_read_compressed_data(int fd,
         size_t longest_string, sav_ctx_t *ctx, void *user_ctx, int *out_rows) {
     readstat_error_t retval = READSTAT_OK;
     unsigned char value[8];
@@ -621,6 +604,8 @@ static readstat_error_t sav_read_compressed_data(const unsigned char *data, size
     char *raw_str_value = NULL;
     char *utf8_str_value = NULL;
     size_t utf8_str_value_len = 0;
+    unsigned char buffer[DATA_BUFFER_SIZE];
+    int buffer_used = 0;
 
     if ((raw_str_value = malloc(longest_string)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
@@ -632,10 +617,15 @@ static readstat_error_t sav_read_compressed_data(const unsigned char *data, size
         goto done;
     }
     while (1) {
-        if (data_offset >= data_len)
-            break;
+        if (data_offset >= buffer_used) {
+            if ((buffer_used = read(fd, buffer, sizeof(buffer))) == -1 ||
+                buffer_used == 0 || (buffer_used % 8) != 0)
+                goto done;
 
-        memcpy(value, &data[data_offset], 8);
+            data_offset = 0;
+        }
+
+        memcpy(value, &buffer[data_offset], 8);
         data_offset += 8;
         
         sav_varinfo_t *col_info = &ctx->varinfo[col];
@@ -653,9 +643,16 @@ static readstat_error_t sav_read_compressed_data(const unsigned char *data, size
                 case 252:
                     goto done;
                 case 253:
+                    if (data_offset >= buffer_used) {
+                        if ((buffer_used = read(fd, buffer, sizeof(buffer))) == -1 ||
+                            buffer_used == 0 || (buffer_used % 8) != 0)
+                            goto done;
+
+                        data_offset = 0;
+                    }
                     if (var_info->type == READSTAT_TYPE_STRING) {
                         if (raw_str_used + 8 <= longest_string) {
-                            memcpy(raw_str_value + raw_str_used, &data[data_offset], 8);
+                            memcpy(raw_str_value + raw_str_used, &buffer[data_offset], 8);
                             raw_str_used += 8;
                         }
                         offset++;
@@ -678,7 +675,7 @@ static readstat_error_t sav_read_compressed_data(const unsigned char *data, size
                             col++;
                         }
                     } else if (var_info->type == READSTAT_TYPE_DOUBLE) {
-                        memcpy(&fp_value, &data[data_offset], 8);
+                        memcpy(&fp_value, &buffer[data_offset], 8);
                         if (ctx->machine_needs_byte_swap) {
                             fp_value = byteswap_double(fp_value);
                         }
