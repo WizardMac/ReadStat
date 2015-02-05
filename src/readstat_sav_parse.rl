@@ -23,7 +23,7 @@ static int compare_varlookups(const void *elem1, const void *elem2) {
 
 %%{
     machine sav_long_variable_parse;
-    write data;
+    write data nofinal noerror;
     alphtype unsigned char;
 }%%
 
@@ -119,12 +119,16 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
         free(table);
     if (output_buffer)
         free(output_buffer);
+
+    /* suppress warning */
+    (void)sav_long_variable_parse_en_main;
+
     return retval;
 }
 
 %%{
     machine sav_very_long_string_parse;
-    write data;
+    write data nofinal noerror;
     alphtype unsigned char;
 }%%
 
@@ -222,5 +226,9 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
         free(output_buffer);
     if (error_buf)
         free(error_buf);
+
+    /* suppress warning */
+    (void)sav_very_long_string_parse_en_main;
+
     return retval;
 }

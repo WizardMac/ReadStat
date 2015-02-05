@@ -5,7 +5,7 @@
 
 %%{
     machine por_field_parse;
-    write data;
+    write data nofinal noerror;
 }%%
 
 int readstat_por_parse_double(const char *data, size_t len, double *result, readstat_error_handler error_cb) {
@@ -79,6 +79,9 @@ int readstat_por_parse_double(const char *data, size_t len, double *result, read
         
         retval = (p - (const unsigned char *)data);
     }
-    
+
+    /* suppress warning */
+    (void)por_field_parse_en_main;
+
     return retval;
 }
