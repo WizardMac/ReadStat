@@ -84,7 +84,7 @@ static int read_st_z(rdata_ctx_t *ctx, void *buffer, size_t len) {
     while (1) {
         long start_out = ctx->z_strm->total_out;
 
-        ctx->z_strm->next_out = buffer + bytes_written;
+        ctx->z_strm->next_out = (unsigned char *)buffer + bytes_written;
         ctx->z_strm->avail_out = len - bytes_written;
 
         result = inflate(ctx->z_strm, Z_SYNC_FLUSH);
@@ -130,7 +130,7 @@ static int read_st_lzma(rdata_ctx_t *ctx, void *buffer, size_t len) {
     while (1) {
         long start_out = ctx->lzma_strm->total_out;
 
-        ctx->lzma_strm->next_out = buffer + bytes_written;
+        ctx->lzma_strm->next_out = (unsigned char *)buffer + bytes_written;
         ctx->lzma_strm->avail_out = len - bytes_written;
 
         result = lzma_code(ctx->lzma_strm, LZMA_RUN);
