@@ -198,7 +198,7 @@ static readstat_error_t init_z_stream(rdata_ctx_t *ctx) {
     ctx->z_strm->next_in = ctx->strm_buffer;
     ctx->z_strm->avail_in = bytes_read;
 
-    if (inflateInit(ctx->z_strm) != Z_OK) {
+    if (inflateInit2(ctx->z_strm, (15+32)) != Z_OK) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
