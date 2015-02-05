@@ -106,7 +106,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
         fprintf(stderr, "Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
-                (char *)data, p - c_data, count, *p);
+                (char *)data, (long)(p - c_data), count, *p);
         retval = READSTAT_ERROR_PARSE;
     }
     
@@ -201,7 +201,7 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     }%%
     
     if (cs < %%{ write first_final; }%% || p != pe) {
-        fprintf(stderr, "Parsed %ld of %ld bytes\n", p - c_data, pe - c_data);
+        fprintf(stderr, "Parsed %ld of %ld bytes\n", (long)(p - c_data), (long)(pe - c_data));
         fprintf(stderr, "Remaining bytes: %s\n", p);
         retval = READSTAT_ERROR_PARSE;
     }

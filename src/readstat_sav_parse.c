@@ -3441,7 +3441,7 @@ case 226:
 
     if (cs < 227|| p != pe) {
         fprintf(stderr, "Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
-                (char *)data, p - c_data, count, *p);
+                (char *)data, (long)(p - c_data), count, *p);
         retval = READSTAT_ERROR_PARSE;
     }
     
@@ -4042,7 +4042,7 @@ case 35:
 
     
     if (cs < 36 || p != pe) {
-        fprintf(stderr, "Parsed %ld of %ld bytes\n", p - c_data, pe - c_data);
+        fprintf(stderr, "Parsed %ld of %ld bytes\n", (long)(p - c_data), (long)(pe - c_data));
         fprintf(stderr, "Remaining bytes: %s\n", p);
         retval = READSTAT_ERROR_PARSE;
     }
