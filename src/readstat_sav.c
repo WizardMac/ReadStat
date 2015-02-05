@@ -119,6 +119,10 @@ static sav_charset_entry_t _charset_table[] = {
 
 static void sav_ctx_free(sav_ctx_t *ctx);
 static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx);
+static readstat_error_t sav_read_compressed_data(const unsigned char *data, size_t data_len,
+        size_t longest_string, sav_ctx_t *ctx, void *user_ctx, int *out_rows);
+static readstat_error_t sav_read_uncompressed_data(const unsigned char *data, size_t data_len,
+        size_t longest_string, sav_ctx_t *ctx, void *user_ctx, int *out_rows);
 static readstat_error_t sav_read_variable_record(int fd, sav_ctx_t *ctx);
 static readstat_error_t sav_read_document_record(int fd, sav_ctx_t *ctx);
 static readstat_error_t sav_read_value_label_record(int fd, sav_ctx_t *ctx, void *user_ctx);
@@ -461,25 +465,72 @@ double handle_missing_double(double fp_value, sav_varinfo_t *info) {
 }
 
 static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
-    unsigned char value[8];
-    char *raw_str_value = NULL;
-    char *utf8_str_value = NULL;
-    unsigned char uncompressed_value[8];
-    int offset = 0;
-    int segment_offset = 0;
-    int row = 0, var_index = 0, col = 0;
     readstat_error_t retval = READSTAT_OK;
-    int i;
-    double fp_value;
     int longest_string = 256;
-    int raw_str_used = 0;
-    size_t utf8_str_value_len;
+    int rows = 0;
+    int i;
+    off_t current_offset = 0;
+    off_t end_offset = 0;
+    size_t data_len = 0;
+    unsigned char *data = NULL;
+    if ((current_offset = lseek(fd, 0, SEEK_CUR)) == -1) {
+        retval = READSTAT_ERROR_READ;
+        goto done;
+    }
+    if ((end_offset = lseek(fd, 0, SEEK_END)) == -1) {
+        retval = READSTAT_ERROR_READ;
+        goto done;
+    }
+    if (lseek(fd, current_offset, SEEK_SET) == -1) {
+        retval = READSTAT_ERROR_READ;
+        goto done;
+    }
+
+    data_len = (end_offset - current_offset);
+    data = malloc(data_len);
+
     for (i=0; i<ctx->var_count; i++) {
         sav_varinfo_t *info = &ctx->varinfo[i];
         if (info->string_length > longest_string) {
             longest_string = info->string_length;
         }
     }
+    if (read(fd, data, data_len) < data_len) {
+        retval = READSTAT_ERROR_READ;
+        goto done;
+    }
+    if (ctx->data_is_compressed) {
+        retval = sav_read_compressed_data(data, data_len, longest_string, ctx, user_ctx, &rows);
+    } else {
+        retval = sav_read_uncompressed_data(data, data_len, longest_string, ctx, user_ctx, &rows);
+    }
+    if (retval != READSTAT_OK)
+        goto done;
+
+    if (rows != ctx->record_count) {
+        retval = READSTAT_ERROR_PARSE;
+    }
+done:
+    
+    if (data)
+        free(data);
+    
+    return retval;
+}
+
+static readstat_error_t sav_read_uncompressed_data(const unsigned char *data, size_t data_len,
+        size_t longest_string, sav_ctx_t *ctx, void *user_ctx, int *out_rows) {
+    readstat_error_t retval = READSTAT_OK;
+    int segment_offset = 0;
+    int row = 0, var_index = 0, col = 0;
+    double fp_value;
+    int offset = 0;
+    off_t data_offset = 0;
+    int raw_str_used = 0;
+    char *raw_str_value = NULL;
+    char *utf8_str_value = NULL;
+    size_t utf8_str_value_len = 0;
+
     if ((raw_str_value = malloc(longest_string)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto done;
@@ -490,165 +541,206 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
         goto done;
     }
     while (1) {
-        if (read(fd, value, 8) < 8) {
+        if (data_offset >= data_len)
             break;
+
+        sav_varinfo_t *col_info = &ctx->varinfo[col];
+        sav_varinfo_t *var_info = &ctx->varinfo[var_index];
+        if (offset > 31) {
+            retval = READSTAT_ERROR_PARSE;
+            goto done;
         }
+        if (var_info->type == READSTAT_TYPE_STRING) {
+            if (raw_str_used + 8 <= longest_string) {
+                memcpy(raw_str_value + raw_str_used, &data[data_offset], 8);
+                raw_str_used += 8;
+            }
+            offset++;
+            if (offset == col_info->width) {
+                segment_offset++;
+                if (segment_offset == var_info->n_segments) {
+                    retval = readstat_convert(utf8_str_value, utf8_str_value_len, 
+                            raw_str_value, raw_str_used, ctx->converter);
+                    if (retval != READSTAT_OK)
+                        goto done;
+                    if (ctx->value_handler(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
+                        retval = READSTAT_ERROR_USER_ABORT;
+                        goto done;
+                    }
+                    raw_str_used = 0;
+                    segment_offset = 0;
+                    var_index += var_info->n_segments;
+                }
+                offset = 0;
+                col++;
+            }
+        } else if (var_info->type == READSTAT_TYPE_DOUBLE) {
+            memcpy(&fp_value, &data[data_offset], 8);
+            if (ctx->machine_needs_byte_swap) {
+                fp_value = byteswap_double(fp_value);
+            }
+            fp_value = handle_missing_double(fp_value, var_info);
+            if (ctx->value_handler(row, var_info->index, isnan(fp_value) ? NULL : &fp_value, READSTAT_TYPE_DOUBLE, user_ctx)) {
+                retval = READSTAT_ERROR_USER_ABORT;
+                goto done;
+            }
+            var_index += var_info->n_segments;
+            col++;
+        }
+        if (col == ctx->var_index) {
+            col = 0;
+            var_index = 0;
+            row++;
+        }
+        data_offset += 8;
+    }
+done:
+    if (retval == READSTAT_OK) {
+        if (out_rows)
+            *out_rows = row;
+    }
+    if (raw_str_value)
+        free(raw_str_value);
+    if (utf8_str_value)
+        free(utf8_str_value);
+
+    return retval;
+}
+
+static readstat_error_t sav_read_compressed_data(const unsigned char *data, size_t data_len,
+        size_t longest_string, sav_ctx_t *ctx, void *user_ctx, int *out_rows) {
+    readstat_error_t retval = READSTAT_OK;
+    unsigned char value[8];
+    int offset = 0;
+    int segment_offset = 0;
+    int row = 0, var_index = 0, col = 0;
+    int i;
+    double fp_value;
+    off_t data_offset = 0;
+    int raw_str_used = 0;
+    char *raw_str_value = NULL;
+    char *utf8_str_value = NULL;
+    size_t utf8_str_value_len = 0;
+
+    if ((raw_str_value = malloc(longest_string)) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto done;
+    }
+    utf8_str_value_len = longest_string*4+1;
+    if ((utf8_str_value = malloc(utf8_str_value_len)) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto done;
+    }
+    while (1) {
+        if (data_offset >= data_len)
+            break;
+
+        memcpy(value, &data[data_offset], 8);
+        data_offset += 8;
         
         sav_varinfo_t *col_info = &ctx->varinfo[col];
         sav_varinfo_t *var_info = &ctx->varinfo[var_index];
-        if (ctx->data_is_compressed) {
-            for (i=0; i<8; i++) {
-                if (offset > 31) {
-                    retval = READSTAT_ERROR_PARSE;
-                    goto done;
-                }
-                col_info = &ctx->varinfo[col];
-                var_info = &ctx->varinfo[var_index];
-                switch (value[i]) {
-                    case 0:
-                        break;
-                    case 252:
-                        goto done;
-                    case 253:
-                        if (read(fd, uncompressed_value, 8) < 8) {
-                            retval = READSTAT_ERROR_READ;
-                            goto done;
-                        }
-                        if (var_info->type == READSTAT_TYPE_STRING) {
-                            if (raw_str_used + 8 <= longest_string) {
-                                memcpy(raw_str_value + raw_str_used, uncompressed_value, 8);
-                                raw_str_used += 8;
-                            }
-                            offset++;
-                            if (offset == col_info->width) {
-                                segment_offset++;
-                                if (segment_offset == var_info->n_segments) {
-                                    retval = readstat_convert(utf8_str_value, utf8_str_value_len, 
-                                            raw_str_value, raw_str_used, ctx->converter);
-                                    if (retval != READSTAT_OK)
-                                        goto done;
-                                    if (ctx->value_handler(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
-                                        retval = READSTAT_ERROR_USER_ABORT;
-                                        goto done;
-                                    }
-                                    raw_str_used = 0;
-                                    segment_offset = 0;
-                                    var_index += var_info->n_segments;
-                                }
-                                offset = 0;
-                                col++;
-                            }
-                        } else if (var_info->type == READSTAT_TYPE_DOUBLE) {
-                            memcpy(&fp_value, uncompressed_value, 8);
-                            if (ctx->machine_needs_byte_swap) {
-                                fp_value = byteswap_double(fp_value);
-                            }
-                            fp_value = handle_missing_double(fp_value, var_info);
-                            if (ctx->value_handler(row, var_info->index, &fp_value, READSTAT_TYPE_DOUBLE, user_ctx)) {
-                                retval = READSTAT_ERROR_USER_ABORT;
-                                goto done;
-                            }
-                            var_index += var_info->n_segments;
-                            col++;
-                        }
-                        break;
-                    case 254:
-                        if (var_info->type == READSTAT_TYPE_STRING) {
-                            if (raw_str_used + 8 <= longest_string) {
-                                memcpy(raw_str_value + raw_str_used, SAV_EIGHT_SPACES, 8);
-                                raw_str_used += 8;
-                            }
-                            offset++;
-                            if (offset == col_info->width) {
-                                segment_offset++;
-                                if (segment_offset == var_info->n_segments) {
-                                    retval = readstat_convert(utf8_str_value, utf8_str_value_len, 
-                                            raw_str_value, raw_str_used, ctx->converter);
-                                    if (retval != READSTAT_OK)
-                                        goto done;
-                                    if (ctx->value_handler(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
-                                        retval = READSTAT_ERROR_USER_ABORT;
-                                        goto done;
-                                    }
-                                    raw_str_used = 0;
-                                    segment_offset = 0;
-                                    var_index += var_info->n_segments;
-                                }
-                                offset = 0;
-                                col++;
-                            }
-                        } else {
-                            retval = READSTAT_ERROR_PARSE;
-                            goto done;
-                        }
-                        break;
-                    case 255:
-                        fp_value = NAN;
-                        if (ctx->value_handler(row, var_info->index, &fp_value, var_info->type, user_ctx)) {
-                            retval = READSTAT_ERROR_USER_ABORT;
-                            goto done;
-                        }
-                        var_index += var_info->n_segments;
-                        col++;
-                        break;
-                    default:
-                        fp_value = value[i] - 100.0;
-                        fp_value = handle_missing_double(fp_value, var_info);
-                        if (ctx->value_handler(row, var_info->index, &fp_value, var_info->type, user_ctx)) {
-                            retval = READSTAT_ERROR_USER_ABORT;
-                            goto done;
-                        }
-                        var_index += var_info->n_segments;
-                        col++;
-                        break;
-                }
-                if (col == ctx->var_index) {
-                    col = 0;
-                    var_index = 0;
-                    row++;
-                }
-            }
-        } else {
+        for (i=0; i<8; i++) {
             if (offset > 31) {
                 retval = READSTAT_ERROR_PARSE;
                 goto done;
             }
-            if (var_info->type == READSTAT_TYPE_STRING) {
-                if (raw_str_used + 8 <= longest_string) {
-                    memcpy(raw_str_value + raw_str_used, value, 8);
-                    raw_str_used += 8;
-                }
-                offset++;
-                if (offset == col_info->width) {
-                    segment_offset++;
-                    if (segment_offset == var_info->n_segments) {
-                        retval = readstat_convert(utf8_str_value, utf8_str_value_len, 
-                                raw_str_value, raw_str_used, ctx->converter);
-                        if (retval != READSTAT_OK)
-                            goto done;
-                        if (ctx->value_handler(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
+            col_info = &ctx->varinfo[col];
+            var_info = &ctx->varinfo[var_index];
+            switch (value[i]) {
+                case 0:
+                    break;
+                case 252:
+                    goto done;
+                case 253:
+                    if (var_info->type == READSTAT_TYPE_STRING) {
+                        if (raw_str_used + 8 <= longest_string) {
+                            memcpy(raw_str_value + raw_str_used, &data[data_offset], 8);
+                            raw_str_used += 8;
+                        }
+                        offset++;
+                        if (offset == col_info->width) {
+                            segment_offset++;
+                            if (segment_offset == var_info->n_segments) {
+                                retval = readstat_convert(utf8_str_value, utf8_str_value_len, 
+                                        raw_str_value, raw_str_used, ctx->converter);
+                                if (retval != READSTAT_OK)
+                                    goto done;
+                                if (ctx->value_handler(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
+                                    retval = READSTAT_ERROR_USER_ABORT;
+                                    goto done;
+                                }
+                                raw_str_used = 0;
+                                segment_offset = 0;
+                                var_index += var_info->n_segments;
+                            }
+                            offset = 0;
+                            col++;
+                        }
+                    } else if (var_info->type == READSTAT_TYPE_DOUBLE) {
+                        memcpy(&fp_value, &data[data_offset], 8);
+                        if (ctx->machine_needs_byte_swap) {
+                            fp_value = byteswap_double(fp_value);
+                        }
+                        fp_value = handle_missing_double(fp_value, var_info);
+                        if (ctx->value_handler(row, var_info->index, &fp_value, READSTAT_TYPE_DOUBLE, user_ctx)) {
                             retval = READSTAT_ERROR_USER_ABORT;
                             goto done;
                         }
-                        raw_str_used = 0;
-                        segment_offset = 0;
                         var_index += var_info->n_segments;
+                        col++;
                     }
-                    offset = 0;
+                    data_offset += 8;
+                    break;
+                case 254:
+                    if (var_info->type == READSTAT_TYPE_STRING) {
+                        if (raw_str_used + 8 <= longest_string) {
+                            memcpy(raw_str_value + raw_str_used, SAV_EIGHT_SPACES, 8);
+                            raw_str_used += 8;
+                        }
+                        offset++;
+                        if (offset == col_info->width) {
+                            segment_offset++;
+                            if (segment_offset == var_info->n_segments) {
+                                retval = readstat_convert(utf8_str_value, utf8_str_value_len, 
+                                        raw_str_value, raw_str_used, ctx->converter);
+                                if (retval != READSTAT_OK)
+                                    goto done;
+                                if (ctx->value_handler(row, var_info->index, utf8_str_value, READSTAT_TYPE_STRING, user_ctx)) {
+                                    retval = READSTAT_ERROR_USER_ABORT;
+                                    goto done;
+                                }
+                                raw_str_used = 0;
+                                segment_offset = 0;
+                                var_index += var_info->n_segments;
+                            }
+                            offset = 0;
+                            col++;
+                        }
+                    } else {
+                        retval = READSTAT_ERROR_PARSE;
+                        goto done;
+                    }
+                    break;
+                case 255:
+                    fp_value = NAN;
+                    if (ctx->value_handler(row, var_info->index, &fp_value, var_info->type, user_ctx)) {
+                        retval = READSTAT_ERROR_USER_ABORT;
+                        goto done;
+                    }
+                    var_index += var_info->n_segments;
                     col++;
-                }
-            } else if (var_info->type == READSTAT_TYPE_DOUBLE) {
-                memcpy(&fp_value, value, 8);
-                if (ctx->machine_needs_byte_swap) {
-                    fp_value = byteswap_double(fp_value);
-                }
-                fp_value = handle_missing_double(fp_value, var_info);
-                if (ctx->value_handler(row, var_info->index, isnan(fp_value) ? NULL : &fp_value, READSTAT_TYPE_DOUBLE, user_ctx)) {
-                    retval = READSTAT_ERROR_USER_ABORT;
-                    goto done;
-                }
-                var_index += var_info->n_segments;
-                col++;
+                    break;
+                default:
+                    fp_value = value[i] - 100.0;
+                    fp_value = handle_missing_double(fp_value, var_info);
+                    if (ctx->value_handler(row, var_info->index, &fp_value, var_info->type, user_ctx)) {
+                        retval = READSTAT_ERROR_USER_ABORT;
+                        goto done;
+                    }
+                    var_index += var_info->n_segments;
+                    col++;
+                    break;
             }
             if (col == ctx->var_index) {
                 col = 0;
@@ -657,16 +749,16 @@ static readstat_error_t sav_read_data(int fd, sav_ctx_t *ctx, void *user_ctx) {
             }
         }
     }
-    if (row != ctx->record_count) {
-        retval = READSTAT_ERROR_PARSE;
-    }
 done:
-    
+    if (retval == READSTAT_OK) {
+        if (out_rows)
+            *out_rows = row;
+    }
     if (raw_str_value)
         free(raw_str_value);
     if (utf8_str_value)
         free(utf8_str_value);
-    
+
     return retval;
 }
 
