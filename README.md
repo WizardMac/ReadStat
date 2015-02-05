@@ -9,7 +9,10 @@ packages. Supported formats include:
 * Stata: DTA
 * SPSS: POR and SAV
 
-The API is callback-based and is suitable for programs with progress bars.
+The ReadStat API is callback-based. It uses very little memory, and is suitable
+for programs with progress bars.  ReadStat uses
+[iconv](https://en.wikipedia.org/wiki/Iconv) to automatically transcode
+text data into UTF-8, so you don't have to worry about character encodings. 
 
 
 Installation
@@ -126,3 +129,9 @@ Example: Convert a DTA to a tab-separated file.
         return 0;
     }
 
+
+Language Bindings
+==
+
+* Julia: [DataRead.jl](https://github.com/WizardMac/DataRead.jl)
+* R: [haven](https://github.com/hadley/haven)
