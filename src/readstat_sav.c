@@ -36,7 +36,9 @@ typedef struct sav_charset_entry_s {
 
 /* See http://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx */
 static sav_charset_entry_t _charset_table[] = { 
-    { .code = 2,     .name = "ASCII" },
+    { .code = 1,     .name = "EBCDIC-US" },
+    { .code = 2,     .name = "US-ASCII" },
+    { .code = 3,     .name = "WINDOWS-1252" },
     { .code = 4,     .name = "DEC-KANJI" },
     { .code = 437,   .name = "CP437" },
     { .code = 708,   .name = "ASMO-708" },
