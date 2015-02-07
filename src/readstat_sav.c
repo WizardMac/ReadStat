@@ -17,7 +17,6 @@
 #include "readstat_io.h"
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
-#include "readstat_spss.h"
 #include "readstat_convert.h"
 
 #define DATA_BUFFER_SIZE              65536
@@ -964,9 +963,8 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *filen
 
             char *format = NULL;
             char buf[80];
-            if (spss_format_is_date(info->print_format.type)) {
-                const char *fmt = spss_format(info->print_format.type);
-                snprintf(buf, sizeof(buf), "%%ts%s", fmt ? fmt : "");
+
+            if (spss_format(buf, sizeof(buf), &info->print_format)) {
                 format = buf;
             }
 
