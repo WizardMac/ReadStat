@@ -1111,7 +1111,7 @@ readstat_error_t readstat_write_sav(readstat_writer_t *writer, void *user_ctx) {
             for (j=0; j<label_count; j++) {
                 char value[8];
                 if (writer->variable_type_provider(i, user_ctx) == READSTAT_TYPE_STRING) {
-                    char *txt_value = writer->vlabel_value_provider(j, i, user_ctx);
+                    const char *txt_value = writer->vlabel_string_value_provider(j, i, user_ctx);
                     size_t txt_len = strlen(txt_value);
                     if (txt_len > 8)
                         txt_len = 8;
@@ -1119,8 +1119,8 @@ readstat_error_t readstat_write_sav(readstat_writer_t *writer, void *user_ctx) {
                     memset(value, ' ', sizeof(value));
                     memcpy(value, txt_value, txt_len);
                 } else {
-                    double *num_val = writer->vlabel_value_provider(j, i, user_ctx);
-                    memcpy(value, num_val, sizeof(double));
+                    double num_val = writer->vlabel_double_value_provider(j, i, user_ctx);
+                    memcpy(value, &num_val, sizeof(double));
                 }
                 writer->data_writer(value, sizeof(value), user_ctx);
                 

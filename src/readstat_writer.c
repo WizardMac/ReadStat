@@ -51,12 +51,17 @@ readstat_error_t readstat_set_vlabel_count_provider(readstat_writer_t *writer, r
     writer->vlabel_count_provider = vlabel_count_provider;
     return READSTAT_OK;
 }
-readstat_error_t readstat_set_vlabel_value_provider(readstat_writer_t *writer, readstat_vlabel_value_provider vlabel_value_provider) {
-    writer->vlabel_value_provider = vlabel_value_provider;
+readstat_error_t readstat_set_vlabel_double_value_provider(readstat_writer_t *writer, readstat_vlabel_double_provider vlabel_value_provider) {
+    writer->vlabel_double_value_provider = vlabel_value_provider;
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_vlabel_label_provider(readstat_writer_t *writer, readstat_vlabel_label_provider vlabel_label_provider) {
+readstat_error_t readstat_set_vlabel_string_value_provider(readstat_writer_t *writer, readstat_vlabel_string_provider vlabel_value_provider) {
+    writer->vlabel_string_value_provider = vlabel_value_provider;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_vlabel_label_provider(readstat_writer_t *writer, readstat_vlabel_string_provider vlabel_label_provider) {
     writer->vlabel_label_provider = vlabel_label_provider;
     return READSTAT_OK;
 }

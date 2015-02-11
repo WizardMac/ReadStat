@@ -98,8 +98,8 @@ typedef const char * (*readstat_variable_format_provider)(int var_index, void *c
 typedef size_t (*readstat_variable_width_provider)(int var_index, void *ctx);
 typedef const void * (*readstat_value_provider)(int obs_index, int var_index, void *ctx);
 typedef int (*readstat_vlabel_count_provider)(int var_index, void *ctx);
-typedef void * (*readstat_vlabel_value_provider)(int label_index, int var_index, void *ctx);
-typedef const char * (*readstat_vlabel_label_provider)(int label_index, int var_index, void *ctx);
+typedef double (*readstat_vlabel_double_provider)(int label_index, int var_index, void *ctx);
+typedef const char * (*readstat_vlabel_string_provider)(int label_index, int var_index, void *ctx);
 
 /* Return non-zero at any time to abort the operation. Called before each row is emitted. */
 typedef int (*readstat_cancellation_provider)(void *ctx);
@@ -113,8 +113,9 @@ typedef struct readstat_writer_s {
     readstat_variable_width_provider    variable_width_provider;
     readstat_value_provider             value_provider;
     readstat_vlabel_count_provider      vlabel_count_provider;
-    readstat_vlabel_value_provider      vlabel_value_provider;
-    readstat_vlabel_label_provider      vlabel_label_provider;
+    readstat_vlabel_double_provider     vlabel_double_value_provider;
+    readstat_vlabel_string_provider     vlabel_string_value_provider;
+    readstat_vlabel_string_provider     vlabel_label_provider;
     readstat_cancellation_provider      cancellation_provider;
     int                                 obs_count;
     int                                 var_count;
@@ -132,8 +133,9 @@ readstat_error_t readstat_set_variable_format_provider(readstat_writer_t *writer
 readstat_error_t readstat_set_variable_width_provider(readstat_writer_t *writer, readstat_variable_width_provider variable_width_provider);
 readstat_error_t readstat_set_value_provider(readstat_writer_t *writer, readstat_value_provider value_provider);
 readstat_error_t readstat_set_vlabel_count_provider(readstat_writer_t *writer, readstat_vlabel_count_provider vlabel_count_provider);
-readstat_error_t readstat_set_vlabel_value_provider(readstat_writer_t *writer, readstat_vlabel_value_provider vlabel_value_provider);
-readstat_error_t readstat_set_vlabel_label_provider(readstat_writer_t *writer, readstat_vlabel_label_provider vlabel_label_provider);
+readstat_error_t readstat_set_vlabel_double_value_provider(readstat_writer_t *writer, readstat_vlabel_double_provider vlabel_double_provider);
+readstat_error_t readstat_set_vlabel_string_value_provider(readstat_writer_t *writer, readstat_vlabel_string_provider vlabel_string_provider);
+readstat_error_t readstat_set_vlabel_label_provider(readstat_writer_t *writer, readstat_vlabel_string_provider vlabel_label_provider);
 readstat_error_t readstat_set_cancellation_provider(readstat_writer_t *writer, readstat_cancellation_provider cancellation_provider);
 readstat_error_t readstat_set_row_count(readstat_writer_t *writer, int row_count);
 readstat_error_t readstat_set_var_count(readstat_writer_t *writer, int var_count);
