@@ -756,7 +756,7 @@ static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t
 
     char *src_charset = NULL;
     sav_machine_integer_info_record_t record;
-    memset(&record, data, data_len);
+    memcpy(&record, data, data_len);
     if (ctx->machine_needs_byte_swap) {
         record.character_code = byteswap4(record.character_code);
     }
@@ -765,7 +765,7 @@ static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t
     } else {
         int i;
         for (i=0; i<sizeof(_charset_table)/sizeof(_charset_table[0]); i++) {
-            if (character_code  == _charset_table[i].code) {
+            if (record.character_code  == _charset_table[i].code) {
                 src_charset = _charset_table[i].name;
                 break;
             }
@@ -773,7 +773,7 @@ static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t
         if (src_charset == NULL) {
             if (ctx->error_handler) {
                 char error_buf[1024];
-                snprintf(error_buf, sizeof(error_buf), "Unsupported character set: %d\n", character_code);
+                snprintf(error_buf, sizeof(error_buf), "Unsupported character set: %d\n", record.character_code);
                 ctx->error_handler(error_buf);
             }
             return READSTAT_ERROR_UNSUPPORTED_CHARSET;
