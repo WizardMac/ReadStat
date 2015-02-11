@@ -13,13 +13,20 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <math.h>
+#include <float.h>
+#include <time.h>
 
 #include "readstat_io.h"
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
+#include "readstat_spss_parse.h"
 #include "readstat_convert.h"
 
-#define DATA_BUFFER_SIZE              65536
+#define READSTAT_PRODUCT_NAME       "ReadStat"
+#define READSTAT_PRODUCT_URL        "https://github.com/WizardMac/ReadStat"
+
+#define MAX_TEXT_SIZE               256
+#define DATA_BUFFER_SIZE            65536
 
 /* Others defined in table below */
 
@@ -983,4 +990,298 @@ cleanup:
         sav_ctx_free(ctx);
     
     return retval;
+}
+
+readstat_error_t readstat_write_sav(readstat_writer_t *writer, void *user_ctx) {
+    readstat_error_t retval = READSTAT_OK;
+    time_t now = time(NULL);
+    struct tm *time_s = localtime(&now);
+
+    int i, j;
+    int var_count = writer->var_count;
+    int obs_count = writer->obs_count;
+    size_t *field_lengths = calloc(var_count, sizeof(size_t));
+    
+    sav_file_header_record_t header;
+    memcpy(header.rec_type, "$FL2", sizeof("$FL2")-1);
+    memset(header.prod_name, ' ', sizeof(header.prod_name));
+    memcpy(header.prod_name,
+           "@(#) SPSS DATA FILE - created by " READSTAT_PRODUCT_NAME ", " READSTAT_PRODUCT_URL, 
+           sizeof("@(#) SPSS DATA FILE - created by " READSTAT_PRODUCT_NAME ", " READSTAT_PRODUCT_URL)-1);
+    header.layout_code = 2;
+    header.nominal_case_size = var_count;
+    for (i=0; i<var_count; i++) {
+        if (writer->variable_type_provider(i, user_ctx) == READSTAT_TYPE_STRING) {
+            field_lengths[i] = writer->variable_width_provider(i, user_ctx);
+            if (field_lengths[i] > 255)
+                field_lengths[i] = 255;
+            header.nominal_case_size += (field_lengths[i] + 7) / 8 - 1;
+        }
+    }
+    header.compressed = 0; /* TODO */
+    header.weight_index = 0;
+    header.ncases = obs_count;
+    header.bias = 100.0;
+    
+    strftime(header.creation_date, sizeof(header.creation_date),
+             "%d %b %y", time_s);
+    strftime(header.creation_time, sizeof(header.creation_time),
+             "%T", time_s);
+    
+    memset(header.file_label, ' ', sizeof(header.file_label));
+
+    if (writer->file_label[0])
+        memcpy(header.file_label, writer->file_label, strlen(writer->file_label));
+    
+    memset(header.padding, '\0', sizeof(header.padding));
+    
+    int32_t rec_type = 0;
+    double missing_val = NAN;
+    
+    writer->data_writer(&header, sizeof(header), user_ctx);
+    
+    for (i=0; i<var_count; i++) {
+        char name_data[9];
+        snprintf(name_data, sizeof(name_data), "var%d", i);
+        size_t name_data_len = strlen(name_data);
+
+        const char *title_data = writer->variable_longname_provider(i, user_ctx);
+        size_t title_data_len = strlen(title_data);
+        rec_type = 2;
+        
+        sav_variable_record_t variable;
+        memset(&variable, 0, sizeof(sav_variable_record_t));
+        variable.type = writer->variable_type_provider(i, user_ctx) == READSTAT_TYPE_STRING ? 255 : 0;
+        variable.has_var_label = (title_data_len > 0);
+        variable.n_missing_values = 1;
+        if (writer->variable_format_provider) {
+            const char *fmt = writer->variable_format_provider(i, user_ctx);
+            if (fmt) {
+                spss_format_t spss_format = { .type = 0, .width = 0, .decimal_places = 0 };
+                if (spss_parse_format(fmt, strlen(fmt), &spss_format) == READSTAT_OK) {
+                    variable.print = (
+                            (spss_format.type << 16) |
+                            (spss_format.width << 8) |
+                            spss_format.decimal_places);
+                }
+                variable.write = variable.print;
+            }
+        }
+
+        memset(variable.name, ' ', sizeof(variable.name));
+        if (name_data_len > 0 && name_data_len <= sizeof(variable.name))
+            memcpy(variable.name, name_data, name_data_len);
+        
+        writer->data_writer(&rec_type, sizeof(rec_type), user_ctx);
+        writer->data_writer(&variable, sizeof(variable), user_ctx);
+        
+        if (title_data_len > 0) {
+            int32_t label_len = title_data_len;
+            if (label_len > 120)
+                label_len = 120;
+            
+            char padded_label[120];
+            memcpy(padded_label, title_data, label_len);
+            
+            writer->data_writer(&label_len, sizeof(label_len), user_ctx);
+            writer->data_writer(padded_label, (label_len + 3) / 4 * 4, user_ctx);
+        }
+        
+        writer->data_writer(&missing_val, sizeof(missing_val), user_ctx);
+        
+        if (writer->variable_type_provider(i, user_ctx)) {
+            int extra_fields = (field_lengths[i] + 7) / 8 - 1;
+            for (j=0; j<extra_fields; j++) {
+                writer->data_writer(&rec_type, sizeof(rec_type), user_ctx);
+                memset(&variable, '\0', sizeof(variable));
+                variable.type = -1;
+                writer->data_writer(&variable, sizeof(variable), user_ctx);
+            }
+        }
+    }
+    
+    int offset = 1;
+    for (i=0; i<var_count; i++) {
+        int32_t label_count = writer->vlabel_count_provider(i, user_ctx);
+        if (label_count) {
+            rec_type = SAV_RECORD_TYPE_VALUE_LABEL;
+            writer->data_writer(&rec_type, sizeof(rec_type), user_ctx);
+            writer->data_writer(&label_count, sizeof(label_count), user_ctx);
+            
+            for (j=0; j<label_count; j++) {
+                char value[8];
+                if (writer->variable_type_provider(i, user_ctx) == READSTAT_TYPE_STRING) {
+                    char *txt_value = writer->vlabel_value_provider(j, i, user_ctx);
+                    size_t txt_len = strlen(txt_value);
+                    if (txt_len > 8)
+                        txt_len = 8;
+
+                    memset(value, ' ', sizeof(value));
+                    memcpy(value, txt_value, txt_len);
+                } else {
+                    double *num_val = writer->vlabel_value_provider(j, i, user_ctx);
+                    memcpy(value, num_val, sizeof(double));
+                }
+                writer->data_writer(value, sizeof(value), user_ctx);
+                
+                const char *label_data = writer->vlabel_label_provider(j, i, user_ctx);
+                size_t label_data_len = strlen(label_data);
+                if (label_data_len > 255)
+                    label_data_len = 255;
+                
+                char label_len = label_data_len;
+                char label[255];
+                
+                writer->data_writer(&label_len, sizeof(label_len), user_ctx);
+                memset(label, ' ', sizeof(label));
+                memcpy(label, label_data, label_data_len);
+                writer->data_writer(label, (label_data_len + 8) / 8 * 8 - 1, user_ctx);
+            }
+            
+            rec_type = SAV_RECORD_TYPE_VALUE_LABEL_VARIABLES;
+            int32_t var_count = 1;
+            int32_t dictionary_index = offset;
+            
+            writer->data_writer(&rec_type, sizeof(rec_type), user_ctx);
+            writer->data_writer(&var_count, sizeof(var_count), user_ctx);
+            writer->data_writer(&dictionary_index, sizeof(dictionary_index), user_ctx);
+        }
+        
+        offset++;
+        if (writer->variable_type_provider(i, user_ctx) == READSTAT_TYPE_STRING) {
+            offset += (field_lengths[i] + 7) / 8 - 1;
+        }
+    }
+    
+    sav_info_record_t info_header;
+    info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
+    info_header.subtype = SAV_RECORD_SUBTYPE_INTEGER_INFO;
+    info_header.size = 4;
+    info_header.count = 8;
+    
+    sav_machine_integer_info_record_t machine_info;
+    machine_info.version_major = 1;
+    machine_info.version_minor = 0;
+    machine_info.version_revision = 0;
+    machine_info.machine_code = -1;
+    machine_info.floating_point_rep = SAV_FLOATING_POINT_REP_IEEE;
+    machine_info.compression_code = 1;
+    machine_info.endianness = machine_is_little_endian() ? SAV_ENDIANNESS_LITTLE : SAV_ENDIANNESS_BIG;
+    machine_info.character_code = SAV_CHARSET_UTF8;
+    
+    writer->data_writer(&info_header, sizeof(info_header), user_ctx);
+    writer->data_writer(&machine_info, sizeof(machine_info), user_ctx);
+    
+    info_header.rec_type = 7;
+    info_header.subtype = 4;
+    info_header.size = 8;
+    info_header.count = 3;
+    
+    sav_machine_floating_point_info_record_t fp_info;
+    fp_info.sysmis = NAN;
+    fp_info.lowest = DBL_MAX;
+    fp_info.highest = -DBL_MAX;
+    
+    writer->data_writer(&info_header, sizeof(info_header), user_ctx);
+    writer->data_writer(&fp_info, sizeof(fp_info), user_ctx);
+    
+    info_header.rec_type = 7;
+    info_header.subtype = 13;
+    info_header.size = 1;
+    info_header.count = 0;
+    
+    for (i=0; i<var_count; i++) {
+        char name_data[9];
+        snprintf(name_data, sizeof(name_data), "var%d", i);
+        size_t name_data_len = strlen(name_data);
+        
+        const char *title_data = writer->variable_shortname_provider(i, user_ctx);
+        size_t title_data_len = strlen(title_data);
+        if (title_data_len > 0 && name_data_len > 0) {
+            if (title_data_len > 64)
+                title_data_len = 64;
+            
+            info_header.count += name_data_len;
+            info_header.count += sizeof("=")-1;
+            info_header.count += title_data_len;
+            info_header.count += sizeof("\x09")-1;
+        }
+    }
+    
+    if (info_header.count > 0) {
+        info_header.count--; /* no trailing 0x09 */
+        
+        writer->data_writer(&info_header, sizeof(info_header), user_ctx);
+        
+        int is_first = 1;
+        
+        for (i=0; i<var_count; i++) {
+            char name_data[9];
+            snprintf(name_data, sizeof(name_data), "var%d", i);
+            size_t name_data_len = strlen(name_data);
+
+            const char *title_data = writer->variable_shortname_provider(i, user_ctx);
+            size_t title_data_len = strlen(title_data);
+            
+            char kv_separator = '=';
+            char tuple_separator = 0x09;
+            
+            if (title_data_len > 0 && name_data_len > 0) {
+                if (title_data_len > 64)
+                    title_data_len = 64;
+                if (!is_first)
+                    writer->data_writer(&tuple_separator, sizeof(tuple_separator), user_ctx);
+                
+                writer->data_writer(name_data, name_data_len, user_ctx);
+                writer->data_writer(&kv_separator, sizeof(kv_separator), user_ctx);
+                writer->data_writer(title_data, title_data_len, user_ctx);
+                
+                is_first = 0;
+            }
+        }
+    }
+    
+    sav_dictionary_termination_record_t termination_record;
+    termination_record.rec_type = 999;
+    termination_record.filler = 0;
+    
+    writer->data_writer(&termination_record, sizeof(termination_record), user_ctx);
+    
+    char *text_value = malloc(MAX_TEXT_SIZE);
+    
+    for (j=0; j<obs_count; j++) {
+        if (writer->cancellation_provider && writer->cancellation_provider(user_ctx)) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+        
+        for (i=0; i<var_count; i++) {
+            if (writer->variable_type_provider(i, user_ctx) == READSTAT_TYPE_STRING) {
+                size_t max_len = field_lengths[i];
+                size_t padded_len = (max_len + 7) / 8 * 8;
+                memset(text_value, ' ', padded_len);
+                const char * user_text_value = writer->value_provider(j, i, user_ctx);
+                if (user_text_value != NULL && user_text_value[0] != '\0') {
+                    memcpy(text_value, user_text_value, strlen(user_text_value));
+                }
+                writer->data_writer(text_value, padded_len, user_ctx);
+            } else {
+                double val = NAN;
+                const double *user_val = writer->value_provider(j, i, user_ctx);
+                if (user_val != NULL && !isnan(*user_val)) {
+                    val = *user_val;
+                }
+                writer->data_writer(&val, sizeof(val), user_ctx);
+            }
+        }
+    }
+    
+cleanup:
+    if (field_lengths)
+        free(field_lengths);
+    if (text_value)
+        free(text_value);
+    
+    return retval;
+
 }
