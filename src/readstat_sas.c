@@ -569,7 +569,7 @@ static readstat_error_t sas_parse_rows(const char *data, sas_ctx_t *ctx) {
     int i;
     size_t row_offset=0;
     for (i=0; i<ctx->page_row_count && ctx->parsed_row_count < ctx->total_row_count; i++) {
-        if ((retval = sas_parse_single_row(&data[row_offset], ctx)) != 0)
+        if ((retval = sas_parse_single_row(&data[row_offset], ctx)) != READSTAT_OK)
             goto cleanup;
 
         row_offset += ctx->row_length;
@@ -784,17 +784,20 @@ static readstat_error_t submit_columns(sas_ctx_t *ctx) {
         char format_buf[1024];
         char label_buf[1024];
         for (i=0; i<ctx->column_count; i++) {
-            if ((retval = copy_text_ref(name_buf, sizeof(name_buf), ctx->col_info[i].name_ref, ctx)) != 0) {
+            if ((retval = copy_text_ref(name_buf, sizeof(name_buf), 
+                            ctx->col_info[i].name_ref, ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
-            if ((retval = copy_text_ref(format_buf, sizeof(format_buf), ctx->col_info[i].format_ref, ctx)) != 0) {
+            if ((retval = copy_text_ref(format_buf, sizeof(format_buf), 
+                            ctx->col_info[i].format_ref, ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
-            if ((retval = copy_text_ref(label_buf, sizeof(label_buf), ctx->col_info[i].label_ref, ctx)) != 0) {
+            if ((retval = copy_text_ref(label_buf, sizeof(label_buf), 
+                            ctx->col_info[i].label_ref, ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
-            int cb_retval = ctx->variable_handler(i, name_buf, format_buf, label_buf, format_buf, 
-                    ctx->col_info[i].type, ctx->user_ctx);
+            int cb_retval = ctx->variable_handler(i, name_buf, format_buf, 
+                    label_buf, format_buf, ctx->col_info[i].type, ctx->user_ctx);
             if (cb_retval) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
@@ -846,7 +849,7 @@ static readstat_error_t sas_parse_page_pass1(const char *page, size_t page_size,
                     signature = read4(page + offset + 4, ctx->bswap);
                 }
                 if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
-                    if ((retval = sas_parse_subheader(signature, page + offset, len, ctx)) != 0) {
+                    if ((retval = sas_parse_subheader(signature, page + offset, len, ctx)) != READSTAT_OK) {
                         goto cleanup;
                     }
                 }
@@ -916,18 +919,18 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
                         signature = read4(page + offset + 4, ctx->bswap);
                     }
                     if (signature != SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
-                        if ((retval = sas_parse_subheader(signature, page + offset, len, ctx)) != 0) {
+                        if ((retval = sas_parse_subheader(signature, page + offset, len, ctx)) != READSTAT_OK) {
                             goto cleanup;
                         }
                     }
                 } else if (compression == SAS_COMPRESSION_RLE) {
                     if (!ctx->did_submit_columns) {
-                        if ((retval = submit_columns(ctx)) != 0) {
+                        if ((retval = submit_columns(ctx)) != READSTAT_OK) {
                             goto cleanup;
                         }
                         ctx->did_submit_columns = 1;
                     }
-                    if ((retval = sas_parse_subheader_rle(page + offset, len, ctx)) != 0) {
+                    if ((retval = sas_parse_subheader_rle(page + offset, len, ctx)) != READSTAT_OK) {
                         goto cleanup;
                     }
                 } else {
@@ -956,7 +959,7 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
     }
     if (data) {
         if (!ctx->did_submit_columns) {
-            if ((retval = submit_columns(ctx)) != 0) {
+            if ((retval = submit_columns(ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
             ctx->did_submit_columns = 1;
@@ -988,7 +991,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if ((retval = sas_read_header(fd, hinfo, parser->error_handler)) != 0) {
+    if ((retval = sas_read_header(fd, hinfo, parser->error_handler)) != READSTAT_OK) {
         goto cleanup;
     }
 
@@ -1036,7 +1039,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
 
-        if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != 0) {
+        if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
     }
@@ -1047,14 +1050,14 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
 
-        if ((retval = sas_parse_page_pass2(page, hinfo->page_size, ctx)) != 0) {
+        if ((retval = sas_parse_page_pass2(page, hinfo->page_size, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
     }
     free(page);
     
     if (!ctx->did_submit_columns) {
-        if ((retval = submit_columns(ctx)) != 0) {
+        if ((retval = submit_columns(ctx)) != READSTAT_OK) {
             goto cleanup;
         }
         ctx->did_submit_columns = 1;
@@ -1103,7 +1106,7 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if ((retval = sas_read_header(fd, hinfo, parser->error_handler)) != 0) {
+    if ((retval = sas_read_header(fd, hinfo, parser->error_handler)) != READSTAT_OK) {
         goto cleanup;
     }
 
@@ -1131,7 +1134,7 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
         if (i < 3)
             continue;
 
-        if ((retval = sas_parse_catalog_page(page, hinfo->page_size, ctx)) != 0) {
+        if ((retval = sas_parse_catalog_page(page, hinfo->page_size, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
     }
