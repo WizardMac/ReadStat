@@ -691,6 +691,8 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
     if (ctx->u64)
         retval = READSTAT_ERROR_PARSE;
 
+    /* Doubles appear to be stored as big-endian, always */
+    int bswap_doubles = machine_is_little_endian();
     int i;
     for (i=16; i<22; i++) {
         if (page[i]) {
@@ -751,7 +753,7 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
                 if (ctx->value_label_handler)
                     ctx->value_label_handler(name, val, READSTAT_TYPE_STRING, label, ctx->user_ctx);
             } else {
-                uint64_t val = read8(&lbp1[22], 1);
+                uint64_t val = read8(&lbp1[22], bswap_doubles);
                 double dval;
                 memcpy(&dval, &val, 8);
                 dval *= -1.0;
