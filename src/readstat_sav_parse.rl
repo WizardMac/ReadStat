@@ -72,6 +72,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
                 memcpy(ctx->varinfo[found->index].longname, temp_val, str_len);
+                ctx->varinfo[found->index].longname[str_len] = '\0';
             } else if (ctx->error_handler) {
                 snprintf(error_buf, sizeof(error_buf), "Failed to find %s\n", temp_key);
                 ctx->error_handler(error_buf);
