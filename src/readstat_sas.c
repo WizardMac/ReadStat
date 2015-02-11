@@ -253,7 +253,7 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx, readstat
     if (ctx->encoding == NULL) {
         if (error_handler) {
             char buf[1024];
-            snprintf(buf, sizeof(buf), "Unsupported character set: %d", header_start.encoding);
+            snprintf(buf, sizeof(buf), "Unsupported character set code: %d\n", header_start.encoding);
             error_handler(buf);
         }
         retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
