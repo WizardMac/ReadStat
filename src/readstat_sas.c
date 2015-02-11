@@ -64,7 +64,6 @@ static unsigned char sas7bcat_magic_number[32] = {
 
 static readstat_charset_entry_t _charset_table[] = { 
     { .code = 0,     .name = SAS_DEFAULT_STRING_ENCODING },
-    { .code = 16,    .name = "GB18030" },
     { .code = 20,    .name = "UTF-8" },
     { .code = 28,    .name = "US-ASCII" },
     { .code = 29,    .name = "ISO-8859-1" },
@@ -73,6 +72,7 @@ static readstat_charset_entry_t _charset_table[] = {
     { .code = 40,    .name = "ISO-8859-9" },
     { .code = 60,    .name = "WINDOWS-1250" },
     { .code = 62,    .name = "WINDOWS-1252" }
+    { .code = 125,   .name = "GB18030" },
 };
 
 #define SAS_SUBHEADER_SIGNATURE_ROW_SIZE       0xF7F7F7F7
