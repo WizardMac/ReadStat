@@ -714,20 +714,20 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
         if (retval != READSTAT_OK)
             goto cleanup;
 
-        if (pad) {
-            pad += 12;
-        }
-        
         int is_string = (name[0] == '$');
 
         if (pad) {
-            pad += 4;
+            pad += 16;
         }
 
         const char *lbp1 = &lsp[116+pad];
 
         /* Pass 1 -- find out the offset of the labels */
         for (i=0; i<label_count2; i++) {
+            if (&lbp1[2] - lsp > block_size) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
             lbp1 += 6 + lbp1[2];
         }
 
