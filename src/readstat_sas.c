@@ -71,8 +71,8 @@ static readstat_charset_entry_t _charset_table[] = {
     { .code = 31,    .name = "ISO-8859-3" },
     { .code = 40,    .name = "ISO-8859-9" },
     { .code = 60,    .name = "WINDOWS-1250" },
-    { .code = 62,    .name = "WINDOWS-1252" }
-    { .code = 125,   .name = "GB18030" },
+    { .code = 62,    .name = "WINDOWS-1252" },
+    { .code = 125,   .name = "GB18030" }
 };
 
 #define SAS_SUBHEADER_SIGNATURE_ROW_SIZE       0xF7F7F7F7
