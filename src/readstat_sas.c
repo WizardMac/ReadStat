@@ -706,8 +706,8 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
     while (lsp < page + page_size) {
         size_t block_size = 255 * (1+lsp[9]);
         size_t pad = (lsp[12] & 0x08) ? 4 : 0; // might be 0x10, not sure
-        // int label_count1 = read4(&lsp[48+pad], ctx->bswap);
-        int label_count2 = read4(&lsp[52+pad], ctx->bswap);
+        int label_count_capacity = read4(&lsp[48+pad], ctx->bswap);
+        int label_count_used = read4(&lsp[52+pad], ctx->bswap);
         char name[4*8+1];
 
         retval = readstat_convert(name, sizeof(name), &lsp[18], 8, ctx->converter);
@@ -723,7 +723,7 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
         const char *lbp1 = &lsp[116+pad];
 
         /* Pass 1 -- find out the offset of the labels */
-        for (i=0; i<label_count2; i++) {
+        for (i=0; i<label_count_capacity; i++) {
             if (&lbp1[2] - lsp > block_size) {
                 retval = READSTAT_ERROR_PARSE;
                 goto cleanup;
@@ -735,7 +735,7 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
         lbp1 = &lsp[116+pad];
 
         /* Pass 2 -- parse pairs of values & labels */
-        for (i=0; i<label_count2; i++) {
+        for (i=0; i<label_count_used; i++) {
             if (&lbp1[30] - lsp > block_size ||
                     &lbp2[10] - lsp > block_size) {
                 retval = READSTAT_ERROR_PARSE;
