@@ -212,7 +212,7 @@ static void sas_catalog_ctx_free(sas_catalog_ctx_t *ctx) {
     free(ctx);
 }
 
-static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx) {
+static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx, readstat_error_handler error_handler) {
     sas_header_start_t  header_start;
     sas_header_end_t    header_end;
     int retval = READSTAT_OK;
@@ -251,6 +251,11 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx) {
         }
     }
     if (ctx->encoding == NULL) {
+        if (error_handler) {
+            char buf[1024];
+            snprintf(buf, sizeof(buf), "Unsupported character set: %d", header_start.encoding);
+            error_handler(buf);
+        }
         retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
         goto cleanup;
     }
@@ -983,7 +988,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if ((retval = sas_read_header(fd, hinfo)) != 0) {
+    if ((retval = sas_read_header(fd, hinfo, parser->error_handler)) != 0) {
         goto cleanup;
     }
 
@@ -993,7 +998,12 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->bswap = machine_is_little_endian() ^ hinfo->little_endian;
     if (!strcmp(hinfo->encoding, "UTF-8") == 0 &&
             !strcmp(hinfo->encoding, "US-ASCII") == 0) {
-        ctx->converter = iconv_open("UTF-8", hinfo->encoding);
+        iconv_t converter = iconv_open("UTF-8", hinfo->encoding);
+        if (converter == (iconv_t)-1) {
+            retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
+            goto cleanup;
+        }
+        ctx->converter = converter;
     }
 
     int i;
@@ -1093,7 +1103,7 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if ((retval = sas_read_header(fd, hinfo)) != 0) {
+    if ((retval = sas_read_header(fd, hinfo, parser->error_handler)) != 0) {
         goto cleanup;
     }
 
@@ -1101,7 +1111,12 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
     ctx->bswap = machine_is_little_endian() ^ hinfo->little_endian;
     if (!strcmp(hinfo->encoding, "UTF-8") == 0 &&
             !strcmp(hinfo->encoding, "US-ASCII") == 0) {
-        ctx->converter = iconv_open("UTF-8", hinfo->encoding);
+        iconv_t converter = iconv_open("UTF-8", hinfo->encoding);
+        if (converter == (iconv_t)-1) {
+            retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
+            goto cleanup;
+        }
+        ctx->converter = converter;
     }
 
     int i;
