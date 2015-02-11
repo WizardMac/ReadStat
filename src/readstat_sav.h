@@ -126,3 +126,9 @@ typedef struct sav_ctx_s {
 #define SAV_HIGHEST_DOUBLE   0x7FEFFFFFFFFFFFFFUL
 #define SAV_MISSING_DOUBLE   0xFFEFFFFFFFFFFFFFUL
 #define SAV_LOWEST_DOUBLE    0xFFEFFFFFFFFFFFFEUL
+
+#define SAV_CHARSET_EBCDIC                1
+#define SAV_CHARSET_7_BIT_ASCII           2
+#define SAV_CHARSET_8_BIT_ASCII           3
+#define SAV_CHARSET_DEC_KANJI             4
+#define SAV_CHARSET_UTF8              65001

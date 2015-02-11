@@ -21,11 +21,6 @@
 
 #define DATA_BUFFER_SIZE              65536
 
-#define SAV_CHARSET_EBCDIC                1
-#define SAV_CHARSET_7_BIT_ASCII           2
-#define SAV_CHARSET_8_BIT_ASCII           3
-#define SAV_CHARSET_DEC_KANJI             4
-#define SAV_CHARSET_UTF8              65001
 /* Others defined in table below */
 
 /* See http://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx */
@@ -760,11 +755,12 @@ static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t
         return READSTAT_ERROR_PARSE;
 
     char *src_charset = NULL;
-    int32_t character_code = ((int32_t *)data)[7];
+    sav_machine_integer_info_record_t record;
+    memset(&record, data, data_len);
     if (ctx->machine_needs_byte_swap) {
-        character_code = byteswap4(character_code);
+        record.character_code = byteswap4(record.character_code);
     }
-    if (character_code == SAV_CHARSET_7_BIT_ASCII || character_code == SAV_CHARSET_UTF8) {
+    if (record.character_code == SAV_CHARSET_7_BIT_ASCII || record.character_code == SAV_CHARSET_UTF8) {
         /* do nothing */
     } else {
         int i;
