@@ -21,6 +21,7 @@
 #include "readstat_sav_parse.h"
 #include "readstat_spss_parse.h"
 #include "readstat_convert.h"
+#include "readstat_writer.h"
 
 #define READSTAT_PRODUCT_NAME       "ReadStat"
 #define READSTAT_PRODUCT_URL        "https://github.com/WizardMac/ReadStat"
@@ -992,11 +993,11 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t sav_emit_header(readstat_writer_t *writer, void *user_ctx, size_t *field_lengths) {
+static readstat_error_t sav_emit_header(readstat_writer_t *writer) {
+    readstat_error_t retval = READSTAT_OK;
     time_t now = time(NULL);
     struct tm *time_s = localtime(&now);
 
-    int i;
     sav_file_header_record_t header;
     memcpy(header.rec_type, "$FL2", sizeof("$FL2")-1);
     memset(header.prod_name, ' ', sizeof(header.prod_name));
@@ -1004,15 +1005,10 @@ static readstat_error_t sav_emit_header(readstat_writer_t *writer, void *user_ct
            "@(#) SPSS DATA FILE - created by " READSTAT_PRODUCT_NAME ", " READSTAT_PRODUCT_URL, 
            sizeof("@(#) SPSS DATA FILE - created by " READSTAT_PRODUCT_NAME ", " READSTAT_PRODUCT_URL)-1);
     header.layout_code = 2;
-    header.nominal_case_size = writer->var_count;
-    for (i=0; i<writer->var_count; i++) {
-        if (field_lengths[i]) {
-            header.nominal_case_size += (field_lengths[i] + 7) / 8 - 1;
-        }
-    }
+    header.nominal_case_size = writer->row_len / 8;
     header.compressed = 0; /* TODO */
     header.weight_index = 0;
-    header.ncases = writer->obs_count;
+    header.ncases = writer->row_count;
     header.bias = 100.0;
     
     strftime(header.creation_date, sizeof(header.creation_date),
@@ -1031,53 +1027,57 @@ static readstat_error_t sav_emit_header(readstat_writer_t *writer, void *user_ct
     
     memset(header.padding, '\0', sizeof(header.padding));
     
-    writer->data_writer(&header, sizeof(header), user_ctx);
-    return READSTAT_OK;
+    retval = readstat_write_bytes(writer, &header, sizeof(header));
+    return retval;
 }
 
-static readstat_error_t sav_emit_variable_records(readstat_writer_t *writer, void *user_ctx, size_t *field_lengths) {
+static readstat_error_t sav_emit_variable_records(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
     int i;
     int32_t rec_type = 0;
     double missing_val = NAN;
     
-    for (i=0; i<writer->var_count; i++) {
+    for (i=0; i<writer->variables_count; i++) {
+        readstat_variable_t *r_variable = readstat_get_variable(writer, i);
         char name_data[9];
         snprintf(name_data, sizeof(name_data), "var%d", i);
         size_t name_data_len = strlen(name_data);
 
-        const char *title_data = writer->variable_longname_provider(i, user_ctx);
+        const char *title_data = r_variable->label;
         size_t title_data_len = strlen(title_data);
+
         rec_type = SAV_RECORD_TYPE_VARIABLE;
+        retval = readstat_write_bytes(writer, &rec_type, sizeof(rec_type));
+        if (retval != READSTAT_OK)
+            goto cleanup;
         
         sav_variable_record_t variable;
         memset(&variable, 0, sizeof(sav_variable_record_t));
-        variable.type = writer->variable_type_provider(i, user_ctx) == READSTAT_TYPE_STRING ? 255 : 0;
+        variable.type = (r_variable->type == READSTAT_TYPE_STRING) ? 255 : 0;
         variable.has_var_label = (title_data_len > 0);
         variable.n_missing_values = 1;
-        if (writer->variable_format_provider) {
-            const char *fmt = writer->variable_format_provider(i, user_ctx);
-            if (fmt) {
-                spss_format_t spss_format = { .type = 0, .width = 0, .decimal_places = 0 };
-                if (spss_parse_format(fmt, strlen(fmt), &spss_format) == READSTAT_OK) {
-                    variable.print = (
-                            (spss_format.type << 16) |
-                            (spss_format.width << 8) |
-                            spss_format.decimal_places);
-                } else {
-                    retval = READSTAT_ERROR_BAD_FORMAT_STRING;
-                    goto cleanup;
-                }
-                variable.write = variable.print;
+        if (r_variable->format[0]) {
+            const char *fmt = r_variable->format;
+            spss_format_t spss_format = { .type = 0, .width = 0, .decimal_places = 0 };
+            if (spss_parse_format(fmt, strlen(fmt), &spss_format) == READSTAT_OK) {
+                variable.print = (
+                        (spss_format.type << 16) |
+                        (spss_format.width << 8) |
+                        spss_format.decimal_places);
+            } else {
+                retval = READSTAT_ERROR_BAD_FORMAT_STRING;
+                goto cleanup;
             }
+            variable.write = variable.print;
         }
 
         memset(variable.name, ' ', sizeof(variable.name));
         if (name_data_len > 0 && name_data_len <= sizeof(variable.name))
             memcpy(variable.name, name_data, name_data_len);
         
-        writer->data_writer(&rec_type, sizeof(rec_type), user_ctx);
-        writer->data_writer(&variable, sizeof(variable), user_ctx);
+        retval = readstat_write_bytes(writer, &variable, sizeof(variable));
+        if (retval != READSTAT_OK)
+            goto cleanup;
         
         if (title_data_len > 0) {
             int32_t label_len = title_data_len;
@@ -1087,20 +1087,32 @@ static readstat_error_t sav_emit_variable_records(readstat_writer_t *writer, voi
             char padded_label[120];
             memcpy(padded_label, title_data, label_len);
             
-            writer->data_writer(&label_len, sizeof(label_len), user_ctx);
-            writer->data_writer(padded_label, (label_len + 3) / 4 * 4, user_ctx);
+            retval = readstat_write_bytes(writer, &label_len, sizeof(label_len));
+            if (retval != READSTAT_OK)
+                goto cleanup;
+
+            retval = readstat_write_bytes(writer, padded_label, (label_len + 3) / 4 * 4);
+            if (retval != READSTAT_OK)
+                goto cleanup;
         }
         
-        writer->data_writer(&missing_val, sizeof(missing_val), user_ctx);
+        retval = readstat_write_bytes(writer, &missing_val, sizeof(missing_val));
+        if (retval != READSTAT_OK)
+            goto cleanup;
         
-        if (writer->variable_type_provider(i, user_ctx)) {
-            int extra_fields = (field_lengths[i] + 7) / 8 - 1;
+        if (r_variable->type == READSTAT_TYPE_STRING) {
+            int extra_fields = r_variable->width / 8 - 1;
             int j;
             for (j=0; j<extra_fields; j++) {
-                writer->data_writer(&rec_type, sizeof(rec_type), user_ctx);
+                retval = readstat_write_bytes(writer, &rec_type, sizeof(rec_type));
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
                 memset(&variable, '\0', sizeof(variable));
                 variable.type = -1;
-                writer->data_writer(&variable, sizeof(variable), user_ctx);
+                retval = readstat_write_bytes(writer, &variable, sizeof(variable));
+                if (retval != READSTAT_OK)
+                    goto cleanup;
             }
         }
     }
@@ -1109,81 +1121,99 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t sav_emit_value_label_records(readstat_writer_t *writer, void *user_ctx, size_t *field_lengths) {
+static readstat_error_t sav_emit_value_label_records(readstat_writer_t *writer) {
+    readstat_error_t retval = READSTAT_OK;
     int i, j;
-    int offset = 1;
-    for (i=0; i<writer->var_count; i++) {
-        int32_t label_count = writer->vlabel_count_provider(i, user_ctx);
+    for (i=0; i<writer->label_sets_count; i++) {
+        readstat_label_set_t *r_label_set = readstat_get_label_set(writer, i);
+        int32_t label_count = r_label_set->value_labels_count;
         int32_t rec_type = 0;
         if (label_count) {
             rec_type = SAV_RECORD_TYPE_VALUE_LABEL;
-            writer->data_writer(&rec_type, sizeof(rec_type), user_ctx);
-            writer->data_writer(&label_count, sizeof(label_count), user_ctx);
+
+            retval = readstat_write_bytes(writer, &rec_type, sizeof(rec_type));
+            if (retval != READSTAT_OK)
+                goto cleanup;
+
+            retval = readstat_write_bytes(writer, &label_count, sizeof(label_count));
+            if (retval != READSTAT_OK)
+                goto cleanup;
             
-            readstat_types_t user_type = writer->variable_type_provider(i, user_ctx);
+            readstat_types_t user_type = r_label_set->type;
             for (j=0; j<label_count; j++) {
+                readstat_value_label_t *r_value_label = readstat_get_value_label(r_label_set, j);
                 char value[8];
                 if (user_type == READSTAT_TYPE_STRING) {
-                    const char *txt_value = writer->vlabel_string_value_provider(j, i, user_ctx);
+                    const char *txt_value = r_value_label->string_key;
                     size_t txt_len = strlen(txt_value);
                     if (txt_len > 8)
                         txt_len = 8;
 
                     memset(value, ' ', sizeof(value));
                     memcpy(value, txt_value, txt_len);
-                } else {
-                    double num_val = NAN;
-                    if (user_type == READSTAT_TYPE_DOUBLE ||
-                            user_type == READSTAT_TYPE_FLOAT) {
-                        num_val = writer->vlabel_double_value_provider(j, i, user_ctx);
-                    } else if (user_type == READSTAT_TYPE_INT32 ||
-                            user_type == READSTAT_TYPE_INT16 ||
-                            user_type == READSTAT_TYPE_CHAR) {
-                        num_val = writer->vlabel_int32_value_provider(j, i, user_ctx);
-                    }
+                } else if (user_type == READSTAT_TYPE_DOUBLE) {
+                    double num_val = r_value_label->double_key;
+                    memcpy(value, &num_val, sizeof(double));
+                } else if (user_type == READSTAT_TYPE_INT32) {
+                    double num_val = r_value_label->int32_key;
                     memcpy(value, &num_val, sizeof(double));
                 }
-                writer->data_writer(value, sizeof(value), user_ctx);
+                retval = readstat_write_bytes(writer, value, sizeof(value));
                 
-                const char *label_data = writer->vlabel_label_provider(j, i, user_ctx);
+                const char *label_data = r_value_label->label;
                 size_t label_data_len = strlen(label_data);
                 if (label_data_len > 255)
                     label_data_len = 255;
                 
                 char label_len = label_data_len;
+                retval = readstat_write_bytes(writer, &label_len, sizeof(label_len));
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
                 char label[255];
-                
-                writer->data_writer(&label_len, sizeof(label_len), user_ctx);
                 memset(label, ' ', sizeof(label));
                 memcpy(label, label_data, label_data_len);
-                writer->data_writer(label, (label_data_len + 8) / 8 * 8 - 1, user_ctx);
+                retval = readstat_write_bytes(writer, label, (label_data_len + 8) / 8 * 8 - 1);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
             }
             
             rec_type = SAV_RECORD_TYPE_VALUE_LABEL_VARIABLES;
-            int32_t var_count = 1;
-            int32_t dictionary_index = offset;
+            int32_t var_count = r_label_set->variables_count;
             
-            writer->data_writer(&rec_type, sizeof(rec_type), user_ctx);
-            writer->data_writer(&var_count, sizeof(var_count), user_ctx);
-            writer->data_writer(&dictionary_index, sizeof(dictionary_index), user_ctx);
-        }
-        
-        offset++;
-        if (writer->variable_type_provider(i, user_ctx) == READSTAT_TYPE_STRING) {
-            offset += (field_lengths[i] + 7) / 8 - 1;
+            retval = readstat_write_bytes(writer, &rec_type, sizeof(rec_type));
+            if (retval != READSTAT_OK)
+                goto cleanup;
+
+            retval = readstat_write_bytes(writer, &var_count, sizeof(var_count));
+            if (retval != READSTAT_OK)
+                goto cleanup;
+
+            for (j=0; j<var_count; j++) {
+                readstat_variable_t *r_variable = readstat_get_label_set_variable(r_label_set, j);
+                int32_t dictionary_index = 1 + r_variable->offset / 8;
+                retval = readstat_write_bytes(writer, &dictionary_index, sizeof(dictionary_index));
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+            }
         }
     }
 
-    return READSTAT_OK;
+cleanup:
+    return retval;
 }
 
-static readstat_error_t sav_emit_integer_info_record(readstat_writer_t *writer, void *user_ctx) {
+static readstat_error_t sav_emit_integer_info_record(readstat_writer_t *writer) {
+    readstat_error_t retval = READSTAT_OK;
+
     sav_info_record_t info_header;
     info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
     info_header.subtype = SAV_RECORD_SUBTYPE_INTEGER_INFO;
     info_header.size = 4;
     info_header.count = 8;
-    writer->data_writer(&info_header, sizeof(info_header), user_ctx);
+    retval = readstat_write_bytes(writer, &info_header, sizeof(info_header));
+    if (retval != READSTAT_OK)
+        goto cleanup;
     
     sav_machine_integer_info_record_t machine_info;
     machine_info.version_major = 1;
@@ -1194,29 +1224,38 @@ static readstat_error_t sav_emit_integer_info_record(readstat_writer_t *writer, 
     machine_info.compression_code = 1;
     machine_info.endianness = machine_is_little_endian() ? SAV_ENDIANNESS_LITTLE : SAV_ENDIANNESS_BIG;
     machine_info.character_code = SAV_CHARSET_UTF8;
-    writer->data_writer(&machine_info, sizeof(machine_info), user_ctx);
+    retval = readstat_write_bytes(writer, &machine_info, sizeof(machine_info));
 
-    return READSTAT_OK;
+cleanup:
+    return retval;
 }
 
-static readstat_error_t sav_emit_floating_point_info_record(readstat_writer_t *writer, void *user_ctx) {
+static readstat_error_t sav_emit_floating_point_info_record(readstat_writer_t *writer) {
+    readstat_error_t retval = READSTAT_OK;
+
     sav_info_record_t info_header;
     info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
     info_header.subtype = SAV_RECORD_SUBTYPE_FP_INFO;
     info_header.size = 8;
     info_header.count = 3;
-    writer->data_writer(&info_header, sizeof(info_header), user_ctx);
+    retval = readstat_write_bytes(writer, &info_header, sizeof(info_header));
+    if (retval != READSTAT_OK)
+        goto cleanup;
     
     sav_machine_floating_point_info_record_t fp_info;
     fp_info.sysmis = NAN;
     fp_info.lowest = DBL_MAX;
     fp_info.highest = -DBL_MAX;
-    writer->data_writer(&fp_info, sizeof(fp_info), user_ctx);
+    retval = readstat_write_bytes(writer, &fp_info, sizeof(fp_info));
+    if (retval != READSTAT_OK)
+        goto cleanup;
 
-    return READSTAT_OK;
+cleanup:
+    return retval;
 }
 
-static readstat_error_t sav_emit_long_var_name_record(readstat_writer_t *writer, void *user_ctx) {
+static readstat_error_t sav_emit_long_var_name_record(readstat_writer_t *writer) {
+    readstat_error_t retval = READSTAT_OK;
     int i;
     sav_info_record_t info_header;
     info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
@@ -1224,12 +1263,13 @@ static readstat_error_t sav_emit_long_var_name_record(readstat_writer_t *writer,
     info_header.size = 1;
     info_header.count = 0;
     
-    for (i=0; i<writer->var_count; i++) {
+    for (i=0; i<writer->variables_count; i++) {
         char name_data[9];
         snprintf(name_data, sizeof(name_data), "var%d", i);
         size_t name_data_len = strlen(name_data);
         
-        const char *title_data = writer->variable_shortname_provider(i, user_ctx);
+        readstat_variable_t *r_variable = readstat_get_variable(writer, i);
+        const char *title_data = r_variable->name;
         size_t title_data_len = strlen(title_data);
         if (title_data_len > 0 && name_data_len > 0) {
             if (title_data_len > 64)
@@ -1245,45 +1285,77 @@ static readstat_error_t sav_emit_long_var_name_record(readstat_writer_t *writer,
     if (info_header.count > 0) {
         info_header.count--; /* no trailing 0x09 */
         
-        writer->data_writer(&info_header, sizeof(info_header), user_ctx);
+        retval = readstat_write_bytes(writer, &info_header, sizeof(info_header));
+        if (retval != READSTAT_OK)
+            goto cleanup;
         
         int is_first = 1;
         
-        for (i=0; i<writer->var_count; i++) {
+        for (i=0; i<writer->variables_count; i++) {
             char name_data[9];
             snprintf(name_data, sizeof(name_data), "var%d", i);
             size_t name_data_len = strlen(name_data);
 
-            const char *title_data = writer->variable_shortname_provider(i, user_ctx);
+            readstat_variable_t *r_variable = readstat_get_variable(writer, i);
+            const char *title_data = r_variable->name;
             size_t title_data_len = strlen(title_data);
             
             char kv_separator = '=';
             char tuple_separator = 0x09;
             
-            if (title_data_len > 0 && name_data_len > 0) {
+            if (title_data_len > 0) {
                 if (title_data_len > 64)
                     title_data_len = 64;
-                if (!is_first)
-                    writer->data_writer(&tuple_separator, sizeof(tuple_separator), user_ctx);
+
+                if (!is_first) {
+                    retval = readstat_write_bytes(writer, &tuple_separator, sizeof(tuple_separator));
+                    if (retval != READSTAT_OK)
+                        goto cleanup;
+                }
                 
-                writer->data_writer(name_data, name_data_len, user_ctx);
-                writer->data_writer(&kv_separator, sizeof(kv_separator), user_ctx);
-                writer->data_writer(title_data, title_data_len, user_ctx);
+                retval = readstat_write_bytes(writer, name_data, name_data_len);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
+                retval = readstat_write_bytes(writer, &kv_separator, sizeof(kv_separator));
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
+                retval = readstat_write_bytes(writer, title_data, title_data_len);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
                 
                 is_first = 0;
             }
         }
     }
 
-    return READSTAT_OK;
+cleanup:
+    return retval;
 }
 
-static readstat_error_t sav_emit_termination_record(readstat_writer_t *writer, void *user_ctx) {
+static readstat_error_t sav_emit_termination_record(readstat_writer_t *writer) {
     sav_dictionary_termination_record_t termination_record;
     termination_record.rec_type = SAV_RECORD_TYPE_DICT_TERMINATION;
     termination_record.filler = 0;
     
-    writer->data_writer(&termination_record, sizeof(termination_record), user_ctx);
+    return readstat_write_bytes(writer, &termination_record, sizeof(termination_record));
+}
+
+/*
+static readstat_error_t sav_emit_string_value(readstat_writer_t *writer, void *user_ctx, const char *string) {
+    size_t max_len = field_lengths[i];
+    size_t padded_len = (max_len + 7) / 8 * 8;
+    memset(text_value, ' ', padded_len);
+    if (user_text_value != NULL && user_text_value[0] != '\0') {
+        memcpy(text_value, user_text_value, strlen(user_text_value));
+    }
+    writer->data_writer(text_value, padded_len, user_ctx);
+    return READSTAT_OK;
+}
+
+static readstat_error_t sav_emit_double_value(readstat_writer_t *writer, void *user_ctx, double val) {
+    writer->data_writer(&val, sizeof(val), user_ctx);
     return READSTAT_OK;
 }
 
@@ -1292,22 +1364,11 @@ static readstat_error_t sav_emit_observations(readstat_writer_t *writer, void *u
     int i, j;
     char *text_value = malloc(MAX_TEXT_SIZE);
     for (j=0; j<writer->obs_count; j++) {
-        if (writer->cancellation_provider && writer->cancellation_provider(user_ctx)) {
-            retval = READSTAT_ERROR_USER_ABORT;
-            goto cleanup;
-        }
-        
         for (i=0; i<writer->var_count; i++) {
             readstat_types_t user_type = writer->variable_type_provider(i, user_ctx);
             if (user_type == READSTAT_TYPE_STRING) {
-                size_t max_len = field_lengths[i];
-                size_t padded_len = (max_len + 7) / 8 * 8;
-                memset(text_value, ' ', padded_len);
                 const char * user_text_value = writer->string_value_provider(j, i, user_ctx);
-                if (user_text_value != NULL && user_text_value[0] != '\0') {
-                    memcpy(text_value, user_text_value, strlen(user_text_value));
-                }
-                writer->data_writer(text_value, padded_len, user_ctx);
+                retval = sav_emit_string_value(writer, user_ctx, user_text_value);
             } else {
                 double val = NAN;
                 if (user_type == READSTAT_TYPE_DOUBLE) {
@@ -1321,8 +1382,10 @@ static readstat_error_t sav_emit_observations(readstat_writer_t *writer, void *u
                 } else if (user_type == READSTAT_TYPE_FLOAT) {
                     val = writer->float_value_provider(j, i, user_ctx);
                 }
-                writer->data_writer(&val, sizeof(val), user_ctx);
+                retval = sav_emit_double_value(writer, user_ctx, val);
             }
+            if (retval != READSTAT_OK)
+                goto cleanup;
         }
     }
 cleanup:
@@ -1336,6 +1399,7 @@ readstat_error_t readstat_write_sav(readstat_writer_t *writer, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
     int i;
     size_t *field_lengths = calloc(writer->var_count, sizeof(size_t));
+    writer->user_ctx = user_ctx;
     for (i=0; i<writer->var_count; i++) {
         if (writer->variable_type_provider(i, user_ctx) == READSTAT_TYPE_STRING) {
             field_lengths[i] = writer->variable_width_provider(i, user_ctx);
@@ -1343,8 +1407,15 @@ readstat_error_t readstat_write_sav(readstat_writer_t *writer, void *user_ctx) {
                 field_lengths[i] = 255;
         }
     }
+
+    writer->row_len = writer->var_count;
+    for (i=0; i<writer->var_count; i++) {
+        if (field_lengths[i]) {
+            writer->row_len += (field_lengths[i] + 7) / 8 - 1;
+        }
+    }
     
-    retval = sav_emit_header(writer, user_ctx, field_lengths);
+    retval = sav_emit_header(writer);
     if (retval != READSTAT_OK)
         goto cleanup;
     
@@ -1382,4 +1453,135 @@ cleanup:
     
     return retval;
 
+}
+*/
+
+static readstat_error_t sav_write_char(void *row, readstat_variable_t *var, char value) {
+    if (var->type != READSTAT_TYPE_CHAR) {
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
+    }
+    double dval = value;
+    memcpy(row, &dval, sizeof(double));
+    return READSTAT_OK;
+}
+
+static readstat_error_t sav_write_int16(void *row, readstat_variable_t *var, int16_t value) {
+    if (var->type != READSTAT_TYPE_INT16) {
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
+    }
+    double dval = value;
+    memcpy(row, &dval, sizeof(double));
+    return READSTAT_OK;
+}
+
+static readstat_error_t sav_write_int32(void *row, readstat_variable_t *var, int32_t value) {
+    if (var->type != READSTAT_TYPE_INT32) {
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
+    }
+    double dval = value;
+    memcpy(row, &dval, sizeof(double));
+    return READSTAT_OK;
+}
+
+static readstat_error_t sav_write_float(void *row, readstat_variable_t *var, float value) {
+    if (var->type != READSTAT_TYPE_FLOAT) {
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
+    }
+    double dval = value;
+    memcpy(row, &dval, sizeof(double));
+    return READSTAT_OK;
+}
+
+static readstat_error_t sav_write_double(void *row, readstat_variable_t *var, double value) {
+    if (var->type != READSTAT_TYPE_DOUBLE) {
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
+    }
+    double dval = value;
+    memcpy(row, &dval, sizeof(double));
+    return READSTAT_OK;
+}
+
+static readstat_error_t sav_write_string(void *row, readstat_variable_t *var, const char *value) {
+    if (var->type != READSTAT_TYPE_STRING) {
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
+    }
+    memset(row, ' ', var->width);
+    if (value != NULL && value[0] != '\0') {
+        memcpy(row, value, strlen(value));
+    }
+    return READSTAT_OK;
+}
+
+static readstat_error_t sav_write_missing(void *row, readstat_variable_t *var) {
+    if (var->type == READSTAT_TYPE_STRING) {
+        memset(row, ' ', var->width);
+    } else {
+        double dval = NAN;
+        memcpy(row, &dval, sizeof(double));
+    }
+    return READSTAT_OK;
+}
+
+static size_t sav_variable_width(readstat_types_t type, size_t user_width) {
+    if (type == READSTAT_TYPE_STRING) {
+        if (user_width > 255 || user_width == 0)
+            user_width = 255;
+        return (user_width + 7) / 8 * 8;
+    }
+    return 8;
+}
+
+static readstat_error_t sav_begin_data(void *writer_ctx) {
+    readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
+    readstat_error_t retval = READSTAT_OK;
+
+    retval = sav_emit_header(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = sav_emit_variable_records(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = sav_emit_value_label_records(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = sav_emit_integer_info_record(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = sav_emit_floating_point_info_record(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = sav_emit_long_var_name_record(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = sav_emit_termination_record(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    return retval;
+}
+
+readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx,
+        const char *file_label, long row_count) {
+    strncpy(writer->file_label, file_label, sizeof(writer->file_label));
+    writer->row_count = row_count;
+    writer->user_ctx = user_ctx;
+
+    writer->callbacks.variable_width = &sav_variable_width;
+    writer->callbacks.write_char = &sav_write_char;
+    writer->callbacks.write_int16 = &sav_write_int16;
+    writer->callbacks.write_int32 = &sav_write_int32;
+    writer->callbacks.write_float = &sav_write_float;
+    writer->callbacks.write_double = &sav_write_double;
+    writer->callbacks.write_string = &sav_write_string;
+    writer->callbacks.write_missing = &sav_write_missing;
+    writer->callbacks.begin_data = &sav_begin_data;
+
+    return READSTAT_OK;
 }
