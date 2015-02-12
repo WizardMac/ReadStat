@@ -888,71 +888,64 @@ cleanup:
     return retval;
 }
 
-readstat_error_t readstat_write_dta(readstat_writer_t *writer, void *user_ctx) {
-    int i, j;
-    
-    readstat_error_t error = READSTAT_OK;
-    unsigned char *row = NULL;
-    
-    dta_header_t header;
-    header.ds_format = 111;
-    header.byteorder = machine_is_little_endian() ? DTA_LOHI : DTA_HILO;
-    header.filetype  = 0x01;
-    header.unused    = 0x00;
-    header.nvar      = writer->var_count;
-    header.nobs      = writer->obs_count;
-
+static readstat_error_t dta_emit_header_data_label(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
     size_t data_label_len = strlen(writer->file_label);
     if (data_label_len > 80)
         data_label_len = 80;
     
     char data_label[81];
-    char time_stamp[18];
-    
     if (data_label_len > 0)
         memcpy(data_label, writer->file_label, data_label_len);
-    
     data_label[data_label_len] = '\0';
-    
+    writer->data_writer(data_label, sizeof(data_label), user_ctx);
+    return READSTAT_OK;
+}
+
+static readstat_error_t dta_emit_header_time_stamp(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
+    char time_stamp[18];
     memset(time_stamp, '\0', sizeof(time_stamp));
-    
-    size_t row_len = 0;
-    dta_ctx_t *ctx = dta_ctx_init(header.nvar, header.nobs, header.byteorder, header.ds_format);
-    for (i=0; i<header.nvar; i++) {
+    writer->data_writer(time_stamp, sizeof(time_stamp), user_ctx);
+    return READSTAT_OK;
+}
+
+static readstat_error_t dta_emit_typlist(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
+    readstat_error_t error = READSTAT_OK;
+    int i;
+
+    for (i=0; i<ctx->nvar; i++) {
         unsigned char type = 0x00;
         readstat_types_t user_type = writer->variable_type_provider(i, user_ctx);
         if (user_type == READSTAT_TYPE_CHAR) {
             type = DTA_111_TYPE_CODE_CHAR;
-            row_len += 1;
         } else if (user_type == READSTAT_TYPE_INT16) {
             type = DTA_111_TYPE_CODE_INT16;
-            row_len += 2;
         } else if (user_type == READSTAT_TYPE_INT32) {
             type = DTA_111_TYPE_CODE_INT32;
-            row_len += 4;
         } else if (user_type == READSTAT_TYPE_FLOAT) {
             type = DTA_111_TYPE_CODE_FLOAT;
-            row_len += 4;
         } else if (user_type == READSTAT_TYPE_DOUBLE) {
             type = DTA_111_TYPE_CODE_DOUBLE;
-            row_len += 8;
         } else if (user_type == READSTAT_TYPE_STRING) {
             size_t max_len = writer->variable_width_provider(i, user_ctx) + 1;
             if (max_len > 244)
                 max_len = 244;
             
             type = max_len;
-            row_len += max_len;
         }
         ctx->typlist[i] = type;
     }
-    
-    if (row_len == 0) {
-        error = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
-        goto cleanup;
+
+    for (i=0; i<ctx->nvar; i++) {
+        unsigned char byte = ctx->typlist[i];
+        writer->data_writer(&byte, 1, user_ctx);
     }
-    
-    for (i=0; i<header.nvar; i++) {
+    return error;
+}
+
+static readstat_error_t dta_emit_varlist(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
+    readstat_error_t error = READSTAT_OK;
+    int i;
+    for (i=0; i<ctx->nvar; i++) {
         const char *varname = writer->variable_shortname_provider(i, user_ctx);
         if (varname) {
             strncpy(&ctx->varlist[ctx->variable_name_len*i], varname, ctx->variable_name_len);
@@ -960,10 +953,19 @@ readstat_error_t readstat_write_dta(readstat_writer_t *writer, void *user_ctx) {
             memset(&ctx->varlist[ctx->variable_name_len*i], '\0', ctx->variable_name_len);
         }
     }
-    
+    writer->data_writer(ctx->varlist, ctx->varlist_len, user_ctx);
+    return error;
+}
+
+static readstat_error_t dta_emit_srtlist(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
     memset(ctx->srtlist, '\0', ctx->srtlist_len);
-    
-    for (i=0; i<header.nvar; i++) {
+    writer->data_writer(ctx->srtlist, ctx->srtlist_len, user_ctx);
+    return READSTAT_OK;
+}
+
+static readstat_error_t dta_emit_fmtlist(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
+    int i;
+    for (i=0; i<ctx->nvar; i++) {
         const char *fmt = writer->variable_format_provider(i, user_ctx);
         if (fmt) {
             strncpy(&ctx->fmtlist[ctx->fmtlist_entry_len*i], fmt, ctx->fmtlist_entry_len);
@@ -971,16 +973,53 @@ readstat_error_t readstat_write_dta(readstat_writer_t *writer, void *user_ctx) {
             memset(&ctx->fmtlist[ctx->fmtlist_entry_len*i], '\0', ctx->fmtlist_entry_len);
         }
     }
-    
-    for (i=0; i<header.nvar; i++) {
+    writer->data_writer(ctx->fmtlist, ctx->fmtlist_len, user_ctx);
+    return READSTAT_OK;
+}
+
+static readstat_error_t dta_emit_lbllist(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
+    int i;
+    for (i=0; i<ctx->nvar; i++) {
         if (writer->vlabel_count_provider(i, user_ctx)) {
             snprintf(&ctx->lbllist[ctx->lbllist_entry_len*i], ctx->lbllist_entry_len, "column%d", i);
         } else {
             memset(&ctx->lbllist[ctx->lbllist_entry_len*i], '\0', ctx->lbllist_entry_len);
         }
     }
+    writer->data_writer(ctx->lbllist, ctx->lbllist_len, user_ctx);
+    return READSTAT_OK;
+}
+
+static readstat_error_t dta_emit_descriptors(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
+    readstat_error_t error = READSTAT_OK;
+
+    error = dta_emit_typlist(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+    error = dta_emit_varlist(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
     
-    for (i=0; i<header.nvar; i++) {
+    error = dta_emit_srtlist(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+    
+    error = dta_emit_fmtlist(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+    
+    error = dta_emit_lbllist(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    return error;
+}
+
+static readstat_error_t dta_emit_variable_labels(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
+    int i;
+    for (i=0; i<ctx->nvar; i++) {
         const char *title = writer->variable_longname_provider(i, user_ctx);
         if (title) {
             strncpy(&ctx->variable_labels[ctx->variable_labels_entry_len*i], title, ctx->variable_labels_entry_len);
@@ -988,31 +1027,47 @@ readstat_error_t readstat_write_dta(readstat_writer_t *writer, void *user_ctx) {
             memset(&ctx->variable_labels[ctx->variable_labels_entry_len*i], '\0', ctx->variable_labels_entry_len);
         }
     }
-    
-    writer->data_writer(&header, sizeof(dta_header_t), user_ctx);
-    writer->data_writer(data_label, sizeof(data_label), user_ctx);
-    writer->data_writer(time_stamp, sizeof(time_stamp), user_ctx);
-    for (i=0; i<header.nvar; i++) {
-        unsigned char byte = ctx->typlist[i];
-        writer->data_writer(&byte, 1, user_ctx);
-    }
-    writer->data_writer(ctx->varlist, ctx->varlist_len, user_ctx);
-    writer->data_writer(ctx->srtlist, ctx->srtlist_len, user_ctx);
-    writer->data_writer(ctx->fmtlist, ctx->fmtlist_len, user_ctx);
-    writer->data_writer(ctx->lbllist, ctx->lbllist_len, user_ctx);
     writer->data_writer(ctx->variable_labels, ctx->variable_labels_len, user_ctx);
-    writer->data_writer("\0\0\0\0", sizeof("\0\0\0\0"), user_ctx); /* 5-byte expansion field */
+    return READSTAT_OK;
+}
+
+static readstat_error_t dta_emit_expansion_fields(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
+    writer->data_writer("\0\0\0\0", sizeof("\0\0\0\0"), user_ctx); /* 5-byte terminator */
+    return READSTAT_OK;
+}
+
+static size_t dta_row_length(dta_ctx_t *ctx) {
+    int i;
+    size_t row_len = 0;
+    for (i=0; i<ctx->nvar; i++) {
+        size_t max_len;
+        dta_type_info(ctx->typlist[i], &max_len, ctx);
+        row_len += max_len;
+    }
+    return row_len;
+}
+
+static readstat_error_t dta_emit_observations(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
+    readstat_error_t error = READSTAT_OK;
+    size_t row_len = dta_row_length(ctx);
+    char *row = 0;
+    int i, j;
+    
+    if (row_len == 0) {
+        error = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
+        goto cleanup;
+    }
     
     row = malloc(row_len);
     
-    for (j=0; j<header.nobs; j++) {
+    for (j=0; j<ctx->nobs; j++) {
         if (writer->cancellation_provider && writer->cancellation_provider(user_ctx)) {
             error = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
         
         off_t offset = 0;
-        for (i=0; i<header.nvar; i++) {
+        for (i=0; i<ctx->nvar; i++) {
             readstat_types_t user_type = writer->variable_type_provider(i, user_ctx);
             size_t value_len = 0;
             if (user_type == READSTAT_TYPE_CHAR) {
@@ -1045,10 +1100,19 @@ readstat_error_t readstat_write_dta(readstat_writer_t *writer, void *user_ctx) {
         }
         writer->data_writer(row, row_len, user_ctx);
     }
-    
-    for (i=0; i<header.nvar; i++) {
+cleanup:
+    if (row) {
+        free(row);
+    }
+    return error;
+}
+
+static readstat_error_t dta_emit_value_labels(readstat_writer_t *writer, void *user_ctx, dta_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
+    int i, j;
+    for (i=0; i<ctx->nvar; i++) {
         if (writer->cancellation_provider && writer->cancellation_provider(user_ctx)) {
-            error = READSTAT_ERROR_USER_ABORT;
+            retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
         
@@ -1099,11 +1163,56 @@ readstat_error_t readstat_write_dta(readstat_writer_t *writer, void *user_ctx) {
             free(txt);
         }
     }
+
+cleanup:
+    return retval;
+}
+
+readstat_error_t readstat_write_dta(readstat_writer_t *writer, void *user_ctx) {
+    readstat_error_t error = READSTAT_OK;
+    
+    dta_header_t header;
+    header.ds_format = 111;
+    header.byteorder = machine_is_little_endian() ? DTA_LOHI : DTA_HILO;
+    header.filetype  = 0x01;
+    header.unused    = 0x00;
+    header.nvar      = writer->var_count;
+    header.nobs      = writer->obs_count;
+    writer->data_writer(&header, sizeof(dta_header_t), user_ctx);
+    
+    dta_ctx_t *ctx = dta_ctx_init(header.nvar, header.nobs, header.byteorder, header.ds_format);
+    
+    error = dta_emit_header_data_label(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+    error = dta_emit_header_time_stamp(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+    error = dta_emit_descriptors(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+    error = dta_emit_variable_labels(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+    error = dta_emit_expansion_fields(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+    error = dta_emit_observations(writer, user_ctx, ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+    
+    if (writer->vlabel_count_provider) {
+        error = dta_emit_value_labels(writer, user_ctx, ctx);
+        if (error != READSTAT_OK)
+            goto cleanup;
+    }
     
 cleanup:
-    if (row) {
-        free(row);
-    }
     dta_ctx_free(ctx);
     
     return error;
