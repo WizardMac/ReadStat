@@ -42,6 +42,26 @@ readstat_error_t readstat_set_variable_width_provider(readstat_writer_t *writer,
     return READSTAT_OK;
 }
 
+readstat_error_t readstat_set_char_value_provider(readstat_writer_t *writer, readstat_char_value_provider value_provider) {
+    writer->char_value_provider = value_provider;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_int16_value_provider(readstat_writer_t *writer, readstat_int16_value_provider value_provider) {
+    writer->int16_value_provider = value_provider;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_int32_value_provider(readstat_writer_t *writer, readstat_int32_value_provider value_provider) {
+    writer->int32_value_provider = value_provider;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_float_value_provider(readstat_writer_t *writer, readstat_float_value_provider value_provider) {
+    writer->float_value_provider = value_provider;
+    return READSTAT_OK;
+}
+
 readstat_error_t readstat_set_double_value_provider(readstat_writer_t *writer, readstat_double_value_provider value_provider) {
     writer->double_value_provider = value_provider;
     return READSTAT_OK;
@@ -56,6 +76,12 @@ readstat_error_t readstat_set_vlabel_count_provider(readstat_writer_t *writer, r
     writer->vlabel_count_provider = vlabel_count_provider;
     return READSTAT_OK;
 }
+
+readstat_error_t readstat_set_vlabel_int32_value_provider(readstat_writer_t *writer, readstat_vlabel_int32_provider vlabel_int32_provider) {
+    writer->vlabel_int32_value_provider = vlabel_int32_provider;
+    return READSTAT_OK;
+}
+
 readstat_error_t readstat_set_vlabel_double_value_provider(readstat_writer_t *writer, readstat_vlabel_double_provider vlabel_value_provider) {
     writer->vlabel_double_value_provider = vlabel_value_provider;
     return READSTAT_OK;
