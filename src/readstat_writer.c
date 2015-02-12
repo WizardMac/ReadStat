@@ -42,8 +42,13 @@ readstat_error_t readstat_set_variable_width_provider(readstat_writer_t *writer,
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_value_provider(readstat_writer_t *writer, readstat_value_provider value_provider) {
-    writer->value_provider = value_provider;
+readstat_error_t readstat_set_double_value_provider(readstat_writer_t *writer, readstat_double_value_provider value_provider) {
+    writer->double_value_provider = value_provider;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_string_value_provider(readstat_writer_t *writer, readstat_string_value_provider value_provider) {
+    writer->string_value_provider = value_provider;
     return READSTAT_OK;
 }
 
@@ -63,6 +68,11 @@ readstat_error_t readstat_set_vlabel_string_value_provider(readstat_writer_t *wr
 
 readstat_error_t readstat_set_vlabel_label_provider(readstat_writer_t *writer, readstat_vlabel_string_provider vlabel_label_provider) {
     writer->vlabel_label_provider = vlabel_label_provider;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_cancellation_provider(readstat_writer_t *writer, readstat_cancellation_provider cancellation_provider) {
+    writer->cancellation_provider = cancellation_provider;
     return READSTAT_OK;
 }
 

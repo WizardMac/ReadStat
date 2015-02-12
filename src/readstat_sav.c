@@ -1030,8 +1030,12 @@ readstat_error_t readstat_write_sav(readstat_writer_t *writer, void *user_ctx) {
     
     memset(header.file_label, ' ', sizeof(header.file_label));
 
+    size_t file_label_len = strlen(writer->file_label);
+    if (file_label_len > sizeof(header.file_label))
+        file_label_len = sizeof(header.file_label);
+
     if (writer->file_label[0])
-        memcpy(header.file_label, writer->file_label, strlen(writer->file_label));
+        memcpy(header.file_label, writer->file_label, file_label_len);
     
     memset(header.padding, '\0', sizeof(header.padding));
     
@@ -1260,17 +1264,13 @@ readstat_error_t readstat_write_sav(readstat_writer_t *writer, void *user_ctx) {
                 size_t max_len = field_lengths[i];
                 size_t padded_len = (max_len + 7) / 8 * 8;
                 memset(text_value, ' ', padded_len);
-                const char * user_text_value = writer->value_provider(j, i, user_ctx);
+                const char * user_text_value = writer->string_value_provider(j, i, user_ctx);
                 if (user_text_value != NULL && user_text_value[0] != '\0') {
                     memcpy(text_value, user_text_value, strlen(user_text_value));
                 }
                 writer->data_writer(text_value, padded_len, user_ctx);
             } else {
-                double val = NAN;
-                const double *user_val = writer->value_provider(j, i, user_ctx);
-                if (user_val != NULL && !isnan(*user_val)) {
-                    val = *user_val;
-                }
+                double val = writer->double_value_provider(j, i, user_ctx);
                 writer->data_writer(&val, sizeof(val), user_ctx);
             }
         }

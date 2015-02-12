@@ -96,8 +96,14 @@ typedef readstat_types_t (*readstat_variable_type_provider)(int var_index, void 
 typedef const char * (*readstat_variable_name_provider)(int var_index, void *ctx);
 typedef const char * (*readstat_variable_format_provider)(int var_index, void *ctx);
 typedef size_t (*readstat_variable_width_provider)(int var_index, void *ctx);
-typedef const void * (*readstat_value_provider)(int obs_index, int var_index, void *ctx);
+typedef char (*readstat_char_value_provider)(int obs_index, int var_index, void *ctx);
+typedef int16_t (*readstat_int16_value_provider)(int obs_index, int var_index, void *ctx);
+typedef int32_t (*readstat_int32_value_provider)(int obs_index, int var_index, void *ctx);
+typedef float (*readstat_float_value_provider)(int obs_index, int var_index, void *ctx);
+typedef double (*readstat_double_value_provider)(int obs_index, int var_index, void *ctx);
+typedef const char * (*readstat_string_value_provider)(int obs_index, int var_index, void *ctx);
 typedef int (*readstat_vlabel_count_provider)(int var_index, void *ctx);
+typedef int32_t (*readstat_vlabel_int32_provider)(int label_index, int var_index, void *ctx);
 typedef double (*readstat_vlabel_double_provider)(int label_index, int var_index, void *ctx);
 typedef const char * (*readstat_vlabel_string_provider)(int label_index, int var_index, void *ctx);
 
@@ -111,15 +117,21 @@ typedef struct readstat_writer_s {
     readstat_variable_type_provider     variable_type_provider;
     readstat_variable_format_provider   variable_format_provider;
     readstat_variable_width_provider    variable_width_provider;
-    readstat_value_provider             value_provider;
+    readstat_char_value_provider        char_value_provider;
+    readstat_int16_value_provider       int16_value_provider;
+    readstat_int32_value_provider       int32_value_provider;
+    readstat_float_value_provider       float_value_provider;
+    readstat_double_value_provider      double_value_provider;
+    readstat_string_value_provider      string_value_provider;
     readstat_vlabel_count_provider      vlabel_count_provider;
+    readstat_vlabel_int32_provider      vlabel_int32_value_provider;
     readstat_vlabel_double_provider     vlabel_double_value_provider;
     readstat_vlabel_string_provider     vlabel_string_value_provider;
     readstat_vlabel_string_provider     vlabel_label_provider;
     readstat_cancellation_provider      cancellation_provider;
     int                                 obs_count;
     int                                 var_count;
-    char                                file_label[64];
+    char                                file_label[80];
 } readstat_writer_t;
 
 readstat_writer_t *readstat_writer_init();
@@ -131,10 +143,20 @@ readstat_error_t readstat_set_variable_longname_provider(readstat_writer_t *writ
 readstat_error_t readstat_set_variable_type_provider(readstat_writer_t *writer, readstat_variable_type_provider variable_type_provider);
 readstat_error_t readstat_set_variable_format_provider(readstat_writer_t *writer, readstat_variable_format_provider variable_format_provider);
 readstat_error_t readstat_set_variable_width_provider(readstat_writer_t *writer, readstat_variable_width_provider variable_width_provider);
-readstat_error_t readstat_set_value_provider(readstat_writer_t *writer, readstat_value_provider value_provider);
+readstat_error_t readstat_set_char_value_provider(readstat_writer_t *writer, readstat_char_value_provider value_provider);
+readstat_error_t readstat_set_int16_value_provider(readstat_writer_t *writer, readstat_int16_value_provider value_provider);
+readstat_error_t readstat_set_int32_value_provider(readstat_writer_t *writer, readstat_int32_value_provider value_provider);
+readstat_error_t readstat_set_float_value_provider(readstat_writer_t *writer, readstat_float_value_provider value_provider);
+readstat_error_t readstat_set_double_value_provider(readstat_writer_t *writer, readstat_double_value_provider value_provider);
+readstat_error_t readstat_set_string_value_provider(readstat_writer_t *writer, readstat_string_value_provider value_provider);
 readstat_error_t readstat_set_vlabel_count_provider(readstat_writer_t *writer, readstat_vlabel_count_provider vlabel_count_provider);
+
+/* DTA: value labels apply only to int32s */
+/* SAV: value labels apply to strings and doubles */
+readstat_error_t readstat_set_vlabel_int32_value_provider(readstat_writer_t *writer, readstat_vlabel_int32_provider vlabel_int32_provider);
 readstat_error_t readstat_set_vlabel_double_value_provider(readstat_writer_t *writer, readstat_vlabel_double_provider vlabel_double_provider);
 readstat_error_t readstat_set_vlabel_string_value_provider(readstat_writer_t *writer, readstat_vlabel_string_provider vlabel_string_provider);
+
 readstat_error_t readstat_set_vlabel_label_provider(readstat_writer_t *writer, readstat_vlabel_string_provider vlabel_label_provider);
 readstat_error_t readstat_set_cancellation_provider(readstat_writer_t *writer, readstat_cancellation_provider cancellation_provider);
 readstat_error_t readstat_set_row_count(readstat_writer_t *writer, int row_count);
@@ -142,6 +164,7 @@ readstat_error_t readstat_set_var_count(readstat_writer_t *writer, int var_count
 readstat_error_t readstat_set_file_label(readstat_writer_t *writer, const char *file_label);
 
 readstat_error_t readstat_write_sav(readstat_writer_t *writer, void *user_ctx);
+readstat_error_t readstat_write_dta(readstat_writer_t *writer, void *user_ctx);
 
 typedef int (*rdata_column_handler)(const char *name, readstat_types_t type, char *format, 
         void *data, long count, void *ctx);

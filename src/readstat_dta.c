@@ -887,3 +887,224 @@ cleanup:
 
     return retval;
 }
+
+readstat_error_t readstat_write_dta(readstat_writer_t *writer, void *user_ctx) {
+    int i, j;
+    
+    readstat_error_t error = READSTAT_OK;
+    unsigned char *row = NULL;
+    
+    dta_header_t header;
+    header.ds_format = 111;
+    header.byteorder = machine_is_little_endian() ? DTA_LOHI : DTA_HILO;
+    header.filetype  = 0x01;
+    header.unused    = 0x00;
+    header.nvar      = writer->var_count;
+    header.nobs      = writer->obs_count;
+
+    size_t data_label_len = strlen(writer->file_label);
+    if (data_label_len > 80)
+        data_label_len = 80;
+    
+    char data_label[81];
+    char time_stamp[18];
+    
+    if (data_label_len > 0)
+        memcpy(data_label, writer->file_label, data_label_len);
+    
+    data_label[data_label_len] = '\0';
+    
+    memset(time_stamp, '\0', sizeof(time_stamp));
+    
+    size_t row_len = 0;
+    dta_ctx_t *ctx = dta_ctx_init(header.nvar, header.nobs, header.byteorder, header.ds_format);
+    for (i=0; i<header.nvar; i++) {
+        unsigned char type = 0x00;
+        readstat_types_t user_type = writer->variable_type_provider(i, user_ctx);
+        if (user_type == READSTAT_TYPE_CHAR) {
+            type = DTA_111_TYPE_CODE_CHAR;
+            row_len += 1;
+        } else if (user_type == READSTAT_TYPE_INT16) {
+            type = DTA_111_TYPE_CODE_INT16;
+            row_len += 2;
+        } else if (user_type == READSTAT_TYPE_INT32) {
+            type = DTA_111_TYPE_CODE_INT32;
+            row_len += 4;
+        } else if (user_type == READSTAT_TYPE_FLOAT) {
+            type = DTA_111_TYPE_CODE_FLOAT;
+            row_len += 4;
+        } else if (user_type == READSTAT_TYPE_DOUBLE) {
+            type = DTA_111_TYPE_CODE_DOUBLE;
+            row_len += 8;
+        } else if (user_type == READSTAT_TYPE_STRING) {
+            size_t max_len = writer->variable_width_provider(i, user_ctx) + 1;
+            if (max_len > 244)
+                max_len = 244;
+            
+            type = max_len;
+            row_len += max_len;
+        }
+        ctx->typlist[i] = type;
+    }
+    
+    if (row_len == 0) {
+        error = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
+        goto cleanup;
+    }
+    
+    for (i=0; i<header.nvar; i++) {
+        const char *varname = writer->variable_shortname_provider(i, user_ctx);
+        if (varname) {
+            strncpy(&ctx->varlist[ctx->variable_name_len*i], varname, ctx->variable_name_len);
+        } else {
+            memset(&ctx->varlist[ctx->variable_name_len*i], '\0', ctx->variable_name_len);
+        }
+    }
+    
+    memset(ctx->srtlist, '\0', ctx->srtlist_len);
+    
+    for (i=0; i<header.nvar; i++) {
+        const char *fmt = writer->variable_format_provider(i, user_ctx);
+        if (fmt) {
+            strncpy(&ctx->fmtlist[ctx->fmtlist_entry_len*i], fmt, ctx->fmtlist_entry_len);
+        } else {
+            memset(&ctx->fmtlist[ctx->fmtlist_entry_len*i], '\0', ctx->fmtlist_entry_len);
+        }
+    }
+    
+    for (i=0; i<header.nvar; i++) {
+        if (writer->vlabel_count_provider(i, user_ctx)) {
+            snprintf(&ctx->lbllist[ctx->lbllist_entry_len*i], ctx->lbllist_entry_len, "column%d", i);
+        } else {
+            memset(&ctx->lbllist[ctx->lbllist_entry_len*i], '\0', ctx->lbllist_entry_len);
+        }
+    }
+    
+    for (i=0; i<header.nvar; i++) {
+        const char *title = writer->variable_longname_provider(i, user_ctx);
+        if (title) {
+            strncpy(&ctx->variable_labels[ctx->variable_labels_entry_len*i], title, ctx->variable_labels_entry_len);
+        } else {
+            memset(&ctx->variable_labels[ctx->variable_labels_entry_len*i], '\0', ctx->variable_labels_entry_len);
+        }
+    }
+    
+    writer->data_writer(&header, sizeof(dta_header_t), user_ctx);
+    writer->data_writer(data_label, sizeof(data_label), user_ctx);
+    writer->data_writer(time_stamp, sizeof(time_stamp), user_ctx);
+    for (i=0; i<header.nvar; i++) {
+        unsigned char byte = ctx->typlist[i];
+        writer->data_writer(&byte, 1, user_ctx);
+    }
+    writer->data_writer(ctx->varlist, ctx->varlist_len, user_ctx);
+    writer->data_writer(ctx->srtlist, ctx->srtlist_len, user_ctx);
+    writer->data_writer(ctx->fmtlist, ctx->fmtlist_len, user_ctx);
+    writer->data_writer(ctx->lbllist, ctx->lbllist_len, user_ctx);
+    writer->data_writer(ctx->variable_labels, ctx->variable_labels_len, user_ctx);
+    writer->data_writer("\0\0\0\0", sizeof("\0\0\0\0"), user_ctx); /* 5-byte expansion field */
+    
+    row = malloc(row_len);
+    
+    for (j=0; j<header.nobs; j++) {
+        if (writer->cancellation_provider && writer->cancellation_provider(user_ctx)) {
+            error = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+        
+        off_t offset = 0;
+        for (i=0; i<header.nvar; i++) {
+            readstat_types_t user_type = writer->variable_type_provider(i, user_ctx);
+            size_t value_len = 0;
+            if (user_type == READSTAT_TYPE_CHAR) {
+                char char_val = writer->char_value_provider(j, i, user_ctx);
+                memcpy(&row[offset], &char_val, value_len = sizeof(char));
+            } else if (user_type == READSTAT_TYPE_INT16) {
+                int16_t int_val = writer->int16_value_provider(j, i, user_ctx);
+                memcpy(&row[offset], &int_val, value_len = sizeof(int16_t));
+            } else if (user_type == READSTAT_TYPE_INT32) {
+                int32_t int_val = writer->int32_value_provider(j, i, user_ctx);
+                memcpy(&row[offset], &int_val, value_len = sizeof(int32_t));
+            } else if (user_type == READSTAT_TYPE_FLOAT) {
+                float float_val = writer->float_value_provider(j, i, user_ctx);
+                memcpy(&row[offset], &float_val, value_len = sizeof(float));
+            } else if (user_type == READSTAT_TYPE_DOUBLE) {
+                double double_val = writer->double_value_provider(j, i, user_ctx);
+                memcpy(&row[offset], &double_val, value_len = sizeof(double));
+            } else if (user_type == READSTAT_TYPE_STRING) {
+                value_len = writer->variable_width_provider(i, user_ctx) + 1;
+                if (value_len > 244)
+                    value_len = 244;
+                const char * text_val = writer->string_value_provider(j, i, user_ctx);
+                if (text_val == NULL || text_val[0] == '\0') {
+                    memset(&row[offset], '\0', value_len);
+                } else {
+                    strncpy((char *)&row[offset], text_val, value_len);
+                }
+            }
+            offset += value_len;
+        }
+        writer->data_writer(row, row_len, user_ctx);
+    }
+    
+    for (i=0; i<header.nvar; i++) {
+        if (writer->cancellation_provider && writer->cancellation_provider(user_ctx)) {
+            error = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+        
+        int32_t n = writer->vlabel_count_provider(i, user_ctx);
+        if (n > 0) {
+            int32_t txtlen = 0;
+            for (j=0; j<n; j++) {
+                const char *label = writer->vlabel_label_provider(j, i, user_ctx);
+                txtlen += strlen(label) + 1;
+            }
+            dta_value_label_table_header_t table_header;
+            table_header.len = 8 + 8*n + txtlen;
+            snprintf(table_header.labname, sizeof(table_header.labname), "column%d", i);
+            
+            writer->data_writer(&table_header, sizeof(dta_value_label_table_header_t), user_ctx);
+
+            if (txtlen == 0) {
+                writer->data_writer(&txtlen, sizeof(int32_t), user_ctx);
+                writer->data_writer(&txtlen, sizeof(int32_t), user_ctx);
+                continue;
+            }
+            
+            int32_t *off = malloc(4*n);
+            int32_t *val = malloc(4*n);
+            char *txt = malloc(txtlen);
+            
+            off_t offset = 0;
+            
+            for (j=0; j<n; j++) {
+                const char *value = writer->vlabel_label_provider(j, i, user_ctx);
+                size_t value_data_len = strlen(value);
+                off[j] = offset;
+                val[j] = writer->vlabel_int32_value_provider(j, i, user_ctx);
+                memcpy(txt + offset, value, value_data_len);
+                offset += value_data_len;
+                
+                txt[offset++] = '\0';                
+            }
+            
+            writer->data_writer(&n, sizeof(int32_t), user_ctx);
+            writer->data_writer(&txtlen, sizeof(int32_t), user_ctx);
+            writer->data_writer(off, 4*n, user_ctx);
+            writer->data_writer(val, 4*n, user_ctx);
+            writer->data_writer(txt, txtlen, user_ctx);
+            
+            free(off);
+            free(val);
+            free(txt);
+        }
+    }
+    
+cleanup:
+    if (row) {
+        free(row);
+    }
+    dta_ctx_free(ctx);
+    
+    return error;
+}
