@@ -26,7 +26,7 @@ void readstat_writer_free(readstat_writer_t *writer) {
         if (writer->variables)
             free(writer->variables);
         if (writer->label_sets) {
-            for (i=0; writer->label_sets_count; i++) {
+            for (i=0; i<writer->label_sets_count; i++) {
                 readstat_label_set_t *label_set = readstat_get_label_set(writer, i);
                 free(label_set->value_labels);
             }
