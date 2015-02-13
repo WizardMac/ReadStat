@@ -11,24 +11,37 @@
 readstat_writer_t *readstat_writer_init() {
     readstat_writer_t *writer = calloc(1, sizeof(readstat_writer_t));
 
-    writer->variables = calloc(VARIABLES_INITIAL_CAPACITY, sizeof(readstat_variable_t));
+    writer->variables = calloc(VARIABLES_INITIAL_CAPACITY, sizeof(readstat_variable_t *));
     writer->variables_capacity = VARIABLES_INITIAL_CAPACITY;
 
-    writer->label_sets = calloc(LABEL_SETS_INITIAL_CAPACITY, sizeof(readstat_label_set_t));
+    writer->label_sets = calloc(LABEL_SETS_INITIAL_CAPACITY, sizeof(readstat_label_set_t *));
     writer->label_sets_capacity = LABEL_SETS_INITIAL_CAPACITY;
 
     return writer;
 }
 
+static void readstat_variable_free(readstat_variable_t *variable) {
+    free(variable);
+}
+
+static void readstat_label_set_free(readstat_label_set_t *label_set) {
+    free(label_set->value_labels);
+    free(label_set->variables);
+    free(label_set);
+}
+
 void readstat_writer_free(readstat_writer_t *writer) {
     int i;
     if (writer) {
-        if (writer->variables)
+        if (writer->variables) {
+            for (i=0; i<writer->variables_count; i++) {
+                readstat_variable_free(writer->variables[i]);
+            }
             free(writer->variables);
+        }
         if (writer->label_sets) {
             for (i=0; i<writer->label_sets_count; i++) {
-                readstat_label_set_t *label_set = readstat_get_label_set(writer, i);
-                free(label_set->value_labels);
+                readstat_label_set_free(writer->label_sets[i]);
             }
             free(writer->label_sets);
         }
@@ -56,9 +69,11 @@ readstat_label_set_t *readstat_add_label_set(readstat_writer_t *writer, readstat
     if (writer->label_sets_count == writer->label_sets_capacity) {
         writer->label_sets_capacity *= 2;
         writer->label_sets = realloc(writer->label_sets, 
-                writer->label_sets_capacity * sizeof(readstat_label_set_t));
+                writer->label_sets_capacity * sizeof(readstat_label_set_t *));
     }
-    readstat_label_set_t *new_label_set = &writer->label_sets[writer->label_sets_count++];
+    readstat_label_set_t *new_label_set = malloc(sizeof(readstat_label_set_t));
+    
+    writer->label_sets[writer->label_sets_count++] = new_label_set;
 
     new_label_set->type = type;
     strncpy(new_label_set->name, name, sizeof(new_label_set->name));
@@ -74,7 +89,7 @@ readstat_label_set_t *readstat_add_label_set(readstat_writer_t *writer, readstat
 
 readstat_label_set_t *readstat_get_label_set(readstat_writer_t *writer, int index) {
     if (index < writer->label_sets_count) {
-        return &writer->label_sets[index];
+        return writer->label_sets[index];
     }
     return NULL;
 }
@@ -128,13 +143,16 @@ readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, readstat_t
     if (writer->variables_count == writer->variables_capacity) {
         writer->variables_capacity *= 2;
         writer->variables = realloc(writer->variables,
-                writer->variables_capacity * sizeof(readstat_variable_t));
+                writer->variables_capacity * sizeof(readstat_variable_t *));
     }
-    readstat_variable_t *new_variable = &writer->variables[writer->variables_count++];
+    readstat_variable_t *new_variable = malloc(sizeof(readstat_variable_t));
+    
+    writer->variables[writer->variables_count++] = new_variable;
 
     memset(new_variable, 0, sizeof(readstat_variable_t));
 
     new_variable->user_width = width;
+    new_variable->type = type;
 
     if (name) {
         snprintf(new_variable->name, sizeof(new_variable->name), "%s", name);
@@ -162,7 +180,7 @@ readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, readstat_t
 
 readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index) {
     if (index < writer->variables_count) {
-        return &writer->variables[index];
+        return writer->variables[index];
     }
     return NULL;
 }

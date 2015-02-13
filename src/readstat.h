@@ -158,11 +158,11 @@ typedef ssize_t (*readstat_data_writer)(const void *data, size_t len, void *ctx)
 typedef struct readstat_writer_s {
     readstat_data_writer        data_writer;
 
-    readstat_variable_t        *variables;
+    readstat_variable_t       **variables;
     long                        variables_count;
     long                        variables_capacity;
 
-    readstat_label_set_t       *label_sets;
+    readstat_label_set_t      **label_sets;
     long                        label_sets_count;
     long                        label_sets_capacity;
 
