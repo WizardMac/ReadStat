@@ -23,8 +23,10 @@ static readstat_error_t dta_emit_header_data_label(readstat_writer_t *writer) {
 }
 
 static readstat_error_t dta_emit_header_time_stamp(readstat_writer_t *writer) {
+    time_t now = time(NULL);
+    struct tm *time_s = localtime(&now);
     char time_stamp[18];
-    memset(time_stamp, '\0', sizeof(time_stamp));
+    strftime(time_stamp, sizeof(time_stamp), "%d %b %Y %H:%M", time_s);
     return readstat_write_bytes(writer, time_stamp, sizeof(time_stamp));
 }
 
