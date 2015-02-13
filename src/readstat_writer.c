@@ -209,31 +209,31 @@ readstat_error_t readstat_begin_row(readstat_writer_t *writer) {
 }
 
 // Then call one of these for each variable
-readstat_error_t readstat_insert_char_value(readstat_writer_t *writer, readstat_variable_t *variable, char value) {
+readstat_error_t readstat_insert_char_value(readstat_writer_t *writer, const readstat_variable_t *variable, char value) {
     return writer->callbacks.write_char(&writer->row[variable->offset], variable, value);
 }
 
-readstat_error_t readstat_insert_int16_value(readstat_writer_t *writer, readstat_variable_t *variable, int16_t value) {
+readstat_error_t readstat_insert_int16_value(readstat_writer_t *writer, const readstat_variable_t *variable, int16_t value) {
     return writer->callbacks.write_int16(&writer->row[variable->offset], variable, value);
 }
 
-readstat_error_t readstat_insert_int32_value(readstat_writer_t *writer, readstat_variable_t *variable, int32_t value) {
+readstat_error_t readstat_insert_int32_value(readstat_writer_t *writer, const readstat_variable_t *variable, int32_t value) {
     return writer->callbacks.write_int32(&writer->row[variable->offset], variable, value);
 }
 
-readstat_error_t readstat_insert_float_value(readstat_writer_t *writer, readstat_variable_t *variable, float value) {
+readstat_error_t readstat_insert_float_value(readstat_writer_t *writer, const readstat_variable_t *variable, float value) {
     return writer->callbacks.write_float(&writer->row[variable->offset], variable, value);
 }
 
-readstat_error_t readstat_insert_double_value(readstat_writer_t *writer, readstat_variable_t *variable, double value) {
+readstat_error_t readstat_insert_double_value(readstat_writer_t *writer, const readstat_variable_t *variable, double value) {
     return writer->callbacks.write_double(&writer->row[variable->offset], variable, value);
 }
 
-readstat_error_t readstat_insert_string_value(readstat_writer_t *writer, readstat_variable_t *variable, const char *value) {
+readstat_error_t readstat_insert_string_value(readstat_writer_t *writer, const readstat_variable_t *variable, const char *value) {
     return writer->callbacks.write_string(&writer->row[variable->offset], variable, value);
 }
 
-readstat_error_t readstat_insert_missing_value(readstat_writer_t *writer, readstat_variable_t *variable) {
+readstat_error_t readstat_insert_missing_value(readstat_writer_t *writer, const readstat_variable_t *variable) {
     return writer->callbacks.write_missing(&writer->row[variable->offset], variable);
 }
 
