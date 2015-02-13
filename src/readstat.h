@@ -208,13 +208,13 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
 readstat_error_t readstat_begin_row(readstat_writer_t *writer);
 
 // Then call one of these for each variable
-readstat_error_t readstat_add_char_value(readstat_writer_t *writer, readstat_variable_t *variable, char value);
-readstat_error_t readstat_add_int16_value(readstat_writer_t *writer, readstat_variable_t *variable, int16_t value);
-readstat_error_t readstat_add_int32_value(readstat_writer_t *writer, readstat_variable_t *variable, int32_t value);
-readstat_error_t readstat_add_float_value(readstat_writer_t *writer, readstat_variable_t *variable, float value);
-readstat_error_t readstat_add_double_value(readstat_writer_t *writer, readstat_variable_t *variable, double value);
-readstat_error_t readstat_add_string_value(readstat_writer_t *writer, readstat_variable_t *variable, const char *value);
-readstat_error_t readstat_add_missing_value(readstat_writer_t *writer, readstat_variable_t *variable);
+readstat_error_t readstat_insert_char_value(readstat_writer_t *writer, readstat_variable_t *variable, char value);
+readstat_error_t readstat_insert_int16_value(readstat_writer_t *writer, readstat_variable_t *variable, int16_t value);
+readstat_error_t readstat_insert_int32_value(readstat_writer_t *writer, readstat_variable_t *variable, int32_t value);
+readstat_error_t readstat_insert_float_value(readstat_writer_t *writer, readstat_variable_t *variable, float value);
+readstat_error_t readstat_insert_double_value(readstat_writer_t *writer, readstat_variable_t *variable, double value);
+readstat_error_t readstat_insert_string_value(readstat_writer_t *writer, readstat_variable_t *variable, const char *value);
+readstat_error_t readstat_insert_missing_value(readstat_writer_t *writer, readstat_variable_t *variable);
 
 // Finally, close out the row
 readstat_error_t readstat_end_row(readstat_writer_t *writer);
