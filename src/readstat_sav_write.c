@@ -66,7 +66,7 @@ static readstat_error_t sav_emit_variable_records(readstat_writer_t *writer) {
     for (i=0; i<writer->variables_count; i++) {
         readstat_variable_t *r_variable = readstat_get_variable(writer, i);
         char name_data[9];
-        snprintf(name_data, sizeof(name_data), "var%d", i);
+        snprintf(name_data, sizeof(name_data), "VAR%d", i);
         size_t name_data_len = strlen(name_data);
 
         const char *title_data = r_variable->label;
@@ -291,7 +291,7 @@ static readstat_error_t sav_emit_long_var_name_record(readstat_writer_t *writer)
     
     for (i=0; i<writer->variables_count; i++) {
         char name_data[9];
-        snprintf(name_data, sizeof(name_data), "var%d", i);
+        snprintf(name_data, sizeof(name_data), "VAR%d", i);
         size_t name_data_len = strlen(name_data);
         
         readstat_variable_t *r_variable = readstat_get_variable(writer, i);
@@ -319,7 +319,7 @@ static readstat_error_t sav_emit_long_var_name_record(readstat_writer_t *writer)
         
         for (i=0; i<writer->variables_count; i++) {
             char name_data[9];
-            snprintf(name_data, sizeof(name_data), "var%d", i);
+            snprintf(name_data, sizeof(name_data), "VAR%d", i);
             size_t name_data_len = strlen(name_data);
 
             readstat_variable_t *r_variable = readstat_get_variable(writer, i);
