@@ -116,6 +116,7 @@ void readstat_label_double_value(readstat_label_set_t *label_set, double value, 
     }
     readstat_value_label_t *new_value_label = &label_set->value_labels[label_set->value_labels_count++];
     new_value_label->double_key = value;
+    strncpy(new_value_label->label, label, sizeof(new_value_label->label));
 }
 
 void readstat_label_int32_value(readstat_label_set_t *label_set, int32_t value, const char *label) {
@@ -126,6 +127,7 @@ void readstat_label_int32_value(readstat_label_set_t *label_set, int32_t value, 
     }
     readstat_value_label_t *new_value_label = &label_set->value_labels[label_set->value_labels_count++];
     new_value_label->int32_key = value;
+    strncpy(new_value_label->label, label, sizeof(new_value_label->label));
 }
 
 void readstat_label_string_value(readstat_label_set_t *label_set, const char *value, const char *label) {
@@ -136,6 +138,7 @@ void readstat_label_string_value(readstat_label_set_t *label_set, const char *va
     }
     readstat_value_label_t *new_value_label = &label_set->value_labels[label_set->value_labels_count++];
     strncpy(new_value_label->string_key, value, sizeof(new_value_label->string_key));
+    strncpy(new_value_label->label, label, sizeof(new_value_label->label));
 }
 
 readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, readstat_types_t type, size_t width,
