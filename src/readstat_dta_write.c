@@ -50,7 +50,7 @@ static readstat_error_t dta_emit_typlist(readstat_writer_t *writer, dta_ctx_t *c
         } else if (user_type == READSTAT_TYPE_DOUBLE) {
             type = DTA_111_TYPE_CODE_DOUBLE;
         } else if (user_type == READSTAT_TYPE_STRING) {
-            size_t max_len = r_variable->width + 1;
+            size_t max_len = r_variable->width;
             if (max_len > 244)
                 max_len = 244;
             
