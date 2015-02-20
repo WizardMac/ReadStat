@@ -71,7 +71,7 @@ readstat_label_set_t *readstat_add_label_set(readstat_writer_t *writer, readstat
         writer->label_sets = realloc(writer->label_sets, 
                 writer->label_sets_capacity * sizeof(readstat_label_set_t *));
     }
-    readstat_label_set_t *new_label_set = malloc(sizeof(readstat_label_set_t));
+    readstat_label_set_t *new_label_set = calloc(1, sizeof(readstat_label_set_t));
     
     writer->label_sets[writer->label_sets_count++] = new_label_set;
 
@@ -148,11 +148,9 @@ readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, readstat_t
         writer->variables = realloc(writer->variables,
                 writer->variables_capacity * sizeof(readstat_variable_t *));
     }
-    readstat_variable_t *new_variable = malloc(sizeof(readstat_variable_t));
+    readstat_variable_t *new_variable = calloc(1, sizeof(readstat_variable_t));
     
     writer->variables[writer->variables_count++] = new_variable;
-
-    memset(new_variable, 0, sizeof(readstat_variable_t));
 
     new_variable->user_width = width;
     new_variable->type = type;
