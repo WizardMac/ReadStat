@@ -39,6 +39,11 @@ static readstat_error_t sav_encode_variable_format(int32_t *out_code,
         }
     } else if (r_variable->type == READSTAT_TYPE_STRING) {
         spss_format.type = SPSS_FORMAT_TYPE_A;
+        if (r_variable->user_width) {
+            spss_format.width = r_variable->user_width;
+        } else {
+            spss_format.width = r_variable->width;
+        }
     } else {
         spss_format.type = SPSS_FORMAT_TYPE_F;
         spss_format.width = 8;
