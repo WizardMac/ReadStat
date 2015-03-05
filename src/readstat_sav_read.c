@@ -156,11 +156,13 @@ static readstat_error_t sav_read_variable_record(int fd, sav_ctx_t *ctx) {
     info->offset = ctx->var_offset;
     info->type = dta_type;
 
-    retval = readstat_convert(info->name, sizeof(info->name), variable.name, 8, ctx->converter);
+    retval = readstat_convert(info->name, sizeof(info->name), 
+            variable.name, sizeof(variable.name), ctx->converter);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    retval = readstat_convert(info->longname, sizeof(info->longname), variable.name, 8, ctx->converter);
+    retval = readstat_convert(info->longname, sizeof(info->longname), 
+            variable.name, sizeof(variable.name), ctx->converter);
     if (retval != READSTAT_OK)
         goto cleanup;
 
