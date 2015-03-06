@@ -145,11 +145,12 @@ static readstat_error_t sav_skip_variable_record(int fd, sav_ctx_t *ctx) {
             goto cleanup;
         }
         label_len = ctx->machine_needs_byte_swap ? byteswap4(label_len) : label_len;
-        lseek(fd, label_len, SEEK_SET);
+        int32_t label_capacity = (label_len + 3) / 4 * 4;
+        lseek(fd, label_capacity, SEEK_CUR);
     }
     if (variable.n_missing_values) {
         int n_missing_values = ctx->machine_needs_byte_swap ? byteswap4(variable.n_missing_values) : variable.n_missing_values;
-        lseek(fd, n_missing_values * sizeof(double), SEEK_SET);
+        lseek(fd, n_missing_values * sizeof(double), SEEK_CUR);
     }
 cleanup:
     return retval;
@@ -300,7 +301,7 @@ static readstat_error_t sav_skip_value_label_record(int fd, sav_ctx_t *ctx, void
             goto cleanup;
         }
         size_t label_len = (vlabel.label_len + 8) / 8 * 8 - 1;
-        lseek(fd, label_len, SEEK_SET);
+        lseek(fd, label_len, SEEK_CUR);
     }
 
     if (read(fd, &rec_type, sizeof(int32_t)) < sizeof(int32_t)) {
@@ -321,7 +322,7 @@ static readstat_error_t sav_skip_value_label_record(int fd, sav_ctx_t *ctx, void
     if (ctx->machine_needs_byte_swap)
         var_count = byteswap4(var_count);
     
-    lseek(fd, var_count * sizeof(int32_t), SEEK_SET);
+    lseek(fd, var_count * sizeof(int32_t), SEEK_CUR);
 
 cleanup:
     return retval;
