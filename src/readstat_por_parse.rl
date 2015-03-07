@@ -8,7 +8,8 @@
     write data nofinal noerror;
 }%%
 
-int readstat_por_parse_double(const char *data, size_t len, double *result, readstat_error_handler error_cb) {
+int readstat_por_parse_double(const char *data, size_t len, double *result, 
+        readstat_error_handler error_cb, void *user_ctx) {
     int retval = 0;
     double val = 0.0;
     long num = 0;
@@ -69,7 +70,7 @@ int readstat_por_parse_double(const char *data, size_t len, double *result, read
         if (error_cb) {
             char error_buf[1024];
             snprintf(error_buf, sizeof(error_buf), "Read bytes: %ld Ending state: %d\n", (long)(p - (const unsigned char *)data), cs);
-            error_cb(error_buf);
+            error_cb(error_buf, user_ctx);
         }
     }
     

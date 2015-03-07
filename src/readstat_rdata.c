@@ -19,8 +19,8 @@
 #include <lzma.h>
 #endif
 
-#include "readstat_io.h"
 #include "readstat_rdata.h"
+#include "readstat_io.h"
 
 #define RDATA_ATOM_LEN 128
 
@@ -893,7 +893,7 @@ static readstat_error_t discard_vector(rdata_sexptype_header_t sexptype_header, 
     } else if (ctx->error_handler) {
         char error_buf[1024];
         snprintf(error_buf, sizeof(error_buf), "Vector with non-positive length: %d\n", length);
-        ctx->error_handler(error_buf);
+        ctx->error_handler(error_buf, ctx->user_ctx);
     }
     
     if (sexptype_header.attributes) {
