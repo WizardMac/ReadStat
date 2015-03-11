@@ -471,8 +471,8 @@ static readstat_error_t sav_write_missing(void *row, const readstat_variable_t *
     if (var->type == READSTAT_TYPE_STRING) {
         memset(row, ' ', var->width);
     } else {
-        double dval = DBL_MIN;
-        memcpy(row, &dval, sizeof(double));
+        uint64_t missing_val = SAV_MISSING_DOUBLE;
+        memcpy(row, &missing_val, sizeof(uint64_t));
     }
     return READSTAT_OK;
 }
