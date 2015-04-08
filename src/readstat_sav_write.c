@@ -78,7 +78,11 @@ static readstat_error_t sav_emit_header(readstat_writer_t *writer) {
     header.layout_code = 2;
     header.nominal_case_size = writer->row_len / 8;
     header.compressed = 0; /* TODO */
-    header.weight_index = 0;
+    if (writer->fweight_variable) {
+        header.weight_index = writer->fweight_variable->index + 1;
+    } else {
+        header.weight_index = 0;
+    }
     header.ncases = writer->row_count;
     header.bias = 100.0;
     
@@ -522,9 +526,7 @@ cleanup:
     return retval;
 }
 
-readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx,
-        const char *file_label, long row_count) {
-    snprintf(writer->file_label, sizeof(writer->file_label), "%s", file_label);
+readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count) {
     writer->row_count = row_count;
     writer->user_ctx = user_ctx;
 

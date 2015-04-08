@@ -1138,6 +1138,12 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *filen
             i += info->n_segments;
         }
     }
+    if (parser->fweight_handler && ctx->fweight_index) {
+        if (parser->fweight_handler(ctx->fweight_index - 1, ctx->user_ctx)) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+    }
 
     if (ctx->value_handler) {
         retval = sav_read_data(fd, ctx);

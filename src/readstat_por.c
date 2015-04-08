@@ -80,6 +80,7 @@ typedef struct readstat_por_ctx_s {
     size_t         buf_used;
     size_t         buf_pos;
     char           space;
+    char           fweight_name[9];
     uint16_t       lookup[256];
     unsigned char *string_buffer;
     size_t         string_buffer_len;
@@ -326,6 +327,13 @@ static readstat_error_t read_variable_count_record(readstat_por_ctx_t *ctx) {
     if (read_double(ctx, NULL) == -1) {
         return READSTAT_ERROR_PARSE;
     }
+    return READSTAT_OK;
+}
+
+static readstat_error_t read_case_weight_record(readstat_por_ctx_t *ctx) {
+    if (read_string(ctx, ctx->fweight_name, sizeof(ctx->fweight_name)) == -1)
+        return READSTAT_ERROR_PARSE;
+
     return READSTAT_OK;
 }
 
@@ -692,10 +700,9 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *filen
                     goto cleanup;
                 break;
             case '6': /* case weight */
-                if (read_string(ctx, string, sizeof(string)) == -1) {
-                    retval = READSTAT_ERROR_PARSE;
+                retval = read_case_weight_record(ctx);
+                if (retval != READSTAT_OK)
                     goto cleanup;
-                }
                 break;
             case '7': /* variable */
                 retval = read_variable_record(ctx);
@@ -762,6 +769,18 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *filen
                     if (cb_retval) {
                         retval = READSTAT_ERROR_USER_ABORT;
                         goto cleanup;
+                    }
+                }
+                if (parser->fweight_handler && ctx->fweight_name[0]) {
+                    for (i=0; i<ctx->var_count; i++) {
+                        por_varinfo_t *info = &ctx->varinfo[i];
+                        if (strcmp(info->name, ctx->fweight_name) == 0) {
+                            if (parser->fweight_handler(i, user_ctx)) {
+                                retval = READSTAT_ERROR_USER_ABORT;
+                                goto cleanup;
+                            }
+                            break;
+                        }
                     }
                 }
                 retval = read_por_file_data(ctx);
