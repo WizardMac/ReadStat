@@ -36,6 +36,9 @@
 #define SAS_COMPRESSION_TRUNC  0x01
 #define SAS_COMPRESSION_ROW    0x04
 
+#define SAS_COMPRESSION_SIGNATURE_RLE  "SASYZCRL"
+#define SAS_COMPRESSION_SIGNATURE_RDC  "SASYZCR2"
+
 #define SAS_RLE_COMMAND_COPY64          0
 #define SAS_RLE_COMMAND_INSERT_BLANK17  6
 #define SAS_RLE_COMMAND_INSERT_ZERO17   7
@@ -368,8 +371,8 @@ static readstat_error_t sas_parse_column_text_subheader(const char *subheader, s
     ctx->text_blobs[ctx->text_blob_count-1] = blob;
 
     /* hack */
-    if (len-signature_len > 12 + sizeof("SASYZCR2")-1 &&
-            strncmp(blob + 12, "SASYZCR2", sizeof("SASYZCR2")-1) == 0) {
+    if (len-signature_len > 12 + sizeof(SAS_COMPRESSION_SIGNATURE_RDC)-1 &&
+            strncmp(blob + 12, SAS_COMPRESSION_SIGNATURE_RDC, sizeof(SAS_COMPRESSION_SIGNATURE_RDC)-1) == 0) {
         ctx->rdc_compression = 1;
     }
 
