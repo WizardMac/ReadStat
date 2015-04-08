@@ -34,7 +34,7 @@
 
 #define SAS_COMPRESSION_NONE   0x00
 #define SAS_COMPRESSION_TRUNC  0x01
-#define SAS_COMPRESSION_RLE    0x04
+#define SAS_COMPRESSION_ROW    0x04
 
 #define SAS_RLE_COMMAND_COPY64          0
 #define SAS_RLE_COMMAND_INSERT_BLANK17  6
@@ -172,6 +172,8 @@ typedef struct sas_ctx_s {
     col_info_t   *col_info;
 
     iconv_t       converter;
+
+    int           rdc_compression:1;
 } sas_ctx_t;
 
 typedef struct cat_ctx_s {
@@ -364,6 +366,12 @@ static readstat_error_t sas_parse_column_text_subheader(const char *subheader, s
     memcpy(blob, subheader+signature_len, len-signature_len);
     ctx->text_blob_lengths[ctx->text_blob_count-1] = len-signature_len;
     ctx->text_blobs[ctx->text_blob_count-1] = blob;
+
+    /* hack */
+    if (len-signature_len > 12 + sizeof("SASYZCR2")-1 &&
+            strncmp(blob + 12, "SASYZCR2", sizeof("SASYZCR2")-1) == 0) {
+        ctx->rdc_compression = 1;
+    }
 
 cleanup:
     return retval;
@@ -604,6 +612,81 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t sas_parse_subheader_rdc(const char *subheader, size_t len, sas_ctx_t *ctx) {
+    /* TODO bounds checking */
+    readstat_error_t retval = READSTAT_OK;
+    const unsigned char *input = (const unsigned char *)subheader;
+    char *buffer = malloc(ctx->row_length);
+    char *output = buffer;
+    while (input - (const unsigned char *)subheader < len - 2) {
+        int i;
+        unsigned short prefix = (input[0] << 8) + input[1];
+        input += 2;
+        for (i=0; i<16; i++) {
+            if (input - (const unsigned char *)subheader >= len)
+                break;
+
+            if ((prefix & (1 << (15 - i))) == 0) {
+                *output++ = *input++;
+            } else {
+                unsigned char marker_byte = *input++;
+                unsigned char next_byte = *input++;
+                size_t insert_len = 0, copy_len = 0;
+                unsigned char insert_byte = 0x00;
+                size_t back_offset = 0;
+
+                if (marker_byte >= 0x00 && marker_byte <= 0x07) {
+                    insert_len = 3 + marker_byte;
+                    insert_byte = next_byte;
+                } else if (marker_byte >= 0x08 && marker_byte <= 0x0A) {
+//                        (next_byte & 0x0F) != (next_byte >> 4)) {
+                    copy_len = 14 + next_byte;
+                    back_offset = (marker_byte - 0x05) * 8;
+//                    input--;
+                } else if (marker_byte >= 0x0B && marker_byte <= 0x0F) {
+                    copy_len = 0; // 14 + (*input++);
+                    back_offset = (marker_byte - 0x05) * 8;
+                    input++; // eat a byte
+                } else if ((marker_byte >> 4) > 2) {
+                    copy_len = (marker_byte >> 4);
+                    back_offset = 3 + (marker_byte & 0x0F) + next_byte * 16;
+                } else if ((marker_byte >> 4) == 2) {
+                    copy_len = 16 + (*input++);
+                    back_offset = 3 + (marker_byte & 0x0F) + next_byte * 16;
+                } else if ((marker_byte >> 4) == 1) {
+                    insert_len = 19 + (marker_byte & 0x0F) + next_byte * 16;
+                    insert_byte = *input++;
+                } else {
+                    retval = READSTAT_ERROR_PARSE;
+                    goto cleanup;
+                }
+
+                if (insert_len) {
+                    memset(output, insert_byte, insert_len);
+                    output += insert_len;
+                } else if (copy_len) {
+                    if (output - buffer < back_offset || copy_len > back_offset) {
+                        retval = READSTAT_ERROR_PARSE;
+                        goto cleanup;
+                    }
+                    memcpy(output, output - back_offset, copy_len);
+                    output += copy_len;
+                }
+            }
+        }
+    }
+
+    if (output - buffer != ctx->row_length) {
+        retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
+        goto cleanup;
+    }
+    retval = sas_parse_single_row(buffer, ctx);
+cleanup:
+    free(buffer);
+
+    return retval;
+}
+
 static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t len, sas_ctx_t *ctx) {
     /* TODO bounds checking */
     readstat_error_t retval = READSTAT_OK;
@@ -677,6 +760,13 @@ cleanup:
     free(buffer);
 
     return retval;
+}
+
+static readstat_error_t sas_parse_subheader_compressed(const char *subheader, size_t len, sas_ctx_t *ctx) {
+    if (ctx->rdc_compression)
+        return sas_parse_subheader_rdc(subheader, len, ctx);
+
+    return sas_parse_subheader_rle(subheader, len, ctx);
 }
 
 static readstat_error_t sas_parse_subheader(uint32_t signature, const char *subheader, size_t len, sas_ctx_t *ctx) {
@@ -880,7 +970,7 @@ static readstat_error_t sas_parse_page_pass1(const char *page, size_t page_size,
                         goto cleanup;
                     }
                 }
-            } else if (compression == SAS_COMPRESSION_RLE) {
+            } else if (compression == SAS_COMPRESSION_ROW) {
                 /* void */
             } else {
                 retval = READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
@@ -950,14 +1040,14 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
                             goto cleanup;
                         }
                     }
-                } else if (compression == SAS_COMPRESSION_RLE) {
+                } else if (compression == SAS_COMPRESSION_ROW) {
                     if (!ctx->did_submit_columns) {
                         if ((retval = submit_columns(ctx)) != READSTAT_OK) {
                             goto cleanup;
                         }
                         ctx->did_submit_columns = 1;
                     }
-                    if ((retval = sas_parse_subheader_rle(page + offset, len, ctx)) != READSTAT_OK) {
+                    if ((retval = sas_parse_subheader_compressed(page + offset, len, ctx)) != READSTAT_OK) {
                         goto cleanup;
                     }
                 } else {
