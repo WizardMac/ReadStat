@@ -34,7 +34,10 @@
 
 #define SAS_COMPRESSION_NONE   0x00
 #define SAS_COMPRESSION_TRUNC  0x01
-#define SAS_COMPRESSION_RLE    0x04
+#define SAS_COMPRESSION_ROW    0x04
+
+#define SAS_COMPRESSION_SIGNATURE_RLE  "SASYZCRL"
+#define SAS_COMPRESSION_SIGNATURE_RDC  "SASYZCR2"
 
 #define SAS_RLE_COMMAND_COPY64          0
 #define SAS_RLE_COMMAND_INSERT_BLANK17  6
@@ -364,6 +367,13 @@ static readstat_error_t sas_parse_column_text_subheader(const char *subheader, s
     memcpy(blob, subheader+signature_len, len-signature_len);
     ctx->text_blob_lengths[ctx->text_blob_count-1] = len-signature_len;
     ctx->text_blobs[ctx->text_blob_count-1] = blob;
+
+    /* another bit of a hack */
+    if (len-signature_len > 12 + sizeof(SAS_COMPRESSION_SIGNATURE_RDC)-1 &&
+            strncmp(blob + 12, SAS_COMPRESSION_SIGNATURE_RDC, sizeof(SAS_COMPRESSION_SIGNATURE_RDC)-1) == 0) {
+        retval = READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
+        goto cleanup;
+    }
 
 cleanup:
     return retval;
@@ -880,7 +890,7 @@ static readstat_error_t sas_parse_page_pass1(const char *page, size_t page_size,
                         goto cleanup;
                     }
                 }
-            } else if (compression == SAS_COMPRESSION_RLE) {
+            } else if (compression == SAS_COMPRESSION_ROW) {
                 /* void */
             } else {
                 retval = READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
@@ -950,7 +960,7 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
                             goto cleanup;
                         }
                     }
-                } else if (compression == SAS_COMPRESSION_RLE) {
+                } else if (compression == SAS_COMPRESSION_ROW) {
                     if (!ctx->did_submit_columns) {
                         if ((retval = submit_columns(ctx)) != READSTAT_OK) {
                             goto cleanup;
