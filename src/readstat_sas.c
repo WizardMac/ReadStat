@@ -627,7 +627,7 @@ static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t le
         unsigned char length = (control & 0x0F);
         int copy_len = 0;
         int insert_len = 0;
-        char insert_byte = '\0';
+        unsigned char insert_byte = '\0';
         switch (command) {
             case SAS_RLE_COMMAND_COPY64:
                 copy_len = (*input++) + 64 + length * 256;
