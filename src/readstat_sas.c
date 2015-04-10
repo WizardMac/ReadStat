@@ -641,7 +641,7 @@ static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t le
                 insert_byte = ' ';
                 break;
             case SAS_RLE_COMMAND_INSERT_ZERO17:
-                insert_len = (*input++) + 17;
+                insert_len = (*input++) + 17 + length * 256;
                 insert_byte = '\0';
                 break;
             case SAS_RLE_COMMAND_COPY1:  copy_len = length + 1; break;
