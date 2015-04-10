@@ -544,14 +544,18 @@ static readstat_error_t sas_parse_column_format_subheader(const char *subheader,
 static readstat_error_t handle_data_value(const char *col_data, col_info_t *col_info, sas_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     int cb_retval = 0;
+    readstat_value_t value;
+    memset(&value, 0, sizeof(readstat_value_t));
+
+    value.type = col_info->type;
+
     if (col_info->type == READSTAT_TYPE_STRING) {
         retval = readstat_convert(ctx->scratch_buffer, ctx->scratch_buffer_len,
                 col_data, col_info->width, ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
 
-        cb_retval = ctx->value_handler(ctx->parsed_row_count, col_info->index, 
-                ctx->scratch_buffer, READSTAT_TYPE_STRING, ctx->user_ctx);
+        value.v.string_value = ctx->scratch_buffer;
     } else if (col_info->type == READSTAT_TYPE_DOUBLE) {
         uint64_t  val = 0;
         double dval = NAN;
@@ -570,9 +574,11 @@ static readstat_error_t handle_data_value(const char *col_data, col_info_t *col_
 
         memcpy(&dval, &val, 8);
 
-        cb_retval = ctx->value_handler(ctx->parsed_row_count, col_info->index, 
-                isnan(dval) ? NULL : &dval, READSTAT_TYPE_DOUBLE, ctx->user_ctx);
+        value.v.double_value = dval;
+        value.is_system_missing = isnan(dval);
     }
+    cb_retval = ctx->value_handler(ctx->parsed_row_count, col_info->index, 
+            value, ctx->user_ctx);
 
     if (cb_retval)
         retval = READSTAT_ERROR_USER_ABORT;
@@ -779,21 +785,24 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
             size_t label_len = read2(&lbp2[8], ctx->bswap);
             size_t value_entry_len = 6 + lbp1[2];
             const char *label = &lbp2[10];
+            readstat_value_t value = { .type = is_string ? READSTAT_TYPE_STRING : READSTAT_TYPE_DOUBLE };
             if (is_string) {
                 char val[4*16+1];
                 retval = readstat_convert(val, sizeof(val), &lbp1[value_entry_len-16], 16, ctx->converter);
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
-                if (ctx->value_label_handler)
-                    ctx->value_label_handler(name, val, READSTAT_TYPE_STRING, label, ctx->user_ctx);
+                value.v.string_value = val;
             } else {
                 uint64_t val = read8(&lbp1[22], bswap_doubles);
                 double dval;
                 memcpy(&dval, &val, 8);
                 dval *= -1.0;
-                if (ctx->value_label_handler)
-                    ctx->value_label_handler(name, &dval, READSTAT_TYPE_DOUBLE, label, ctx->user_ctx);
+
+                value.v.double_value = dval;
+            }
+            if (ctx->value_label_handler) {
+                ctx->value_label_handler(name, value, label, ctx->user_ctx);
             }
 
             lbp1 += value_entry_len;
@@ -807,6 +816,38 @@ cleanup:
     return retval;
 }
 
+static readstat_variable_t *sas_init_variable(sas_ctx_t *ctx, int i, readstat_error_t *out_retval) {
+    readstat_error_t retval = READSTAT_OK;
+    readstat_variable_t *variable = calloc(1, sizeof(readstat_variable_t));
+
+    variable->index = i;
+    variable->type = ctx->col_info[i].type;
+
+    if ((retval = copy_text_ref(variable->name, sizeof(variable->name), 
+                    ctx->col_info[i].name_ref, ctx)) != READSTAT_OK) {
+        goto cleanup;
+    }
+    if ((retval = copy_text_ref(variable->format, sizeof(variable->format), 
+                    ctx->col_info[i].format_ref, ctx)) != READSTAT_OK) {
+        goto cleanup;
+    }
+    if ((retval = copy_text_ref(variable->label, sizeof(variable->label), 
+                    ctx->col_info[i].label_ref, ctx)) != READSTAT_OK) {
+        goto cleanup;
+    }
+
+cleanup:
+    if (retval != READSTAT_OK) {
+        free(variable);
+        if (out_retval)
+            *out_retval = retval;
+
+        return NULL;
+    }
+
+    return variable;
+}
+
 static readstat_error_t submit_columns(sas_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     if (ctx->info_handler) {
@@ -817,24 +858,13 @@ static readstat_error_t submit_columns(sas_ctx_t *ctx) {
     }
     if (ctx->variable_handler) {
         int i;
-        char name_buf[1024];
-        char format_buf[1024];
-        char label_buf[1024];
         for (i=0; i<ctx->column_count; i++) {
-            if ((retval = copy_text_ref(name_buf, sizeof(name_buf), 
-                            ctx->col_info[i].name_ref, ctx)) != READSTAT_OK) {
-                goto cleanup;
-            }
-            if ((retval = copy_text_ref(format_buf, sizeof(format_buf), 
-                            ctx->col_info[i].format_ref, ctx)) != READSTAT_OK) {
-                goto cleanup;
-            }
-            if ((retval = copy_text_ref(label_buf, sizeof(label_buf), 
-                            ctx->col_info[i].label_ref, ctx)) != READSTAT_OK) {
-                goto cleanup;
-            }
-            int cb_retval = ctx->variable_handler(i, name_buf, format_buf, 
-                    label_buf, format_buf, ctx->col_info[i].type, ctx->user_ctx);
+            readstat_variable_t *variable = sas_init_variable(ctx, i, &retval);
+            if (variable == NULL)
+                break;
+
+            int cb_retval = ctx->variable_handler(i, variable, variable->format, ctx->user_ctx);
+            free(variable);
             if (cb_retval) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;

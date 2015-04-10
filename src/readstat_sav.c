@@ -47,7 +47,7 @@ sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header) {
     
     ctx->varinfo_capacity = SAV_VARINFO_INITIAL_CAPACITY;
     
-    if ((ctx->varinfo = calloc(ctx->varinfo_capacity, sizeof(sav_varinfo_t))) == NULL) {
+    if ((ctx->varinfo = calloc(ctx->varinfo_capacity, sizeof(spss_varinfo_t))) == NULL) {
         sav_ctx_free(ctx);
         return NULL;
     }
@@ -59,7 +59,8 @@ void sav_ctx_free(sav_ctx_t *ctx) {
     if (ctx->varinfo) {
         int i;
         for (i=0; i<ctx->var_count; i++) {
-            free(ctx->varinfo[i].label);
+            if (ctx->varinfo[i].label)
+                free(ctx->varinfo[i].label);
         }
         free(ctx->varinfo);
     }
