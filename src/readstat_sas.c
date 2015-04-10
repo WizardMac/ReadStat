@@ -40,6 +40,7 @@
 #define SAS_COMPRESSION_SIGNATURE_RDC  "SASYZCR2"
 
 #define SAS_RLE_COMMAND_COPY64          0
+#define SAS_RLE_COMMAND_INSERT_BYTE17   4
 #define SAS_RLE_COMMAND_INSERT_BLANK17  6
 #define SAS_RLE_COMMAND_INSERT_ZERO17   7
 #define SAS_RLE_COMMAND_COPY1           8
@@ -623,40 +624,39 @@ cleanup:
 static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t len, sas_ctx_t *ctx) {
     /* TODO bounds checking */
     readstat_error_t retval = READSTAT_OK;
-    const char *input = subheader;
+    const unsigned char *input = (const unsigned char *)subheader;
     char *buffer = malloc(ctx->row_length);
     char *output = buffer;
-    while (input < subheader + len) {
-        unsigned char control = input[0];
+    while (input < (const unsigned char *)subheader + len) {
+        unsigned char control = *input++;
         unsigned char command = (control & 0xF0) >> 4;
         unsigned char length = (control & 0x0F);
         int copy_len = 0;
         int insert_len = 0;
         char insert_byte = '\0';
-        input++;
         switch (command) {
             case SAS_RLE_COMMAND_COPY64:
-                copy_len = (unsigned char)input[0] + 64;
-                input++;
+                copy_len = (*input++) + 64 + length * 256;
+                break;
+            case SAS_RLE_COMMAND_INSERT_BYTE17:
+                insert_len = (*input++) + 17 + length * 16;
+                insert_byte = *input++;
                 break;
             case SAS_RLE_COMMAND_INSERT_BLANK17:
-                insert_len = (unsigned char)input[0] + 17;
+                insert_len = (*input++) + 17 + length * 256;
                 insert_byte = ' ';
-                input++;
                 break;
             case SAS_RLE_COMMAND_INSERT_ZERO17:
-                insert_len = (unsigned char)input[0] + 17;
+                insert_len = (*input++) + 17;
                 insert_byte = '\0';
-                input++;
                 break;
             case SAS_RLE_COMMAND_COPY1:  copy_len = length + 1; break;
             case SAS_RLE_COMMAND_COPY17: copy_len = length + 17; break;
             case SAS_RLE_COMMAND_COPY33: copy_len = length + 33; break;
             case SAS_RLE_COMMAND_COPY49: copy_len = length + 49; break;
             case SAS_RLE_COMMAND_INSERT_BYTE3:
-                insert_byte = input[0];
+                insert_byte = *input++;
                 insert_len = length + 3;
-                input++;
                 break;
             case SAS_RLE_COMMAND_INSERT_AT2:
                 insert_byte = '@';
