@@ -97,6 +97,7 @@ static readstat_charset_entry_t _charset_table[] = {
 #define SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE    0xF6F6F6F6
 #define SAS_SUBHEADER_SIGNATURE_COUNTS         0xFFFFFC00
 #define SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT  0xFFFFFBFE
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_UNKNOWN 0xFFFFFFFA
 #define SAS_SUBHEADER_SIGNATURE_COLUMN_ATTRS   0xFFFFFFFC
 #define SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT    0xFFFFFFFD
 #define SAS_SUBHEADER_SIGNATURE_COLUMN_LIST    0xFFFFFFFE
@@ -717,6 +718,8 @@ static readstat_error_t sas_parse_subheader(uint32_t signature, const char *subh
     } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT) {
         retval = sas_parse_column_format_subheader(subheader, len, ctx);
     } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_LIST) {
+        /* void */
+    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_UNKNOWN) {
         /* void */
     } else {
         retval = READSTAT_ERROR_PARSE;
