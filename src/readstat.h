@@ -112,6 +112,7 @@ typedef struct readstat_variable_s {
     readstat_missingness_t  missingness;
 } readstat_variable_t;
 
+/* Accessor methods for use inside a variable handler */
 const char *readstat_variable_get_name(readstat_variable_t *variable);
 const char *readstat_variable_get_label(readstat_variable_t *variable);
 const char *readstat_variable_get_format(readstat_variable_t *variable);
