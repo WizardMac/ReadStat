@@ -18,6 +18,7 @@
 #define READSTAT_PRODUCT_URL        "https://github.com/WizardMac/ReadStat"
 
 #define MAX_TEXT_SIZE               256
+#define MAX_LABEL_SIZE              256
 
 static int32_t sav_encode_format(spss_format_t *spss_format) {
     return ((spss_format->type << 16) |
@@ -145,7 +146,7 @@ static readstat_error_t sav_emit_variable_records(readstat_writer_t *writer) {
             goto cleanup;
         
         if (title_data_len > 0) {
-            char padded_label[120];
+            char padded_label[MAX_LABEL_SIZE];
             int32_t label_len = title_data_len;
             if (label_len > sizeof(padded_label))
                 label_len = sizeof(padded_label);
