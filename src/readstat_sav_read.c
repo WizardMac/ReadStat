@@ -21,7 +21,7 @@
 /* See http://msdn.microsoft.com/en-us/library/dd317756(VS.85).aspx */
 static readstat_charset_entry_t _charset_table[] = { 
     { .code = 1,     .name = "EBCDIC-US" },
-    { .code = 2,     .name = "US-ASCII" },
+    { .code = 2,     .name = "WINDOWS-1252" }, /* supposed to be ASCII, but some files are miscoded */
     { .code = 3,     .name = "WINDOWS-1252" },
     { .code = 4,     .name = "DEC-KANJI" },
     { .code = 437,   .name = "CP437" },
@@ -788,7 +788,7 @@ static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t
     if (ctx->machine_needs_byte_swap) {
         record.character_code = byteswap4(record.character_code);
     }
-    if (record.character_code == SAV_CHARSET_7_BIT_ASCII || record.character_code == SAV_CHARSET_UTF8) {
+    if (record.character_code == SAV_CHARSET_UTF8) {
         /* do nothing */
     } else {
         int i;
@@ -1110,9 +1110,15 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *filen
         }
     }
     if (parser->fweight_handler && ctx->fweight_index) {
-        if (parser->fweight_handler(ctx->fweight_index - 1, ctx->user_ctx)) {
-            retval = READSTAT_ERROR_USER_ABORT;
-            goto cleanup;
+        for (i=0; i<ctx->var_index; i++) {
+            spss_varinfo_t *info = &ctx->varinfo[i];
+            if (info->offset == ctx->fweight_index - 1) {
+                if (parser->fweight_handler(i, ctx->user_ctx)) {
+                    retval = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
+                }
+                break;
+            }
         }
     }
 

@@ -144,8 +144,14 @@ readstat_variable_t *spss_init_variable_for_info(spss_varinfo_t *info) {
     variable->index = info->index;
     variable->type = info->type;
 
-    snprintf(variable->name, sizeof(variable->name), "%s", info->longname);
-    snprintf(variable->label, sizeof(variable->label), "%s", info->label);
+    if (info->longname[0]) {
+        snprintf(variable->name, sizeof(variable->name), "%s", info->longname);
+    } else {
+        snprintf(variable->name, sizeof(variable->name), "%s", info->name);
+    }
+    if (info->label) {
+        snprintf(variable->label, sizeof(variable->label), "%s", info->label);
+    }
 
     spss_format(variable->format, sizeof(variable->format), &info->print_format);
 

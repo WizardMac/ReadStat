@@ -80,7 +80,8 @@ static readstat_error_t sav_emit_header(readstat_writer_t *writer) {
     header.nominal_case_size = writer->row_len / 8;
     header.compressed = 0; /* TODO */
     if (writer->fweight_variable) {
-        header.weight_index = writer->fweight_variable->index + 1;
+        int32_t dictionary_index = 1 + writer->fweight_variable->offset / 8;
+        header.weight_index = dictionary_index;
     } else {
         header.weight_index = 0;
     }
