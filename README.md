@@ -99,8 +99,9 @@ Example: Convert a DTA to a tab-separated file.
         return 0;
     }
 
-    int handle_value(int obs_index, int var_index, readstat_value_t value, readstat_types_t type, void *ctx) {
+    int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
         int *my_var_count = (int *)ctx;
+        readstat_types_t type = readstat_value_type(value);
         if (!readstat_value_is_missing(value)) {
             if (type == READSTAT_TYPE_STRING) {
                 printf("%s", readstat_string_value(value));
