@@ -1094,6 +1094,8 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     long i;
     char *page = malloc(hinfo->page_size);
     off_t start_pos = lseek(fd, 0, SEEK_CUR);
+
+    /* look for META and MIX pages at beginning... */
     for (i=0; i<hinfo->page_count; i++) {
         lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET);
 
@@ -1112,7 +1114,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         uint16_t page_type = read2(&page[off+16], ctx->bswap);
 
         if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA)
-            continue;
+            break;
         if (page_type == SAS_PAGE_TYPE_COMP)
             continue;
 
@@ -1125,6 +1127,42 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
     }
+
+    long last_examined_page_pass1 = i;
+
+    /* ...then AMD pages at the end */
+    for (i=hinfo->page_count-1; i>last_examined_page_pass1; i--) {
+        lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET);
+
+        off_t off = 0;
+        if (ctx->u64)
+            off = 16;
+
+        size_t head_len = off + 16 + 2;
+        size_t tail_len = hinfo->page_size - head_len;
+
+        if (read(fd, page, head_len) < head_len) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        uint16_t page_type = read2(&page[off+16], ctx->bswap);
+
+        if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA)
+            break;
+        if (page_type == SAS_PAGE_TYPE_COMP)
+            continue;
+
+        if (read(fd, page + head_len, tail_len) < tail_len) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
+            goto cleanup;
+        }
+    }
+
     lseek(fd, start_pos, SEEK_SET);
 
     for (i=0; i<hinfo->page_count; i++) {
