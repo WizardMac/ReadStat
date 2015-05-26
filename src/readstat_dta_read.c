@@ -8,6 +8,7 @@
 
 #include "readstat_dta.h"
 #include "readstat_io.h"
+#include "readstat_convert.h"
 
 static readstat_error_t dta_update_progress(int fd, dta_ctx_t *ctx);
 static inline readstat_types_t dta_type_info(uint16_t typecode, size_t *max_len, dta_ctx_t *ctx);
@@ -85,16 +86,21 @@ static readstat_variable_t *dta_init_variable(dta_ctx_t *ctx, int i, readstat_ty
     variable->type = type;
     variable->index = i;
 
-    snprintf(variable->name, sizeof(variable->name), "%s", 
-            &ctx->varlist[ctx->variable_name_len*i]);
+    readstat_convert(variable->name, sizeof(variable->name), 
+            &ctx->varlist[ctx->variable_name_len*i],
+            ctx->variable_name_len, ctx->converter);
 
-    if (ctx->variable_labels[ctx->variable_labels_entry_len*i])
-        snprintf(variable->label, sizeof(variable->label), "%s", 
-                &ctx->variable_labels[ctx->variable_labels_entry_len*i]);
+    if (ctx->variable_labels[ctx->variable_labels_entry_len*i]) {
+        readstat_convert(variable->label, sizeof(variable->label),
+                &ctx->variable_labels[ctx->variable_labels_entry_len*i],
+                ctx->variable_labels_entry_len, ctx->converter);
+    }
 
-    if (ctx->fmtlist[ctx->fmtlist_entry_len*i])
-        snprintf(variable->format, sizeof(variable->format), "%s",
-                &ctx->fmtlist[ctx->fmtlist_entry_len*i]);
+    if (ctx->fmtlist[ctx->fmtlist_entry_len*i]) {
+        readstat_convert(variable->format, sizeof(variable->format),
+                &ctx->fmtlist[ctx->fmtlist_entry_len*i],
+                ctx->fmtlist_entry_len, ctx->converter);
+    }
 
     return variable;
 }
@@ -579,21 +585,8 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *filen
             value.type = dta_type_info(ctx->typlist[j], &max_len, ctx);
 
             if (value.type == READSTAT_TYPE_STRING) {
-                int needs_null = 1;
-                int k;
-                for (k=0; k<max_len; k++) {
-                    if (buf[offset+k] == '\0') {
-                        needs_null = 0;
-                        break;
-                    }
-                }
-                if (needs_null) {
-                    memcpy(str_buf, &buf[offset], max_len);
-                    str_buf[max_len] = '\0';
-                    value.v.string_value = str_buf;
-                } else {
-                    value.v.string_value = &buf[offset];
-                }
+                readstat_convert(str_buf, sizeof(str_buf), &buf[offset], max_len, ctx->converter);
+                value.v.string_value = str_buf;
             } else if (value.type == READSTAT_TYPE_LONG_STRING) {
                 uint32_t v, o;
                 v = *((uint32_t *)&buf[offset]);
