@@ -955,7 +955,7 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
     if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA) {
         ctx->page_row_count = read2(&page[off+18], ctx->bswap);
         data = &page[off+24];
-    } else if (page_type != SAS_PAGE_TYPE_COMP) {
+    } else if (!(page_type & SAS_PAGE_TYPE_COMP)) {
         uint16_t subheader_count = read2(&page[off+20], ctx->bswap);
 
         int i;
@@ -1115,7 +1115,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
         if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA)
             break;
-        if (page_type == SAS_PAGE_TYPE_COMP)
+        if ((page_type & SAS_PAGE_TYPE_COMP))
             continue;
 
         if (read(fd, page + head_len, tail_len) < tail_len) {
@@ -1150,7 +1150,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
         if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA)
             break;
-        if (page_type == SAS_PAGE_TYPE_COMP)
+        if ((page_type & SAS_PAGE_TYPE_COMP))
             continue;
 
         if (read(fd, page + head_len, tail_len) < tail_len) {
