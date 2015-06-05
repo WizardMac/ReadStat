@@ -47,6 +47,12 @@ dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, uns
         ctx->typlist_version = 0;
     }
 
+    if (ds_format >= 118) {
+        ctx->data_label_len_len = 2;
+    } else if (ds_format >= 117) {
+        ctx->data_label_len_len = 1;
+    }
+
     if (ds_format < 105) {
         ctx->expansion_len_len = 0;
     } else if (ds_format < 110) {

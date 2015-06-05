@@ -385,6 +385,20 @@ readstat_error_t dta_read_xmlish_preamble(int fd, dta_ctx_t *ctx, dta_header_t *
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
+    if (header->ds_format >= 118) {
+        /* Only support files < 4 billion rows for now */
+        if (header->byteorder == DTA_HILO) {
+            if (read(fd, &header->nobs, sizeof(int32_t)) != sizeof(int32_t)) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
+            }
+        } else {
+            if (lseek(fd, 4, SEEK_CUR) == -1) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
+            }
+        }
+    }
     if ((retval = dta_read_tag(fd, ctx, "</N>")) != READSTAT_OK) {
         goto cleanup;
     }
@@ -454,15 +468,26 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *filen
     }
     
     if (ctx->file_is_xmlish) {
-        unsigned char label_len;
+        uint16_t label_len = 0;
+        unsigned char timestamp_len;
 
         if ((retval = dta_read_tag(fd, ctx, "<label>")) != READSTAT_OK) {
             goto cleanup;
         }
         
-        if (read(fd, &label_len, 1) != 1) {
-            retval = READSTAT_ERROR_READ;
-            goto cleanup;
+        if (ctx->data_label_len_len == 2) {
+            if (read(fd, &label_len, sizeof(uint16_t)) != sizeof(uint16_t)) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
+            }
+            label_len = ctx->machine_needs_byte_swap ? byteswap2(label_len) : label_len;
+        } else if (ctx->data_label_len_len == 1) {
+            unsigned char label_len_char;
+            if (read(fd, &label_len_char, sizeof(unsigned char)) != sizeof(unsigned char)) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
+            }
+            label_len = label_len_char;
         }
         
         if (lseek(fd, label_len, SEEK_CUR) == -1) {
@@ -478,12 +503,12 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *filen
             goto cleanup;
         }
         
-        if (read(fd, &label_len, 1) != 1) {
+        if (read(fd, &timestamp_len, 1) != 1) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
         
-        if (lseek(fd, label_len, SEEK_CUR) == -1) {
+        if (lseek(fd, timestamp_len, SEEK_CUR) == -1) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }

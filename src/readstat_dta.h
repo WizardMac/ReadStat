@@ -49,6 +49,7 @@ typedef struct dta_gso_header_s {
 
 typedef struct dta_ctx_s {
     size_t         data_label_len;
+    size_t         data_label_len_len;
     size_t         time_stamp_len;
     char           typlist_version;
     size_t         typlist_entry_len;
