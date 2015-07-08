@@ -63,10 +63,15 @@ readstat_value_t readstat_variable_get_missing_range_hi(readstat_variable_t *var
 }
 
 void readstat_variable_add_missing_double_value(readstat_variable_t *variable, double value) {
+    readstat_variable_add_missing_double_range(variable, value, value);
+}
+
+void readstat_variable_add_missing_double_range(readstat_variable_t *variable, double lo, double hi) {
     int i = readstat_variable_get_missing_ranges_count(variable);
     if (2*i < sizeof(variable->missingness.missing_ranges)/sizeof(variable->missingness.missing_ranges[0])) {
-        variable->missingness.missing_ranges[2*i] = make_double_value(value);
-        variable->missingness.missing_ranges[2*i+1] = make_double_value(value);
+        variable->missingness.missing_ranges[2*i] = make_double_value(lo);
+        variable->missingness.missing_ranges[2*i+1] = make_double_value(hi);
         variable->missingness.missing_ranges_count++;
     }
 }
+
