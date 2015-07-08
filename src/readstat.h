@@ -234,6 +234,7 @@ void readstat_label_string_value(readstat_label_set_t *label_set, const char *va
 // Now define your variables. Note that `width' is only used for READSTAT_TYPE_STRING variables.
 readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, readstat_types_t type, size_t width,
         const char *name, const char *label, const char *format, readstat_label_set_t *label_set);
+void readstat_variable_add_missing_double_value(readstat_variable_t *variable, double value);
 readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index);
 
 // Optional metadata

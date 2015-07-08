@@ -119,6 +119,9 @@ static readstat_error_t sav_emit_variable_records(readstat_writer_t *writer) {
 
         const char *title_data = r_variable->label;
         size_t title_data_len = strlen(title_data);
+        int n_missing_values = readstat_variable_get_missing_ranges_count(r_variable);
+        if (n_missing_values > 3)
+            n_missing_values = 3;
 
         rec_type = SAV_RECORD_TYPE_VARIABLE;
         retval = readstat_write_bytes(writer, &rec_type, sizeof(rec_type));
@@ -130,7 +133,7 @@ static readstat_error_t sav_emit_variable_records(readstat_writer_t *writer) {
 
         variable.type = (r_variable->type == READSTAT_TYPE_STRING) ? r_variable->width : 0;
         variable.has_var_label = (title_data_len > 0);
-        variable.n_missing_values = 0;
+        variable.n_missing_values = n_missing_values;
 
         retval = sav_encode_variable_format(&variable.print, r_variable);
         if (retval != READSTAT_OK)
@@ -159,6 +162,14 @@ static readstat_error_t sav_emit_variable_records(readstat_writer_t *writer) {
             strncpy(padded_label, title_data, (label_len + 3) / 4 * 4);
             
             retval = readstat_write_bytes(writer, padded_label, (label_len + 3) / 4 * 4);
+            if (retval != READSTAT_OK)
+                goto cleanup;
+        }
+
+        for (j=0; j<n_missing_values; j++) {
+            readstat_value_t missing_val = readstat_variable_get_missing_range_lo(r_variable, j);
+            double d_val = readstat_double_value(missing_val);
+            retval = readstat_write_bytes(writer, &d_val, sizeof(double));
             if (retval != READSTAT_OK)
                 goto cleanup;
         }
