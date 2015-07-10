@@ -1,4 +1,5 @@
 #include "readstat.h"
+#include "readstat_iconv.h"
 #include "readstat_bits.h"
 
 #pragma pack(push, 1)
@@ -24,12 +25,6 @@ typedef struct dta_short_expansion_field_s {
     int16_t          len;
 } dta_short_expansion_field_t;
 
-typedef struct dta_short_value_label_table_header_s {
-    int16_t          len;
-    char             labname[12];
-    char             padding[2];
-} dta_short_value_label_table_header_t;
-
 typedef struct dta_value_label_table_header_s {
     int32_t          len;
     char             labname[33];
@@ -48,6 +43,7 @@ typedef struct dta_gso_header_s {
 
 typedef struct dta_ctx_s {
     size_t         data_label_len;
+    size_t         data_label_len_len;
     size_t         time_stamp_len;
     char           typlist_version;
     size_t         typlist_entry_len;
@@ -70,6 +66,8 @@ typedef struct dta_ctx_s {
     size_t         variable_labels_entry_len;
     size_t         expansion_len_len;
     size_t         value_label_table_len_len;
+    size_t         value_label_table_labname_len;
+    size_t         value_label_table_padding_len;
 
     off_t          data_offset;
     off_t          strls_offset;
@@ -81,6 +79,7 @@ typedef struct dta_ctx_s {
     int            machine_is_twos_complement;
     int            file_is_xmlish;
 
+    iconv_t        converter;
     readstat_progress_handler progress_handler;
     size_t                    file_size;
     void                     *user_ctx;

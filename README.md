@@ -85,11 +85,11 @@ Example: Convert a DTA to a tab-separated file.
         return 0;
     }
 
-    int handle_variable(int index, const char *var_name, const char *var_format, const char *var_label, 
-        const char *val_labels, readstat_types_t type, void *ctx) {
+    int handle_variable(int index, readstat_variable_t *variable, 
+        const char *val_labels, void *ctx) {
         int *my_var_count = (int *)ctx;
 
-        printf("%s", var_name);
+        printf("%s", readstat_variable_get_name(variable));
         if (index == *my_var_count - 1) {
             printf("\n");
         } else {
@@ -99,8 +99,9 @@ Example: Convert a DTA to a tab-separated file.
         return 0;
     }
 
-    int handle_value(int obs_index, int var_index, readstat_value_t value, readstat_types_t type, void *ctx) {
+    int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
         int *my_var_count = (int *)ctx;
+        readstat_types_t type = readstat_value_type(value);
         if (!readstat_value_is_missing(value)) {
             if (type == READSTAT_TYPE_STRING) {
                 printf("%s", readstat_string_value(value));
