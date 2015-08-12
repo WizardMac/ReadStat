@@ -46,6 +46,7 @@ typedef struct rdata_ctx_s {
     z_stream                    *z_strm;
     unsigned char               *strm_buffer;
     int                          fd;
+    size_t                       bytes_read;
     
     rdata_atom_table_t          *atom_table;
     int                          class_is_posixct;
@@ -78,8 +79,8 @@ static char *atom_table_lookup(rdata_atom_table_t *table, int index) {
     return &table->data[(index-1)*RDATA_ATOM_LEN];
 }
 
-static int read_st_z(rdata_ctx_t *ctx, void *buffer, size_t len) {
-    int bytes_written = 0;
+static ssize_t read_st_z(rdata_ctx_t *ctx, void *buffer, size_t len) {
+    ssize_t bytes_written = 0;
     int error = 0;
     int result = Z_OK;
     while (1) {
@@ -124,8 +125,8 @@ static int read_st_z(rdata_ctx_t *ctx, void *buffer, size_t len) {
 }
 
 #ifdef HAVE_LZMA
-static int read_st_lzma(rdata_ctx_t *ctx, void *buffer, size_t len) {
-    int bytes_written = 0;
+static ssize_t read_st_lzma(rdata_ctx_t *ctx, void *buffer, size_t len) {
+    ssize_t bytes_written = 0;
     int error = 0;
     int result = LZMA_OK;
     while (1) {
@@ -170,16 +171,25 @@ static int read_st_lzma(rdata_ctx_t *ctx, void *buffer, size_t len) {
 }
 #endif
 
-static int read_st(rdata_ctx_t *ctx, void *buffer, size_t len) {
+static ssize_t read_st(rdata_ctx_t *ctx, void *buffer, size_t len) {
+    ssize_t bytes_read = 0;
 #ifdef HAVE_LZMA
-    if (ctx->lzma_strm)
-        return read_st_lzma(ctx, buffer, len);
+    if (ctx->lzma_strm) {
+        bytes_read = read_st_lzma(ctx, buffer, len);
+    } else
 #endif
 
-    if (ctx->z_strm)
-        return read_st_z(ctx, buffer, len);
+    if (ctx->z_strm) {
+        bytes_read = read_st_z(ctx, buffer, len);
+    } else {
+        bytes_read = read(ctx->fd, buffer, len);
+    }
 
-    return read(ctx->fd, buffer, len);
+    if (bytes_read > 0) {
+        ctx->bytes_read += bytes_read;
+    }
+
+    return bytes_read;
 }
 
 static int lseek_st(rdata_ctx_t *ctx, size_t len) {
