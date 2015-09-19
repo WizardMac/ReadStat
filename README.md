@@ -41,114 +41,117 @@ abort the parsing process.
 
 Example: Return the number of records in a DTA file.
 
-    #include "readstat.h"
+```c
+#include "readstat.h"
 
-    int handle_info(int obs_count, int var_count, void *ctx) {
-        int *my_count = (int *)ctx;
+int handle_info(int obs_count, int var_count, void *ctx) {
+    int *my_count = (int *)ctx;
 
-        *my_count = obs_count;
+    *my_count = obs_count;
 
-        return 0;
+    return 0;
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <filename>\n", argv[0]);
+        return 1;
     }
+    int my_count = 0;
+    readstat_error_t error = READSTAT_OK;
+    readstat_parser_t *parser = readstat_parser_init();
+    readstat_set_info_handler(parser, &handle_info);
 
-    int main(int argc, char *argv[]) {
-        if (argc != 2) {
-            printf("Usage: %s <filename>\n", argv[0]);
-            return 1;
-        }
-        int my_count = 0;
-        readstat_error_t error = READSTAT_OK;
-        readstat_parser_t *parser = readstat_parser_init();
-        readstat_set_info_handler(parser, &handle_info);
+    error = readstat_parse_dta(parser, argv[1], &my_count);
 
-        error = readstat_parse_dta(parser, argv[1], &my_count);
+    readstat_parser_free(parser);
 
-        readstat_parser_free(parser);
-
-        if (error != READSTAT_OK) {
-            printf("Error processing %s: %d\n", argv[1], error);
-            return 1;
-        }
-        printf("Found %d records\n", my_count);
-        return 0;
+    if (error != READSTAT_OK) {
+        printf("Error processing %s: %d\n", argv[1], error);
+        return 1;
     }
+    printf("Found %d records\n", my_count);
+    return 0;
+}
+```
 
 Example: Convert a DTA to a tab-separated file.
 
-    #include "readstat.h"
+```c
+#include "readstat.h"
 
-    int handle_info(int obs_count, int var_count, void *ctx) {
-        int *my_var_count = (int *)ctx;
-        
-        *my_var_count = var_count;
+int handle_info(int obs_count, int var_count, void *ctx) {
+    int *my_var_count = (int *)ctx;
+    
+    *my_var_count = var_count;
 
-        return 0;
+    return 0;
+}
+
+int handle_variable(int index, readstat_variable_t *variable, 
+    const char *val_labels, void *ctx) {
+    int *my_var_count = (int *)ctx;
+
+    printf("%s", readstat_variable_get_name(variable));
+    if (index == *my_var_count - 1) {
+        printf("\n");
+    } else {
+        printf("\t");
     }
 
-    int handle_variable(int index, readstat_variable_t *variable, 
-        const char *val_labels, void *ctx) {
-        int *my_var_count = (int *)ctx;
+    return 0;
+}
 
-        printf("%s", readstat_variable_get_name(variable));
-        if (index == *my_var_count - 1) {
-            printf("\n");
-        } else {
-            printf("\t");
+int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
+    int *my_var_count = (int *)ctx;
+    readstat_types_t type = readstat_value_type(value);
+    if (!readstat_value_is_missing(value)) {
+        if (type == READSTAT_TYPE_STRING) {
+            printf("%s", readstat_string_value(value));
+        } else if (type == READSTAT_TYPE_CHAR) {
+            printf("%hhd", readstat_char_value(value));
+        } else if (type == READSTAT_TYPE_INT16) {
+            printf("%hd", readstat_int16_value(value));
+        } else if (type == READSTAT_TYPE_INT32) {
+            printf("%d", readstat_int32_value(value));
+        } else if (type == READSTAT_TYPE_FLOAT) {
+            printf("%f", readstat_float_value(value));
+        } else if (type == READSTAT_TYPE_DOUBLE) {
+            printf("%lf", readstat_double_value(value));
         }
-
-        return 0;
+    }
+    if (var_index == *my_var_count - 1) {
+        printf("\n");
+    } else {
+        printf("\t");
     }
 
-    int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
-        int *my_var_count = (int *)ctx;
-        readstat_types_t type = readstat_value_type(value);
-        if (!readstat_value_is_missing(value)) {
-            if (type == READSTAT_TYPE_STRING) {
-                printf("%s", readstat_string_value(value));
-            } else if (type == READSTAT_TYPE_CHAR) {
-                printf("%hhd", readstat_char_value(value));
-            } else if (type == READSTAT_TYPE_INT16) {
-                printf("%hd", readstat_int16_value(value));
-            } else if (type == READSTAT_TYPE_INT32) {
-                printf("%d", readstat_int32_value(value));
-            } else if (type == READSTAT_TYPE_FLOAT) {
-                printf("%f", readstat_float_value(value));
-            } else if (type == READSTAT_TYPE_DOUBLE) {
-                printf("%lf", readstat_double_value(value));
-            }
-        }
-        if (var_index == *my_var_count - 1) {
-            printf("\n");
-        } else {
-            printf("\t");
-        }
+    return 0;
+}
 
-        return 0;
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <filename>\n", argv[0]);
+        return 1;
     }
+    int my_var_count = 0;
+    readstat_error_t error = READSTAT_OK;
+    readstat_parser_t *parser = readstat_parser_init();
+    readstat_set_info_handler(parser, &handle_info);
+    readstat_set_variable_handler(parser, &handle_variable);
+    readstat_set_value_handler(parser, &handle_value);
 
-    int main(int argc, char *argv[]) {
-        if (argc != 2) {
-            printf("Usage: %s <filename>\n", argv[0]);
-            return 1;
-        }
-        int my_var_count = 0;
-        readstat_error_t error = READSTAT_OK;
-        readstat_parser_t *parser = readstat_parser_init();
-        readstat_set_info_handler(parser, &handle_info);
-        readstat_set_variable_handler(parser, &handle_variable);
-        readstat_set_value_handler(parser, &handle_value);
+    error = readstat_parse_dta(parser, argv[1], &my_var_count);
 
-        error = readstat_parse_dta(parser, argv[1], &my_var_count);
+    readstat_parser_free(parser);
 
-        readstat_parser_free(parser);
-
-        if (error != READSTAT_OK) {
-            printf("Error processing %s: %d\n", argv[1], error);
-            return 1;
-        }
-        return 0;
+    if (error != READSTAT_OK) {
+        printf("Error processing %s: %d\n", argv[1], error);
+        return 1;
     }
-
+    return 0;
+}
+```
 
 Language Bindings
 ==
