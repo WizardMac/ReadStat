@@ -1081,8 +1081,8 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->little_endian = hinfo->little_endian;
     ctx->vendor = hinfo->vendor;
     ctx->bswap = machine_is_little_endian() ^ hinfo->little_endian;
-    if (!strcmp(hinfo->encoding, "UTF-8") == 0 &&
-            !strcmp(hinfo->encoding, "US-ASCII") == 0) {
+    if (strcmp(hinfo->encoding, "UTF-8") != 0 &&
+            strcmp(hinfo->encoding, "US-ASCII") != 0) {
         iconv_t converter = iconv_open("UTF-8", hinfo->encoding);
         if (converter == (iconv_t)-1) {
             retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
