@@ -752,7 +752,7 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
         size_t pad = (lsp[12] & 0x08) ? 4 : 0; // might be 0x10, not sure
         int label_count_capacity = read4(&lsp[48+pad], ctx->bswap);
         int label_count_used = read4(&lsp[52+pad], ctx->bswap);
-        char name[4*8+1];
+        char name[4*32+1];
 
         retval = readstat_convert(name, sizeof(name), &lsp[18], 8, ctx->converter);
         if (retval != READSTAT_OK)
@@ -762,6 +762,15 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
 
         if (pad) {
             pad += 16;
+        }
+
+        if ((lsp[12] & 0x80)) { // has long name
+            /* Uncomment to return long name to client code instead of short name
+            retval = readstat_convert(name, sizeof(name), &lsp[116+pad], 32, ctx->converter);
+            if (retval != READSTAT_OK)
+                goto cleanup;
+                */
+            pad += 32;
         }
 
         const char *lbp1 = &lsp[116+pad];
@@ -1240,8 +1249,8 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
 
     ctx->u64 = hinfo->u64;
     ctx->bswap = machine_is_little_endian() ^ hinfo->little_endian;
-    if (!strcmp(hinfo->encoding, "UTF-8") == 0 &&
-            !strcmp(hinfo->encoding, "US-ASCII") == 0) {
+    if (strcmp(hinfo->encoding, "UTF-8") != 0 &&
+            strcmp(hinfo->encoding, "US-ASCII") != 0) {
         iconv_t converter = iconv_open("UTF-8", hinfo->encoding);
         if (converter == (iconv_t)-1) {
             retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
