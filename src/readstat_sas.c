@@ -1219,13 +1219,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     }
 
 cleanup:
-    if (ctx)
-        sas_ctx_free(ctx);
-    if (fd != -1)
-        readstat_close(fd);
-    if (hinfo)
-        free(hinfo);
-
     if (retval == READSTAT_ERROR_OPEN) {
         if (ctx->error_handler) {
             char buf[1024];
@@ -1240,6 +1233,13 @@ cleanup:
             ctx->error_handler(buf, user_ctx);
         }
     }
+
+    if (ctx)
+        sas_ctx_free(ctx);
+    if (fd != -1)
+        readstat_close(fd);
+    if (hinfo)
+        free(hinfo);
 
     return retval;
 }
