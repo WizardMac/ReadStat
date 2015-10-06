@@ -5,9 +5,11 @@
 #include "readstat.h"
 
 int readstat_open(const char *filename) {
-    return open(filename, O_RDONLY | O_LARGEFILE
+    return open(filename, O_RDONLY
 #if defined _WIN32 || defined __CYGWIN__
             | O_BINARY
+#elif defined _AIX
+            | O_LARGEFILE
 #endif
             );
 }
@@ -18,11 +20,11 @@ int readstat_close(int fd) {
 
 #ifdef _AIX
 off64_t readstat_lseek(int fildes, off64_t offset, int whence) {
-    lseek64(fildes, offset, whence);
+    return lseek64(fildes, offset, whence);
 }
 #else
 off_t readstat_lseek(int fildes, off_t offset, int whence) {
-    lseek(fildes, offset, whence);
+    return lseek(fildes, offset, whence);
 }
 #endif
 
