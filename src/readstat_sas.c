@@ -349,6 +349,7 @@ static readstat_error_t sas_parse_column_text_subheader(const char *subheader, s
     readstat_error_t retval = READSTAT_OK;
     size_t signature_len = ctx->u64 ? 8 : 4;
     uint16_t remainder = read2(&subheader[signature_len], ctx->bswap);
+    char *blob = NULL;
     if (remainder != len - (4+2*signature_len)) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
@@ -357,7 +358,11 @@ static readstat_error_t sas_parse_column_text_subheader(const char *subheader, s
     ctx->text_blobs = realloc(ctx->text_blobs, ctx->text_blob_count * sizeof(char *));
     ctx->text_blob_lengths = realloc(ctx->text_blob_lengths,
             ctx->text_blob_count * sizeof(ctx->text_blob_lengths[0]));
-    char *blob = malloc(len-signature_len);
+
+    if ((blob = malloc(len-signature_len)) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
     memcpy(blob, subheader+signature_len, len-signature_len);
     ctx->text_blob_lengths[ctx->text_blob_count-1] = len-signature_len;
     ctx->text_blobs[ctx->text_blob_count-1] = blob;
@@ -620,6 +625,10 @@ static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t le
     const unsigned char *input = (const unsigned char *)subheader;
     char *buffer = malloc(ctx->row_length);
     char *output = buffer;
+    if (buffer == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
     while (input < (const unsigned char *)subheader + len) {
         unsigned char control = *input++;
         unsigned char command = (control & 0xF0) >> 4;
@@ -683,7 +692,8 @@ static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t le
     }
     retval = sas_parse_single_row(buffer, ctx);
 cleanup:
-    free(buffer);
+    if (buffer)
+        free(buffer);
 
     return retval;
 }
@@ -1046,10 +1056,13 @@ cleanup:
 
 readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *filename, void *user_ctx) {
     int fd = -1;
+    long i;
     readstat_error_t retval = READSTAT_OK;
+    int64_t start_pos;
 
     sas_ctx_t  *ctx = calloc(1, sizeof(sas_ctx_t));
     sas_header_info_t  *hinfo = calloc(1, sizeof(sas_header_info_t));
+    char *page = NULL;
 
     ctx->info_handler = parser->info_handler;
     ctx->variable_handler = parser->variable_handler;
@@ -1092,9 +1105,12 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         ctx->converter = converter;
     }
 
-    long i;
-    char *page = malloc(hinfo->page_size);
-    int64_t start_pos = readstat_lseek(fd, 0, SEEK_CUR);
+    page = malloc(hinfo->page_size);
+    start_pos = readstat_lseek(fd, 0, SEEK_CUR);
+    if (page == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
 
     /* look for META and MIX pages at beginning... */
     for (i=0; i<hinfo->page_count; i++) {
@@ -1188,7 +1204,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
     }
-    free(page);
     
     if (!ctx->did_submit_columns) {
         if ((retval = submit_columns(ctx)) != READSTAT_OK) {
@@ -1234,6 +1249,8 @@ cleanup:
         }
     }
 
+    if (page)
+        free(page);
     if (ctx)
         sas_ctx_free(ctx);
     if (fd != -1)
@@ -1247,6 +1264,8 @@ cleanup:
 readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *filename, void *user_ctx) {
     int fd = -1;
     readstat_error_t retval = READSTAT_OK;
+    long i;
+    char *page = NULL;
 
     sas_catalog_ctx_t *ctx = calloc(1, sizeof(sas_catalog_ctx_t));
     sas_header_info_t *hinfo = calloc(1, sizeof(sas_header_info_t));
@@ -1275,8 +1294,11 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
         ctx->converter = converter;
     }
 
-    int i;
-    char *page = malloc(hinfo->page_size);
+    page = malloc(hinfo->page_size);
+    if (page == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
     for (i=0; i<hinfo->page_count; i++) {
         if (read(fd, page, hinfo->page_size) < hinfo->page_size) {
             retval = READSTAT_ERROR_READ;
@@ -1291,7 +1313,6 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
     }
-    free(page);
 
     char test;
     if (read(fd, &test, 1) == 1) {
@@ -1300,6 +1321,8 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
     }
 
 cleanup:
+    if (page)
+        free(page);
     if (ctx)
         sas_catalog_ctx_free(ctx);
     if (fd != -1)
