@@ -281,7 +281,7 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
         retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
         goto cleanup;
     }
-    if (lseek(fd, 196 + a1, SEEK_SET) == -1) {
+    if (readstat_lseek(fd, 196 + a1, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -322,7 +322,7 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
         ctx->page_count = bswap ? byteswap4(page_count) : page_count;
     }
     
-    if (lseek(fd, 8, SEEK_CUR) == -1) {
+    if (readstat_lseek(fd, 8, SEEK_CUR) == -1) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -336,7 +336,7 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
     } else {
         ctx->vendor = READSTAT_VENDOR_SAS;
     }
-    if (lseek(fd, header_size, SEEK_SET) == -1) {
+    if (readstat_lseek(fd, header_size, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -1063,13 +1063,13 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    ctx->file_size = lseek(fd, 0, SEEK_END);
+    ctx->file_size = readstat_lseek(fd, 0, SEEK_END);
     if (ctx->file_size == -1) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
 
-    if (lseek(fd, 0, SEEK_SET) == -1) {
+    if (readstat_lseek(fd, 0, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -1094,11 +1094,11 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     long i;
     char *page = malloc(hinfo->page_size);
-    off_t start_pos = lseek(fd, 0, SEEK_CUR);
+    off_t start_pos = readstat_lseek(fd, 0, SEEK_CUR);
 
     /* look for META and MIX pages at beginning... */
     for (i=0; i<hinfo->page_count; i++) {
-        lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET);
+        readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET);
 
         off_t off = 0;
         if (ctx->u64)
@@ -1133,7 +1133,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     /* ...then AMD pages at the end */
     for (i=hinfo->page_count-1; i>last_examined_page_pass1; i--) {
-        lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET);
+        readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET);
 
         off_t off = 0;
         if (ctx->u64)
@@ -1164,7 +1164,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
     }
 
-    lseek(fd, start_pos, SEEK_SET);
+    readstat_lseek(fd, start_pos, SEEK_SET);
 
     for (i=0; i<hinfo->page_count; i++) {
         if ((retval = sas_update_progress(fd, ctx)) != READSTAT_OK) {
