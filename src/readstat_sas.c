@@ -1094,11 +1094,14 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     long i;
     char *page = malloc(hinfo->page_size);
-    off_t start_pos = readstat_lseek(fd, 0, SEEK_CUR);
+    int64_t start_pos = readstat_lseek(fd, 0, SEEK_CUR);
 
     /* look for META and MIX pages at beginning... */
     for (i=0; i<hinfo->page_count; i++) {
-        readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET);
+        if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
 
         off_t off = 0;
         if (ctx->u64)
@@ -1133,7 +1136,10 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     /* ...then AMD pages at the end */
     for (i=hinfo->page_count-1; i>last_examined_page_pass1; i--) {
-        readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET);
+        if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
 
         off_t off = 0;
         if (ctx->u64)
@@ -1164,7 +1170,10 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
     }
 
-    readstat_lseek(fd, start_pos, SEEK_SET);
+    if (readstat_lseek(fd, start_pos, SEEK_SET) == -1) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
 
     for (i=0; i<hinfo->page_count; i++) {
         if ((retval = sas_update_progress(fd, ctx)) != READSTAT_OK) {
@@ -1220,14 +1229,14 @@ cleanup:
     if (retval == READSTAT_ERROR_OPEN) {
         if (ctx->error_handler) {
             char buf[1024];
-            snprintf(buf, sizeof(buf), "Error opening file (%d): %s\n", errno, strerror(errno));
+            snprintf(buf, sizeof(buf), "ReadStat: Error opening file (%d): %s\n", errno, strerror(errno));
             ctx->error_handler(buf, user_ctx);
         }
     }
     if (retval == READSTAT_ERROR_READ) {
         if (ctx->error_handler) {
             char buf[1024];
-            snprintf(buf, sizeof(buf), "Error reading file (%d): %s\n", errno, strerror(errno));
+            snprintf(buf, sizeof(buf), "ReadStat: Error reading file (%d): %s\n", errno, strerror(errno));
             ctx->error_handler(buf, user_ctx);
         }
     }
