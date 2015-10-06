@@ -282,7 +282,7 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
         goto cleanup;
     }
     if (readstat_lseek(fd, 196 + a1, SEEK_SET) == -1) {
-        retval = READSTAT_ERROR_READ;
+        retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
 
@@ -323,7 +323,7 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
     }
     
     if (readstat_lseek(fd, 8, SEEK_CUR) == -1) {
-        retval = READSTAT_ERROR_READ;
+        retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
     if (read(fd, &header_end, sizeof(sas_header_end_t)) < sizeof(sas_header_end_t)) {
@@ -337,7 +337,7 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
         ctx->vendor = READSTAT_VENDOR_SAS;
     }
     if (readstat_lseek(fd, header_size, SEEK_SET) == -1) {
-        retval = READSTAT_ERROR_READ;
+        retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
 
@@ -1078,12 +1078,12 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     ctx->file_size = readstat_lseek(fd, 0, SEEK_END);
     if (ctx->file_size == -1) {
-        retval = READSTAT_ERROR_READ;
+        retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
 
     if (readstat_lseek(fd, 0, SEEK_SET) == -1) {
-        retval = READSTAT_ERROR_READ;
+        retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
 
@@ -1115,7 +1115,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     /* look for META and MIX pages at beginning... */
     for (i=0; i<hinfo->page_count; i++) {
         if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
-            retval = READSTAT_ERROR_READ;
+            retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
 
@@ -1153,7 +1153,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     /* ...then AMD pages at the end */
     for (i=hinfo->page_count-1; i>last_examined_page_pass1; i--) {
         if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
-            retval = READSTAT_ERROR_READ;
+            retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
 
@@ -1187,7 +1187,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     }
 
     if (readstat_lseek(fd, start_pos, SEEK_SET) == -1) {
-        retval = READSTAT_ERROR_READ;
+        retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
 
@@ -1234,17 +1234,13 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     }
 
 cleanup:
-    if (retval == READSTAT_ERROR_OPEN) {
+    if (retval == READSTAT_ERROR_OPEN ||
+            retval == READSTAT_ERROR_READ ||
+            retval == READSTAT_ERROR_SEEK) {
         if (ctx->error_handler) {
             char buf[1024];
-            snprintf(buf, sizeof(buf), "ReadStat: Error opening file (%d): %s\n", errno, strerror(errno));
-            ctx->error_handler(buf, user_ctx);
-        }
-    }
-    if (retval == READSTAT_ERROR_READ) {
-        if (ctx->error_handler) {
-            char buf[1024];
-            snprintf(buf, sizeof(buf), "ReadStat: Error reading file (%d): %s\n", errno, strerror(errno));
+            snprintf(buf, sizeof(buf), "ReadStat: %s (retval = %d): %s (errno = %d)\n", 
+                    readstat_error_message(retval), retval, strerror(errno), errno);
             ctx->error_handler(buf, user_ctx);
         }
     }

@@ -42,7 +42,8 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_ROW_WIDTH_MISMATCH,
     READSTAT_ERROR_BAD_FORMAT_STRING,
     READSTAT_ERROR_VALUE_TYPE_MISMATCH,
-    READSTAT_ERROR_WRITE
+    READSTAT_ERROR_WRITE,
+    READSTAT_ERROR_SEEK
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);
