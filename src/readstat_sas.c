@@ -179,15 +179,6 @@ typedef struct sas_ctx_s {
     iconv_t       converter;
 } sas_ctx_t;
 
-typedef struct cat_ctx_s {
-    readstat_value_label_handler   value_label_handler;
-    int        u64;
-    void      *user_ctx;
-    int32_t    header_size;
-    int32_t    page_size;
-    int32_t    page_count;
-} cat_ctx_t;
-
 static uint64_t read8(const char *data, int bswap) {
     uint64_t tmp;
     memcpy(&tmp, data, 8);
