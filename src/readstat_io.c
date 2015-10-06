@@ -28,9 +28,9 @@ off_t readstat_lseek(int fildes, off_t offset, int whence) {
 }
 #endif
 
-readstat_error_t readstat_update_progress(int fd, size_t file_size, 
+readstat_error_t readstat_update_progress(int fd, long file_size, 
         readstat_progress_handler progress_handler, void *user_ctx) {
-    off_t current_offset = readstat_lseek(fd, 0, SEEK_CUR);
+    long current_offset = readstat_lseek(fd, 0, SEEK_CUR);
     if (current_offset == -1)
         return READSTAT_ERROR_READ;
 

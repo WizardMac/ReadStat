@@ -130,7 +130,7 @@ typedef struct sas_header_info_s {
     int      little_endian;
     int      u64;
     int      vendor;
-    size_t   page_size;
+    long     page_size;
     long     page_count;
     char    *encoding;
 } sas_header_info_t;
