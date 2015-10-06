@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
@@ -1059,6 +1060,11 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     if ((fd = readstat_open(filename)) == -1) {
         retval = READSTAT_ERROR_OPEN;
+        if (ctx->error_handler) {
+            char buf[1024];
+            snprintf(buf, sizeof(buf), "Error opening file (%d): %s\n", errno, strerror(errno));
+            ctx->error_handler(buf, user_ctx);
+        }
         goto cleanup;
     }
 
