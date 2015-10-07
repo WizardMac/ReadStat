@@ -149,7 +149,7 @@ typedef struct sas_ctx_s {
     readstat_value_handler      value_handler;
     readstat_error_handler      error_handler;
     readstat_progress_handler   progress_handler;
-    size_t                      file_size;
+    int64_t                     file_size;
 
     int           little_endian;
     int           u64;
