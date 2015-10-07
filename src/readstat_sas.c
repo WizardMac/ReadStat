@@ -1107,7 +1107,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    ctx->error_handler("Reading header...\n", ctx->user_ctx); // XXX
     if ((retval = sas_read_header(fd, hinfo, parser->error_handler, user_ctx)) != READSTAT_OK) {
         goto cleanup;
     }
@@ -1135,7 +1134,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    ctx->error_handler("Looking for META and MIX pages...\n", ctx->user_ctx); // XXX
     /* look for META and MIX pages at beginning... */
     for (i=0; i<hinfo->page_count; i++) {
         if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
@@ -1173,15 +1171,12 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
 
         if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
-            snprintf(error_buf, sizeof(error_buf), "Error parsing page %lld (Pass 1)\n", i);
-            ctx->error_handler(error_buf, ctx->user_ctx); // XXX
             goto cleanup;
         }
     }
 
     int64_t last_examined_page_pass1 = i;
 
-    ctx->error_handler("Looking for AMD pages...\n", ctx->user_ctx); // XXX
     /* ...then AMD pages at the end */
     for (i=hinfo->page_count-1; i>last_examined_page_pass1; i--) {
         if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
@@ -1219,8 +1214,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
 
         if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
-            snprintf(error_buf, sizeof(error_buf), "Error parsing page %lld (Pass 1)\n", i);
-            ctx->error_handler(error_buf, ctx->user_ctx); // XXX
             goto cleanup;
         }
     }
@@ -1244,8 +1237,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
 
         if ((retval = sas_parse_page_pass2(page, hinfo->page_size, ctx)) != READSTAT_OK) {
-            snprintf(error_buf, sizeof(error_buf), "Error parsing page %lld (Pass 2)\n", i);
-            ctx->error_handler(error_buf, ctx->user_ctx); // XXX
             goto cleanup;
         }
     }
@@ -1273,7 +1264,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     char test;
     if (read(fd, &test, 1) == 1) {
-        ctx->error_handler("Extra data at end of file :-(\n", ctx->user_ctx); // XXX
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
