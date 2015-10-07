@@ -1,7 +1,9 @@
 
 int readstat_open(const char *filename);
 int readstat_close(int fd);
-#ifdef _AIX
+#if defined _WIN32 || defined __CYGWIN__
+_off64_t readstat_lseek(int fildes, _off64_t offset, int whence);
+#elif defined _AIX
 off64_t readstat_lseek(int fildes, off64_t offset, int whence);
 #else
 off_t readstat_lseek(int fildes, off_t offset, int whence);
