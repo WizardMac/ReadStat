@@ -239,7 +239,7 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
     sas_header_end_t    header_end;
     int retval = READSTAT_OK;
     char error_buf[1024];
-    int64_t a1 = 0;
+    int a1 = 0;
     if (read(fd, &header_start, sizeof(sas_header_start_t)) < sizeof(sas_header_start_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
@@ -284,7 +284,7 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
     if (readstat_lseek(fd, 196 + a1, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %ld\n", 196 + a1);
+            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %d\n", 196 + a1);
             error_handler(error_buf, user_ctx);
         }
         goto cleanup;
