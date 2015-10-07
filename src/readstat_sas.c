@@ -1214,6 +1214,9 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
 
         if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
+            int64_t pos = readstat_lseek(fd, 0, SEEK_CUR); // XXX
+            snprintf(error_buf, sizeof(error_buf), "Error parsing page %lld (Pass 1, pos = %lld)\n", i, pos);
+            ctx->error_handler(error_buf, ctx->user_ctx);
             goto cleanup;
         }
     }
