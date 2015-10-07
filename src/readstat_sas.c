@@ -635,6 +635,7 @@ static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t le
     /* TODO bounds checking */
     readstat_error_t retval = READSTAT_OK;
     const unsigned char *input = (const unsigned char *)subheader;
+    char error_buf[1024];
     char *buffer = malloc(ctx->row_length);
     char *output = buffer;
     if (buffer == NULL) {
@@ -700,6 +701,12 @@ static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t le
     }
     if (output - buffer != ctx->row_length) {
         retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
+        if (ctx->error_handler) {
+            snprintf(error_buf, sizeof(error_buf), 
+                    "ReadStat: Row #%d decompressed to %d bytes (expected %d bytes)\n",
+                    ctx->parsed_row_count, output - buffer, ctx->row_length);
+            ctx->error_handler(error_buf, ctx->user_ctx);
+        }
         goto cleanup;
     }
     retval = sas_parse_single_row(buffer, ctx);
@@ -1171,11 +1178,13 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
 
         if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
-            int64_t pos = readstat_lseek(fd, 0, SEEK_CUR);
-            snprintf(error_buf, sizeof(error_buf), 
-                    "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
-                    i, pos - hinfo->page_size, pos-1);
-            ctx->error_handler(error_buf, ctx->user_ctx);
+            if (ctx->error_handler) {
+                int64_t pos = readstat_lseek(fd, 0, SEEK_CUR);
+                snprintf(error_buf, sizeof(error_buf), 
+                        "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
+                        i, pos - hinfo->page_size, pos-1);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
             goto cleanup;
         }
     }
@@ -1219,11 +1228,13 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
 
         if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
-            int64_t pos = readstat_lseek(fd, 0, SEEK_CUR);
-            snprintf(error_buf, sizeof(error_buf), 
-                    "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
-                    i, pos - hinfo->page_size, pos-1);
-            ctx->error_handler(error_buf, ctx->user_ctx);
+            if (ctx->error_handler) {
+                int64_t pos = readstat_lseek(fd, 0, SEEK_CUR);
+                snprintf(error_buf, sizeof(error_buf), 
+                        "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
+                        i, pos - hinfo->page_size, pos-1);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
             goto cleanup;
         }
     }
@@ -1247,11 +1258,13 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
 
         if ((retval = sas_parse_page_pass2(page, hinfo->page_size, ctx)) != READSTAT_OK) {
-            int64_t pos = readstat_lseek(fd, 0, SEEK_CUR);
-            snprintf(error_buf, sizeof(error_buf), 
-                    "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
-                    i, pos - hinfo->page_size, pos-1);
-            ctx->error_handler(error_buf, ctx->user_ctx);
+            if (ctx->error_handler) {
+                int64_t pos = readstat_lseek(fd, 0, SEEK_CUR);
+                snprintf(error_buf, sizeof(error_buf), 
+                        "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
+                        i, pos - hinfo->page_size, pos-1);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
             goto cleanup;
         }
     }
