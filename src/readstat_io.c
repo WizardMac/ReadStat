@@ -18,21 +18,17 @@ int readstat_close(int fd) {
     return close(fd);
 }
 
-#if defined _AIX
+#if defined _WIN32 || defined __CYGWIN__
+_off64_t readstat_lseek(int fildes, _off64_t offset, int whence) {
+    return _lseeki64(fildes, offset, whence);
+}
+#elif defined _AIX
 off64_t readstat_lseek(int fildes, off64_t offset, int whence) {
     return lseek64(fildes, offset, whence);
 }
-#elif _GL_WINDOWS_64_BIT_OFF_T
-off_t readstat_lseek(int fildes, off_t offset, int whence) {
-    printf("Calling _lseeki64 on a %ld-bit number...\n", 8*sizeof(off_t)):
-    return -1;
-    // return _lseeki64(fildes, offset, whence);
-}
 #else
 off_t readstat_lseek(int fildes, off_t offset, int whence) {
-    printf("Calling lseek on a %ld-bit number...\n", 8*sizeof(off_t));
-    return -1;
-    // return lseek(fildes, offset, whence);
+    return lseek(fildes, offset, whence);
 }
 #endif
 
