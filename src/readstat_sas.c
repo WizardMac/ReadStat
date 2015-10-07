@@ -1013,6 +1013,7 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
                         signature = read4(page + offset + 4, ctx->bswap);
                     }
                     if (signature != SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
+                        printf("+ Parsing subheader %d\n", i);
                         if ((retval = sas_parse_subheader(signature, page + offset, len, ctx)) != READSTAT_OK) {
                             goto cleanup;
                         }
@@ -1024,6 +1025,7 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
                         }
                         ctx->did_submit_columns = 1;
                     }
+                        printf("+ Parsing RLE subheader %d\n", i);
                     if ((retval = sas_parse_subheader_rle(page + offset, len, ctx)) != READSTAT_OK) {
                         goto cleanup;
                     }
