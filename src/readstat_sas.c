@@ -877,29 +877,24 @@ cleanup:
 static readstat_error_t submit_columns(sas_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     if (ctx->info_handler) {
-        printf("Calling info handler...\n");
         if (ctx->info_handler(ctx->total_row_count, ctx->column_count, ctx->user_ctx)) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
-        printf("Finished calling info handler.\n");
     }
     if (ctx->variable_handler) {
         int i;
         for (i=0; i<ctx->column_count; i++) {
-            printf("Initializing variable...\n");
             readstat_variable_t *variable = sas_init_variable(ctx, i, &retval);
             if (variable == NULL)
                 break;
 
-            printf("Calling variable handler on variable %i...\n", i);
             int cb_retval = ctx->variable_handler(i, variable, variable->format, ctx->user_ctx);
             free(variable);
             if (cb_retval) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
             }
-            printf("Finished calling variable handler.\n");
         }
     }
 cleanup:
@@ -1057,15 +1052,12 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
     }
     if (data) {
         if (!ctx->did_submit_columns) {
-            printf("Submitting columns...\n");
             if ((retval = submit_columns(ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
-            printf("Finished submitting columns\n");
             ctx->did_submit_columns = 1;
         }
         if (ctx->value_handler) {
-            printf("Parsing rows...\n");
             retval = sas_parse_rows(data, ctx);
         }
     } 
@@ -1097,7 +1089,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    printf("Seeking to end of file\n");
     ctx->file_size = readstat_lseek(fd, 0, SEEK_END);
     if (ctx->file_size == -1) {
         retval = READSTAT_ERROR_SEEK;
@@ -1108,7 +1099,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    printf("Seeking to beginning of file\n");
     if (readstat_lseek(fd, 0, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
@@ -1142,8 +1132,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
-
-    printf("Page count: %lld  Page size: %lld\n", hinfo->page_count, hinfo->page_size);
 
     /* look for META and MIX pages at beginning... */
     for (i=0; i<hinfo->page_count; i++) {
@@ -1190,7 +1178,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     /* ...then AMD pages at the end */
     for (i=hinfo->page_count-1; i>last_examined_page_pass1; i--) {
-        printf("Seeking to page %lld\n", i);
         if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
             retval = READSTAT_ERROR_SEEK;
             if (ctx->error_handler) {
@@ -1225,13 +1212,11 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
 
-        printf("Parsing page %lld (Pass 1)\n", i);
         if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
     }
 
-    printf("Seeking to starting position\n");
     if (readstat_lseek(fd, start_pos, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
@@ -1245,25 +1230,21 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         if ((retval = sas_update_progress(fd, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
-        printf("Reading page %lld\n", i);
         if (read(fd, page, hinfo->page_size) < hinfo->page_size) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
-        printf("Parsing page %lld (Pass 2)\n", i);
         if ((retval = sas_parse_page_pass2(page, hinfo->page_size, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
     }
     
     if (!ctx->did_submit_columns) {
-        printf("Submitting columns...\n");
         if ((retval = submit_columns(ctx)) != READSTAT_OK) {
             goto cleanup;
         }
         ctx->did_submit_columns = 1;
-        printf("Finished submitting columns\n");
     }
 
     if (ctx->value_handler && ctx->parsed_row_count != ctx->total_row_count) {
@@ -1290,7 +1271,6 @@ cleanup:
     if (retval == READSTAT_ERROR_OPEN ||
             retval == READSTAT_ERROR_READ ||
             retval == READSTAT_ERROR_SEEK) {
-        printf("Reporting errors...\n");
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: %s (retval = %d): %s (errno = %d)\n", 
                     readstat_error_message(retval), retval, strerror(errno), errno);
@@ -1298,7 +1278,6 @@ cleanup:
         }
     }
 
-    printf("Freeing...\n");
     if (page)
         free(page);
     if (ctx)
