@@ -206,7 +206,7 @@ static int lseek_st(rdata_ctx_t *ctx, size_t len) {
         return retval;
     }
 
-    return lseek(ctx->fd, len, SEEK_CUR);
+    return readstat_lseek(ctx->fd, len, SEEK_CUR);
 }
 
 static readstat_error_t init_z_stream(rdata_ctx_t *ctx) {
@@ -261,7 +261,10 @@ static readstat_error_t init_stream(rdata_ctx_t *ctx) {
         goto cleanup;
     }
 
-    lseek(ctx->fd, 0, SEEK_SET);
+    if (readstat_lseek(ctx->fd, 0, SEEK_SET) == -1) {
+        retval = READSTAT_ERROR_SEEK;
+        goto cleanup;
+    }
 
     if (header[0] == '\x1f' && header[1] == '\x8b') {
         return init_z_stream(ctx);
@@ -290,7 +293,9 @@ static readstat_error_t reset_stream(rdata_ctx_t *ctx) {
     }
 #endif
 
-    lseek(ctx->fd, 0, SEEK_SET);
+    if (readstat_lseek(ctx->fd, 0, SEEK_SET) == -1) {
+        return READSTAT_ERROR_SEEK;
+    }
     return init_stream(ctx);
 }
 
@@ -898,7 +903,7 @@ static readstat_error_t discard_vector(rdata_sexptype_header_t sexptype_header, 
     
     if (length > 0) {
         if (lseek_st(ctx, length * element_size) == -1) {
-            return READSTAT_ERROR_READ;
+            return READSTAT_ERROR_SEEK;
         }
     } else if (ctx->error_handler) {
         char error_buf[1024];
@@ -1095,7 +1100,7 @@ static readstat_error_t recursive_discard(rdata_sexptype_header_t sexptype_heade
         case RDATA_SEXPTYPE_ENVIRONMENT:
             /* locked */
             if (lseek_st(ctx, sizeof(uint32_t)) == -1) {
-                return READSTAT_ERROR_READ;
+                return READSTAT_ERROR_SEEK;
             }
             
             rdata_sexptype_info_t enclosure, frame, hash_table, attributes;
@@ -1113,7 +1118,7 @@ static readstat_error_t recursive_discard(rdata_sexptype_header_t sexptype_heade
             /*
              if (sexptype_header.attributes) {
              if (lseek(ctx->fd, sizeof(uint32_t), SEEK_CUR) == -1) {
-             return READSTAT_ERROR_READ;
+             return READSTAT_ERROR_SEEK;
              }
              } */
             break;
