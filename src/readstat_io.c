@@ -20,7 +20,7 @@ int readstat_close(int fd) {
 
 #if defined _WIN32 || defined __CYGWIN__
 _off64_t readstat_lseek(int fildes, _off64_t offset, int whence) {
-    return _lseeki64(fildes, offset, whence);
+    return lseek64(fildes, offset, whence);
 }
 #elif defined _AIX
 off64_t readstat_lseek(int fildes, off64_t offset, int whence) {
