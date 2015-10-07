@@ -621,7 +621,6 @@ static readstat_error_t sas_parse_rows(const char *data, sas_ctx_t *ctx) {
     int i;
     size_t row_offset=0;
     for (i=0; i<ctx->page_row_count && ctx->parsed_row_count < ctx->total_row_count; i++) {
-        printf("Parsing row %d\n", i);
         if ((retval = sas_parse_single_row(&data[row_offset], ctx)) != READSTAT_OK)
             goto cleanup;
 
@@ -1013,7 +1012,6 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
                         signature = read4(page + offset + 4, ctx->bswap);
                     }
                     if (signature != SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
-                        printf("+ Parsing subheader %d\n", i);
                         if ((retval = sas_parse_subheader(signature, page + offset, len, ctx)) != READSTAT_OK) {
                             goto cleanup;
                         }
@@ -1025,7 +1023,6 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
                         }
                         ctx->did_submit_columns = 1;
                     }
-                        printf("+ Parsing RLE subheader %d\n", i);
                     if ((retval = sas_parse_subheader_rle(page + offset, len, ctx)) != READSTAT_OK) {
                         goto cleanup;
                     }
@@ -1059,6 +1056,7 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
             if ((retval = submit_columns(ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
+            printf("Finished submitting columns\n");
             ctx->did_submit_columns = 1;
         }
         if (ctx->value_handler) {
@@ -1256,12 +1254,13 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
     }
     
-    printf("Submitting columns...\n");
     if (!ctx->did_submit_columns) {
+        printf("Submitting columns...\n");
         if ((retval = submit_columns(ctx)) != READSTAT_OK) {
             goto cleanup;
         }
         ctx->did_submit_columns = 1;
+        printf("Finished submitting columns\n");
     }
 
     if (ctx->value_handler && ctx->parsed_row_count != ctx->total_row_count) {
@@ -1288,6 +1287,7 @@ cleanup:
     if (retval == READSTAT_ERROR_OPEN ||
             retval == READSTAT_ERROR_READ ||
             retval == READSTAT_ERROR_SEEK) {
+        printf("Reporting errors...\n");
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: %s (retval = %d): %s (errno = %d)\n", 
                     readstat_error_message(retval), retval, strerror(errno), errno);
@@ -1295,6 +1295,7 @@ cleanup:
         }
     }
 
+    printf("Freeing...\n");
     if (page)
         free(page);
     if (ctx)
