@@ -621,6 +621,7 @@ static readstat_error_t sas_parse_rows(const char *data, sas_ctx_t *ctx) {
     int i;
     size_t row_offset=0;
     for (i=0; i<ctx->page_row_count && ctx->parsed_row_count < ctx->total_row_count; i++) {
+        printf("Parsing row %d\n", i);
         if ((retval = sas_parse_single_row(&data[row_offset], ctx)) != READSTAT_OK)
             goto cleanup;
 
@@ -1052,12 +1053,14 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
     }
     if (data) {
         if (!ctx->did_submit_columns) {
+            printf("Submitting columns...\n");
             if ((retval = submit_columns(ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
             ctx->did_submit_columns = 1;
         }
         if (ctx->value_handler) {
+            printf("Parsing rows...\n");
             retval = sas_parse_rows(data, ctx);
         }
     } 
