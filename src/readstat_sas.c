@@ -1089,8 +1089,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    ctx->file_size = readstat_lseek(fd, 0, SEEK_END);
-    if (ctx->file_size == -1) {
+    if ((ctx->file_size = readstat_lseek(fd, 0, SEEK_END)) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to end of file\n");
@@ -1126,9 +1125,11 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         ctx->converter = converter;
     }
 
-    page = malloc(hinfo->page_size);
-    start_pos = readstat_lseek(fd, 0, SEEK_CUR);
-    if (page == NULL) {
+    if ((start_pos = readstat_lseek(fd, 0, SEEK_CUR)) == NULL) {
+        retval = READSTAT_ERROR_SEEK;
+        goto cleanup;
+    }
+    if ((page = malloc(hinfo->page_size)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
