@@ -877,24 +877,29 @@ cleanup:
 static readstat_error_t submit_columns(sas_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     if (ctx->info_handler) {
+        printf("Calling info handler...\n");
         if (ctx->info_handler(ctx->total_row_count, ctx->column_count, ctx->user_ctx)) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
+        printf("Finished calling info handler.\n");
     }
     if (ctx->variable_handler) {
         int i;
         for (i=0; i<ctx->column_count; i++) {
+            printf("Initializing variable...\n");
             readstat_variable_t *variable = sas_init_variable(ctx, i, &retval);
             if (variable == NULL)
                 break;
 
+            printf("Calling variable handler on variable %i...\n", i);
             int cb_retval = ctx->variable_handler(i, variable, variable->format, ctx->user_ctx);
             free(variable);
             if (cb_retval) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
             }
+            printf("Finished calling variable handler.\n");
         }
     }
 cleanup:
@@ -1142,7 +1147,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     /* look for META and MIX pages at beginning... */
     for (i=0; i<hinfo->page_count; i++) {
-        printf("Seeking to page %lld\n", i);
         if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
             retval = READSTAT_ERROR_SEEK;
             if (ctx->error_handler) {
@@ -1177,7 +1181,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
 
-        printf("Parsing page %lld (Pass 1)\n", i);
         if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
