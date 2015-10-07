@@ -24,11 +24,15 @@ off64_t readstat_lseek(int fildes, off64_t offset, int whence) {
 }
 #elif _GL_WINDOWS_64_BIT_OFF_T
 off_t readstat_lseek(int fildes, off_t offset, int whence) {
-    return _lseeki64(fildes, offset, whence);
+    printf("Calling _lseeki64 on a %ld-bit number...\n", 8*sizeof(off_t)):
+    return -1;
+    // return _lseeki64(fildes, offset, whence);
 }
 #else
 off_t readstat_lseek(int fildes, off_t offset, int whence) {
-    return lseek(fildes, offset, whence);
+    printf("Calling lseek on a %ld-bit number...\n", 8*sizeof(off_t));
+    return -1;
+    // return lseek(fildes, offset, whence);
 }
 #endif
 
