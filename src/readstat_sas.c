@@ -1089,6 +1089,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
+    printf("Seeking to end of file\n");
     ctx->file_size = readstat_lseek(fd, 0, SEEK_END);
     if (ctx->file_size == -1) {
         retval = READSTAT_ERROR_SEEK;
@@ -1099,6 +1100,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
+    printf("Seeking to beginning of file\n");
     if (readstat_lseek(fd, 0, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
@@ -1133,8 +1135,11 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
+    printf("Page count: %lld  Page size: %lld\n", hinfo->page_count, hinfo->page_size);
+
     /* look for META and MIX pages at beginning... */
     for (i=0; i<hinfo->page_count; i++) {
+        printf("Seeking to page %lld\n", i);
         if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
             retval = READSTAT_ERROR_SEEK;
             if (ctx->error_handler) {
@@ -1169,6 +1174,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
 
+        printf("Parsing page %lld (Pass 1)\n", i);
         if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
@@ -1178,6 +1184,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     /* ...then AMD pages at the end */
     for (i=hinfo->page_count-1; i>last_examined_page_pass1; i--) {
+        printf("Seeking to page %lld\n", i);
         if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
             retval = READSTAT_ERROR_SEEK;
             if (ctx->error_handler) {
@@ -1212,11 +1219,13 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
 
+        printf("Parsing page %lld (Pass 1)\n", i);
         if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
     }
 
+    printf("Seeking to starting position\n");
     if (readstat_lseek(fd, start_pos, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
@@ -1230,16 +1239,19 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         if ((retval = sas_update_progress(fd, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
+        printf("Reading page %lld\n", i);
         if (read(fd, page, hinfo->page_size) < hinfo->page_size) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
+        printf("Parsing page %lld (Pass 2)\n", i);
         if ((retval = sas_parse_page_pass2(page, hinfo->page_size, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
     }
     
+    printf("Submitting columns...\n");
     if (!ctx->did_submit_columns) {
         if ((retval = submit_columns(ctx)) != READSTAT_OK) {
             goto cleanup;
