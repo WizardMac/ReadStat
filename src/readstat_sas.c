@@ -239,7 +239,7 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
     sas_header_end_t    header_end;
     int retval = READSTAT_OK;
     char error_buf[1024];
-    long a1 = 0;
+    int64_t a1 = 0;
     if (read(fd, &header_start, sizeof(sas_header_start_t)) < sizeof(sas_header_start_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
@@ -283,8 +283,10 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
     }
     if (readstat_lseek(fd, 196 + a1, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
-        snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %ld\n", 196 + a1);
-        error_handler(error_buf, user_ctx);
+        if (error_handler) {
+            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %ld\n", 196 + a1);
+            error_handler(error_buf, user_ctx);
+        }
         goto cleanup;
     }
 
@@ -326,8 +328,10 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
     
     if (readstat_lseek(fd, 8, SEEK_CUR) == -1) {
         retval = READSTAT_ERROR_SEEK;
-        snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek forward by %d\n", 8);
-        error_handler(error_buf, user_ctx);
+        if (error_handler) {
+            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek forward by %d\n", 8);
+            error_handler(error_buf, user_ctx);
+        }
         goto cleanup;
     }
     if (read(fd, &header_end, sizeof(sas_header_end_t)) < sizeof(sas_header_end_t)) {
@@ -342,8 +346,10 @@ static readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
     }
     if (readstat_lseek(fd, header_size, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
-        snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %u\n", header_size);
-        error_handler(error_buf, user_ctx);
+        if (error_handler) {
+            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %u\n", header_size);
+            error_handler(error_buf, user_ctx);
+        }
         goto cleanup;
     }
 
@@ -1086,15 +1092,19 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->file_size = readstat_lseek(fd, 0, SEEK_END);
     if (ctx->file_size == -1) {
         retval = READSTAT_ERROR_SEEK;
-        snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to end of file\n");
-        ctx->error_handler(error_buf, ctx->user_ctx);
+        if (ctx->error_handler) {
+            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to end of file\n");
+            ctx->error_handler(error_buf, ctx->user_ctx);
+        }
         goto cleanup;
     }
 
     if (readstat_lseek(fd, 0, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
-        snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to beginning of file\n");
-        ctx->error_handler(error_buf, ctx->user_ctx);
+        if (ctx->error_handler) {
+            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to beginning of file\n");
+            ctx->error_handler(error_buf, ctx->user_ctx);
+        }
         goto cleanup;
     }
 
@@ -1127,9 +1137,11 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     for (i=0; i<hinfo->page_count; i++) {
         if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
             retval = READSTAT_ERROR_SEEK;
-            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld (= %lld + %lld*%lld)",
-                    start_pos + i*hinfo->page_size, start_pos, i, hinfo->page_size);
-            ctx->error_handler(error_buf, ctx->user_ctx);
+            if (ctx->error_handler) {
+                snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld (= %lld + %lld*%lld)",
+                        start_pos + i*hinfo->page_size, start_pos, i, hinfo->page_size);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
             goto cleanup;
         }
 
@@ -1162,15 +1174,17 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         }
     }
 
-    long last_examined_page_pass1 = i;
+    int64_t last_examined_page_pass1 = i;
 
     /* ...then AMD pages at the end */
     for (i=hinfo->page_count-1; i>last_examined_page_pass1; i--) {
         if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
             retval = READSTAT_ERROR_SEEK;
-            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld (= %lld + %lld*%lld)",
-                    start_pos + i*hinfo->page_size, start_pos, i, hinfo->page_size);
-            ctx->error_handler(error_buf, ctx->user_ctx);
+            if (ctx->error_handler) {
+                snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld (= %lld + %lld*%lld)",
+                        start_pos + i*hinfo->page_size, start_pos, i, hinfo->page_size);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
             goto cleanup;
         }
 
@@ -1205,8 +1219,10 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     if (readstat_lseek(fd, start_pos, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
-        snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld\n", start_pos);
-        ctx->error_handler(error_buf, ctx->user_ctx);
+        if (ctx->error_handler) {
+            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld\n", start_pos);
+            ctx->error_handler(error_buf, ctx->user_ctx);
+        }
         goto cleanup;
     }
 
