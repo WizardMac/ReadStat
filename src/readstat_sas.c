@@ -703,7 +703,7 @@ static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t le
         retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), 
-                    "ReadStat: Row #%d decompressed to %d bytes (expected %d bytes)\n",
+                    "ReadStat: Row #%d decompressed to %ld bytes (expected %d bytes)\n",
                     ctx->parsed_row_count, output - buffer, ctx->row_length);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
