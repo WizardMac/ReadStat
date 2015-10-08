@@ -41,7 +41,7 @@
 #define SAS_COMPRESSION_SIGNATURE_RDC  "SASYZCR2"
 
 #define SAS_RLE_COMMAND_COPY64          0
-#define SAS_RLE_COMMAND_INSERT_BYTE17   4
+#define SAS_RLE_COMMAND_INSERT_BYTE18   4
 #define SAS_RLE_COMMAND_INSERT_BLANK17  6
 #define SAS_RLE_COMMAND_INSERT_ZERO17   7
 #define SAS_RLE_COMMAND_COPY1           8
@@ -653,8 +653,8 @@ static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t le
             case SAS_RLE_COMMAND_COPY64:
                 copy_len = (*input++) + 64 + length * 256;
                 break;
-            case SAS_RLE_COMMAND_INSERT_BYTE17:
-                insert_len = (*input++) + 17 + length * 16;
+            case SAS_RLE_COMMAND_INSERT_BYTE18:
+                insert_len = (*input++) + 18 + length * 16;
                 insert_byte = *input++;
                 break;
             case SAS_RLE_COMMAND_INSERT_BLANK17:
