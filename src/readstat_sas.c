@@ -842,6 +842,9 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
             lbp2 += 8 + 2 + label_len + 1;
         }
 
+        if (read4(&lsp[block_size-6], ctx->bswap) == -1)
+            break;
+
         lsp += block_size;
     }
 
