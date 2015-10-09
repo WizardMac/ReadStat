@@ -767,14 +767,18 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
         }
     }
 
+    size_t chunk_size = (page_size-16)/16;
     const char *lsp = &page[22];
 
     while (lsp < page + page_size) {
-        size_t block_size = 255 * (1+lsp[9]);
+        size_t block_size = 255*(1+lsp[9])/chunk_size*chunk_size;
         size_t pad = (lsp[12] & 0x08) ? 4 : 0; // might be 0x10, not sure
         int label_count_capacity = read4(&lsp[48+pad], ctx->bswap);
         int label_count_used = read4(&lsp[52+pad], ctx->bswap);
         char name[4*32+1];
+
+        if (lsp + block_size > page + page_size) // sometimes bleeds over by 6 bytes
+            block_size = page + page_size - lsp;
 
         retval = readstat_convert(name, sizeof(name), &lsp[18], 8, ctx->converter);
         if (retval != READSTAT_OK)
