@@ -12,6 +12,7 @@
 #include "readstat_io.h"
 
 #define SAS_DEFAULT_STRING_ENCODING "WINDOWS-1252"
+#define SAS_USELESS_CATALOG_PAGES   3
 
 #define SAS_ALIGNMENT_OFFSET_4  0x33
 
@@ -1360,16 +1361,16 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
-    for (i=0; i<hinfo->page_count; i++) {
+    if (readstat_lseek(fd, SAS_USELESS_CATALOG_PAGES*hinfo->page_size, SEEK_CUR) == -1) {
+        retval = READSTAT_ERROR_SEEK;
+        goto cleanup;
+    }
+    for (i=SAS_USELESS_CATALOG_PAGES; i<hinfo->page_count; i++) {
         if (read(fd, page, hinfo->page_size) < hinfo->page_size) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
         
-        /* skip the first three pages cuz they suck */
-        if (i < 3)
-            continue;
-
         if ((retval = sas_parse_catalog_page(page, hinfo->page_size, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
