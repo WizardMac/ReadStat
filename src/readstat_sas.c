@@ -12,7 +12,8 @@
 #include "readstat_io.h"
 
 #define SAS_DEFAULT_STRING_ENCODING "WINDOWS-1252"
-#define SAS_USELESS_CATALOG_PAGES   3
+#define SAS_CATALOG_USELESS_PAGES   3
+#define SAS_CATALOG_MISSING_VALUE   0x2EFFFFFFFFFF
 
 #define SAS_ALIGNMENT_OFFSET_4  0x33
 
@@ -854,9 +855,11 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
                 value.v.string_value = val;
             } else {
                 uint64_t val = read8(&lbp1[22], bswap_doubles);
-                double dval;
-                memcpy(&dval, &val, 8);
-                dval *= -1.0;
+                double dval = NAN;
+                if (val != SAS_CATALOG_MISSING_VALUE) {
+                    memcpy(&dval, &val, 8);
+                    dval *= -1.0;
+                }
 
                 value.v.double_value = dval;
             }
@@ -1388,11 +1391,11 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
-    if (readstat_lseek(fd, SAS_USELESS_CATALOG_PAGES*hinfo->page_size, SEEK_CUR) == -1) {
+    if (readstat_lseek(fd, SAS_CATALOG_USELESS_PAGES*hinfo->page_size, SEEK_CUR) == -1) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
-    for (i=SAS_USELESS_CATALOG_PAGES; i<hinfo->page_count; i++) {
+    for (i=SAS_CATALOG_USELESS_PAGES; i<hinfo->page_count; i++) {
         if (read(fd, page, hinfo->page_size) < hinfo->page_size) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
