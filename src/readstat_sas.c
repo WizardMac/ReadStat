@@ -13,7 +13,6 @@
 
 #define SAS_DEFAULT_STRING_ENCODING "WINDOWS-1252"
 #define SAS_CATALOG_USELESS_PAGES   3
-#define SAS_CATALOG_MISSING_VALUE   0x2EFFFFFFFFFF
 
 #define SAS_ALIGNMENT_OFFSET_4  0x33
 
@@ -856,7 +855,10 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
             } else {
                 uint64_t val = read8(&lbp1[22], bswap_doubles);
                 double dval = NAN;
-                if (val != SAS_CATALOG_MISSING_VALUE) {
+                if (val >= 0x000000FFFFFFFFFF && val <= 0x0000FFFFFFFFFFFF) {
+                    value.tag = (val >> 40) & 0xFF;
+                    value.is_system_missing = 1;
+                } else {
                     memcpy(&dval, &val, 8);
                     dval *= -1.0;
                 }
