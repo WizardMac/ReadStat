@@ -760,6 +760,8 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
     /* Doubles appear to be stored as big-endian, always */
     int bswap_doubles = machine_is_little_endian();
     int i;
+    uint32_t *value_offset = NULL;
+
     for (i=16; i<22; i++) {
         if (page[i]) {
             /* not a labels page... I think */
@@ -790,6 +792,9 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
         if (retval != READSTAT_OK)
             goto cleanup;
 
+        value_offset = realloc(value_offset, sizeof(uint32_t) * label_count_used);
+        memset(value_offset, 0, sizeof(uint32_t) * label_count_used);
+
         int is_string = (name[0] == '$');
 
         if (pad) {
@@ -805,7 +810,8 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
             pad += 32;
         }
 
-        const char *lbp1 = &lsp[116+pad];
+        const char *value_start = &lsp[116+pad];
+        const char *lbp1 = value_start;
 
         /* Pass 1 -- find out the offset of the labels */
         for (i=0; i<label_count_capacity; i++) {
@@ -813,14 +819,23 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
                 retval = READSTAT_ERROR_PARSE;
                 goto cleanup;
             }
+            if (i<label_count_used) {
+                uint32_t label_pos = read4(&lbp1[10], ctx->bswap);
+                if (label_pos >= label_count_used) {
+                    retval = READSTAT_ERROR_PARSE;
+                    goto cleanup;
+                }
+                value_offset[label_pos] = lbp1 - value_start;
+            }
             lbp1 += 6 + lbp1[2];
         }
 
         const char *lbp2 = lbp1;
-        lbp1 = &lsp[116+pad];
 
         /* Pass 2 -- parse pairs of values & labels */
         for (i=0; i<label_count_used; i++) {
+            lbp1 = value_start + value_offset[i];
+
             if (&lbp1[30] - lsp > block_size ||
                     &lbp2[10] - lsp > block_size) {
                 retval = READSTAT_ERROR_PARSE;
@@ -849,7 +864,6 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
                 ctx->value_label_handler(name, value, label, ctx->user_ctx);
             }
 
-            lbp1 += value_entry_len;
             lbp2 += 8 + 2 + label_len + 1;
         }
 
@@ -860,6 +874,9 @@ static readstat_error_t sas_parse_catalog_page(const char *page, size_t page_siz
     }
 
 cleanup:
+    if (value_offset)
+        free(value_offset);
+
     return retval;
 }
 
