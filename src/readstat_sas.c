@@ -586,8 +586,13 @@ static readstat_error_t handle_data_value(const char *col_data, col_info_t *col_
 
         memcpy(&dval, &val, 8);
 
-        value.v.double_value = dval;
-        value.is_system_missing = isnan(dval);
+        if (isnan(dval)) {
+            value.v.double_value = NAN;
+            value.is_system_missing = 1;
+            value.tag = ~((val >> 40) & 0xFF);
+        } else {
+            value.v.double_value = dval;
+        }
     }
     cb_retval = ctx->value_handler(ctx->parsed_row_count, col_info->index, 
             value, ctx->user_ctx);
