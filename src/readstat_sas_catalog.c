@@ -114,7 +114,7 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t sas_parse_catalog_block(const char *data, size_t data_size, sas_catalog_ctx_t *ctx) {
+static readstat_error_t sas_catalog_parse_block(const char *data, size_t data_size, sas_catalog_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
 
     size_t pad = (data[2] & 0x08) ? 4 : 0; // might be 0x10, not sure
@@ -147,7 +147,7 @@ cleanup:
     return retval;
 }
 
-static void sas_catalog_build_index(const char *index, size_t len, sas_catalog_ctx_t *ctx) {
+static void sas_catalog_augment_index(const char *index, size_t len, sas_catalog_ctx_t *ctx) {
     const char *xlsr = index;
     while (xlsr + 212 <= index + len) {
         if (memcmp(xlsr, "        ", 8) == 0) // some block pointers seem to have an extra 8-byte padding
@@ -167,10 +167,80 @@ static void sas_catalog_build_index(const char *index, size_t len, sas_catalog_c
     }
 }
 
+static int sas_catalog_block_size(int start_page, int start_page_pos, sas_catalog_ctx_t *ctx, readstat_error_t *outError) {
+    readstat_error_t retval = READSTAT_OK;
+    int next_page = start_page;
+    int next_page_pos = start_page_pos;
+
+    int buffer_len = 0;
+    int block_len = 0;
+
+    char *page = malloc(16);
+
+    // calculate buffer size needed
+    while (next_page > 0 && next_page_pos > 0) {
+        if (readstat_lseek(ctx->fd, ctx->header_size+(next_page-1)*ctx->page_size+next_page_pos, SEEK_SET) == -1) {
+            retval = READSTAT_ERROR_SEEK;
+            goto cleanup;
+        }
+        if (read(ctx->fd, page, 16) < 16) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+        next_page = sas_read4(&page[0], ctx->bswap);
+        next_page_pos = sas_read2(&page[4], ctx->bswap);
+        block_len = sas_read2(&page[6], ctx->bswap);
+
+        buffer_len += block_len;
+    }
+
+cleanup:
+    if (outError)
+        *outError = retval;
+    if (page)
+        free(page);
+
+    return retval == READSTAT_OK ? buffer_len : -1;
+}
+
+static readstat_error_t sas_catalog_read_block(char *buffer, size_t buffer_len, int start_page, int start_page_pos, sas_catalog_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
+    int next_page = start_page;
+    int next_page_pos = start_page_pos;
+
+    int block_len = 0;
+    int buffer_offset = 0;
+
+    char *page = malloc(16);
+
+    while (next_page > 0 && next_page_pos > 0) {
+        if (readstat_lseek(ctx->fd, ctx->header_size+(next_page-1)*ctx->page_size+next_page_pos, SEEK_SET) == -1) {
+            retval = READSTAT_ERROR_SEEK;
+            goto cleanup;
+        }
+        if (read(ctx->fd, page, 16) < 16) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+        next_page = sas_read4(&page[0], ctx->bswap);
+        next_page_pos = sas_read2(&page[4], ctx->bswap);
+        block_len = sas_read2(&page[6], ctx->bswap);
+        if (read(ctx->fd, buffer + buffer_offset, block_len) < block_len) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+        buffer_offset += block_len;
+    }
+cleanup:
+    if (page)
+        free(page);
+
+    return retval;
+}
+
 readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *filename, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
     int64_t i;
-    int64_t start_pos;
     char *page = NULL;
     char *buffer = NULL;
 
@@ -212,15 +282,11 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
         ctx->converter = converter;
     }
 
-    if ((start_pos = readstat_lseek(ctx->fd, 0, SEEK_CUR)) == -1) {
-        retval = READSTAT_ERROR_SEEK;
-        goto cleanup;
-    }
     if ((page = malloc(ctx->page_size)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
-    if (readstat_lseek(ctx->fd, start_pos+SAS_CATALOG_FIRST_INDEX_PAGE*ctx->page_size, SEEK_SET) == -1) {
+    if (readstat_lseek(ctx->fd, ctx->header_size+SAS_CATALOG_FIRST_INDEX_PAGE*ctx->page_size, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
@@ -229,11 +295,11 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    sas_catalog_build_index(&page[856], ctx->page_size - 856, ctx);
+    sas_catalog_augment_index(&page[856], ctx->page_size - 856, ctx);
 
     // Pass 1 -- find the XLSR entries
     for (i=SAS_CATALOG_USELESS_PAGES; i<ctx->page_count; i++) {
-        if (readstat_lseek(ctx->fd, start_pos+i*ctx->page_size, SEEK_SET) == -1) {
+        if (readstat_lseek(ctx->fd, ctx->header_size+i*ctx->page_size, SEEK_SET) == -1) {
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
@@ -242,7 +308,7 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
         if (memcmp(&page[16], "XLSR", sizeof("XLSR")-1) == 0) {
-            sas_catalog_build_index(&page[16], ctx->page_size - 16, ctx);
+            sas_catalog_augment_index(&page[16], ctx->page_size - 16, ctx);
         }
     }
 
@@ -251,53 +317,16 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
         int start_page = ctx->block_pointers[i] >> 32;
         int start_page_pos = (ctx->block_pointers[i]) & 0xFFFF;
 
-        int next_page = start_page;
-        int next_page_pos = start_page_pos;
-
-        int buffer_len = 0;
-        int buffer_offset = 0;
-        int block_len = 0;
-        // calculate buffer size needed
-        while (next_page > 0 && next_page_pos > 0) {
-            if (readstat_lseek(ctx->fd, start_pos+(next_page-1)*ctx->page_size+next_page_pos, SEEK_SET) == -1) {
-                retval = READSTAT_ERROR_SEEK;
-                goto cleanup;
-            }
-            if (read(ctx->fd, page, 16) < 16) {
-                retval = READSTAT_ERROR_READ;
-                goto cleanup;
-            }
-            next_page = sas_read4(&page[0], ctx->bswap);
-            next_page_pos = sas_read2(&page[4], ctx->bswap);
-            block_len = sas_read2(&page[6], ctx->bswap);
-
-            buffer_len += block_len;
-        }
-        if (buffer_len == 0) {
+        int buffer_len = sas_catalog_block_size(start_page, start_page_pos, ctx, &retval);
+        if (buffer_len == -1) {
+            goto cleanup;
+        } else if (buffer_len == 0) {
             continue;
         }
         buffer = realloc(buffer, buffer_len);
-        next_page = start_page;
-        next_page_pos = start_page_pos;
-        while (next_page > 0 && next_page_pos > 0) {
-            if (readstat_lseek(ctx->fd, start_pos+(next_page-1)*ctx->page_size+next_page_pos, SEEK_SET) == -1) {
-                retval = READSTAT_ERROR_SEEK;
-                goto cleanup;
-            }
-            if (read(ctx->fd, page, 16) < 16) {
-                retval = READSTAT_ERROR_READ;
-                goto cleanup;
-            }
-            next_page = sas_read4(&page[0], ctx->bswap);
-            next_page_pos = sas_read2(&page[4], ctx->bswap);
-            block_len = sas_read2(&page[6], ctx->bswap);
-            if (read(ctx->fd, buffer + buffer_offset, block_len) < block_len) {
-                retval = READSTAT_ERROR_READ;
-                goto cleanup;
-            }
-            buffer_offset += block_len;
-        }
-        if ((retval = sas_parse_catalog_block(buffer, buffer_len, ctx)) != READSTAT_OK)
+        if ((retval = sas_catalog_read_block(buffer, buffer_len, start_page, start_page_pos, ctx)) != READSTAT_OK)
+            goto cleanup;
+        if ((retval = sas_catalog_parse_block(buffer, buffer_len, ctx)) != READSTAT_OK)
             goto cleanup;
     }
 

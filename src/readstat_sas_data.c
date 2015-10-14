@@ -10,6 +10,8 @@
 #include "readstat_convert.h"
 #include "readstat_io.h"
 
+#define ERROR_BUF_SIZE 1024
+
 #define SAS_PAGE_TYPE_META   0x0000
 #define SAS_PAGE_TYPE_DATA   0x0100
 #define SAS_PAGE_TYPE_MIX    0x0200
@@ -80,14 +82,21 @@ typedef struct sas_ctx_s {
     int           little_endian;
     int           u64;
     int           vendor;
+    int           fd;
     void         *user_ctx;
     int           bswap;
     int           did_submit_columns;
+
     int32_t       row_length;
     int32_t       page_row_count;
     int32_t       parsed_row_count;
     int32_t       total_row_count;
     int32_t       column_count;
+
+    int64_t       header_size;
+    int64_t       page_count;
+    int64_t       page_size;
+
     int           text_blob_count;
     size_t       *text_blob_lengths;
     char        **text_blobs;
@@ -124,14 +133,17 @@ static void sas_ctx_free(sas_ctx_t *ctx) {
     if (ctx->converter)
         iconv_close(ctx->converter);
 
+    if (ctx->fd != -1)
+        readstat_close(ctx->fd);
+
     free(ctx);
 }
 
-static readstat_error_t sas_update_progress(int fd, sas_ctx_t *ctx) {
+static readstat_error_t sas_update_progress(sas_ctx_t *ctx) {
     if (!ctx->progress_handler)
         return READSTAT_OK;
 
-    return readstat_update_progress(fd, ctx->file_size, ctx->progress_handler, ctx->user_ctx);
+    return readstat_update_progress(ctx->fd, ctx->file_size, ctx->progress_handler, ctx->user_ctx);
 }
 
 static readstat_error_t sas_parse_column_text_subheader(const char *subheader, size_t len, sas_ctx_t *ctx) {
@@ -417,7 +429,7 @@ static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t le
     /* TODO bounds checking */
     readstat_error_t retval = READSTAT_OK;
     const unsigned char *input = (const unsigned char *)subheader;
-    char error_buf[1024];
+    char error_buf[ERROR_BUF_SIZE];
     char *buffer = malloc(ctx->row_length);
     char *output = buffer;
     if (buffer == NULL) {
@@ -757,16 +769,170 @@ cleanup:
     return retval;
 }
 
-readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *filename, void *user_ctx) {
-    int fd = -1;
-    int64_t i;
+static readstat_error_t parse_meta_pages_pass1(sas_ctx_t *ctx, int64_t *outLastExaminedPage) {
     readstat_error_t retval = READSTAT_OK;
-    int64_t start_pos;
-    char error_buf[1024];
+    int64_t i;
+    char error_buf[ERROR_BUF_SIZE];
+    char *page = malloc(ctx->page_size);
+
+    /* look for META and MIX pages at beginning... */
+    for (i=0; i<ctx->page_count; i++) {
+        if (readstat_lseek(ctx->fd, ctx->header_size + i*ctx->page_size, SEEK_SET) == -1) {
+            retval = READSTAT_ERROR_SEEK;
+            if (ctx->error_handler) {
+                snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld (= %lld + %lld*%lld)",
+                        ctx->header_size + i*ctx->page_size, ctx->header_size, i, ctx->page_size);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
+            goto cleanup;
+        }
+
+        off_t off = 0;
+        if (ctx->u64)
+            off = 16;
+
+        size_t head_len = off + 16 + 2;
+        size_t tail_len = ctx->page_size - head_len;
+
+        if (read(ctx->fd, page, head_len) < head_len) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        uint16_t page_type = sas_read2(&page[off+16], ctx->bswap);
+
+        if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA)
+            break;
+        if ((page_type & SAS_PAGE_TYPE_COMP))
+            continue;
+
+        if (read(ctx->fd, page + head_len, tail_len) < tail_len) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        if ((retval = sas_parse_page_pass1(page, ctx->page_size, ctx)) != READSTAT_OK) {
+            if (ctx->error_handler) {
+                int64_t pos = readstat_lseek(ctx->fd, 0, SEEK_CUR);
+                snprintf(error_buf, sizeof(error_buf), 
+                        "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
+                        i, pos - ctx->page_size, pos-1);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    if (page)
+        free(page);
+    if (outLastExaminedPage)
+        *outLastExaminedPage = i;
+
+    return retval;
+}
+
+static readstat_error_t parse_amd_pages_pass1(int64_t last_examined_page_pass1, sas_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
+    int64_t i;
+    char error_buf[ERROR_BUF_SIZE];
+    char *page = malloc(ctx->page_size);
+
+    /* ...then AMD pages at the end */
+    for (i=ctx->page_count-1; i>last_examined_page_pass1; i--) {
+        if (readstat_lseek(ctx->fd, ctx->header_size + i*ctx->page_size, SEEK_SET) == -1) {
+            retval = READSTAT_ERROR_SEEK;
+            if (ctx->error_handler) {
+                snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld (= %lld + %lld*%lld)",
+                        ctx->header_size + i*ctx->page_size, ctx->header_size, i, ctx->page_size);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
+            goto cleanup;
+        }
+
+        off_t off = 0;
+        if (ctx->u64)
+            off = 16;
+
+        size_t head_len = off + 16 + 2;
+        size_t tail_len = ctx->page_size - head_len;
+
+        if (read(ctx->fd, page, head_len) < head_len) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        uint16_t page_type = sas_read2(&page[off+16], ctx->bswap);
+
+        if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA)
+            break;
+        if ((page_type & SAS_PAGE_TYPE_COMP))
+            continue;
+
+        if (read(ctx->fd, page + head_len, tail_len) < tail_len) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        if ((retval = sas_parse_page_pass1(page, ctx->page_size, ctx)) != READSTAT_OK) {
+            if (ctx->error_handler) {
+                int64_t pos = readstat_lseek(ctx->fd, 0, SEEK_CUR);
+                snprintf(error_buf, sizeof(error_buf), 
+                        "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
+                        i, pos - ctx->page_size, pos-1);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    if (page)
+        free(page);
+
+    return retval;
+}
+
+static readstat_error_t parse_all_pages_pass2(sas_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
+    int64_t i;
+    char error_buf[ERROR_BUF_SIZE];
+    char *page = malloc(ctx->page_size);
+
+    for (i=0; i<ctx->page_count; i++) {
+        if ((retval = sas_update_progress(ctx)) != READSTAT_OK) {
+            goto cleanup;
+        }
+        if (read(ctx->fd, page, ctx->page_size) < ctx->page_size) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        if ((retval = sas_parse_page_pass2(page, ctx->page_size, ctx)) != READSTAT_OK) {
+            if (ctx->error_handler) {
+                int64_t pos = readstat_lseek(ctx->fd, 0, SEEK_CUR);
+                snprintf(error_buf, sizeof(error_buf), 
+                        "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
+                        i, pos - ctx->page_size, pos-1);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
+            goto cleanup;
+        }
+    }
+cleanup:
+    if (page)
+        free(page);
+
+    return retval;
+}
+
+readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *filename, void *user_ctx) {
+    int64_t last_examined_page_pass1 = 0;
+    readstat_error_t retval = READSTAT_OK;
+    char error_buf[ERROR_BUF_SIZE];
 
     sas_ctx_t  *ctx = calloc(1, sizeof(sas_ctx_t));
     sas_header_info_t  *hinfo = calloc(1, sizeof(sas_header_info_t));
-    char *page = NULL;
 
     ctx->info_handler = parser->info_handler;
     ctx->variable_handler = parser->variable_handler;
@@ -775,12 +941,12 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->progress_handler = parser->progress_handler;
     ctx->user_ctx = user_ctx;
 
-    if ((fd = readstat_open(filename)) == -1) {
+    if ((ctx->fd = readstat_open(filename)) == -1) {
         retval = READSTAT_ERROR_OPEN;
         goto cleanup;
     }
 
-    if ((ctx->file_size = readstat_lseek(fd, 0, SEEK_END)) == -1) {
+    if ((ctx->file_size = readstat_lseek(ctx->fd, 0, SEEK_END)) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to end of file\n");
@@ -789,7 +955,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if (readstat_lseek(fd, 0, SEEK_SET) == -1) {
+    if (readstat_lseek(ctx->fd, 0, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to beginning of file\n");
@@ -798,7 +964,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if ((retval = sas_read_header(fd, hinfo, parser->error_handler, user_ctx)) != READSTAT_OK) {
+    if ((retval = sas_read_header(ctx->fd, hinfo, ctx->error_handler, user_ctx)) != READSTAT_OK) {
         goto cleanup;
     }
 
@@ -806,6 +972,10 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->little_endian = hinfo->little_endian;
     ctx->vendor = hinfo->vendor;
     ctx->bswap = machine_is_little_endian() ^ hinfo->little_endian;
+    ctx->header_size = hinfo->header_size;
+    ctx->page_count = hinfo->page_count;
+    ctx->page_size = hinfo->page_size;
+
     if (strcmp(hinfo->encoding, "UTF-8") != 0 &&
             strcmp(hinfo->encoding, "US-ASCII") != 0) {
         iconv_t converter = iconv_open("UTF-8", hinfo->encoding);
@@ -816,141 +986,25 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         ctx->converter = converter;
     }
 
-    if ((start_pos = readstat_lseek(fd, 0, SEEK_CUR)) == -1) {
-        retval = READSTAT_ERROR_SEEK;
-        goto cleanup;
-    }
-    if ((page = malloc(hinfo->page_size)) == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
+    if ((retval = parse_meta_pages_pass1(ctx, &last_examined_page_pass1)) != READSTAT_OK) {
         goto cleanup;
     }
 
-    /* look for META and MIX pages at beginning... */
-    for (i=0; i<hinfo->page_count; i++) {
-        if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
-            retval = READSTAT_ERROR_SEEK;
-            if (ctx->error_handler) {
-                snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld (= %lld + %lld*%lld)",
-                        start_pos + i*hinfo->page_size, start_pos, i, hinfo->page_size);
-                ctx->error_handler(error_buf, ctx->user_ctx);
-            }
-            goto cleanup;
-        }
-
-        off_t off = 0;
-        if (ctx->u64)
-            off = 16;
-
-        size_t head_len = off + 16 + 2;
-        size_t tail_len = hinfo->page_size - head_len;
-
-        if (read(fd, page, head_len) < head_len) {
-            retval = READSTAT_ERROR_READ;
-            goto cleanup;
-        }
-
-        uint16_t page_type = sas_read2(&page[off+16], ctx->bswap);
-
-        if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA)
-            break;
-        if ((page_type & SAS_PAGE_TYPE_COMP))
-            continue;
-
-        if (read(fd, page + head_len, tail_len) < tail_len) {
-            retval = READSTAT_ERROR_READ;
-            goto cleanup;
-        }
-
-        if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
-            if (ctx->error_handler) {
-                int64_t pos = readstat_lseek(fd, 0, SEEK_CUR);
-                snprintf(error_buf, sizeof(error_buf), 
-                        "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
-                        i, pos - hinfo->page_size, pos-1);
-                ctx->error_handler(error_buf, ctx->user_ctx);
-            }
-            goto cleanup;
-        }
+    if ((retval = parse_amd_pages_pass1(last_examined_page_pass1, ctx)) != READSTAT_OK) {
+        goto cleanup;
     }
 
-    int64_t last_examined_page_pass1 = i;
-
-    /* ...then AMD pages at the end */
-    for (i=hinfo->page_count-1; i>last_examined_page_pass1; i--) {
-        if (readstat_lseek(fd, start_pos + i*hinfo->page_size, SEEK_SET) == -1) {
-            retval = READSTAT_ERROR_SEEK;
-            if (ctx->error_handler) {
-                snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld (= %lld + %lld*%lld)",
-                        start_pos + i*hinfo->page_size, start_pos, i, hinfo->page_size);
-                ctx->error_handler(error_buf, ctx->user_ctx);
-            }
-            goto cleanup;
-        }
-
-        off_t off = 0;
-        if (ctx->u64)
-            off = 16;
-
-        size_t head_len = off + 16 + 2;
-        size_t tail_len = hinfo->page_size - head_len;
-
-        if (read(fd, page, head_len) < head_len) {
-            retval = READSTAT_ERROR_READ;
-            goto cleanup;
-        }
-
-        uint16_t page_type = sas_read2(&page[off+16], ctx->bswap);
-
-        if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA)
-            break;
-        if ((page_type & SAS_PAGE_TYPE_COMP))
-            continue;
-
-        if (read(fd, page + head_len, tail_len) < tail_len) {
-            retval = READSTAT_ERROR_READ;
-            goto cleanup;
-        }
-
-        if ((retval = sas_parse_page_pass1(page, hinfo->page_size, ctx)) != READSTAT_OK) {
-            if (ctx->error_handler) {
-                int64_t pos = readstat_lseek(fd, 0, SEEK_CUR);
-                snprintf(error_buf, sizeof(error_buf), 
-                        "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
-                        i, pos - hinfo->page_size, pos-1);
-                ctx->error_handler(error_buf, ctx->user_ctx);
-            }
-            goto cleanup;
-        }
-    }
-
-    if (readstat_lseek(fd, start_pos, SEEK_SET) == -1) {
+    if (readstat_lseek(ctx->fd, ctx->header_size, SEEK_SET) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld\n", start_pos);
+            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld\n", ctx->header_size);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
         goto cleanup;
     }
 
-    for (i=0; i<hinfo->page_count; i++) {
-        if ((retval = sas_update_progress(fd, ctx)) != READSTAT_OK) {
-            goto cleanup;
-        }
-        if (read(fd, page, hinfo->page_size) < hinfo->page_size) {
-            retval = READSTAT_ERROR_READ;
-            goto cleanup;
-        }
-
-        if ((retval = sas_parse_page_pass2(page, hinfo->page_size, ctx)) != READSTAT_OK) {
-            if (ctx->error_handler) {
-                int64_t pos = readstat_lseek(fd, 0, SEEK_CUR);
-                snprintf(error_buf, sizeof(error_buf), 
-                        "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
-                        i, pos - hinfo->page_size, pos-1);
-                ctx->error_handler(error_buf, ctx->user_ctx);
-            }
-            goto cleanup;
-        }
+    if ((retval = parse_all_pages_pass2(ctx)) != READSTAT_OK) {
+        goto cleanup;
     }
     
     if (!ctx->did_submit_columns) {
@@ -970,12 +1024,12 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if ((retval = sas_update_progress(fd, ctx)) != READSTAT_OK) {
+    if ((retval = sas_update_progress(ctx)) != READSTAT_OK) {
         goto cleanup;
     }
 
     char test;
-    if (read(fd, &test, 1) == 1) {
+    if (read(ctx->fd, &test, 1) == 1) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -991,12 +1045,8 @@ cleanup:
         }
     }
 
-    if (page)
-        free(page);
     if (ctx)
         sas_ctx_free(ctx);
-    if (fd != -1)
-        readstat_close(fd);
     if (hinfo)
         free(hinfo);
 
