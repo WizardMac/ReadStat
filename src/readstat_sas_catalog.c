@@ -149,7 +149,10 @@ cleanup:
 
 static void sas_catalog_build_index(const char *index, size_t len, sas_catalog_ctx_t *ctx) {
     const char *xlsr = index;
-    while (xlsr < index + len) {
+    while (xlsr + 212 <= index + len) {
+        if (memcmp(xlsr, "        ", 8) == 0) // some block pointers seem to have an extra 8-byte padding
+            xlsr += 8;
+
         if (memcmp(xlsr, "XLSR", 4) != 0)
             break;
 
@@ -160,7 +163,7 @@ static void sas_catalog_build_index(const char *index, size_t len, sas_catalog_c
             ctx->block_pointers = realloc(ctx->block_pointers, (ctx->block_pointers_capacity *= 2) * sizeof(uint64_t));
         }
 
-        xlsr += 212; // XXX: some block pointers seem to have an extra 8-byte padding
+        xlsr += 212;
     }
 }
 
