@@ -7,9 +7,9 @@
 #include <unistd.h>
 #include <time.h>
 
+#include "readstat.h"
 #include "readstat_dta.h"
 #include "readstat_writer.h"
-#include "readstat_io.h"
 
 #define DTA_DEFAULT_FORMAT_BYTE    "%8.0g"
 #define DTA_DEFAULT_FORMAT_INT16   "%8.0g"
@@ -299,7 +299,7 @@ static readstat_error_t dta_begin_data(void *writer_ctx) {
     if (error != READSTAT_OK)
         goto cleanup;
     
-    ctx = dta_ctx_init(header.nvar, header.nobs, header.byteorder, header.ds_format);
+    ctx = dta_ctx_init(header.nvar, header.nobs, header.byteorder, header.ds_format, NULL);
     
     error = dta_emit_header_data_label(writer);
     if (error != READSTAT_OK)

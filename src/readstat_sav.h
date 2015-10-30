@@ -76,6 +76,7 @@ typedef struct sav_ctx_s {
     readstat_value_handler          value_handler;
     readstat_value_label_handler    value_label_handler;
     size_t                          file_size;
+    readstat_io_t                  *io;
     void                           *user_ctx;
 
     spss_varinfo_t *varinfo;
@@ -117,6 +118,6 @@ typedef struct sav_ctx_s {
 #define SAV_CHARSET_DEC_KANJI             4
 #define SAV_CHARSET_UTF8              65001
 
-sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header);
+sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header, readstat_io_t *io);
 void sav_ctx_free(sav_ctx_t *ctx);
 

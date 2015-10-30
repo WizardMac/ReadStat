@@ -8,7 +8,6 @@
 #include "readstat_sas.h"
 #include "readstat_iconv.h"
 #include "readstat_convert.h"
-#include "readstat_io.h"
 
 #define SAS_DEFAULT_STRING_ENCODING "WINDOWS-1252"
 
@@ -79,13 +78,13 @@ uint16_t sas_read2(const char *data, int bswap) {
     return bswap ? byteswap2(tmp) : tmp;
 }
 
-readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx, 
+readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *ctx, 
         readstat_error_handler error_handler, void *user_ctx) {
     sas_header_start_t  header_start;
     sas_header_end_t    header_end;
     int retval = READSTAT_OK;
     char error_buf[1024];
-    if (read(fd, &header_start, sizeof(sas_header_start_t)) < sizeof(sas_header_start_t)) {
+    if (io->read_handler(&header_start, sizeof(sas_header_start_t), io->io_ctx) < sizeof(sas_header_start_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -126,7 +125,7 @@ readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
         retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
         goto cleanup;
     }
-    if (readstat_lseek(fd, 196 + ctx->pad1, SEEK_SET) == -1) {
+    if (io->seek_handler(196 + ctx->pad1, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %d\n", 196 + ctx->pad1);
@@ -137,11 +136,11 @@ readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
 
     uint32_t header_size, page_size;
 
-    if (read(fd, &header_size, sizeof(uint32_t)) < sizeof(uint32_t)) {
+    if (io->read_handler(&header_size, sizeof(uint32_t), io->io_ctx) < sizeof(uint32_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
-    if (read(fd, &page_size, sizeof(uint32_t)) < sizeof(uint32_t)) {
+    if (io->read_handler(&page_size, sizeof(uint32_t), io->io_ctx) < sizeof(uint32_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -157,21 +156,21 @@ readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
 
     if (ctx->u64) {
         uint64_t page_count;
-        if (read(fd, &page_count, sizeof(uint64_t)) < sizeof(uint64_t)) {
+        if (io->read_handler(&page_count, sizeof(uint64_t), io->io_ctx) < sizeof(uint64_t)) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
         ctx->page_count = bswap ? byteswap8(page_count) : page_count;
     } else {
         uint32_t page_count;
-        if (read(fd, &page_count, sizeof(uint32_t)) < sizeof(uint32_t)) {
+        if (io->read_handler(&page_count, sizeof(uint32_t), io->io_ctx) < sizeof(uint32_t)) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
         ctx->page_count = bswap ? byteswap4(page_count) : page_count;
     }
     
-    if (readstat_lseek(fd, 8, SEEK_CUR) == -1) {
+    if (io->seek_handler(8, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek forward by %d\n", 8);
@@ -179,7 +178,7 @@ readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
         }
         goto cleanup;
     }
-    if (read(fd, &header_end, sizeof(sas_header_end_t)) < sizeof(sas_header_end_t)) {
+    if (io->read_handler(&header_end, sizeof(sas_header_end_t), io->io_ctx) < sizeof(sas_header_end_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -189,7 +188,7 @@ readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
     } else {
         ctx->vendor = READSTAT_VENDOR_SAS;
     }
-    if (readstat_lseek(fd, ctx->header_size, SEEK_SET) == -1) {
+    if (io->seek_handler(ctx->header_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld\n", ctx->header_size);
@@ -201,4 +200,3 @@ readstat_error_t sas_read_header(int fd, sas_header_info_t *ctx,
 cleanup:
     return retval;
 }
-

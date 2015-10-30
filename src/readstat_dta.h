@@ -83,6 +83,7 @@ typedef struct dta_ctx_s {
     readstat_progress_handler progress_handler;
     size_t                    file_size;
     void                     *user_ctx;
+    readstat_io_t            *io;
 } dta_ctx_t;
 
 #define DTA_HILO  0x01
@@ -128,5 +129,5 @@ typedef struct dta_ctx_s {
 #define DTA_OLD_TYPE_CODE_FLOAT    'f'
 #define DTA_OLD_TYPE_CODE_DOUBLE   'd'
 
-dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, unsigned char ds_format);
+dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, unsigned char ds_format, readstat_io_t *io);
 void dta_ctx_free(dta_ctx_t *ctx);

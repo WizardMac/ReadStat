@@ -137,6 +137,38 @@ typedef int (*readstat_value_label_handler)(const char *val_labels,
 typedef void (*readstat_error_handler)(const char *error_message, void *ctx);
 typedef int (*readstat_progress_handler)(double progress, void *ctx);
 
+#if defined _WIN32 || defined __CYGWIN__
+typedef _off64_t readstat_off_t;
+#elif defined _AIX
+typedef off64_t readstat_off_t;
+#else
+typedef off_t readstat_off_t;
+#endif
+
+typedef enum readstat_io_flags_e {
+    READSTAT_SEEK_SET,
+    READSTAT_SEEK_CUR,
+    READSTAT_SEEK_END
+} readstat_io_flags_t;
+
+typedef int (*readstat_open_handler)(void *io_ctx);
+typedef int (*readstat_close_handler)(void *io_ctx);
+typedef readstat_off_t (*readstat_seek_handler)(readstat_off_t offset, readstat_io_flags_t whence, void *io_ctx);
+typedef ssize_t (*readstat_read_handler)(void *buf, size_t nbyte, void *io_ctx);
+typedef readstat_error_t (*readstat_update_handler)(long file_size, readstat_progress_handler progress_handler, void *user_ctx, void *io_ctx);
+
+typedef struct readstat_io_s {
+    readstat_open_handler          open_handler;
+    readstat_close_handler         close_handler;
+    readstat_seek_handler          seek_handler;
+    readstat_read_handler          read_handler;
+    readstat_update_handler        update_handler;
+    void                          *io_ctx;
+} readstat_io_t;
+
+readstat_io_t *readstat_io_init();
+void readstat_io_free(readstat_io_t *io);
+
 typedef struct readstat_parser_s {
     readstat_info_handler          info_handler;
     readstat_variable_handler      variable_handler;
@@ -158,11 +190,18 @@ readstat_error_t readstat_set_value_label_handler(readstat_parser_t *parser, rea
 readstat_error_t readstat_set_error_handler(readstat_parser_t *parser, readstat_error_handler error_handler);
 readstat_error_t readstat_set_progress_handler(readstat_parser_t *parser, readstat_progress_handler progress_handler);
 
-readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *filename, void *user_ctx);
-readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *filename, void *user_ctx);
-readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *filename, void *user_ctx);
-readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *filename, void *user_ctx);
-readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *filename, void *user_ctx);
+readstat_error_t readstat_set_open_handler(readstat_io_t *io, readstat_open_handler open_handler);
+readstat_error_t readstat_set_close_handler(readstat_io_t *io, readstat_close_handler close_handler);
+readstat_error_t readstat_set_seek_handler(readstat_io_t *io, readstat_seek_handler seek_handler);
+readstat_error_t readstat_set_read_handler(readstat_io_t *io, readstat_read_handler read_handler);
+readstat_error_t readstat_set_update_handler(readstat_io_t *io, readstat_update_handler update_handler);
+readstat_error_t readstat_set_io_ctx(readstat_io_t *io, void *io_ctx);
+
+readstat_error_t readstat_parse_dta(readstat_parser_t *parser, readstat_io_t *io, void *user_ctx);
+readstat_error_t readstat_parse_sav(readstat_parser_t *parser, readstat_io_t *io, void *user_ctx);
+readstat_error_t readstat_parse_por(readstat_parser_t *parser, readstat_io_t *io, void *user_ctx);
+readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, readstat_io_t *io, void *user_ctx);
+readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, readstat_io_t *io, void *user_ctx);
 
 
 /* Internal module callbacks */

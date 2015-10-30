@@ -6,9 +6,9 @@
 #include <unistd.h>
 
 #include "readstat_dta.h"
-#include "readstat_io.h"
 
-dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, unsigned char ds_format) {
+dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder,
+        unsigned char ds_format, readstat_io_t *io) {
     dta_ctx_t *ctx;
     if ((ctx = malloc(sizeof(dta_ctx_t))) == NULL) {
         return NULL;
@@ -143,6 +143,8 @@ dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder, uns
         dta_ctx_free(ctx);
         return NULL;
     }
+
+    ctx->io = io;
     
     return ctx;
 }
