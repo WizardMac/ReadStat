@@ -597,8 +597,9 @@ cleanup:
     return rs_retval;
 }
 
-readstat_error_t readstat_parse_por(readstat_parser_t *parser, readstat_io_t *io, void *user_ctx) {
+readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
+    readstat_io_t *io = parser->io;
     unsigned char reverse_lookup[256];
     char vanity[200];
     
@@ -615,7 +616,7 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, readstat_io_t *io
     ctx->user_ctx = user_ctx;
     ctx->io = io;
     
-    if (io->open_handler(io->io_ctx) == -1) {
+    if (io->open_handler(path, io->io_ctx) == -1) {
         free(ctx);
         return READSTAT_ERROR_OPEN;
     }

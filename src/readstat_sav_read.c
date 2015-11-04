@@ -1042,13 +1042,14 @@ cleanup:
     return retval;
 }
 
-readstat_error_t readstat_parse_sav(readstat_parser_t *parser, readstat_io_t *io, void *user_ctx) {
+readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
+    readstat_io_t *io = parser->io;
     sav_file_header_record_t header;
     sav_ctx_t *ctx = NULL;
     size_t file_size = 0;
     
-    if (io->open_handler(io->io_ctx) == -1) {
+    if (io->open_handler(path, io->io_ctx) == -1) {
         return READSTAT_ERROR_OPEN;
     }
 

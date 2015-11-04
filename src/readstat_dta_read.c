@@ -408,8 +408,9 @@ cleanup:
     return retval;
 }
 
-readstat_error_t readstat_parse_dta(readstat_parser_t *parser, readstat_io_t *io, void *user_ctx) {
+readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
+    readstat_io_t *io = parser->io;
     int i;
     size_t  record_len = 0;
     char *buf = NULL;
@@ -419,7 +420,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, readstat_io_t *io
     char *long_string = NULL;
     size_t file_size = 0;
 
-    if (io->open_handler(io->io_ctx) == -1) {
+    if (io->open_handler(path, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_OPEN;
         goto cleanup;
     }

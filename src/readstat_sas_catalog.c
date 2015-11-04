@@ -236,8 +236,9 @@ cleanup:
     return retval;
 }
 
-readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, readstat_io_t *io, void *user_ctx) {
+readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *path, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
+    readstat_io_t *io = parser->io;
     int64_t i;
     char *page = NULL;
     char *buffer = NULL;
@@ -251,7 +252,7 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, readstat_io_
     ctx->user_ctx = user_ctx;
     ctx->io = io;
 
-    if (io->open_handler(io->io_ctx) == -1) {
+    if (io->open_handler(path, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_OPEN;
         goto cleanup;
     }

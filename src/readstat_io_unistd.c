@@ -19,9 +19,8 @@
 #endif
 
 
-int unistd_open_handler(void *io_ctx) {
-    const char *filename = ((unistd_io_ctx_t*) io_ctx)->filename;
-    int fd = open(filename, UNISTD_OPEN_OPTIONS);
+int unistd_open_handler(const char *path, void *io_ctx) {
+    int fd = open(path, UNISTD_OPEN_OPTIONS);
     ((unistd_io_ctx_t*) io_ctx)->fd = fd;
     return fd;
 }
@@ -76,25 +75,14 @@ readstat_error_t unistd_update_handler(long file_size,
     return READSTAT_OK;
 }
 
-readstat_io_t *unistd_io_init(const char *filename) {
+void unistd_io_init(readstat_parser_t *parser) {
+    readstat_set_open_handler(parser, unistd_open_handler);
+    readstat_set_close_handler(parser, unistd_close_handler);
+    readstat_set_seek_handler(parser, unistd_seek_handler);
+    readstat_set_read_handler(parser, unistd_read_handler);
+    readstat_set_update_handler(parser, unistd_update_handler);
+
     unistd_io_ctx_t *io_ctx = calloc(1, sizeof(unistd_io_ctx_t));
-    io_ctx->filename = filename;
     io_ctx->fd = -1;
-
-    readstat_io_t *io = readstat_io_init();
-    readstat_set_open_handler(io, unistd_open_handler);
-    readstat_set_close_handler(io, unistd_close_handler);
-    readstat_set_seek_handler(io, unistd_seek_handler);
-    readstat_set_read_handler(io, unistd_read_handler);
-    readstat_set_update_handler(io, unistd_update_handler);
-    readstat_set_io_ctx(io, (void*) io_ctx);
-
-    return io;
-}
-
-void unistd_io_free(readstat_io_t *io) {
-    if (io) {
-        free(io->io_ctx);
-        free(io);
-    }
+    readstat_set_io_ctx(parser, (void*) io_ctx);
 }
