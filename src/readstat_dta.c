@@ -7,13 +7,24 @@
 
 #include "readstat_dta.h"
 
-dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder,
-        unsigned char ds_format, readstat_io_t *io) {
+dta_ctx_t *dta_ctx_preinit(readstat_io_t *io) {
     dta_ctx_t *ctx;
     if ((ctx = malloc(sizeof(dta_ctx_t))) == NULL) {
         return NULL;
     }
     memset(ctx, 0, sizeof(dta_ctx_t));
+
+    ctx->io = io;
+    ctx->initialized = 0;
+
+    return ctx;
+}
+
+dta_ctx_t *dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
+        unsigned char byteorder, unsigned char ds_format) {
+    if (ctx == NULL) {
+        ctx = dta_ctx_preinit(NULL);
+    }
 
     int machine_byteorder = DTA_HILO;
     if (machine_is_little_endian()) {
@@ -144,7 +155,7 @@ dta_ctx_t *dta_ctx_init(int16_t nvar, int32_t nobs, unsigned char byteorder,
         return NULL;
     }
 
-    ctx->io = io;
+    ctx->initialized = 1;
     
     return ctx;
 }
