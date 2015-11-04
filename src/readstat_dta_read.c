@@ -18,7 +18,7 @@ static readstat_error_t dta_skip_expansion_fields(dta_ctx_t *ctx);
 
 static readstat_error_t dta_update_progress(dta_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
-    return io->update_handler(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
+    return io->update(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
 }
 
 static inline readstat_types_t dta_type_info(uint16_t typecode, size_t *max_len, dta_ctx_t *ctx) {
@@ -114,7 +114,7 @@ static readstat_error_t dta_read_map(dta_ctx_t *ctx) {
 
     uint64_t map_buffer[14];
 
-    if (io->read_handler(map_buffer, sizeof(map_buffer), io->io_ctx) != sizeof(map_buffer)) {
+    if (io->read(map_buffer, sizeof(map_buffer), io->io_ctx) != sizeof(map_buffer)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -138,7 +138,7 @@ static readstat_error_t dta_read_descriptors(dta_ctx_t *ctx) {
 
     size_t buffer_len = ctx->nvar * ctx->typlist_entry_len;
     unsigned char *buffer = malloc(buffer_len);
-    if (io->read_handler(buffer, buffer_len, io->io_ctx) != buffer_len) {
+    if (io->read(buffer, buffer_len, io->io_ctx) != buffer_len) {
         free(buffer);
         return -1;
     }
@@ -161,27 +161,27 @@ static readstat_error_t dta_read_descriptors(dta_ctx_t *ctx) {
         return -1;
 
     if (dta_read_tag(io, ctx, "<varnames>") != READSTAT_OK ||
-            io->read_handler(ctx->varlist, ctx->varlist_len, io->io_ctx) != ctx->varlist_len ||
+            io->read(ctx->varlist, ctx->varlist_len, io->io_ctx) != ctx->varlist_len ||
             dta_read_tag(io, ctx, "</varnames>") != READSTAT_OK)
         return -1;
 
     if (dta_read_tag(io, ctx, "<sortlist>") != READSTAT_OK ||
-            io->read_handler(ctx->srtlist, ctx->srtlist_len, io->io_ctx) != ctx->srtlist_len ||
+            io->read(ctx->srtlist, ctx->srtlist_len, io->io_ctx) != ctx->srtlist_len ||
             dta_read_tag(io, ctx, "</sortlist>") != READSTAT_OK)
         return -1;
 
     if (dta_read_tag(io, ctx, "<formats>") != READSTAT_OK ||
-            io->read_handler(ctx->fmtlist, ctx->fmtlist_len, io->io_ctx) != ctx->fmtlist_len ||
+            io->read(ctx->fmtlist, ctx->fmtlist_len, io->io_ctx) != ctx->fmtlist_len ||
             dta_read_tag(io, ctx, "</formats>") != READSTAT_OK)
         return -1;
 
     if (dta_read_tag(io, ctx, "<value_label_names>") != READSTAT_OK ||
-            io->read_handler(ctx->lbllist, ctx->lbllist_len, io->io_ctx) != ctx->lbllist_len ||
+            io->read(ctx->lbllist, ctx->lbllist_len, io->io_ctx) != ctx->lbllist_len ||
             dta_read_tag(io, ctx, "</value_label_names>") != READSTAT_OK)
         return -1;
 
     if (dta_read_tag(io, ctx, "<variable_labels>") != READSTAT_OK ||
-            io->read_handler(ctx->variable_labels, ctx->variable_labels_len, io->io_ctx) != ctx->variable_labels_len ||
+            io->read(ctx->variable_labels, ctx->variable_labels_len, io->io_ctx) != ctx->variable_labels_len ||
             dta_read_tag(io, ctx, "</variable_labels>") != READSTAT_OK)
         return -1;
 
@@ -191,7 +191,7 @@ static readstat_error_t dta_read_descriptors(dta_ctx_t *ctx) {
 static readstat_error_t dta_skip_expansion_fields(dta_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
     if (ctx->file_is_xmlish) {
-        if (io->seek_handler(ctx->data_offset, READSTAT_SEEK_SET, io->io_ctx) == -1)
+        if (io->seek(ctx->data_offset, READSTAT_SEEK_SET, io->io_ctx) == -1)
             return READSTAT_ERROR_SEEK;
 
         return READSTAT_OK;
@@ -204,7 +204,7 @@ static readstat_error_t dta_skip_expansion_fields(dta_ctx_t *ctx) {
         char data_type;
         if (ctx->expansion_len_len == 2) {
             dta_short_expansion_field_t  expansion_field;
-            if (io->read_handler(&expansion_field, sizeof(expansion_field), io->io_ctx) != sizeof(expansion_field))
+            if (io->read(&expansion_field, sizeof(expansion_field), io->io_ctx) != sizeof(expansion_field))
                 return READSTAT_ERROR_READ;
 
             if (ctx->machine_needs_byte_swap) {
@@ -216,7 +216,7 @@ static readstat_error_t dta_skip_expansion_fields(dta_ctx_t *ctx) {
             data_type = expansion_field.data_type;
         } else {
             dta_expansion_field_t  expansion_field;
-            if (io->read_handler(&expansion_field, sizeof(expansion_field), io->io_ctx) != sizeof(expansion_field))
+            if (io->read(&expansion_field, sizeof(expansion_field), io->io_ctx) != sizeof(expansion_field))
                 return READSTAT_ERROR_READ;
             
             if (ctx->machine_needs_byte_swap) {
@@ -234,7 +234,7 @@ static readstat_error_t dta_skip_expansion_fields(dta_ctx_t *ctx) {
         if (data_type != 1)
             return READSTAT_ERROR_PARSE;
 
-        if (io->seek_handler(len, READSTAT_SEEK_CUR, io->io_ctx) == -1)
+        if (io->seek(len, READSTAT_SEEK_CUR, io->io_ctx) == -1)
             return READSTAT_ERROR_SEEK;
     }
 
@@ -248,7 +248,7 @@ static readstat_error_t dta_read_tag(readstat_io_t *io, dta_ctx_t *ctx, const ch
 
     char buffer[256];
     size_t len = strlen(tag);
-    if (io->read_handler(buffer, len, io->io_ctx) != len) {
+    if (io->read(buffer, len, io->io_ctx) != len) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -263,7 +263,7 @@ cleanup:
 static readstat_error_t dta_read_long_string(dta_ctx_t *ctx, int v, int o, char **long_string_out) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
-    if (io->seek_handler(ctx->strls_offset, READSTAT_SEEK_SET, io->io_ctx) != ctx->strls_offset) {
+    if (io->seek(ctx->strls_offset, READSTAT_SEEK_SET, io->io_ctx) != ctx->strls_offset) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
@@ -275,7 +275,7 @@ static readstat_error_t dta_read_long_string(dta_ctx_t *ctx, int v, int o, char 
     dta_gso_header_t header;
 
     while (1) {
-        if (io->read_handler(&header, sizeof(dta_gso_header_t), io->io_ctx) != sizeof(dta_gso_header_t)) {
+        if (io->read(&header, sizeof(dta_gso_header_t), io->io_ctx) != sizeof(dta_gso_header_t)) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
@@ -295,7 +295,7 @@ static readstat_error_t dta_read_long_string(dta_ctx_t *ctx, int v, int o, char 
                 *long_string_out = NULL;
             } else if (header.t == DTA_GSO_TYPE_ASCII) {
                 char *string_buf = malloc(header.len);
-                if (io->read_handler(string_buf, header.len, io->io_ctx) != header.len) {
+                if (io->read(string_buf, header.len, io->io_ctx) != header.len) {
                     free(string_buf);
                     retval = READSTAT_ERROR_READ;
                     goto cleanup;
@@ -312,7 +312,7 @@ static readstat_error_t dta_read_long_string(dta_ctx_t *ctx, int v, int o, char 
             }
             break;
         } else {
-            if (io->seek_handler(header.len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+            if (io->seek(header.len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
                 retval = READSTAT_ERROR_SEEK;
                 goto cleanup;
             }
@@ -337,7 +337,7 @@ static readstat_error_t dta_read_xmlish_preamble(readstat_io_t *io, dta_ctx_t *c
     if ((retval = dta_read_tag(io, ctx, "<release>")) != READSTAT_OK) {
         goto cleanup;
     }
-    if (io->read_handler(ds_format, sizeof(ds_format), io->io_ctx) != sizeof(ds_format)) {
+    if (io->read(ds_format, sizeof(ds_format), io->io_ctx) != sizeof(ds_format)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -352,7 +352,7 @@ static readstat_error_t dta_read_xmlish_preamble(readstat_io_t *io, dta_ctx_t *c
     if ((retval = dta_read_tag(io, ctx, "<byteorder>")) != READSTAT_OK) {
         goto cleanup;
     }
-    if (io->read_handler(byteorder, sizeof(byteorder), io->io_ctx) != sizeof(byteorder)) {
+    if (io->read(byteorder, sizeof(byteorder), io->io_ctx) != sizeof(byteorder)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -371,7 +371,7 @@ static readstat_error_t dta_read_xmlish_preamble(readstat_io_t *io, dta_ctx_t *c
     if ((retval = dta_read_tag(io, ctx, "<K>")) != READSTAT_OK) {
         goto cleanup;
     }
-    if (io->read_handler(&header->nvar, sizeof(int16_t), io->io_ctx) != sizeof(int16_t)) {
+    if (io->read(&header->nvar, sizeof(int16_t), io->io_ctx) != sizeof(int16_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -382,19 +382,19 @@ static readstat_error_t dta_read_xmlish_preamble(readstat_io_t *io, dta_ctx_t *c
     if ((retval = dta_read_tag(io, ctx, "<N>")) != READSTAT_OK) {
         goto cleanup;
     }
-    if (io->read_handler(&header->nobs, sizeof(int32_t), io->io_ctx) != sizeof(int32_t)) {
+    if (io->read(&header->nobs, sizeof(int32_t), io->io_ctx) != sizeof(int32_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
     if (header->ds_format >= 118) {
         /* Only support files < 4 billion rows for now */
         if (header->byteorder == DTA_HILO) {
-            if (io->read_handler(&header->nobs, sizeof(int32_t), io->io_ctx) != sizeof(int32_t)) {
+            if (io->read(&header->nobs, sizeof(int32_t), io->io_ctx) != sizeof(int32_t)) {
                 retval = READSTAT_ERROR_READ;
                 goto cleanup;
             }
         } else {
-            if (io->seek_handler(4, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+            if (io->seek(4, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
                 retval = READSTAT_ERROR_SEEK;
                 goto cleanup;
             }
@@ -420,24 +420,24 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     char *long_string = NULL;
     size_t file_size = 0;
 
-    if (io->open_handler(path, io->io_ctx) == -1) {
+    if (io->open(path, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_OPEN;
         goto cleanup;
     }
 
     char magic[4];
-    if (io->read_handler(magic, 4, io->io_ctx) != 4) {
+    if (io->read(magic, 4, io->io_ctx) != 4) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
 
-    file_size = io->seek_handler(0, READSTAT_SEEK_END, io->io_ctx);
+    file_size = io->seek(0, READSTAT_SEEK_END, io->io_ctx);
     if (file_size == -1) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
 
-    if (io->seek_handler(0, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+    if (io->seek(0, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
@@ -445,7 +445,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     if (strncmp(magic, "<sta", 4) == 0) {
         retval = dta_read_xmlish_preamble(io, ctx, &header);
     } else {
-        if (io->read_handler(&header, sizeof(header), io->io_ctx) != sizeof(header)) {
+        if (io->read(&header, sizeof(header), io->io_ctx) != sizeof(header)) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
@@ -480,21 +480,21 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
         }
         
         if (ctx->data_label_len_len == 2) {
-            if (io->read_handler(&label_len, sizeof(uint16_t), io->io_ctx) != sizeof(uint16_t)) {
+            if (io->read(&label_len, sizeof(uint16_t), io->io_ctx) != sizeof(uint16_t)) {
                 retval = READSTAT_ERROR_READ;
                 goto cleanup;
             }
             label_len = ctx->machine_needs_byte_swap ? byteswap2(label_len) : label_len;
         } else if (ctx->data_label_len_len == 1) {
             unsigned char label_len_char;
-            if (io->read_handler(&label_len_char, sizeof(unsigned char), io->io_ctx) != sizeof(unsigned char)) {
+            if (io->read(&label_len_char, sizeof(unsigned char), io->io_ctx) != sizeof(unsigned char)) {
                 retval = READSTAT_ERROR_READ;
                 goto cleanup;
             }
             label_len = label_len_char;
         }
         
-        if (io->seek_handler(label_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+        if (io->seek(label_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
@@ -507,12 +507,12 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
             goto cleanup;
         }
         
-        if (io->read_handler(&timestamp_len, 1, io->io_ctx) != 1) {
+        if (io->read(&timestamp_len, 1, io->io_ctx) != 1) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
         
-        if (io->seek_handler(timestamp_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+        if (io->seek(timestamp_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
@@ -521,13 +521,13 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
             goto cleanup;
         }
     } else {
-        if (io->seek_handler(ctx->data_label_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+        if (io->seek(ctx->data_label_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
         
         if (ctx->time_stamp_len) {
-            if (io->seek_handler(ctx->time_stamp_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+            if (io->seek(ctx->time_stamp_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
                 retval = READSTAT_ERROR_SEEK;
                 goto cleanup;
             }
@@ -599,7 +599,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     }
 
     for (i=0; i<ctx->nobs; i++) {
-        if (io->read_handler(buf, record_len, io->io_ctx) != record_len) {
+        if (io->read(buf, record_len, io->io_ctx) != record_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
@@ -624,7 +624,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
                     o = byteswap4(o);
                 }
                 if (v > 0 && o > 0) {
-                    off_t cur_pos = io->seek_handler(0, READSTAT_SEEK_CUR, io->io_ctx);
+                    off_t cur_pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                     if (cur_pos == -1) {
                         retval = READSTAT_ERROR_SEEK;
                         goto cleanup;
@@ -634,7 +634,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
                         goto cleanup;
                     }
                     value.v.string_value = long_string;
-                    if (io->seek_handler(cur_pos, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+                    if (io->seek(cur_pos, READSTAT_SEEK_SET, io->io_ctx) == -1) {
                         retval = READSTAT_ERROR_SEEK;
                         goto cleanup;
                     }
@@ -737,7 +737,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     }
 
     if (ctx->file_is_xmlish) {
-        if (io->seek_handler(ctx->value_labels_offset, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+        if (io->seek(ctx->value_labels_offset, READSTAT_SEEK_SET, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
@@ -755,7 +755,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
 
             if (ctx->value_label_table_len_len == 2) {
                 int16_t table_header_len;
-                if (io->read_handler(&table_header_len, sizeof(int16_t), io->io_ctx) < sizeof(int16_t))
+                if (io->read(&table_header_len, sizeof(int16_t), io->io_ctx) < sizeof(int16_t))
                     break;
 
                 n = table_header_len;
@@ -770,7 +770,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
                 }
 
                 int32_t table_header_len;
-                if (io->read_handler(&table_header_len, sizeof(int32_t), io->io_ctx) < sizeof(int32_t))
+                if (io->read(&table_header_len, sizeof(int32_t), io->io_ctx) < sizeof(int32_t))
                     break;
 
                 len = table_header_len;
@@ -779,10 +779,10 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
                     len = byteswap4(table_header_len);
             }
                 
-            if (io->read_handler(labname, ctx->value_label_table_labname_len, io->io_ctx) < ctx->value_label_table_labname_len)
+            if (io->read(labname, ctx->value_label_table_labname_len, io->io_ctx) < ctx->value_label_table_labname_len)
                 break;
 
-            if (io->seek_handler(ctx->value_label_table_padding_len, READSTAT_SEEK_CUR, io->io_ctx) == -1)
+            if (io->seek(ctx->value_label_table_padding_len, READSTAT_SEEK_CUR, io->io_ctx) == -1)
                 break;
 
             if ((table_buffer = malloc(len)) == NULL) {
@@ -790,7 +790,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
                 goto cleanup;
             }
 
-            if (io->read_handler(table_buffer, len, io->io_ctx) < len) {
+            if (io->read(table_buffer, len, io->io_ctx) < len) {
                 free(table_buffer);
                 break;
             }
@@ -861,7 +861,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
 
 
 cleanup:
-    io->close_handler(io->io_ctx);
+    io->close(io->io_ctx);
     if (ctx)
         dta_ctx_free(ctx);
     if (buf)

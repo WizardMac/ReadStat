@@ -158,11 +158,11 @@ typedef ssize_t (*readstat_read_handler)(void *buf, size_t nbyte, void *io_ctx);
 typedef readstat_error_t (*readstat_update_handler)(long file_size, readstat_progress_handler progress_handler, void *user_ctx, void *io_ctx);
 
 typedef struct readstat_io_s {
-    readstat_open_handler          open_handler;
-    readstat_close_handler         close_handler;
-    readstat_seek_handler          seek_handler;
-    readstat_read_handler          read_handler;
-    readstat_update_handler        update_handler;
+    readstat_open_handler          open;
+    readstat_close_handler         close;
+    readstat_seek_handler          seek;
+    readstat_read_handler          read;
+    readstat_update_handler        update;
     void                          *io_ctx;
 } readstat_io_t;
 

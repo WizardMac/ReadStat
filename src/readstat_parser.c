@@ -61,27 +61,27 @@ readstat_error_t readstat_set_fweight_handler(readstat_parser_t *parser, readsta
 }
 
 readstat_error_t readstat_set_open_handler(readstat_parser_t *parser, readstat_open_handler open_handler) {
-    parser->io->open_handler = open_handler;
+    parser->io->open = open_handler;
     return READSTAT_OK;
 }
 
 readstat_error_t readstat_set_close_handler(readstat_parser_t *parser, readstat_close_handler close_handler) {
-    parser->io->close_handler = close_handler;
+    parser->io->close = close_handler;
     return READSTAT_OK;
 }
 
 readstat_error_t readstat_set_seek_handler(readstat_parser_t *parser, readstat_seek_handler seek_handler) {
-    parser->io->seek_handler = seek_handler;
+    parser->io->seek = seek_handler;
     return READSTAT_OK;
 }
 
 readstat_error_t readstat_set_read_handler(readstat_parser_t *parser, readstat_read_handler read_handler) {
-    parser->io->read_handler = read_handler;
+    parser->io->read = read_handler;
     return READSTAT_OK;
 }
 
 readstat_error_t readstat_set_update_handler(readstat_parser_t *parser, readstat_update_handler update_handler) {
-    parser->io->update_handler = update_handler;
+    parser->io->update = update_handler;
     return READSTAT_OK;
 }
 

@@ -102,18 +102,18 @@ static void por_ctx_free(readstat_por_ctx_t *ctx) {
 
 static readstat_error_t por_update_progress(readstat_por_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
-    return io->update_handler(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
+    return io->update(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
 }
 
 static int skip_newline(readstat_io_t *io) {
     char newline[1];
     
-    if (io->read_handler(newline, sizeof(newline), io->io_ctx) != sizeof(newline)) {
+    if (io->read(newline, sizeof(newline), io->io_ctx) != sizeof(newline)) {
         return -1;
     }
     
     if (newline[0] == '\r') {
-        if (io->read_handler(newline, sizeof(newline), io->io_ctx) != sizeof(newline)) {
+        if (io->read(newline, sizeof(newline), io->io_ctx) != sizeof(newline)) {
             return -1;
         }
     }
@@ -132,7 +132,7 @@ static int read_bytes(readstat_por_ctx_t *ctx, void *dst, size_t len) {
 
     while (bytes_left > POR_LINE_LENGTH - ctx->pos) {
         int line_len = POR_LINE_LENGTH - ctx->pos;
-        if (io->read_handler(buf, line_len, io->io_ctx) == -1)
+        if (io->read(buf, line_len, io->io_ctx) == -1)
             return -1;
         
         for (i=0; i<line_len; i++) {
@@ -142,7 +142,7 @@ static int read_bytes(readstat_por_ctx_t *ctx, void *dst, size_t len) {
         }
         for (; i<line_len; i++) {
             buf[i] = ctx->space;
-            if (io->seek_handler(-1, READSTAT_SEEK_CUR, io->io_ctx) == -1)
+            if (io->seek(-1, READSTAT_SEEK_CUR, io->io_ctx) == -1)
                 return -1;
         }
         if (skip_newline(ctx->io) == -1)
@@ -156,7 +156,7 @@ static int read_bytes(readstat_por_ctx_t *ctx, void *dst, size_t len) {
         bytes_left -= line_len;
     }
     if (bytes_left) {
-        if (io->read_handler(buf, bytes_left, io->io_ctx) == -1)
+        if (io->read(buf, bytes_left, io->io_ctx) == -1)
             return -1;
         
         for (i=0; i<bytes_left; i++) {
@@ -171,7 +171,7 @@ static int read_bytes(readstat_por_ctx_t *ctx, void *dst, size_t len) {
         }
         for (; i<bytes_left; i++) {
             buf[i] = ctx->space;
-            if (io->seek_handler(-1, READSTAT_SEEK_CUR, io->io_ctx) == -1)
+            if (io->seek(-1, READSTAT_SEEK_CUR, io->io_ctx) == -1)
                 return -1;
         }
         memcpy((char *)dst + offset, buf, bytes_left);
@@ -616,17 +616,17 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
     ctx->user_ctx = user_ctx;
     ctx->io = io;
     
-    if (io->open_handler(path, io->io_ctx) == -1) {
+    if (io->open(path, io->io_ctx) == -1) {
         free(ctx);
         return READSTAT_ERROR_OPEN;
     }
 
-    if ((ctx->file_size = io->seek_handler(0, READSTAT_SEEK_END, io->io_ctx)) == -1) {
+    if ((ctx->file_size = io->seek(0, READSTAT_SEEK_END, io->io_ctx)) == -1) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
 
-    if (io->seek_handler(0, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+    if (io->seek(0, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
@@ -802,7 +802,7 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
     }
     
 cleanup:
-    io->close_handler(io->io_ctx);
+    io->close(io->io_ctx);
     por_ctx_free(ctx);
     
     return retval;

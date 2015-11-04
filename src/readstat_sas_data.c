@@ -137,7 +137,7 @@ static void sas_ctx_free(sas_ctx_t *ctx) {
 
 static readstat_error_t sas_update_progress(sas_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
-    return io->update_handler(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
+    return io->update(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
 }
 
 static readstat_error_t sas_parse_column_text_subheader(const char *subheader, size_t len, sas_ctx_t *ctx) {
@@ -772,7 +772,7 @@ static readstat_error_t parse_meta_pages_pass1(sas_ctx_t *ctx, int64_t *outLastE
 
     /* look for META and MIX pages at beginning... */
     for (i=0; i<ctx->page_count; i++) {
-        if (io->seek_handler(ctx->header_size + i*ctx->page_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+        if (io->seek(ctx->header_size + i*ctx->page_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             if (ctx->error_handler) {
                 snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld (= %lld + %lld*%lld)",
@@ -789,7 +789,7 @@ static readstat_error_t parse_meta_pages_pass1(sas_ctx_t *ctx, int64_t *outLastE
         size_t head_len = off + 16 + 2;
         size_t tail_len = ctx->page_size - head_len;
 
-        if (io->read_handler(page, head_len, io->io_ctx) < head_len) {
+        if (io->read(page, head_len, io->io_ctx) < head_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
@@ -801,14 +801,14 @@ static readstat_error_t parse_meta_pages_pass1(sas_ctx_t *ctx, int64_t *outLastE
         if ((page_type & SAS_PAGE_TYPE_COMP))
             continue;
 
-        if (io->read_handler(page + head_len, tail_len, io->io_ctx) < tail_len) {
+        if (io->read(page + head_len, tail_len, io->io_ctx) < tail_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
         if ((retval = sas_parse_page_pass1(page, ctx->page_size, ctx)) != READSTAT_OK) {
             if (ctx->error_handler) {
-                int64_t pos = io->seek_handler(0, READSTAT_SEEK_CUR, io->io_ctx);
+                int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(error_buf, sizeof(error_buf), 
                         "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
                         i, pos - ctx->page_size, pos-1);
@@ -836,7 +836,7 @@ static readstat_error_t parse_amd_pages_pass1(int64_t last_examined_page_pass1, 
 
     /* ...then AMD pages at the end */
     for (i=ctx->page_count-1; i>last_examined_page_pass1; i--) {
-        if (io->seek_handler(ctx->header_size + i*ctx->page_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+        if (io->seek(ctx->header_size + i*ctx->page_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             if (ctx->error_handler) {
                 snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld (= %lld + %lld*%lld)",
@@ -853,7 +853,7 @@ static readstat_error_t parse_amd_pages_pass1(int64_t last_examined_page_pass1, 
         size_t head_len = off + 16 + 2;
         size_t tail_len = ctx->page_size - head_len;
 
-        if (io->read_handler(page, head_len, io->io_ctx) < head_len) {
+        if (io->read(page, head_len, io->io_ctx) < head_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
@@ -865,14 +865,14 @@ static readstat_error_t parse_amd_pages_pass1(int64_t last_examined_page_pass1, 
         if ((page_type & SAS_PAGE_TYPE_COMP))
             continue;
 
-        if (io->read_handler(page + head_len, tail_len, io->io_ctx) < tail_len) {
+        if (io->read(page + head_len, tail_len, io->io_ctx) < tail_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
         if ((retval = sas_parse_page_pass1(page, ctx->page_size, ctx)) != READSTAT_OK) {
             if (ctx->error_handler) {
-                int64_t pos = io->seek_handler(0, READSTAT_SEEK_CUR, io->io_ctx);
+                int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(error_buf, sizeof(error_buf), 
                         "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
                         i, pos - ctx->page_size, pos-1);
@@ -900,14 +900,14 @@ static readstat_error_t parse_all_pages_pass2(sas_ctx_t *ctx) {
         if ((retval = sas_update_progress(ctx)) != READSTAT_OK) {
             goto cleanup;
         }
-        if (io->read_handler(page, ctx->page_size, io->io_ctx) < ctx->page_size) {
+        if (io->read(page, ctx->page_size, io->io_ctx) < ctx->page_size) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
         if ((retval = sas_parse_page_pass2(page, ctx->page_size, ctx)) != READSTAT_OK) {
             if (ctx->error_handler) {
-                int64_t pos = io->seek_handler(0, READSTAT_SEEK_CUR, io->io_ctx);
+                int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(error_buf, sizeof(error_buf), 
                         "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
                         i, pos - ctx->page_size, pos-1);
@@ -940,12 +940,12 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->user_ctx = user_ctx;
     ctx->io = parser->io;
 
-    if (io->open_handler(path, io->io_ctx) == -1) {
+    if (io->open(path, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_OPEN;
         goto cleanup;
     }
 
-    if ((ctx->file_size = io->seek_handler(0, READSTAT_SEEK_END, io->io_ctx)) == -1) {
+    if ((ctx->file_size = io->seek(0, READSTAT_SEEK_END, io->io_ctx)) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to end of file\n");
@@ -954,7 +954,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if (io->seek_handler(0, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+    if (io->seek(0, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to beginning of file\n");
@@ -993,7 +993,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if (io->seek_handler(ctx->header_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+    if (io->seek(ctx->header_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %lld\n", ctx->header_size);
@@ -1028,13 +1028,13 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     }
 
     char test;
-    if (io->read_handler(&test, 1, io->io_ctx) == 1) {
+    if (io->read(&test, 1, io->io_ctx) == 1) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
 
 cleanup:
-    io->close_handler(io->io_ctx);
+    io->close(io->io_ctx);
 
     if (retval == READSTAT_ERROR_OPEN ||
             retval == READSTAT_ERROR_READ ||
