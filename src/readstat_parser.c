@@ -90,12 +90,17 @@ readstat_error_t readstat_set_io_ctx(readstat_parser_t *parser, void *io_ctx) {
 
 rdata_parser_t *rdata_parser_init() {
     rdata_parser_t *parser = calloc(1, sizeof(rdata_parser_t));
+    parser->io = calloc(1, sizeof(readstat_io_t));
+    unistd_io_init_rdata(parser);
     return parser;
 }
 
 void rdata_parser_free(rdata_parser_t *parser) {
-    if (parser)
+    if (parser) {
+        if (parser->io)
+            free(parser->io);
         free(parser);
+    }
 }
 
 readstat_error_t rdata_set_table_handler(rdata_parser_t *parser, rdata_table_handler table_handler) {
@@ -125,5 +130,40 @@ readstat_error_t rdata_set_value_label_handler(rdata_parser_t *parser, rdata_tex
 
 readstat_error_t rdata_set_error_handler(rdata_parser_t *parser, readstat_error_handler error_handler) {
     parser->error_handler = error_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t rdata_set_open_handler(rdata_parser_t *parser, readstat_open_handler open_handler) {
+    parser->io->open = open_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t rdata_set_close_handler(rdata_parser_t *parser, readstat_close_handler close_handler) {
+    parser->io->close = close_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t rdata_set_seek_handler(rdata_parser_t *parser, readstat_seek_handler seek_handler) {
+    parser->io->seek = seek_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t rdata_set_read_handler(rdata_parser_t *parser, readstat_read_handler read_handler) {
+    parser->io->read = read_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t rdata_set_update_handler(rdata_parser_t *parser, readstat_update_handler update_handler) {
+    parser->io->update = update_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t rdata_set_io_ctx(rdata_parser_t *parser, void *io_ctx) {
+    if (!parser->io->external_io)
+        free(parser->io->io_ctx);
+
+    parser->io->io_ctx = io_ctx;
+    parser->io->external_io = 1;
+
     return READSTAT_OK;
 }

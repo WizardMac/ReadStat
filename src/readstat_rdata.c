@@ -10,7 +10,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <math.h>
 #include <zlib.h>
@@ -20,7 +19,6 @@
 #endif
 
 #include "readstat_rdata.h"
-#include "readstat_io.h"
 
 #define RDATA_ATOM_LEN 128
 
@@ -45,7 +43,7 @@ typedef struct rdata_ctx_s {
 #endif
     z_stream                    *z_strm;
     unsigned char               *strm_buffer;
-    int                          fd;
+    readstat_io_t               *io;
     size_t                       bytes_read;
     
     rdata_atom_table_t          *atom_table;
@@ -103,7 +101,7 @@ static ssize_t read_st_z(rdata_ctx_t *ctx, void *buffer, size_t len) {
 
         if (ctx->z_strm->avail_in == 0) {
             int bytes_read = 0;
-            bytes_read = read(ctx->fd, ctx->strm_buffer, STREAM_BUFFER_SIZE);
+            bytes_read = ctx->io->read(ctx->strm_buffer, STREAM_BUFFER_SIZE, ctx->io->io_ctx);
             if (bytes_read < 0) {
                 error = bytes_read;
                 break;
@@ -149,7 +147,7 @@ static ssize_t read_st_lzma(rdata_ctx_t *ctx, void *buffer, size_t len) {
 
         if (ctx->lzma_strm->avail_in == 0) {
             int bytes_read = 0;
-            bytes_read = read(ctx->fd, ctx->strm_buffer, STREAM_BUFFER_SIZE);
+            bytes_read = ctx->io->read(ctx->strm_buffer, STREAM_BUFFER_SIZE, ctx->io->io_ctx);
             if (bytes_read < 0) {
                 error = bytes_read;
                 break;
@@ -182,7 +180,7 @@ static ssize_t read_st(rdata_ctx_t *ctx, void *buffer, size_t len) {
     if (ctx->z_strm) {
         bytes_read = read_st_z(ctx, buffer, len);
     } else {
-        bytes_read = read(ctx->fd, buffer, len);
+        bytes_read = ctx->io->read(buffer, len, ctx->io->io_ctx);
     }
 
     if (bytes_read > 0) {
@@ -206,14 +204,14 @@ static int lseek_st(rdata_ctx_t *ctx, size_t len) {
         return retval;
     }
 
-    return readstat_lseek(ctx->fd, len, SEEK_CUR);
+    return ctx->io->seek(len, SEEK_CUR, ctx->io->io_ctx);
 }
 
 static readstat_error_t init_z_stream(rdata_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     ctx->z_strm = calloc(1, sizeof(z_stream));
     ctx->strm_buffer = malloc(STREAM_BUFFER_SIZE);
-    int bytes_read = read(ctx->fd, ctx->strm_buffer, STREAM_BUFFER_SIZE);
+    int bytes_read = ctx->io->read(ctx->strm_buffer, STREAM_BUFFER_SIZE, ctx->io->io_ctx);
     if (bytes_read <= 0) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
@@ -239,7 +237,7 @@ static readstat_error_t init_lzma_stream(rdata_ctx_t *ctx) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
-    int bytes_read = read(ctx->fd, ctx->strm_buffer, STREAM_BUFFER_SIZE);
+    int bytes_read = ctx->io->read(ctx->strm_buffer, STREAM_BUFFER_SIZE, ctx->io->io_ctx);
     if (bytes_read <= 0) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
@@ -256,12 +254,12 @@ static readstat_error_t init_stream(rdata_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     char header[5];
     
-    if (read(ctx->fd, &header, sizeof(header)) != sizeof(header)) {
+    if (ctx->io->read(&header, sizeof(header), ctx->io->io_ctx) != sizeof(header)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
 
-    if (readstat_lseek(ctx->fd, 0, SEEK_SET) == -1) {
+    if (ctx->io->seek(0, SEEK_SET, ctx->io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
@@ -293,14 +291,14 @@ static readstat_error_t reset_stream(rdata_ctx_t *ctx) {
     }
 #endif
 
-    if (readstat_lseek(ctx->fd, 0, SEEK_SET) == -1) {
+    if (ctx->io->seek(0, SEEK_SET, ctx->io->io_ctx) == -1) {
         return READSTAT_ERROR_SEEK;
     }
     return init_stream(ctx);
 }
 
-rdata_ctx_t *init_rdata_ctx(const char *filename) {
-    int fd = readstat_open(filename);
+rdata_ctx_t *rdata_ctx_init(readstat_io_t *io, const char *filename) {
+    int fd = io->open(filename, io->io_ctx);
     if (fd == -1) {
         return NULL;
     }
@@ -317,13 +315,14 @@ rdata_ctx_t *init_rdata_ctx(const char *filename) {
         ctx->machine_needs_byteswap = 1;
     }
 
-    ctx->fd = fd;
+    ctx->io = io;
     
     return ctx;
 }
 
 void free_rdata_ctx(rdata_ctx_t *ctx) {
-    readstat_close(ctx->fd);
+    if (ctx->io)
+        ctx->io->close(ctx->io->io_ctx);
     free(ctx->atom_table);
 #ifdef HAVE_LZMA
     if (ctx->lzma_strm) {
@@ -345,7 +344,7 @@ readstat_error_t rdata_parse(rdata_parser_t *parser, const char *filename, void 
     int is_rdata = 0;
     readstat_error_t retval = READSTAT_OK;
     rdata_v2_header_t v2_header;
-    rdata_ctx_t *ctx = init_rdata_ctx(filename);
+    rdata_ctx_t *ctx = rdata_ctx_init(parser->io, filename);
 
     if (ctx == NULL) {
         retval = READSTAT_ERROR_OPEN;
