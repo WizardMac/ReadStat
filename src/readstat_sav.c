@@ -17,11 +17,10 @@
 #include <time.h>
 
 #include "readstat_sav.h"
-#include "readstat_io.h"
 
 #define SAV_VARINFO_INITIAL_CAPACITY  512
 
-sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header) {
+sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header, readstat_io_t *io) {
     sav_ctx_t *ctx = NULL;
     if ((ctx = malloc(sizeof(sav_ctx_t))) == NULL) {
         return NULL;
@@ -51,6 +50,8 @@ sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header) {
         sav_ctx_free(ctx);
         return NULL;
     }
+
+    ctx->io = io;
     
     return ctx;
 }

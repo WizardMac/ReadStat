@@ -1,15 +1,21 @@
 
 #include <stdlib.h>
 #include "readstat.h"
+#include "readstat_io_unistd.h"
 
 readstat_parser_t *readstat_parser_init() {
     readstat_parser_t *parser = calloc(1, sizeof(readstat_parser_t));
+    parser->io = calloc(1, sizeof(readstat_io_t));
+    unistd_io_init(parser);
     return parser;
 }
 
 void readstat_parser_free(readstat_parser_t *parser) {
-    if (parser)
+    if (parser) {
+        if (parser->io)
+            free(parser->io);
         free(parser);
+    }
 }
 
 readstat_error_t readstat_set_info_handler(readstat_parser_t *parser, readstat_info_handler info_handler) {
@@ -44,6 +50,41 @@ readstat_error_t readstat_set_progress_handler(readstat_parser_t *parser, readst
 
 readstat_error_t readstat_set_fweight_handler(readstat_parser_t *parser, readstat_fweight_handler fweight_handler) {
     parser->fweight_handler = fweight_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_open_handler(readstat_parser_t *parser, readstat_open_handler open_handler) {
+    parser->io->open = open_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_close_handler(readstat_parser_t *parser, readstat_close_handler close_handler) {
+    parser->io->close = close_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_seek_handler(readstat_parser_t *parser, readstat_seek_handler seek_handler) {
+    parser->io->seek = seek_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_read_handler(readstat_parser_t *parser, readstat_read_handler read_handler) {
+    parser->io->read = read_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_update_handler(readstat_parser_t *parser, readstat_update_handler update_handler) {
+    parser->io->update = update_handler;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_io_ctx(readstat_parser_t *parser, void *io_ctx) {
+    if (!parser->io->external_io)
+        free(parser->io->io_ctx);
+
+    parser->io->io_ctx = io_ctx;
+    parser->io->external_io = 1;
+
     return READSTAT_OK;
 }
 

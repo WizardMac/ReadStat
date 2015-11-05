@@ -12,7 +12,6 @@
 #include "readstat_sav.h"
 #include "readstat_spss_parse.h"
 #include "readstat_writer.h"
-#include "readstat_io.h"
 
 #define READSTAT_PRODUCT_NAME       "ReadStat"
 #define READSTAT_PRODUCT_URL        "https://github.com/WizardMac/ReadStat"
