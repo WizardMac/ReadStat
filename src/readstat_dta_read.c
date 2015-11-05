@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include "readstat_dta.h"
 #include "readstat_convert.h"
 
@@ -454,8 +453,8 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
         }
     }
 
-    if (dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format) != 0) {
-        retval = READSTAT_ERROR_MALLOC;
+    retval = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format);
+    if (retval != READSTAT_OK) {
         goto cleanup;
     }
 

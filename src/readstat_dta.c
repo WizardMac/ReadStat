@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include "readstat_dta.h"
 
@@ -20,8 +19,9 @@ dta_ctx_t *dta_ctx_alloc(readstat_io_t *io) {
     return ctx;
 }
 
-int dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
+readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
         unsigned char byteorder, unsigned char ds_format) {
+    readstat_error_t retval = READSTAT_OK;
     int machine_byteorder = DTA_HILO;
     if (machine_is_little_endian()) {
         machine_byteorder = DTA_LOHI;
@@ -126,28 +126,35 @@ int dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
     ctx->variable_labels_len = ctx->variable_labels_entry_len * ctx->nvar * sizeof(char);
 
     if ((ctx->typlist = malloc(ctx->typlist_len)) == NULL) {
-        return -1;
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
     }
     if ((ctx->varlist = malloc(ctx->varlist_len)) == NULL) {
-        return -1;
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
     }
     if ((ctx->srtlist = malloc(ctx->srtlist_len)) == NULL) {
-        return -1;
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
     }
     if ((ctx->fmtlist = malloc(ctx->fmtlist_len)) == NULL) {
-        return -1;
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
     }
     if ((ctx->lbllist = malloc(ctx->lbllist_len)) == NULL) {
-        return -1;
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
     }
 
     if ((ctx->variable_labels = malloc(ctx->variable_labels_len)) == NULL) {
-        return -1;
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
     }
 
     ctx->initialized = 1;
-    
-    return 0;
+
+cleanup:
+    return retval;
 }
 
 void dta_ctx_free(dta_ctx_t *ctx) {

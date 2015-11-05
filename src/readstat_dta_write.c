@@ -299,10 +299,9 @@ static readstat_error_t dta_begin_data(void *writer_ctx) {
     if (error != READSTAT_OK)
         goto cleanup;
     
-    if (dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format) != 0) {
-        error = READSTAT_ERROR_MALLOC;
+    error = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format);
+    if (error != READSTAT_OK)
         goto cleanup;
-    }
     
     error = dta_emit_header_data_label(writer);
     if (error != READSTAT_OK)

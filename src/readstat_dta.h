@@ -131,6 +131,6 @@ typedef struct dta_ctx_s {
 #define DTA_OLD_TYPE_CODE_DOUBLE   'd'
 
 dta_ctx_t *dta_ctx_alloc(readstat_io_t *io);
-int dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs, unsigned char byteorder, unsigned char ds_format);
+readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs, unsigned char byteorder, unsigned char ds_format);
 
 void dta_ctx_free(dta_ctx_t *ctx);
