@@ -12,16 +12,9 @@ readstat_parser_t *readstat_parser_init() {
 
 void readstat_parser_free(readstat_parser_t *parser) {
     if (parser) {
-        readstat_io_free(parser->io);
+        if (parser->io)
+            free(parser->io);
         free(parser);
-    }
-}
-
-void readstat_io_free(readstat_io_t *io) {
-    if (io) {
-        if (io->io_ctx)
-            free(io->io_ctx);
-        free(io);
     }
 }
 
@@ -86,9 +79,12 @@ readstat_error_t readstat_set_update_handler(readstat_parser_t *parser, readstat
 }
 
 readstat_error_t readstat_set_io_ctx(readstat_parser_t *parser, void *io_ctx) {
-    if (parser->io->io_ctx)
+    if (!parser->io->external_io)
         free(parser->io->io_ctx);
+
     parser->io->io_ctx = io_ctx;
+    parser->io->external_io = 1;
+
     return READSTAT_OK;
 }
 
