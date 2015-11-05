@@ -1,6 +1,5 @@
 
 #include <stdlib.h>
-#include <unistd.h>
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
 

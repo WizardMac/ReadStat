@@ -1,6 +1,5 @@
 
 #include <stdlib.h>
-#include <unistd.h>
 #include "readstat.h"
 #include "readstat_spss.h"
 #include "readstat_spss_parse.h"

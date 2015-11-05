@@ -1,7 +1,6 @@
 
 #include "readstat.h"
 #include "readstat_por_parse.h"
-#include <unistd.h>
 
 %%{
     machine por_field_parse;
