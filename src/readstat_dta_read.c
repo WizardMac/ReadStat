@@ -421,7 +421,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     char *long_string = NULL;
     size_t file_size = 0;
 
-    ctx = dta_ctx_preinit(io);
+    ctx = dta_ctx_alloc(io);
 
     if (io->open(path, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_OPEN;
@@ -454,7 +454,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
         }
     }
 
-    if ((ctx = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format)) == NULL) {
+    if (dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format) != 0) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }

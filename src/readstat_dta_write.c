@@ -284,7 +284,7 @@ static readstat_error_t dta_begin_data(void *writer_ctx) {
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     readstat_error_t error = READSTAT_OK;
     
-    dta_ctx_t *ctx = NULL;
+    dta_ctx_t *ctx = dta_ctx_alloc(NULL);
     dta_header_t header;
     memset(&header, 0, sizeof(dta_header_t));
 
@@ -299,7 +299,10 @@ static readstat_error_t dta_begin_data(void *writer_ctx) {
     if (error != READSTAT_OK)
         goto cleanup;
     
-    ctx = dta_ctx_init(NULL, header.nvar, header.nobs, header.byteorder, header.ds_format);
+    if (dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format) != 0) {
+        error = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
     
     error = dta_emit_header_data_label(writer);
     if (error != READSTAT_OK)

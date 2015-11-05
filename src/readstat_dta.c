@@ -7,7 +7,7 @@
 
 #include "readstat_dta.h"
 
-dta_ctx_t *dta_ctx_preinit(readstat_io_t *io) {
+dta_ctx_t *dta_ctx_alloc(readstat_io_t *io) {
     dta_ctx_t *ctx;
     if ((ctx = malloc(sizeof(dta_ctx_t))) == NULL) {
         return NULL;
@@ -20,12 +20,8 @@ dta_ctx_t *dta_ctx_preinit(readstat_io_t *io) {
     return ctx;
 }
 
-dta_ctx_t *dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
+int dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
         unsigned char byteorder, unsigned char ds_format) {
-    if (ctx == NULL) {
-        ctx = dta_ctx_preinit(NULL);
-    }
-
     int machine_byteorder = DTA_HILO;
     if (machine_is_little_endian()) {
         machine_byteorder = DTA_LOHI;
@@ -130,34 +126,28 @@ dta_ctx_t *dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
     ctx->variable_labels_len = ctx->variable_labels_entry_len * ctx->nvar * sizeof(char);
 
     if ((ctx->typlist = malloc(ctx->typlist_len)) == NULL) {
-        dta_ctx_free(ctx);
-        return NULL;
+        return -1;
     }
     if ((ctx->varlist = malloc(ctx->varlist_len)) == NULL) {
-        dta_ctx_free(ctx);
-        return NULL;
+        return -1;
     }
     if ((ctx->srtlist = malloc(ctx->srtlist_len)) == NULL) {
-        dta_ctx_free(ctx);
-        return NULL;
+        return -1;
     }
     if ((ctx->fmtlist = malloc(ctx->fmtlist_len)) == NULL) {
-        dta_ctx_free(ctx);
-        return NULL;
+        return -1;
     }
     if ((ctx->lbllist = malloc(ctx->lbllist_len)) == NULL) {
-        dta_ctx_free(ctx);
-        return NULL;
+        return -1;
     }
 
     if ((ctx->variable_labels = malloc(ctx->variable_labels_len)) == NULL) {
-        dta_ctx_free(ctx);
-        return NULL;
+        return -1;
     }
 
     ctx->initialized = 1;
     
-    return ctx;
+    return 0;
 }
 
 void dta_ctx_free(dta_ctx_t *ctx) {
