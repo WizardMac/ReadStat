@@ -832,6 +832,7 @@ static readstat_error_t parse_amd_pages_pass1(int64_t last_examined_page_pass1, 
     int64_t i;
     char error_buf[ERROR_BUF_SIZE];
     char *page = malloc(ctx->page_size);
+    int64_t amd_page_count = 0;
 
     /* ...then AMD pages at the end */
     for (i=ctx->page_count-1; i>last_examined_page_pass1; i--) {
@@ -859,8 +860,12 @@ static readstat_error_t parse_amd_pages_pass1(int64_t last_examined_page_pass1, 
 
         uint16_t page_type = sas_read2(&page[off+16], ctx->bswap);
 
-        if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA)
-            break;
+        if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA) {
+            /* Usually AMD pages are at the end but sometimes data pages appear after them */
+            if (amd_page_count > 0)
+                break;
+            continue;
+        }
         if ((page_type & SAS_PAGE_TYPE_COMP))
             continue;
 
@@ -879,6 +884,8 @@ static readstat_error_t parse_amd_pages_pass1(int64_t last_examined_page_pass1, 
             }
             goto cleanup;
         }
+
+        amd_page_count++;
     }
 
 cleanup:
