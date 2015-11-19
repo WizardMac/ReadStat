@@ -129,6 +129,7 @@ static readstat_error_t sav_read_dictionary_termination_record(sav_ctx_t *ctx);
 static readstat_error_t sav_parse_machine_floating_point_record(void *data, sav_ctx_t *ctx);
 static readstat_error_t sav_parse_variable_display_parameter_record(void *data, sav_ctx_t *ctx);
 static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t data_len, sav_ctx_t *ctx);
+static readstat_error_t sav_parse_long_value_labels_record(void *data, size_t data_len, sav_ctx_t *ctx);
 
 static readstat_error_t sav_update_progress(sav_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
@@ -340,6 +341,38 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t sav_submit_value_labels(value_label_t *value_labels, int32_t label_count, 
+        readstat_types_t value_type, readstat_missingness_t *missingness, sav_ctx_t *ctx) {
+    char label_name_buf[256];
+    readstat_error_t retval = READSTAT_OK;
+    int32_t i;
+
+    snprintf(label_name_buf, sizeof(label_name_buf), SAV_LABEL_NAME_PREFIX "%d", ctx->value_labels_count);
+
+    for (i=0; i<label_count; i++) {
+        value_label_t *vlabel = &value_labels[i];
+        readstat_value_t value = { .type = value_type };
+        if (value_type == READSTAT_TYPE_DOUBLE) {
+            double val_d = 0.0;
+            memcpy(&val_d, vlabel->value, 8);
+            if (ctx->machine_needs_byte_swap)
+                val_d = byteswap_double(val_d);
+
+            value.v.double_value = val_d;
+            spss_tag_missing_double(&value, missingness);
+        } else {
+            char unpadded_val[8*4+1];
+            retval = readstat_convert(unpadded_val, sizeof(unpadded_val), vlabel->value, 8, ctx->converter);
+            if (retval != READSTAT_OK)
+                break;
+
+            value.v.string_value = unpadded_val;
+        }
+        ctx->value_label_handler(label_name_buf, value, vlabel->label, ctx->user_ctx);
+    }
+    return retval;
+}
+
 static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
     int32_t label_count;
     readstat_error_t retval = READSTAT_OK;
@@ -348,7 +381,6 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
     int32_t rec_type;
     int32_t var_count;
     readstat_types_t value_type = READSTAT_TYPE_STRING;
-    char label_name_buf[256];
     char label_buf[256];
     value_label_t *value_labels = NULL;
     readstat_missingness_t *missingness = NULL;
@@ -365,7 +397,6 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
         goto cleanup;
     }
     
-    snprintf(label_name_buf, sizeof(label_name_buf), SAV_LABEL_NAME_PREFIX "%d", ctx->value_labels_count);
     int i;
     for (i=0; i<label_count; i++) {
         value_label_t *vlabel = &value_labels[i];
@@ -422,27 +453,7 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
         }
     }
     if (ctx->value_label_handler) {
-        for (i=0; i<label_count; i++) {
-            value_label_t *vlabel = &value_labels[i];
-            readstat_value_t value = { .type = value_type };
-            if (value_type == READSTAT_TYPE_DOUBLE) {
-                double val_d = 0.0;
-                memcpy(&val_d, vlabel->value, 8);
-                if (ctx->machine_needs_byte_swap)
-                    val_d = byteswap_double(val_d);
-
-                value.v.double_value = val_d;
-                spss_tag_missing_double(&value, missingness);
-            } else {
-                char unpadded_val[8*4+1];
-                retval = readstat_convert(unpadded_val, sizeof(unpadded_val), vlabel->value, 8, ctx->converter);
-                if (retval != READSTAT_OK)
-                    break;
-
-                value.v.string_value = unpadded_val;
-            }
-            ctx->value_label_handler(label_name_buf, value, vlabel->label, ctx->user_ctx);
-        }
+        sav_submit_value_labels(value_labels, label_count, value_type, missingness, ctx);
     }
     ctx->value_labels_count++;
 cleanup:
@@ -844,6 +855,146 @@ static readstat_error_t sav_parse_variable_display_parameter_record(void *data, 
     return READSTAT_OK;
 }
 
+static readstat_error_t sav_parse_long_value_labels_record(void *data, size_t data_len, sav_ctx_t *ctx) {
+    if (!ctx->value_label_handler)
+        return READSTAT_OK;
+
+    readstat_error_t retval = READSTAT_OK;
+    int32_t label_name_len = 0;
+    int32_t label_count = 0;
+    int32_t i = 0;
+    char *data_ptr = data;
+    char *data_end = data_ptr + data_len;
+    char var_name_buf[256*4+1];
+    char label_name_buf[256];
+    readstat_missingness_t *missingness = NULL;
+    readstat_types_t value_type = READSTAT_TYPE_STRING;
+    char *value_buffer = NULL;
+    char *label_buffer = NULL;
+    
+    memset(label_name_buf, '\0', sizeof(label_name_buf));
+
+    if (data_ptr + sizeof(int32_t) > data_end) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
+    memcpy(&label_name_len, data_ptr, sizeof(int32_t));
+    if (ctx->machine_needs_byte_swap)
+        label_name_len = byteswap4(label_name_len);
+
+    data_ptr += sizeof(int32_t);
+
+    if (data_ptr + label_name_len > data_end) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
+    retval = readstat_convert(var_name_buf, sizeof(var_name_buf), data_ptr, label_name_len, ctx->converter);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    data_ptr += label_name_len;
+
+    for (i=0; i<ctx->var_index;) {
+        spss_varinfo_t *info = &ctx->varinfo[i];
+        if (strcmp(var_name_buf, info->longname) == 0) {
+            info->labels_index = ctx->value_labels_count++;
+            snprintf(label_name_buf, sizeof(label_name_buf),
+                     SAV_LABEL_NAME_PREFIX "%d", info->labels_index);
+            value_type = info->type;
+            missingness = &info->missingness;
+            break;
+        }
+        i += info->n_segments;
+    }
+    
+    if (label_name_buf[0] == '\0') {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
+    data_ptr += sizeof(int32_t);
+
+    if (data_ptr + sizeof(int32_t) > data_end) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
+    memcpy(&label_count, data_ptr, sizeof(int32_t));
+    if (ctx->machine_needs_byte_swap)
+        label_count = byteswap4(label_count);
+
+    data_ptr += sizeof(int32_t);
+
+    for (i=0; i<label_count; i++) {
+        int32_t value_len = 0, label_len = 0;
+        int32_t value_buffer_len = 0, label_buffer_len = 0;
+
+        if (data_ptr + sizeof(int32_t) > data_end) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
+
+        memcpy(&value_len, data_ptr, sizeof(int32_t));
+        if (ctx->machine_needs_byte_swap)
+            value_len = byteswap4(value_len);
+
+        data_ptr += sizeof(int32_t);
+
+        value_buffer_len = value_len*4+1;
+        value_buffer = realloc(value_buffer, value_buffer_len);
+
+        if (data_ptr + value_len > data_end) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
+
+        retval = readstat_convert(value_buffer, value_buffer_len, data_ptr, value_len, ctx->converter);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+
+        data_ptr += value_len;
+
+        if (data_ptr + sizeof(int32_t) > data_end) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
+
+        memcpy(&label_len, data_ptr, sizeof(int32_t));
+        if (ctx->machine_needs_byte_swap)
+            label_len = byteswap4(label_len);
+
+        data_ptr += sizeof(int32_t);
+
+        label_buffer_len = label_len*4+1;
+        label_buffer = realloc(label_buffer, label_buffer_len);
+
+        if (data_ptr + label_len > data_end) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
+
+        retval = readstat_convert(label_buffer, label_buffer_len, data_ptr, label_len, ctx->converter);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+
+        data_ptr += label_len;
+
+        readstat_value_t value = { .type = READSTAT_TYPE_STRING };
+        value.v.string_value = value_buffer;
+
+        ctx->value_label_handler(label_name_buf, value, label_buffer, ctx->user_ctx);
+    }
+
+cleanup:
+    if (value_buffer)
+        free(value_buffer);
+    if (label_buffer)
+        free(label_buffer);
+    return retval;
+}
+
 static readstat_error_t sav_parse_records_pass1(sav_ctx_t *ctx) {
     char data_buf[4096];
     readstat_error_t retval = READSTAT_OK;
@@ -1023,6 +1174,10 @@ static readstat_error_t sav_parse_records_pass2(sav_ctx_t *ctx) {
                         if (retval != READSTAT_OK)
                             goto cleanup;
                         break;
+                    case SAV_RECORD_SUBTYPE_LONG_VALUE_LABELS:
+                        retval = sav_parse_long_value_labels_record(data_buf, count, ctx);
+                        if (retval != READSTAT_OK)
+                            goto cleanup;
                     default: /* misc. info */
                         break;
                 }
