@@ -868,8 +868,6 @@ static readstat_error_t sav_parse_long_value_labels_record(void *data, size_t da
     char *data_end = data_ptr + data_len;
     char var_name_buf[256*4+1];
     char label_name_buf[256];
-    readstat_missingness_t *missingness = NULL;
-    readstat_types_t value_type = READSTAT_TYPE_STRING;
     char *value_buffer = NULL;
     char *label_buffer = NULL;
     
@@ -903,8 +901,6 @@ static readstat_error_t sav_parse_long_value_labels_record(void *data, size_t da
             info->labels_index = ctx->value_labels_count++;
             snprintf(label_name_buf, sizeof(label_name_buf),
                      SAV_LABEL_NAME_PREFIX "%d", info->labels_index);
-            value_type = info->type;
-            missingness = &info->missingness;
             break;
         }
         i += info->n_segments;
