@@ -1043,8 +1043,7 @@ static readstat_error_t sav_parse_records_pass1(sav_ctx_t *ctx) {
                 int size = extra_info[1];
                 int count = extra_info[2];
                 data_len = size * count;
-                if (subtype == SAV_RECORD_SUBTYPE_INTEGER_INFO ||
-                    subtype == SAV_RECORD_SUBTYPE_VERY_LONG_STR) {
+                if (subtype == SAV_RECORD_SUBTYPE_INTEGER_INFO) {
                     if (data_len > sizeof(data_buf)) {
                         retval = READSTAT_ERROR_PARSE;
                         goto cleanup;
@@ -1053,11 +1052,7 @@ static readstat_error_t sav_parse_records_pass1(sav_ctx_t *ctx) {
                         retval = READSTAT_ERROR_PARSE;
                         goto cleanup;
                     }
-                    if (subtype == SAV_RECORD_SUBTYPE_INTEGER_INFO) {
-                        retval = sav_parse_machine_integer_info_record(data_buf, data_len, ctx);
-                    } else if (subtype == SAV_RECORD_SUBTYPE_VERY_LONG_STR) {
-                        retval = sav_parse_very_long_string_record(data_buf, count, ctx);
-                    }
+                    retval = sav_parse_machine_integer_info_record(data_buf, data_len, ctx);
                     if (retval != READSTAT_OK)
                         goto cleanup;
                 } else {
@@ -1171,7 +1166,9 @@ static readstat_error_t sav_parse_records_pass2(sav_ctx_t *ctx) {
                             goto cleanup;
                         break;
                     case SAV_RECORD_SUBTYPE_VERY_LONG_STR:
-                        /* parsed in pass 1 */
+                        retval = sav_parse_very_long_string_record(data_buf, count, ctx);
+                        if (retval != READSTAT_OK)
+                            goto cleanup;
                         break;
                     case SAV_RECORD_SUBTYPE_LONG_VALUE_LABELS:
                         retval = sav_parse_long_value_labels_record(data_buf, count, ctx);
@@ -1192,6 +1189,68 @@ static readstat_error_t sav_parse_records_pass2(sav_ctx_t *ctx) {
 cleanup:
     if (data_buf)
         free(data_buf);
+    return retval;
+}
+
+static void sav_set_n_segments_and_var_count(sav_ctx_t *ctx) {
+    int i;
+    for (i=0; i<ctx->var_index;) {
+        spss_varinfo_t *info = &ctx->varinfo[i];
+        if (info->string_length) {
+            info->n_segments = (info->string_length + 251) / 252;
+        }
+        info->index = ctx->var_count++;
+        i += info->n_segments;
+    }
+}
+
+static readstat_error_t sav_handle_variables(readstat_parser_t *parser, sav_ctx_t *ctx) {
+    int i;
+    readstat_error_t retval = READSTAT_OK;
+
+    if (!parser->variable_handler)
+        return retval;
+
+    for (i=0; i<ctx->var_index;) {
+        char label_name_buf[256];
+        spss_varinfo_t *info = &ctx->varinfo[i];
+        readstat_variable_t *variable = spss_init_variable_for_info(info);
+
+        snprintf(label_name_buf, sizeof(label_name_buf), SAV_LABEL_NAME_PREFIX "%d", info->labels_index);
+
+        int cb_retval = parser->variable_handler(info->index, variable,
+                info->labels_index == -1 ? NULL : label_name_buf,
+                ctx->user_ctx);
+
+        spss_free_variable(variable);
+
+        if (cb_retval) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+        i += info->n_segments;
+    }
+cleanup:
+    return retval;
+}
+
+static readstat_error_t sav_handle_fweight(readstat_parser_t *parser, sav_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
+    int i;
+    if (parser->fweight_handler && ctx->fweight_index) {
+        for (i=0; i<ctx->var_index;) {
+            spss_varinfo_t *info = &ctx->varinfo[i];
+            if (info->offset == ctx->fweight_index - 1) {
+                if (parser->fweight_handler(info->index, ctx->user_ctx)) {
+                    retval = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
+                }
+                break;
+            }
+            i += info->n_segments;
+        }
+    }
+cleanup:
     return retval;
 }
 
@@ -1235,73 +1294,33 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
     ctx->user_ctx = user_ctx;
     ctx->file_size = file_size;
     
-    retval = sav_parse_records_pass1(ctx);
-    if (retval != READSTAT_OK)
+    if ((retval = sav_parse_records_pass1(ctx)) != READSTAT_OK)
         goto cleanup;
     
-    int i;
-    for (i=0; i<ctx->var_index;) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
-        if (info->string_length) {
-            info->n_segments = (info->string_length + 251) / 252;
-        }
-        info->index = ctx->var_count++;
-        i += info->n_segments;
-    }
-
     if (io->seek(sizeof(sav_file_header_record_t), READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
 
-    retval = sav_update_progress(ctx);
-    if (retval != READSTAT_OK)
+    if ((retval = sav_update_progress(ctx)) != READSTAT_OK)
         goto cleanup;
 
-    retval = sav_parse_records_pass2(ctx);
-    if (retval != READSTAT_OK)
+    if ((retval = sav_parse_records_pass2(ctx)) != READSTAT_OK)
         goto cleanup;
-    
+ 
+    sav_set_n_segments_and_var_count(ctx);
+
     if (parser->info_handler) {
         if (parser->info_handler(ctx->record_count, ctx->var_count, ctx->user_ctx)) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
     }
-    if (parser->variable_handler) {
-        for (i=0; i<ctx->var_index;) {
-            char label_name_buf[256];
-            spss_varinfo_t *info = &ctx->varinfo[i];
-            readstat_variable_t *variable = spss_init_variable_for_info(info);
+    if ((retval = sav_handle_variables(parser, ctx)) != READSTAT_OK)
+        goto cleanup;
 
-            snprintf(label_name_buf, sizeof(label_name_buf), SAV_LABEL_NAME_PREFIX "%d", info->labels_index);
-
-            int cb_retval = parser->variable_handler(info->index, variable,
-                    info->labels_index == -1 ? NULL : label_name_buf,
-                    ctx->user_ctx);
-
-            spss_free_variable(variable);
-
-            if (cb_retval) {
-                retval = READSTAT_ERROR_USER_ABORT;
-                goto cleanup;
-            }
-            i += info->n_segments;
-        }
-    }
-    if (parser->fweight_handler && ctx->fweight_index) {
-        for (i=0; i<ctx->var_index;) {
-            spss_varinfo_t *info = &ctx->varinfo[i];
-            if (info->offset == ctx->fweight_index - 1) {
-                if (parser->fweight_handler(info->index, ctx->user_ctx)) {
-                    retval = READSTAT_ERROR_USER_ABORT;
-                    goto cleanup;
-                }
-                break;
-            }
-            i += info->n_segments;
-        }
-    }
+    if ((retval = sav_handle_fweight(parser, ctx)) != READSTAT_OK)
+        goto cleanup;
 
     if (ctx->value_handler) {
         retval = sav_read_data(ctx);

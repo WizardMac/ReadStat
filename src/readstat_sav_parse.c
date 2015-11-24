@@ -49,7 +49,7 @@ static const int sav_long_variable_parse_en_main = 1;
 
 readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) {
     unsigned char *c_data = (unsigned char *)data;
-    int var_count = ctx->var_count;
+    int var_count = ctx->var_index;
     varlookup_t *table = malloc(var_count * sizeof(varlookup_t));
     readstat_error_t retval = READSTAT_OK;
 
@@ -3485,7 +3485,7 @@ static const int sav_very_long_string_parse_en_main = 1;
 
 readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
     unsigned char *c_data = (unsigned char *)data;
-    int var_count = ctx->var_index; // var_count hasn't been set yet
+    int var_count = ctx->var_index;
     varlookup_t *table = malloc(var_count * sizeof(varlookup_t));
     readstat_error_t retval = READSTAT_OK;
 

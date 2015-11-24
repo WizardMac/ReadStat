@@ -43,7 +43,7 @@ static void build_lookup_table(varlookup_t *table, int var_count, sav_ctx_t *ctx
 
 readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) {
     unsigned char *c_data = (unsigned char *)data;
-    int var_count = ctx->var_count;
+    int var_count = ctx->var_index;
     varlookup_t *table = malloc(var_count * sizeof(varlookup_t));
     readstat_error_t retval = READSTAT_OK;
 
@@ -146,7 +146,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
 
 readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
     unsigned char *c_data = (unsigned char *)data;
-    int var_count = ctx->var_index; // var_count hasn't been set yet
+    int var_count = ctx->var_index;
     varlookup_t *table = malloc(var_count * sizeof(varlookup_t));
     readstat_error_t retval = READSTAT_OK;
 
