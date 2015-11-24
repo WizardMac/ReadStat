@@ -204,11 +204,12 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     spss_varinfo_t *info = &ctx->varinfo[ctx->var_index];
     memset(info, 0, sizeof(spss_varinfo_t));
     info->width = 1;
+    info->n_segments = 1;
     info->index = ctx->var_index;
     info->offset = ctx->var_offset;
     info->type = dta_type;
 
-    retval = readstat_convert(info->name, sizeof(info->name), 
+    retval = readstat_convert(info->name, sizeof(info->name),
             variable.name, sizeof(variable.name), ctx->converter);
     if (retval != READSTAT_OK)
         goto cleanup;
@@ -1258,8 +1259,6 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
         spss_varinfo_t *info = &ctx->varinfo[i];
         if (info->string_length) {
             info->n_segments = (info->string_length + 251) / 252;
-        } else {
-            info->n_segments = 1;
         }
         info->index = ctx->var_count++;
         i += info->n_segments;
