@@ -1043,7 +1043,8 @@ static readstat_error_t sav_parse_records_pass1(sav_ctx_t *ctx) {
                 int size = extra_info[1];
                 int count = extra_info[2];
                 data_len = size * count;
-                if (subtype == SAV_RECORD_SUBTYPE_INTEGER_INFO) {
+                if (subtype == SAV_RECORD_SUBTYPE_INTEGER_INFO ||
+                    subtype == SAV_RECORD_SUBTYPE_VERY_LONG_STR) {
                     if (data_len > sizeof(data_buf)) {
                         retval = READSTAT_ERROR_PARSE;
                         goto cleanup;
@@ -1052,10 +1053,13 @@ static readstat_error_t sav_parse_records_pass1(sav_ctx_t *ctx) {
                         retval = READSTAT_ERROR_PARSE;
                         goto cleanup;
                     }
-                    retval = sav_parse_machine_integer_info_record(data_buf, data_len, ctx);
+                    if (subtype == SAV_RECORD_SUBTYPE_INTEGER_INFO) {
+                        retval = sav_parse_machine_integer_info_record(data_buf, data_len, ctx);
+                    } else if (subtype == SAV_RECORD_SUBTYPE_VERY_LONG_STR) {
+                        retval = sav_parse_very_long_string_record(data_buf, count, ctx);
+                    }
                     if (retval != READSTAT_OK)
                         goto cleanup;
-                    done = 1;
                 } else {
                     if (io->seek(data_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
                         retval = READSTAT_ERROR_SEEK;
@@ -1167,9 +1171,7 @@ static readstat_error_t sav_parse_records_pass2(sav_ctx_t *ctx) {
                             goto cleanup;
                         break;
                     case SAV_RECORD_SUBTYPE_VERY_LONG_STR:
-                        retval = sav_parse_very_long_string_record(data_buf, count, ctx);
-                        if (retval != READSTAT_OK)
-                            goto cleanup;
+                        /* parsed in pass 1 */
                         break;
                     case SAV_RECORD_SUBTYPE_LONG_VALUE_LABELS:
                         retval = sav_parse_long_value_labels_record(data_buf, count, ctx);
@@ -1236,6 +1238,16 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
     retval = sav_parse_records_pass1(ctx);
     if (retval != READSTAT_OK)
         goto cleanup;
+    
+    int i;
+    for (i=0; i<ctx->var_index;) {
+        spss_varinfo_t *info = &ctx->varinfo[i];
+        if (info->string_length) {
+            info->n_segments = (info->string_length + 251) / 252;
+        }
+        info->index = ctx->var_count++;
+        i += info->n_segments;
+    }
 
     if (io->seek(sizeof(sav_file_header_record_t), READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
@@ -1249,16 +1261,6 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
     retval = sav_parse_records_pass2(ctx);
     if (retval != READSTAT_OK)
         goto cleanup;
-
-    int i;
-    for (i=0; i<ctx->var_index;) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
-        if (info->string_length) {
-            info->n_segments = (info->string_length + 251) / 252;
-        }
-        info->index = ctx->var_count++;
-        i += info->n_segments;
-    }
     
     if (parser->info_handler) {
         if (parser->info_handler(ctx->record_count, ctx->var_count, ctx->user_ctx)) {
