@@ -519,7 +519,7 @@ static readstat_error_t sav_read_data(sav_ctx_t *ctx) {
     if (retval != READSTAT_OK)
         goto done;
 
-    if (rows != ctx->record_count) {
+    if (ctx->record_count != -1 && rows != ctx->record_count) {
         retval = READSTAT_ERROR_PARSE;
     }
 
