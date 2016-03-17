@@ -543,7 +543,10 @@ static readstat_error_t sav_write_string(void *row, const readstat_variable_t *v
     }
     memset(row, ' ', var->width);
     if (value != NULL && value[0] != '\0') {
-        memcpy(row, value, strlen(value));
+        size_t value_len = strlen(value);
+        if (value_len > var->width)
+            value_len = var->width;
+        memcpy(row, value, value_len);
     }
     return READSTAT_OK;
 }
