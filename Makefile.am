@@ -35,3 +35,7 @@ libreadstat_la_LIBADD = -llzma -lz
 libreadstat_la_LDFLAGS =
 
 include_HEADERS = src/readstat.h
+
+install-exec-hook:
+	@(cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES))
+
