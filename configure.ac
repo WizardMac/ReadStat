@@ -1,5 +1,5 @@
 AC_INIT([readstat], [20160511])
-AM_INIT_AUTOMAKE([subdir-objects])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
 LT_INIT
 AC_PROG_CC
