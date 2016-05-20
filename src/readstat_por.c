@@ -584,7 +584,9 @@ static readstat_error_t read_por_file_data(readstat_por_ctx_t *ctx) {
                 }
                 spss_tag_missing_double(&value, &info->missingness);
             }
-            ctx->value_handler(ctx->obs_count, i, value, ctx->user_ctx);
+            if (ctx->value_handler) {
+                ctx->value_handler(ctx->obs_count, i, value, ctx->user_ctx);
+            }
         }
         ctx->obs_count++;
 
@@ -757,9 +759,13 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
 
                     snprintf(label_name_buf, sizeof(label_name_buf), POR_LABEL_NAME_PREFIX "%d", info->labels_index);
 
-                    int cb_retval = ctx->variable_handler(i, variable,
-                            info->labels_index == -1 ? NULL : label_name_buf,
-                            user_ctx);
+                    int cb_retval = 0;
+                    
+                    if (ctx->variable_handler) {
+                        ctx->variable_handler(i, variable,
+                                info->labels_index == -1 ? NULL : label_name_buf,
+                                user_ctx);
+                    }
 
                     spss_free_variable(variable);
 

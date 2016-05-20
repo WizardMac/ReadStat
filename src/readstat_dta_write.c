@@ -52,7 +52,7 @@ static readstat_error_t dta_emit_typlist(readstat_writer_t *writer, dta_ctx_t *c
         } else if (user_type == READSTAT_TYPE_DOUBLE) {
             type = DTA_111_TYPE_CODE_DOUBLE;
         } else if (user_type == READSTAT_TYPE_STRING) {
-            size_t max_len = r_variable->width;
+            size_t max_len = r_variable->storage_width;
             if (max_len > 244)
                 max_len = 244;
             
@@ -377,7 +377,7 @@ static readstat_error_t dta_write_string(void *row, const readstat_variable_t *v
     if (var->type != READSTAT_TYPE_STRING) {
         return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
     }
-    size_t value_len = var->width;
+    size_t value_len = var->storage_width;
     if (value_len > 244)
         value_len = 244;
     if (value == NULL || value[0] == '\0') {

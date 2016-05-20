@@ -544,6 +544,7 @@ static readstat_variable_t *sas_init_variable(sas_ctx_t *ctx, int i, readstat_er
 
     variable->index = i;
     variable->type = ctx->col_info[i].type;
+    variable->storage_width = ctx->col_info[i].width;
 
     if ((retval = copy_text_ref(variable->name, sizeof(variable->name), 
                     ctx->col_info[i].name_ref, ctx)) != READSTAT_OK) {

@@ -76,11 +76,12 @@ static inline readstat_types_t dta_type_info(uint16_t typecode, size_t *max_len,
     return type;
 }
 
-static readstat_variable_t *dta_init_variable(dta_ctx_t *ctx, int i, readstat_types_t type) {
+static readstat_variable_t *dta_init_variable(dta_ctx_t *ctx, int i, readstat_types_t type, size_t max_len) {
     readstat_variable_t *variable = calloc(1, sizeof(readstat_variable_t));
 
     variable->type = type;
     variable->index = i;
+    variable->storage_width = max_len;
 
     readstat_convert(variable->name, sizeof(variable->name), 
             &ctx->varlist[ctx->variable_name_len*i],
@@ -560,7 +561,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
             max_len++; /* might append NULL */
 
         if (parser->variable_handler) {
-            readstat_variable_t *variable = dta_init_variable(ctx, i, type);
+            readstat_variable_t *variable = dta_init_variable(ctx, i, type, max_len);
 
             const char *value_labels = NULL;
 

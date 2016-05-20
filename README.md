@@ -1,22 +1,17 @@
-ReadStat: Read data sets from R, SAS, Stata, and SPSS
+ReadStat: Read (and write) data sets from R, SAS, Stata, and SPSS
 --
 
-Originally developed for [Wizard](http://www.wizardmac.com/), ReadStat is an
-MIT-licensed C library for reading files from popular stats packages. Supported
-formats include:
+Originally developed for [Wizard](http://www.wizardmac.com/), ReadStat is a
+command-line tool and MIT-licensed C library for reading files from popular
+stats packages. Supported formats include:
 
 * R: RData and RDS
 * SAS: SAS7BDAT and SAS7BCAT
 * Stata: DTA
 * SPSS: POR and SAV
 
-There is also preliminary write support for the DTA and SAV formats.
-
-The ReadStat API is callback-based. It uses very little memory, and is suitable
-for programs with progress bars.  ReadStat uses
-[iconv](https://en.wikipedia.org/wiki/Iconv) to automatically transcode
-text data into UTF-8, so you don't have to worry about character encodings. 
-
+There is also write support for the DTA and SAV formats. At the moment, the
+ReadStat command-line tool works only with the non-R formats.
 
 Installation
 ==
@@ -26,9 +21,47 @@ Tweak the Makefile and then:
     make
     sudo make install
 
-
-Usage
+Command-line Usage
 ==
+
+Standard usage:
+
+    readstat <input file> <output file>
+
+Where:
+
+* `<input file>` ends with `.dta`, `.por`, `.sav`, or `.sas7bdat`, and
+* `<output file>` ends with `.dta` or `.sav`
+
+Note that ReadStat will not overwrite existing files, so if you get a "File
+exists" error, delete the file you intend to replace.
+
+If you have a SAS catalog file containing the data set's value labels, a second
+invocation style is supported:
+
+    readstat <input file> <catalog file> <output file>
+
+Where:
+
+* `<input file>` ends with `.sas7bdat`
+* `<catalog file>` ends with `.sas7bcat`
+* `<output file>` ends with `.dta` or `.sav`
+
+If the file conversion succeeds, ReadStat will report the number of rows and
+variables converted, e.g.
+
+    Converted 111 variables and 160851 rows in 12.36 seconds
+
+At the moment value labels are supported, but the finer nuances of converting
+format strings (e.g. `%8.2g`) are not.
+
+Library Usage
+==
+
+The ReadStat API is callback-based. It uses very little memory, and is suitable
+for programs with progress bars.  ReadStat uses
+[iconv](https://en.wikipedia.org/wiki/Iconv) to automatically transcode
+text data into UTF-8, so you don't have to worry about character encodings. 
 
 See src/readstat.h for the complete API. In general you'll provide a filename
 and a set of optional callback functions for handling various information and

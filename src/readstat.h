@@ -111,7 +111,7 @@ typedef struct readstat_variable_s {
     char                    label[1024];
     readstat_label_set_t   *label_set;
     off_t                   offset;
-    size_t                  width;
+    size_t                  storage_width;
     size_t                  user_width;
     readstat_missingness_t  missingness;
 } readstat_variable_t;
@@ -121,6 +121,7 @@ const char *readstat_variable_get_name(readstat_variable_t *variable);
 const char *readstat_variable_get_label(readstat_variable_t *variable);
 const char *readstat_variable_get_format(readstat_variable_t *variable);
 readstat_types_t readstat_variable_get_type(readstat_variable_t *variable);
+size_t readstat_variable_get_width(readstat_variable_t *variable);
 int readstat_variable_get_missing_ranges_count(readstat_variable_t *variable);
 readstat_value_t readstat_variable_get_missing_range_lo(readstat_variable_t *variable, int i);
 readstat_value_t readstat_variable_get_missing_range_hi(readstat_variable_t *variable, int i);
