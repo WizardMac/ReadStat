@@ -21,8 +21,9 @@ text data into UTF-8, so you don't have to worry about character encodings.
 Installation
 ==
 
-Tweak the Makefile and then:
+Bootstrap autotools by running ./autogen.sh and then proceed as usual:
 
+    ./configure
     make
     sudo make install
 
