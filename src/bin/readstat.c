@@ -5,8 +5,8 @@
 #include <errno.h>
 #include <sys/time.h>
 
-#include "readstat.h"
-#include "CKHashTable.h"
+#include "../readstat.h"
+#include "../CKHashTable.h"
 
 #define RS_VERSION_STRING  "1.0-prerelease"
 

@@ -16,8 +16,9 @@ ReadStat command-line tool works only with the non-R formats.
 Installation
 ==
 
-Tweak the Makefile and then:
+Bootstrap autotools by running ./autogen.sh and then proceed as usual:
 
+    ./configure
     make
     sudo make install
 
