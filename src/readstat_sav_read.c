@@ -814,13 +814,16 @@ static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t
     if (data_len != 32)
         return READSTAT_ERROR_PARSE;
 
-    char *src_charset = NULL;
+    const char *src_charset = NULL;
+    const char *dst_charset = ctx->output_encoding;
     sav_machine_integer_info_record_t record;
     memcpy(&record, data, data_len);
     if (ctx->machine_needs_byte_swap) {
         record.character_code = byteswap4(record.character_code);
     }
-    if (record.character_code == SAV_CHARSET_UTF8) {
+    if (ctx->input_encoding) {
+        src_charset = ctx->input_encoding;
+    } else if (record.character_code == SAV_CHARSET_UTF8) {
         /* do nothing */
     } else {
         int i;
@@ -839,11 +842,12 @@ static readstat_error_t sav_parse_machine_integer_info_record(void *data, size_t
             return READSTAT_ERROR_UNSUPPORTED_CHARSET;
         }
     }
-    if (src_charset) {
-        ctx->converter = iconv_open("UTF-8", src_charset);
-        if (ctx->converter == (iconv_t)-1) {
+    if (src_charset && dst_charset && strcmp(src_charset, dst_charset) != 0) {
+        iconv_t converter = iconv_open(dst_charset, src_charset);
+        if (converter == (iconv_t)-1) {
             return READSTAT_ERROR_UNSUPPORTED_CHARSET;
         }
+        ctx->converter = converter;
     }
     return READSTAT_OK;
 }
@@ -1291,6 +1295,8 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
     ctx->error_handler = parser->error_handler;
     ctx->value_handler = parser->value_handler;
     ctx->value_label_handler = parser->value_label_handler;
+    ctx->input_encoding = parser->input_encoding;
+    ctx->output_encoding = parser->output_encoding;
     ctx->user_ctx = user_ctx;
     ctx->file_size = file_size;
     

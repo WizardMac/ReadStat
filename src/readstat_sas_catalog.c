@@ -23,6 +23,8 @@ typedef struct sas_catalog_ctx_s {
     uint64_t      *block_pointers;
     int            block_pointers_used;
     int            block_pointers_capacity;
+    const char    *input_encoding;
+    const char    *output_encoding;
     iconv_t        converter;
 } sas_catalog_ctx_t;
 
@@ -248,6 +250,8 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
     ctx->block_pointers = malloc((ctx->block_pointers_capacity = 200) * sizeof(uint64_t));
 
     ctx->value_label_handler = parser->value_label_handler;
+    ctx->input_encoding = parser->input_encoding;
+    ctx->output_encoding = parser->output_encoding;
     ctx->user_ctx = user_ctx;
     ctx->io = io;
 
@@ -266,15 +270,17 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
     ctx->header_size = hinfo->header_size;
     ctx->page_count = hinfo->page_count;
     ctx->page_size = hinfo->page_size;
+    if (ctx->input_encoding == NULL) {
+        ctx->input_encoding = hinfo->encoding;
+    }
 
     if (ctx->u64) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
 
-    if (strcmp(hinfo->encoding, "UTF-8") != 0 &&
-            strcmp(hinfo->encoding, "US-ASCII") != 0) {
-        iconv_t converter = iconv_open("UTF-8", hinfo->encoding);
+    if (ctx->input_encoding && ctx->output_encoding && strcmp(ctx->input_encoding, ctx->output_encoding) != 0) {
+        iconv_t converter = iconv_open(ctx->output_encoding, ctx->input_encoding);
         if (converter == (iconv_t)-1) {
             retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
             goto cleanup;

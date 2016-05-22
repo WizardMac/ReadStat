@@ -454,7 +454,8 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
         }
     }
 
-    retval = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format);
+    retval = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format,
+            parser->input_encoding, parser->output_encoding);
     if (retval != READSTAT_OK) {
         goto cleanup;
     }

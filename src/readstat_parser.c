@@ -7,6 +7,7 @@ readstat_parser_t *readstat_parser_init() {
     readstat_parser_t *parser = calloc(1, sizeof(readstat_parser_t));
     parser->io = calloc(1, sizeof(readstat_io_t));
     unistd_io_init(parser);
+    parser->output_encoding = "UTF-8";
     return parser;
 }
 
@@ -85,6 +86,16 @@ readstat_error_t readstat_set_io_ctx(readstat_parser_t *parser, void *io_ctx) {
     parser->io->io_ctx = io_ctx;
     parser->io->external_io = 1;
 
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_input_character_encoding(readstat_parser_t *parser, const char *encoding) {
+    parser->input_encoding = encoding;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_set_output_character_encoding(readstat_parser_t *parser, const char *encoding) {
+    parser->output_encoding = encoding;
     return READSTAT_OK;
 }
 

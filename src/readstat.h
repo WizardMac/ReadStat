@@ -177,6 +177,8 @@ typedef struct readstat_parser_s {
     readstat_error_handler         error_handler;
     readstat_progress_handler      progress_handler;
     readstat_io_t                 *io;
+    const char                    *input_encoding;
+    const char                    *output_encoding;
 } readstat_parser_t;
 
 readstat_parser_t *readstat_parser_init();
@@ -197,6 +199,14 @@ readstat_error_t readstat_set_seek_handler(readstat_parser_t *parser, readstat_s
 readstat_error_t readstat_set_read_handler(readstat_parser_t *parser, readstat_read_handler read_handler);
 readstat_error_t readstat_set_update_handler(readstat_parser_t *parser, readstat_update_handler update_handler);
 readstat_error_t readstat_set_io_ctx(readstat_parser_t *parser, void *io_ctx);
+
+// Usually inferred from the file, but sometimes a manual override is desirable.
+// In particular, pre-14 Stata uses the system encoding, which is usually Win 1252
+// but could be anything. `encoding' should be an iconv-compatible name.
+readstat_error_t readstat_set_input_character_encoding(readstat_parser_t *parser, const char *encoding);
+
+// Defaults to UTF-8. Pass in NULL to disable transliteration.
+readstat_error_t readstat_set_output_character_encoding(readstat_parser_t *parser, const char *encoding);
 
 readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path, void *user_ctx);
 readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path, void *user_ctx);

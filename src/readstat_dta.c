@@ -20,7 +20,8 @@ dta_ctx_t *dta_ctx_alloc(readstat_io_t *io) {
 }
 
 readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
-        unsigned char byteorder, unsigned char ds_format) {
+        unsigned char byteorder, unsigned char ds_format,
+        const char *input_encoding, const char *output_encoding) {
     readstat_error_t retval = READSTAT_OK;
     int machine_byteorder = DTA_HILO;
     if (machine_is_little_endian()) {
@@ -114,8 +115,17 @@ readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
         ctx->file_is_xmlish = 1;
     }
 
-    if (ds_format < 118) {
-        ctx->converter = iconv_open("UTF-8", "WINDOWS-1252");
+    if (output_encoding) {
+        if (input_encoding) {
+            ctx->converter = iconv_open(output_encoding, input_encoding);
+        } else if (ds_format < 118) {
+            ctx->converter = iconv_open(output_encoding, "WINDOWS-1252");
+        }
+        if (ctx->converter == (iconv_t)-1) {
+            ctx->converter = NULL;
+            retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
+            goto cleanup;
+        }
     }
 
     ctx->typlist_len = ctx->nvar * sizeof(uint16_t);

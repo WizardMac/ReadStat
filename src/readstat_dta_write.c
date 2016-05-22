@@ -299,7 +299,7 @@ static readstat_error_t dta_begin_data(void *writer_ctx) {
     if (error != READSTAT_OK)
         goto cleanup;
     
-    error = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format);
+    error = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format, NULL, NULL);
     if (error != READSTAT_OK)
         goto cleanup;
     

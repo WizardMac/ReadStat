@@ -81,6 +81,8 @@ typedef struct sav_ctx_s {
 
     spss_varinfo_t *varinfo;
     size_t         varinfo_capacity;
+    const char    *input_encoding;
+    const char    *output_encoding;
     iconv_t        converter;
     int            var_index;
     int            var_offset;
