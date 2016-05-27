@@ -15,6 +15,7 @@ typedef struct mod_xlsx_ctx_s {
     lxw_workbook *workbook;
     lxw_worksheet *worksheet;
     lxw_format *label_fmt;
+    lxw_format *missing_fmt;
     long row_count;
 } mod_xlsx_ctx_t;
 
@@ -45,9 +46,14 @@ static void *ctx_init(const char *filename) {
     mod_xlsx_ctx_t *mod_ctx = malloc(sizeof(mod_xlsx_ctx_t));
     mod_ctx->workbook = workbook_new(filename);
     mod_ctx->worksheet = workbook_add_worksheet(mod_ctx->workbook, "Data");
+
     mod_ctx->label_fmt = workbook_add_format(mod_ctx->workbook);
     format_set_bold(mod_ctx->label_fmt);
     format_set_align(mod_ctx->label_fmt, LXW_ALIGN_CENTER);
+
+    mod_ctx->missing_fmt = workbook_add_format(mod_ctx->workbook);
+    format_set_font_color(mod_ctx->missing_fmt, LXW_COLOR_GRAY);
+
     return mod_ctx;
 }
 
@@ -74,19 +80,21 @@ static int handle_variable(int index, readstat_variable_t *variable,
 static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
     mod_xlsx_ctx_t *mod_ctx = (mod_xlsx_ctx_t *)ctx;
     readstat_types_t type = readstat_value_type(value);
+    lxw_format *value_fmt = readstat_value_is_considered_missing(value) ? mod_ctx->missing_fmt : NULL;
+
     if (var_index == 0) {
         mod_ctx->row_count++;
     }
     if (readstat_value_is_system_missing(value)) {
         worksheet_write_blank(mod_ctx->worksheet, obs_index+1, var_index, NULL);
     } else if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING) {
-        worksheet_write_string(mod_ctx->worksheet, obs_index+1, var_index, readstat_string_value(value), NULL);
+        worksheet_write_string(mod_ctx->worksheet, obs_index+1, var_index, readstat_string_value(value), value_fmt);
     } else if (type == READSTAT_TYPE_CHAR ||
             type == READSTAT_TYPE_INT16 ||
             type == READSTAT_TYPE_INT32 ||
             type == READSTAT_TYPE_FLOAT ||
             type == READSTAT_TYPE_DOUBLE) {
-        worksheet_write_number(mod_ctx->worksheet, obs_index+1, var_index, readstat_double_value(value), NULL);
+        worksheet_write_number(mod_ctx->worksheet, obs_index+1, var_index, readstat_double_value(value), value_fmt);
     }
     return 0;
 }
