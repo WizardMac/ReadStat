@@ -32,7 +32,7 @@ Standard usage:
 Where:
 
 * `<input file>` ends with `.dta`, `.por`, `.sav`, or `.sas7bdat`, and
-* `<output file>` ends with `.dta` or `.sav`
+* `<output file>` ends with `.dta`, `.sav`, or `.csv`
 
 Note that ReadStat will not overwrite existing files, so if you get a "File
 exists" error, delete the file you intend to replace.
@@ -46,7 +46,7 @@ Where:
 
 * `<input file>` ends with `.sas7bdat`
 * `<catalog file>` ends with `.sas7bcat`
-* `<output file>` ends with `.dta` or `.sav`
+* `<output file>` ends with `.dta`, `.sav`, or `.csv`
 
 If the file conversion succeeds, ReadStat will report the number of rows and
 variables converted, e.g.

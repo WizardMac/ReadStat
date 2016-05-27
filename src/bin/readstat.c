@@ -6,7 +6,9 @@
 #include <sys/time.h>
 
 #include "../readstat.h"
-#include "../CKHashTable.h"
+#include "module.h"
+#include "mod_readstat.h"
+#include "mod_csv.h"
 
 #define RS_VERSION_STRING  "1.0-prerelease"
 
@@ -17,20 +19,16 @@
 #define RS_FORMAT_SAS_DATA      0x08
 #define RS_FORMAT_SAS_CATALOG   0x10
 
-#define RS_FORMAT_CAN_READ      (RS_FORMAT_DTA | RS_FORMAT_SAV | RS_FORMAT_POR | RS_FORMAT_SAS_DATA)
 #define RS_FORMAT_CAN_WRITE     (RS_FORMAT_DTA | RS_FORMAT_SAV)
 
 typedef struct rs_ctx_s {
-    readstat_writer_t *writer;
-    ck_hash_table_t *label_set_dict;
-
-    long fweight_index;
-    long var_count;
-    long row_count;
-
-    int out_format;
-    int out_fd;
+    rs_module_t *module;
+    void        *module_ctx;
+    long         row_count;
+    long         var_count;
 } rs_ctx_t;
+
+rs_module_t _modules[2];
 
 int format(char *filename) {
     size_t len = strlen(filename);
@@ -63,16 +61,21 @@ int is_catalog(char *filename) {
 }
 
 int can_read(char *filename) {
-    return (format(filename) & RS_FORMAT_CAN_READ);
+    return (format(filename) != RS_FORMAT_UNKNOWN);
+}
+
+rs_module_t *rs_module_for_filename(const char *filename) {
+    int i;
+    for (i=0; i<sizeof(_modules)/sizeof(_modules[0]); i++) {
+        rs_module_t mod = _modules[i];
+        if (mod.accept(filename))
+            return &_modules[i];
+    }
+    return NULL;
 }
 
 int can_write(char *filename) {
-    return (format(filename) & RS_FORMAT_CAN_WRITE);
-}
-
-static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
-    rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    return write(rs_ctx->out_fd, bytes, len);
+    return (rs_module_for_filename(filename) != NULL);
 }
 
 static void handle_error(const char *msg, void *ctx) {
@@ -81,122 +84,49 @@ static void handle_error(const char *msg, void *ctx) {
 
 static int handle_fweight(int var_index, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    readstat_writer_t *writer = rs_ctx->writer;
-    readstat_writer_set_fweight_variable(writer, readstat_get_variable(writer, var_index));
+    if (rs_ctx->module->handle_fweight) {
+        return rs_ctx->module->handle_fweight(var_index, rs_ctx->module_ctx);
+    }
     return 0;
 }
 
 static int handle_info(int obs_count, int var_count, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    rs_ctx->var_count = var_count;
-    rs_ctx->row_count = obs_count;
-    return (var_count == 0 || obs_count == 0);
+    if (rs_ctx->module->handle_info) {
+        return rs_ctx->module->handle_info(obs_count, var_count, rs_ctx->module_ctx);
+    }
+    return 0;
 }
 
 static int handle_value_label(const char *val_labels, readstat_value_t value,
                               const char *label, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    readstat_writer_t *writer = rs_ctx->writer;
-    readstat_label_set_t *label_set = NULL;
-    readstat_types_t type = readstat_value_type(value);
-
-    label_set = (readstat_label_set_t *)ck_str_hash_lookup(val_labels, rs_ctx->label_set_dict);
-    if (label_set == NULL) {
-        label_set = readstat_add_label_set(writer, type, val_labels);
-        ck_str_hash_insert(val_labels, label_set, rs_ctx->label_set_dict);
+    if (rs_ctx->module->handle_value_label) {
+        return rs_ctx->module->handle_value_label(val_labels, value, label, rs_ctx->module_ctx);
     }
-
-    if (type == READSTAT_TYPE_INT32) {
-        readstat_label_int32_value(label_set, readstat_int32_value(value), label);
-    } else if (type == READSTAT_TYPE_DOUBLE) {
-        readstat_label_double_value(label_set, readstat_double_value(value), label);
-    } else if (type == READSTAT_TYPE_STRING) {
-        readstat_label_string_value(label_set, readstat_string_value(value), label);
-    }
-
     return 0;
 }
 
 static int handle_variable(int index, readstat_variable_t *variable,
                            const char *val_labels, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    readstat_writer_t *writer = rs_ctx->writer;
-
-    readstat_types_t type = readstat_variable_get_type(variable);
-    const char *name = readstat_variable_get_name(variable);
-    const char *label = readstat_variable_get_label(variable);
-    char *format = NULL;
-    size_t width = readstat_variable_get_width(variable);
-    readstat_label_set_t *label_set = NULL;
-    
-    if (val_labels) {
-        label_set = (readstat_label_set_t *)ck_str_hash_lookup(val_labels, rs_ctx->label_set_dict);
+    if (rs_ctx->module->handle_variable) {
+        return rs_ctx->module->handle_variable(index, variable, val_labels, rs_ctx->module_ctx);
     }
-
-    readstat_add_variable(writer, type, width, name, label, format, label_set);
-
     return 0;
 }
 
 static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    readstat_writer_t *writer = rs_ctx->writer;
-
-    readstat_variable_t *variable = readstat_get_variable(writer, var_index);
-    readstat_types_t type = readstat_value_type(value);
-    readstat_error_t error = READSTAT_OK;
-
     if (var_index == 0) {
-        if (obs_index == 0) {
-            if (rs_ctx->out_format == RS_FORMAT_SAV) {
-                error = readstat_begin_writing_sav(writer, rs_ctx, rs_ctx->row_count);
-            } else if (rs_ctx->out_format == RS_FORMAT_DTA) {
-                error = readstat_begin_writing_dta(writer, rs_ctx, rs_ctx->row_count);
-            }
-            if (error != READSTAT_OK)
-                goto cleanup;
-        }
-        if (var_index == 0) {
-            error = readstat_begin_row(writer);
-            if (error != READSTAT_OK)
-                goto cleanup;
-        }
+        rs_ctx->row_count++;
     }
-
-    if (readstat_value_is_system_missing(value)) {
-        error = readstat_insert_missing_value(writer, variable);
-    } else if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING) {
-        error = readstat_insert_string_value(writer, variable, readstat_string_value(value));
-    } else if (type == READSTAT_TYPE_CHAR) {
-        error = readstat_insert_char_value(writer, variable, readstat_char_value(value));
-    } else if (type == READSTAT_TYPE_INT16) {
-        error = readstat_insert_int16_value(writer, variable, readstat_int16_value(value));
-    } else if (type == READSTAT_TYPE_INT32) {
-        error = readstat_insert_int32_value(writer, variable, readstat_int32_value(value));
-    } else if (type == READSTAT_TYPE_FLOAT) {
-        error = readstat_insert_float_value(writer, variable, readstat_float_value(value));
-    } else if (type == READSTAT_TYPE_DOUBLE) {
-        error = readstat_insert_double_value(writer, variable, readstat_double_value(value));
+    if (obs_index == 0) {
+        rs_ctx->var_count++;
     }
-    if (error != READSTAT_OK)
-        goto cleanup;
-
-    if (var_index == rs_ctx->var_count - 1) {
-        error = readstat_end_row(writer);
-        if (error != READSTAT_OK)
-            goto cleanup;
-
-        if (obs_index == rs_ctx->row_count - 1) {
-            error = readstat_end_writing(writer);
-            if (error != READSTAT_OK)
-                goto cleanup;
-        }
+    if (rs_ctx->module->handle_value) {
+        return rs_ctx->module->handle_value(obs_index, var_index, value, rs_ctx->module_ctx);
     }
-
-cleanup:
-    if (error != READSTAT_OK)
-        return 1;
-
     return 0;
 }
 
@@ -218,17 +148,6 @@ readstat_error_t parse_file(readstat_parser_t *parser, const char *input_filenam
     return error;
 }
 
-rs_ctx_t *ctx_init() {
-    rs_ctx_t *ctx = malloc(sizeof(rs_ctx_t));
-    ctx->label_set_dict = ck_hash_table_init(1024);
-    return ctx;
-}
-
-void ctx_free(rs_ctx_t *rs_ctx) {
-    ck_hash_table_free(rs_ctx->label_set_dict);
-    free(rs_ctx);
-}
-
 void print_version() {
     dprintf(STDERR_FILENO, "ReadStat version " RS_VERSION_STRING "\n");
 }
@@ -237,9 +156,9 @@ void print_usage(const char *cmd) {
     print_version();
 
     dprintf(STDERR_FILENO, "\n  Standard usage:\n");
-    dprintf(STDERR_FILENO, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|sav)\n", cmd);
+    dprintf(STDERR_FILENO, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|sav|csv)\n", cmd);
     dprintf(STDERR_FILENO, "\n  Usage if your value labels are stored in a separate SAS catalog file:\n");
-    dprintf(STDERR_FILENO, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|sav)\n\n", cmd);
+    dprintf(STDERR_FILENO, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|sav|csv)\n\n", cmd);
 }
 
 int main(int argc, char** argv) {
@@ -248,6 +167,9 @@ int main(int argc, char** argv) {
     char *input_filename = NULL;
     char *catalog_filename = NULL;
     char *output_filename = NULL;
+
+    _modules[0] = rs_mod_readstat;
+    _modules[1] = rs_mod_csv;
 
     if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
         print_version();
@@ -276,28 +198,22 @@ int main(int argc, char** argv) {
     }
 
     int input_format = format(input_filename);
-    int output_format = format(output_filename);
+    rs_module_t *module = rs_module_for_filename(output_filename);
 
     gettimeofday(&start_time, NULL);
 
-    int fd = open(output_filename, O_CREAT | O_WRONLY | O_EXCL, 0644);
-    if (fd == -1) {
-        dprintf(STDERR_FILENO, "Error opening %s for writing: %s\n", output_filename, strerror(errno));
-        return 1;
-    }
-
     readstat_parser_t *pass1_parser = readstat_parser_init();
     readstat_parser_t *pass2_parser = readstat_parser_init();
-    readstat_writer_t *writer = readstat_writer_init();
-    readstat_writer_set_file_label(writer, "Created by ReadStat <https://github.com/WizardMac/ReadStat>");
 
-    rs_ctx_t *rs_ctx = ctx_init();
+    rs_ctx_t *rs_ctx = calloc(1, sizeof(rs_ctx_t));
 
-    rs_ctx->writer = writer;
-    rs_ctx->out_fd = fd;
-    rs_ctx->out_format = output_format;
+    void *module_ctx = module->init(output_filename);
 
-    readstat_set_data_writer(writer, &write_data);
+    if (module_ctx == NULL)
+        goto cleanup;
+
+    rs_ctx->module = module;
+    rs_ctx->module_ctx = module_ctx;
 
     // Pass 1 - Collect fweight and value labels
     readstat_set_error_handler(pass1_parser, &handle_error);
@@ -333,10 +249,12 @@ int main(int argc, char** argv) {
 cleanup:
     readstat_parser_free(pass1_parser);
     readstat_parser_free(pass2_parser);
-    readstat_writer_free(writer);
-    ctx_free(rs_ctx);
 
-    close(fd);
+    if (module->finish) {
+        module->finish(rs_ctx->module_ctx);
+    }
+
+    free(rs_ctx);
 
     if (error != READSTAT_OK) {
         dprintf(STDERR_FILENO, "%s\n", readstat_error_message(error));

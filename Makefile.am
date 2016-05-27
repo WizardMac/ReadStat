@@ -36,10 +36,14 @@ libreadstat_la_LDFLAGS =
 
 include_HEADERS = src/readstat.h
 
-bin_PROGRAMS = readstat
+bin_PROGRAMS = \
+   readstat
 
 readstat_SOURCES = \
-    src/bin/readstat.c
+	src/bin/readstat.c \
+	src/bin/readstat_util.c \
+	src/bin/mod_csv.c \
+	src/bin/mod_readstat.c
 
 readstat_LDADD = -lreadstat
 

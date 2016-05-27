@@ -203,10 +203,10 @@ readstat_error_t readstat_set_io_ctx(readstat_parser_t *parser, void *io_ctx);
 // Usually inferred from the file, but sometimes a manual override is desirable.
 // In particular, pre-14 Stata uses the system encoding, which is usually Win 1252
 // but could be anything. `encoding' should be an iconv-compatible name.
-readstat_error_t readstat_set_input_character_encoding(readstat_parser_t *parser, const char *encoding);
+readstat_error_t readstat_set_file_character_encoding(readstat_parser_t *parser, const char *encoding);
 
 // Defaults to UTF-8. Pass in NULL to disable transliteration.
-readstat_error_t readstat_set_output_character_encoding(readstat_parser_t *parser, const char *encoding);
+readstat_error_t readstat_set_handler_character_encoding(readstat_parser_t *parser, const char *encoding);
 
 readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path, void *user_ctx);
 readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path, void *user_ctx);

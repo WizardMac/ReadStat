@@ -89,12 +89,12 @@ readstat_error_t readstat_set_io_ctx(readstat_parser_t *parser, void *io_ctx) {
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_input_character_encoding(readstat_parser_t *parser, const char *encoding) {
+readstat_error_t readstat_set_file_character_encoding(readstat_parser_t *parser, const char *encoding) {
     parser->input_encoding = encoding;
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_output_character_encoding(readstat_parser_t *parser, const char *encoding) {
+readstat_error_t readstat_set_handler_character_encoding(readstat_parser_t *parser, const char *encoding) {
     parser->output_encoding = encoding;
     return READSTAT_OK;
 }
