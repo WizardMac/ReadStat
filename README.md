@@ -34,6 +34,9 @@ Where:
 * `<input file>` ends with `.dta`, `.por`, `.sav`, or `.sas7bdat`, and
 * `<output file>` ends with `.dta`, `.sav`, or `.csv`
 
+If [libxlsxwriter](http://libxlsxwriter.github.io) is found at compile-time, an
+XLSX file (ending in `.xlsx`) can be written instead.
+
 Note that ReadStat will not overwrite existing files, so if you get a "File
 exists" error, delete the file you intend to replace.
 
