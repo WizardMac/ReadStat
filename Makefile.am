@@ -46,6 +46,13 @@ readstat_SOURCES = \
 	src/bin/modules/mod_readstat.c
 
 readstat_LDADD = -lreadstat
+readstat_CFLAGS =
+
+if HAVE_XLSXWRITER
+readstat_SOURCES += src/bin/modules/mod_xlsx.c
+readstat_LDADD += -lxlsxwriter
+readstat_CFLAGS += -DHAVE_XLSXWRITER=1
+endif
 
 install-exec-hook:
 	@(cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES))

@@ -10,6 +10,10 @@
 #include "modules/mod_readstat.h"
 #include "modules/mod_csv.h"
 
+#if HAVE_XLSXWRITER
+#include "modules/mod_xlsx.h"
+#endif
+
 #define RS_VERSION_STRING  "1.0-prerelease"
 
 #define RS_FORMAT_UNKNOWN       0x00
@@ -27,8 +31,6 @@ typedef struct rs_ctx_s {
     long         row_count;
     long         var_count;
 } rs_ctx_t;
-
-rs_module_t _modules[2];
 
 int format(char *filename) {
     size_t len = strlen(filename);
@@ -64,18 +66,18 @@ int can_read(char *filename) {
     return (format(filename) != RS_FORMAT_UNKNOWN);
 }
 
-rs_module_t *rs_module_for_filename(const char *filename) {
+rs_module_t *rs_module_for_filename(rs_module_t *modules, long module_count, const char *filename) {
     int i;
-    for (i=0; i<sizeof(_modules)/sizeof(_modules[0]); i++) {
-        rs_module_t mod = _modules[i];
+    for (i=0; i<module_count; i++) {
+        rs_module_t mod = modules[i];
         if (mod.accept(filename))
-            return &_modules[i];
+            return &modules[i];
     }
     return NULL;
 }
 
-int can_write(char *filename) {
-    return (rs_module_for_filename(filename) != NULL);
+int can_write(rs_module_t *modules, long modules_count, char *filename) {
+    return (rs_module_for_filename(modules, modules_count, filename) != NULL);
 }
 
 static void handle_error(const char *msg, void *ctx) {
@@ -168,8 +170,22 @@ int main(int argc, char** argv) {
     char *catalog_filename = NULL;
     char *output_filename = NULL;
 
-    _modules[0] = rs_mod_readstat;
-    _modules[1] = rs_mod_csv;
+    rs_module_t *modules = NULL;
+    long module_count = 2;
+    long module_index = 0;
+
+#if HAVE_XLSXWRITER
+    module_count++;
+#endif
+
+    modules = calloc(module_count, sizeof(rs_module_t));
+
+    modules[module_index++] = rs_mod_readstat;
+    modules[module_index++] = rs_mod_csv;
+
+#if HAVE_XLSXWRITER
+    modules[module_index++] = rs_mod_xlsx;
+#endif
 
     if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
         print_version();
@@ -178,14 +194,14 @@ int main(int argc, char** argv) {
         print_usage(argv[0]);
         return 0;
     } if (argc == 3) {
-        if (!can_read(argv[1]) || !can_write(argv[2])) {
+        if (!can_read(argv[1]) || !can_write(modules, module_count, argv[2])) {
             print_usage(argv[0]);
             return 1;
         }
         input_filename = argv[1];
         output_filename = argv[2];
     } else if (argc == 4) {
-        if (!can_read(argv[1]) || !is_catalog(argv[2]) || !can_write(argv[3])) {
+        if (!can_read(argv[1]) || !is_catalog(argv[2]) || !can_write(modules, module_count, argv[3])) {
             print_usage(argv[0]);
             return 1;
         }
@@ -198,7 +214,7 @@ int main(int argc, char** argv) {
     }
 
     int input_format = format(input_filename);
-    rs_module_t *module = rs_module_for_filename(output_filename);
+    rs_module_t *module = rs_module_for_filename(modules, module_count, output_filename);
 
     gettimeofday(&start_time, NULL);
 
