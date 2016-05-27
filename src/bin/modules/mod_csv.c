@@ -4,9 +4,9 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "../readstat.h"
-#include "readstat_util.h"
-#include "module.h"
+#include "../../readstat.h"
+#include "../module_util.h"
+#include "../module.h"
 
 typedef struct mod_csv_ctx_s {
     int out_fd;

@@ -41,9 +41,9 @@ bin_PROGRAMS = \
 
 readstat_SOURCES = \
 	src/bin/readstat.c \
-	src/bin/readstat_util.c \
-	src/bin/mod_csv.c \
-	src/bin/mod_readstat.c
+	src/bin/module_util.c \
+	src/bin/modules/mod_csv.c \
+	src/bin/modules/mod_readstat.c
 
 readstat_LDADD = -lreadstat
 

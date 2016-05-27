@@ -7,8 +7,8 @@
 
 #include "../readstat.h"
 #include "module.h"
-#include "mod_readstat.h"
-#include "mod_csv.h"
+#include "modules/mod_readstat.h"
+#include "modules/mod_csv.h"
 
 #define RS_VERSION_STRING  "1.0-prerelease"
 

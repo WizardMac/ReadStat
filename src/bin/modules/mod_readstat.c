@@ -4,10 +4,10 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "../readstat.h"
-#include "../CKHashTable.h"
-#include "readstat_util.h"
-#include "module.h"
+#include "../../readstat.h"
+#include "../../CKHashTable.h"
+#include "../module_util.h"
+#include "../module.h"
 
 typedef struct mod_readstat_ctx_s {
     readstat_writer_t *writer;
