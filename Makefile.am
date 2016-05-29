@@ -31,7 +31,7 @@ if HAVE_RAGEL
 	$(AM_V_GEN)$(RAGEL) $(RAGELFLAGS) -C $< -o $@
 endif
 
-libreadstat_la_LIBADD = -llzma -lz -liconv
+libreadstat_la_LIBADD = -llzma -lz @EXTRA_LIBS@
 libreadstat_la_LDFLAGS =
 
 include_HEADERS = src/readstat.h
@@ -56,4 +56,3 @@ endif
 
 install-exec-hook:
 	@(cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES))
-
