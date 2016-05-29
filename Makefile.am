@@ -45,7 +45,7 @@ readstat_SOURCES = \
 	src/bin/modules/mod_csv.c \
 	src/bin/modules/mod_readstat.c
 
-readstat_LDADD = -lreadstat
+readstat_LDADD = libreadstat.la
 readstat_CFLAGS =
 
 if HAVE_XLSXWRITER
