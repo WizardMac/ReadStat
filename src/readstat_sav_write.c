@@ -408,6 +408,42 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t sav_emit_variable_display_record(readstat_writer_t *writer) {
+    readstat_error_t retval = READSTAT_OK;
+    int i;
+    sav_info_record_t info_header;
+    memset(&info_header, 0, sizeof(sav_info_record_t));
+
+    info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
+    info_header.subtype = SAV_RECORD_SUBTYPE_VAR_DISPLAY;
+    info_header.size = sizeof(int32_t);
+    info_header.count = 2 * writer->variables_count;
+
+    retval = readstat_write_bytes(writer, &info_header, sizeof(info_header));
+    if (retval != READSTAT_OK)
+        goto cleanup;
+ 
+    for (i=0; i<writer->variables_count; i++) {
+        readstat_variable_t *r_variable = readstat_get_variable(writer, i);
+        readstat_measure_t measure = readstat_variable_get_measure(r_variable);
+        int32_t sav_measure = spss_measure_from_readstat_measure(measure);
+
+        retval = readstat_write_bytes(writer, &sav_measure, sizeof(int32_t));
+        if (retval != READSTAT_OK)
+            goto cleanup;
+
+        readstat_alignment_t alignment = readstat_variable_get_alignment(r_variable);
+        int32_t sav_alignment = spss_alignment_from_readstat_alignment(alignment);
+
+        retval = readstat_write_bytes(writer, &sav_alignment, sizeof(int32_t));
+        if (retval != READSTAT_OK)
+            goto cleanup;
+    }
+
+cleanup:
+    return retval;
+}
+
 static readstat_error_t sav_emit_long_var_name_record(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
     int i;
@@ -698,6 +734,10 @@ static readstat_error_t sav_begin_data(void *writer_ctx) {
         goto cleanup;
 
     retval = sav_emit_floating_point_info_record(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = sav_emit_variable_display_record(writer);
     if (retval != READSTAT_OK)
         goto cleanup;
 

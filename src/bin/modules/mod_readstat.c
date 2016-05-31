@@ -134,15 +134,16 @@ static int handle_variable(int index, readstat_variable_t *variable,
     readstat_types_t type = readstat_variable_get_type(variable);
     const char *name = readstat_variable_get_name(variable);
     const char *label = readstat_variable_get_label(variable);
-    char *format = NULL;
     size_t width = readstat_variable_get_width(variable);
-    readstat_label_set_t *label_set = NULL;
     
+    readstat_variable_t *new_variable = readstat_add_variable(writer, name, type, width);
+
     if (val_labels) {
-        label_set = (readstat_label_set_t *)ck_str_hash_lookup(val_labels, mod_ctx->label_set_dict);
+        readstat_label_set_t *label_set = (readstat_label_set_t *)ck_str_hash_lookup(val_labels, mod_ctx->label_set_dict);
+        readstat_variable_set_label_set(new_variable, label_set);
     }
 
-    readstat_add_variable(writer, type, width, name, label, format, label_set);
+    readstat_variable_set_label(new_variable, label);
 
     return 0;
 }
