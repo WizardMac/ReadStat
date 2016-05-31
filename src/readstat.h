@@ -30,7 +30,7 @@ typedef enum readstat_type_e {
 } readstat_types_t;
 
 typedef enum readstat_measure_e {
-    READSTAT_MEASURE_UNKNOWN = -1,
+    READSTAT_MEASURE_UNKNOWN,
     READSTAT_MEASURE_NOMINAL = 1,
     READSTAT_MEASURE_ORDINAL,
     READSTAT_MEASURE_INTERVAL,
@@ -38,7 +38,7 @@ typedef enum readstat_measure_e {
 } readstat_measure_t;
 
 typedef enum readstat_alignment_e {
-    READSTAT_ALIGNMENT_UNKNOWN = -1,
+    READSTAT_ALIGNMENT_UNKNOWN,
     READSTAT_ALIGNMENT_LEFT = 1,
     READSTAT_ALIGNMENT_CENTER,
     READSTAT_ALIGNMENT_RIGHT
