@@ -88,8 +88,8 @@ typedef struct sas_ctx_s {
     int32_t        row_length;
     int32_t        page_row_count;
     int32_t        parsed_row_count;
-    int32_t        total_row_count;
     int32_t        column_count;
+    int32_t        row_limit;
 
     int64_t        header_size;
     int64_t        page_count;
@@ -207,7 +207,8 @@ static readstat_error_t sas_parse_row_size_subheader(const char *subheader, size
 
     ctx->row_length = row_length;
     ctx->page_row_count = page_row_count;
-    ctx->total_row_count = total_row_count;
+    if (ctx->row_limit == 0 || total_row_count < ctx->row_limit)
+        ctx->row_limit = total_row_count;
 
     return retval;
 }
@@ -388,6 +389,9 @@ cleanup:
 }
 
 static readstat_error_t sas_parse_single_row(const char *data, sas_ctx_t *ctx) {
+    if (ctx->parsed_row_count == ctx->row_limit)
+        return READSTAT_OK;
+
     readstat_error_t retval = READSTAT_OK;
     int j;
     if (ctx->value_handler) {
@@ -411,7 +415,7 @@ static readstat_error_t sas_parse_rows(const char *data, sas_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     int i;
     size_t row_offset=0;
-    for (i=0; i<ctx->page_row_count && ctx->parsed_row_count < ctx->total_row_count; i++) {
+    for (i=0; i<ctx->page_row_count && ctx->parsed_row_count < ctx->row_limit; i++) {
         if ((retval = sas_parse_single_row(&data[row_offset], ctx)) != READSTAT_OK)
             goto cleanup;
 
@@ -423,6 +427,9 @@ cleanup:
 }
 
 static readstat_error_t sas_parse_subheader_rle(const char *subheader, size_t len, sas_ctx_t *ctx) {
+    if (ctx->row_limit == ctx->parsed_row_count)
+        return READSTAT_OK;
+
     /* TODO bounds checking */
     readstat_error_t retval = READSTAT_OK;
     const unsigned char *input = (const unsigned char *)subheader;
@@ -578,7 +585,7 @@ cleanup:
 static readstat_error_t submit_columns(sas_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     if (ctx->info_handler) {
-        if (ctx->info_handler(ctx->total_row_count, ctx->column_count, ctx->user_ctx)) {
+        if (ctx->info_handler(ctx->row_limit, ctx->column_count, ctx->user_ctx)) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
@@ -960,6 +967,8 @@ static readstat_error_t parse_all_pages_pass2(sas_ctx_t *ctx) {
             }
             goto cleanup;
         }
+        if (ctx->parsed_row_count == ctx->row_limit)
+            break;
     }
 cleanup:
     if (page)
@@ -986,6 +995,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->output_encoding = parser->output_encoding;
     ctx->user_ctx = user_ctx;
     ctx->io = parser->io;
+    ctx->row_limit = parser->row_limit;
 
     if (io->open(path, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_OPEN;
@@ -1059,23 +1069,17 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if (ctx->value_handler && ctx->parsed_row_count != ctx->total_row_count) {
+    if (ctx->value_handler && ctx->parsed_row_count != ctx->row_limit) {
         retval = READSTAT_ERROR_ROW_COUNT_MISMATCH;
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "ReadStat: Expected %d rows in file, found %d\n",
-                    ctx->total_row_count, ctx->parsed_row_count);
+                    ctx->row_limit, ctx->parsed_row_count);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
         goto cleanup;
     }
 
     if ((retval = sas_update_progress(ctx)) != READSTAT_OK) {
-        goto cleanup;
-    }
-
-    char test;
-    if (io->read(&test, 1, io->io_ctx) == 1) {
-        retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
 

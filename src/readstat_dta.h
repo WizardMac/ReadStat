@@ -76,6 +76,7 @@ typedef struct dta_ctx_s {
     int            nvar;
     int            nobs;
     size_t         record_len;
+    int            row_limit;
 
     int            machine_needs_byte_swap;
     int            machine_is_twos_complement;

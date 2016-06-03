@@ -547,7 +547,7 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
         goto cleanup;
     }
 
-    for (i=0; i<ctx->nobs; i++) {
+    for (i=0; i<ctx->row_limit; i++) {
         if (io->read(buf, ctx->record_len, io->io_ctx) != ctx->record_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
@@ -678,6 +678,12 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
             goto cleanup;
         }
     }
+
+    if (ctx->row_limit < ctx->nobs) {
+        if (io->seek(ctx->record_len * (ctx->nobs - ctx->row_limit), READSTAT_SEEK_CUR, io->io_ctx) == -1)
+            retval = READSTAT_ERROR_SEEK;
+    }
+
 cleanup:
     if (buf)
         free(buf);
@@ -859,13 +865,16 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     ctx->variable_handler = parser->variable_handler;
     ctx->value_handler = parser->value_handler;
     ctx->value_label_handler = parser->value_label_handler;
+    ctx->row_limit = ctx->nobs;
+    if (parser->row_limit > 0 && parser->row_limit < ctx->nobs)
+        ctx->row_limit = parser->row_limit;
 
     retval = dta_update_progress(ctx);
     if (retval != READSTAT_OK)
         goto cleanup;
     
     if (parser->info_handler) {
-        if (parser->info_handler(ctx->nobs, ctx->nvar, user_ctx)) {
+        if (parser->info_handler(ctx->row_limit, ctx->nvar, user_ctx)) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
