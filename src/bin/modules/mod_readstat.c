@@ -135,12 +135,28 @@ static int handle_variable(int index, readstat_variable_t *variable,
     const char *name = readstat_variable_get_name(variable);
     const char *label = readstat_variable_get_label(variable);
     size_t width = readstat_variable_get_width(variable);
+    int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
     
     readstat_variable_t *new_variable = readstat_add_variable(writer, name, type, width);
 
     if (val_labels) {
         readstat_label_set_t *label_set = (readstat_label_set_t *)ck_str_hash_lookup(val_labels, mod_ctx->label_set_dict);
         readstat_variable_set_label_set(new_variable, label_set);
+    }
+
+    int i;
+    for (i=0; i<missing_ranges_count; i++) {
+        readstat_value_t lo_val = readstat_variable_get_missing_range_lo(variable, i);
+        readstat_value_t hi_val = readstat_variable_get_missing_range_lo(variable, i);
+        if (readstat_value_type(lo_val) == READSTAT_TYPE_DOUBLE) {
+            double lo = readstat_double_value(lo_val);
+            double hi = readstat_double_value(hi_val);
+            if (lo == hi) {
+                readstat_variable_add_missing_double_value(new_variable, lo);
+            } else {
+                readstat_variable_add_missing_double_range(new_variable, lo, hi);
+            }
+        }
     }
 
     readstat_variable_set_label(new_variable, label);
