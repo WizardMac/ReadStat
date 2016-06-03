@@ -136,6 +136,8 @@ static int handle_variable(int index, readstat_variable_t *variable,
     const char *label = readstat_variable_get_label(variable);
     size_t width = readstat_variable_get_width(variable);
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
+    readstat_alignment_t alignment = readstat_variable_get_alignment(variable);
+    readstat_measure_t measure = readstat_variable_get_measure(variable);
     
     readstat_variable_t *new_variable = readstat_add_variable(writer, name, type, width);
 
@@ -159,6 +161,8 @@ static int handle_variable(int index, readstat_variable_t *variable,
         }
     }
 
+    readstat_variable_set_alignment(new_variable, alignment);
+    readstat_variable_set_measure(new_variable, measure);
     readstat_variable_set_label(new_variable, label);
 
     return 0;
