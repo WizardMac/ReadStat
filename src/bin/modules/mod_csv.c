@@ -87,7 +87,7 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
         /* TODO escape */
         dprintf(mod_ctx->out_fd, "\"%s\"", readstat_string_value(value));
     } else if (type == READSTAT_TYPE_CHAR) {
-        dprintf(mod_ctx->out_fd, "%c", readstat_char_value(value));
+        dprintf(mod_ctx->out_fd, "%hhd", readstat_char_value(value));
     } else if (type == READSTAT_TYPE_INT16) {
         dprintf(mod_ctx->out_fd, "%hd", readstat_int16_value(value));
     } else if (type == READSTAT_TYPE_INT32) {
