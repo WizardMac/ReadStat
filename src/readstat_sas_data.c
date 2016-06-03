@@ -852,7 +852,7 @@ static readstat_error_t parse_meta_pages_pass1(sas_ctx_t *ctx, int64_t *outLastE
         }
 
         if ((retval = sas_parse_page_pass1(page, ctx->page_size, ctx)) != READSTAT_OK) {
-            if (ctx->error_handler) {
+            if (ctx->error_handler && retval != READSTAT_ERROR_USER_ABORT) {
                 int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(error_buf, sizeof(error_buf), 
                         "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
@@ -921,7 +921,7 @@ static readstat_error_t parse_amd_pages_pass1(int64_t last_examined_page_pass1, 
         }
 
         if ((retval = sas_parse_page_pass1(page, ctx->page_size, ctx)) != READSTAT_OK) {
-            if (ctx->error_handler) {
+            if (ctx->error_handler && retval != READSTAT_ERROR_USER_ABORT) {
                 int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(error_buf, sizeof(error_buf), 
                         "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
@@ -958,7 +958,7 @@ static readstat_error_t parse_all_pages_pass2(sas_ctx_t *ctx) {
         }
 
         if ((retval = sas_parse_page_pass2(page, ctx->page_size, ctx)) != READSTAT_OK) {
-            if (ctx->error_handler) {
+            if (ctx->error_handler && retval != READSTAT_ERROR_USER_ABORT) {
                 int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(error_buf, sizeof(error_buf), 
                         "ReadStat: Error parsing page %lld, bytes %lld-%lld\n", 
