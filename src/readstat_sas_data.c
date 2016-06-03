@@ -602,6 +602,27 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t submit_columns_if_needed(sas_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
+    if (!ctx->did_submit_columns) {
+        if ((retval = submit_columns(ctx)) != READSTAT_OK) {
+            goto cleanup;
+        }
+        ctx->did_submit_columns = 1;
+    }
+cleanup:
+    return retval;
+}
+
+static int sas_signature_is_recognized(uint32_t signature) {
+    return (signature == SAS_SUBHEADER_SIGNATURE_ROW_SIZE ||
+            signature == SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE ||
+            signature == SAS_SUBHEADER_SIGNATURE_COUNTS ||
+            signature == SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT ||
+            (signature >= SAS_SUBHEADER_SIGNATURE_COLUMN_UNKNOWN &&
+             signature <= SAS_SUBHEADER_SIGNATURE_COLUMN_NAME));
+}
+
 /* First, extract column text */
 static readstat_error_t sas_parse_page_pass1(const char *page, size_t page_size, sas_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
@@ -618,16 +639,19 @@ static readstat_error_t sas_parse_page_pass1(const char *page, size_t page_size,
         uint64_t offset = 0, len = 0;
         uint32_t signature = 0;
         unsigned char compression = 0;
+        unsigned char is_compressed_data = 0;
         int lshp = 0;
         if (ctx->u64) {
             offset = sas_read8(&shp[0], ctx->bswap);
             len = sas_read8(&shp[8], ctx->bswap);
             compression = shp[16];
+            is_compressed_data = shp[17];
             lshp = 24;
         } else {
             offset = sas_read4(&shp[0], ctx->bswap);
             len = sas_read4(&shp[4], ctx->bswap);
             compression = shp[8];
+            is_compressed_data = shp[9];
             lshp = 12;
         }
 
@@ -688,16 +712,19 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
             uint64_t offset = 0, len = 0;
             uint32_t signature = 0;
             unsigned char compression = 0;
+            unsigned char is_compressed_data = 0;
             int lshp = 0;
             if (ctx->u64) {
                 offset = sas_read8(&shp[0], ctx->bswap);
                 len = sas_read8(&shp[8], ctx->bswap);
                 compression = shp[16];
+                is_compressed_data = shp[17];
                 lshp = 24;
             } else {
                 offset = sas_read4(&shp[0], ctx->bswap);
                 len = sas_read4(&shp[4], ctx->bswap);
                 compression = shp[8];
+                is_compressed_data = shp[9];
                 lshp = 12;
             }
 
@@ -712,17 +739,27 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
                     if (!ctx->little_endian && signature == -1 && ctx->u64) {
                         signature = sas_read4(page + offset + 4, ctx->bswap);
                     }
-                    if (signature != SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
-                        if ((retval = sas_parse_subheader(signature, page + offset, len, ctx)) != READSTAT_OK) {
+                    if (is_compressed_data && !sas_signature_is_recognized(signature)) {
+                        if (len != ctx->row_length) {
+                            retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
                             goto cleanup;
+                        }
+                        if ((retval = submit_columns_if_needed(ctx)) != READSTAT_OK) {
+                            goto cleanup;
+                        }
+                        if ((retval = sas_parse_single_row(page + offset, ctx)) != READSTAT_OK) {
+                            goto cleanup;
+                        }
+                    } else {
+                        if (signature != SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
+                            if ((retval = sas_parse_subheader(signature, page + offset, len, ctx)) != READSTAT_OK) {
+                                goto cleanup;
+                            }
                         }
                     }
                 } else if (compression == SAS_COMPRESSION_ROW) {
-                    if (!ctx->did_submit_columns) {
-                        if ((retval = submit_columns(ctx)) != READSTAT_OK) {
-                            goto cleanup;
-                        }
-                        ctx->did_submit_columns = 1;
+                    if ((retval = submit_columns_if_needed(ctx)) != READSTAT_OK) {
+                        goto cleanup;
                     }
                     if ((retval = sas_parse_subheader_rle(page + offset, len, ctx)) != READSTAT_OK) {
                         goto cleanup;
@@ -752,11 +789,8 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
         }
     }
     if (data) {
-        if (!ctx->did_submit_columns) {
-            if ((retval = submit_columns(ctx)) != READSTAT_OK) {
-                goto cleanup;
-            }
-            ctx->did_submit_columns = 1;
+        if ((retval = submit_columns_if_needed(ctx)) != READSTAT_OK) {
+            goto cleanup;
         }
         if (ctx->value_handler) {
             retval = sas_parse_rows(data, ctx);
@@ -1021,11 +1055,8 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
     
-    if (!ctx->did_submit_columns) {
-        if ((retval = submit_columns(ctx)) != READSTAT_OK) {
-            goto cleanup;
-        }
-        ctx->did_submit_columns = 1;
+    if ((retval = submit_columns_if_needed(ctx)) != READSTAT_OK) {
+        goto cleanup;
     }
 
     if (ctx->value_handler && ctx->parsed_row_count != ctx->total_row_count) {
