@@ -177,6 +177,7 @@ int main(int argc, char** argv) {
     char *input_filename = NULL;
     char *catalog_filename = NULL;
     char *output_filename = NULL;
+    char *error_filename = NULL;
 
     rs_module_t *modules = NULL;
     long module_count = 2;
@@ -247,8 +248,10 @@ int main(int argc, char** argv) {
 
     if (catalog_filename) {
         error = parse_file(pass1_parser, catalog_filename, RS_FORMAT_SAS_CATALOG, rs_ctx);
+        error_filename = catalog_filename;
     } else {
         error = parse_file(pass1_parser, input_filename, input_format, rs_ctx);
+        error_filename = input_filename;
     }
     if (error != READSTAT_OK)
         goto cleanup;
@@ -260,6 +263,7 @@ int main(int argc, char** argv) {
     readstat_set_value_handler(pass2_parser, &handle_value);
 
     error = parse_file(pass2_parser, input_filename, input_format, rs_ctx);
+    error_filename = input_filename;
     if (error != READSTAT_OK)
         goto cleanup;
 
@@ -281,7 +285,7 @@ cleanup:
     free(rs_ctx);
 
     if (error != READSTAT_OK) {
-        dprintf(STDERR_FILENO, "%s\n", readstat_error_message(error));
+        dprintf(STDERR_FILENO, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
         unlink(output_filename);
         return 1;
     }
