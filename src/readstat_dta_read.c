@@ -106,6 +106,11 @@ static readstat_variable_t *dta_init_variable(dta_ctx_t *ctx, int i, readstat_ty
                 variable->alignment = READSTAT_ALIGNMENT_RIGHT;
             }
         }
+        int display_width;
+        if (sscanf(variable->format, "%%%ds", &display_width) == 1 ||
+                sscanf(variable->format, "%%-%ds", &display_width) == 1) {
+            variable->display_width = display_width;
+        }
     }
 
     return variable;

@@ -134,12 +134,13 @@ static int handle_variable(int index, readstat_variable_t *variable,
     readstat_types_t type = readstat_variable_get_type(variable);
     const char *name = readstat_variable_get_name(variable);
     const char *label = readstat_variable_get_label(variable);
-    size_t width = readstat_variable_get_width(variable);
+    size_t storage_width = readstat_variable_get_storage_width(variable);
+    int display_width = readstat_variable_get_display_width(variable);
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
     readstat_alignment_t alignment = readstat_variable_get_alignment(variable);
     readstat_measure_t measure = readstat_variable_get_measure(variable);
     
-    readstat_variable_t *new_variable = readstat_add_variable(writer, name, type, width);
+    readstat_variable_t *new_variable = readstat_add_variable(writer, name, type, storage_width);
 
     if (val_labels) {
         readstat_label_set_t *label_set = (readstat_label_set_t *)ck_str_hash_lookup(val_labels, mod_ctx->label_set_dict);
@@ -163,6 +164,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
 
     readstat_variable_set_alignment(new_variable, alignment);
     readstat_variable_set_measure(new_variable, measure);
+    readstat_variable_set_display_width(new_variable, display_width);
     readstat_variable_set_label(new_variable, label);
 
     return 0;

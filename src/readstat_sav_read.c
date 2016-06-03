@@ -868,14 +868,20 @@ static readstat_error_t sav_parse_variable_display_parameter_record(void *data, 
     if (count != 2 * var_count && count != 3 * var_count) {
         return READSTAT_ERROR_PARSE;
     }
-    long field_count = count / var_count;
+    int has_display_width = (count / var_count == 3);
     for (i=0; i<ctx->var_index;) {
-        int32_t measure = 0, alignment = 0;
+        int32_t measure = 0, display_width = 0, alignment = 0;
         spss_varinfo_t *info = &ctx->varinfo[i];
 
         memcpy(&measure, data_ptr, sizeof(int32_t));
         info->measure = spss_measure_to_readstat_measure(measure);
-        data_ptr += (field_count - 1) * sizeof(int32_t);
+        data_ptr += sizeof(int32_t);
+
+        if (has_display_width) {
+            memcpy(&display_width, data_ptr, sizeof(int32_t));
+            info->display_width = display_width;
+            data_ptr += sizeof(int32_t);
+        }
 
         memcpy(&alignment, data_ptr, sizeof(int32_t));
         info->alignment = spss_alignment_to_readstat_alignment(alignment);
