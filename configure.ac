@@ -14,7 +14,7 @@ AC_ARG_VAR([RAGEL], [Ragel generator command])
 AC_ARG_VAR([RAGELFLAGS], [Ragel generator flags])
 AC_PATH_PROG([RAGEL], [ragel], [true])
 AM_CONDITIONAL([HAVE_RAGEL], test "$RAGEL" != "true")
-AC_CHECK_LIB([xlsxwriter], [workbook_new])
+AC_CHECK_LIB([xlsxwriter], [workbook_new], [true], [false])
 AM_CONDITIONAL([HAVE_XLSXWRITER], test "$ac_cv_lib_xlsxwriter_workbook_new" = yes)
 AC_OUTPUT([Makefile])
 
