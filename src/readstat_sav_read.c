@@ -879,16 +879,25 @@ static readstat_error_t sav_parse_variable_display_parameter_record(void *data, 
         spss_varinfo_t *info = &ctx->varinfo[i];
 
         memcpy(&measure, data_ptr, sizeof(int32_t));
+        if (ctx->machine_needs_byte_swap)
+            measure = byteswap4(measure);
+
         info->measure = spss_measure_to_readstat_measure(measure);
         data_ptr += sizeof(int32_t);
 
         if (has_display_width) {
             memcpy(&display_width, data_ptr, sizeof(int32_t));
+            if (ctx->machine_needs_byte_swap)
+                display_width = byteswap4(display_width);
+
             info->display_width = display_width;
             data_ptr += sizeof(int32_t);
         }
 
         memcpy(&alignment, data_ptr, sizeof(int32_t));
+        if (ctx->machine_needs_byte_swap)
+            alignment = byteswap4(alignment);
+
         info->alignment = spss_alignment_to_readstat_alignment(alignment);
         data_ptr += sizeof(int32_t);
 
@@ -1235,6 +1244,7 @@ cleanup:
 
 static void sav_set_n_segments_and_var_count(sav_ctx_t *ctx) {
     int i;
+    ctx->var_count = 0;
     for (i=0; i<ctx->var_index;) {
         spss_varinfo_t *info = &ctx->varinfo[i];
         if (info->string_length) {
