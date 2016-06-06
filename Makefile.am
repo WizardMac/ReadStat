@@ -33,7 +33,7 @@ endif
 
 libreadstat_la_CFLAGS = -Wall
 libreadstat_la_LIBADD = -llzma -lz @EXTRA_LIBS@
-libreadstat_la_LDFLAGS =
+libreadstat_la_LDFLAGS = -no-undefined
 
 include_HEADERS = src/readstat.h
 
