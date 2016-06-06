@@ -1,0 +1,12 @@
+language: c
+
+before_script:
+  - ./autogen.sh
+
+script:
+  - ./configure && make
+
+addons:
+  apt:
+    packages:
+    - liblzma-dev
