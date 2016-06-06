@@ -438,13 +438,16 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
-    
     if (io->read(vars, var_count * sizeof(int32_t), io->io_ctx) < var_count * sizeof(int32_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
     for (i=0; i<var_count; i++) {
-        int var_offset = vars[i]-1; // Why subtract 1????
+        int var_offset = vars[i];
+        if (ctx->machine_needs_byte_swap)
+            var_offset = byteswap4(var_offset);
+
+        var_offset--; // Why subtract 1????
         spss_varinfo_t *var = bsearch(&var_offset, ctx->varinfo, ctx->var_index, sizeof(spss_varinfo_t),
                 &spss_varinfo_compare);
         if (var) {
@@ -867,7 +870,11 @@ static readstat_error_t sav_parse_machine_floating_point_record(const void *data
 static readstat_error_t sav_store_variable_display_parameter_record(const void *data, int count, sav_ctx_t *ctx) {
     const int32_t *data_ptr = data;
     int i;
+
     ctx->variable_display_values = realloc(ctx->variable_display_values, count * sizeof(int32_t));
+    if (ctx->variable_display_values == NULL)
+        return READSTAT_ERROR_MALLOC;
+
     ctx->variable_display_values_count = count;
     for (i=0; i<count; i++) {
         ctx->variable_display_values[i] = ctx->machine_needs_byte_swap ? byteswap4(data_ptr[i]) : data_ptr[i];
@@ -984,6 +991,10 @@ static readstat_error_t sav_parse_long_value_labels_record(const void *data, siz
 
         value_buffer_len = value_len*4+1;
         value_buffer = realloc(value_buffer, value_buffer_len);
+        if (value_buffer == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
 
         if (data_ptr + value_len > data_end) {
             retval = READSTAT_ERROR_PARSE;
@@ -1009,6 +1020,10 @@ static readstat_error_t sav_parse_long_value_labels_record(const void *data, siz
 
         label_buffer_len = label_len*4+1;
         label_buffer = realloc(label_buffer, label_buffer_len);
+        if (label_buffer == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
 
         if (data_ptr + label_len > data_end) {
             retval = READSTAT_ERROR_PARSE;
