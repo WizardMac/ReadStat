@@ -142,7 +142,6 @@ cleanup:
 }
 
 static readstat_error_t dta_read_map(dta_ctx_t *ctx) {
-    readstat_io_t *io = ctx->io;
     if (!ctx->file_is_xmlish)
         return 0;
 
@@ -164,7 +163,6 @@ cleanup:
 
 static readstat_error_t dta_read_descriptors(dta_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
-    readstat_io_t *io = ctx->io;
     size_t buffer_len = ctx->nvar * ctx->typlist_entry_len;
     unsigned char *buffer = NULL;
     int i;
@@ -893,8 +891,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
 
     for (i=0; i<ctx->nvar; i++) {
         size_t      max_len;
-        readstat_types_t type = dta_type_info(ctx->typlist[i], &max_len, ctx);
-
+        dta_type_info(ctx->typlist[i], &max_len, ctx);
         ctx->record_len += max_len;
     }
 
