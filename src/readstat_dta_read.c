@@ -787,6 +787,12 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
             for (i=0; i<n; i++) {
                 if (off[i] < txtlen) {
                     readstat_value_t value = { .v = { .i32_value = val[i] }, .type = READSTAT_TYPE_INT32 };
+                    if (val[i] > DTA_MAX_INT32) {
+                        value.is_system_missing = 1;
+                        if (val[i] > DTA_MISSING_INT32) {
+                            value.tag = 'a' + (val[i] - DTA_MISSING_INT32_A);
+                        }
+                    }
                     if (ctx->value_label_handler(labname, value, &txt[off[i]], ctx->user_ctx)) {
                         retval = READSTAT_ERROR_USER_ABORT;
                         goto cleanup;
