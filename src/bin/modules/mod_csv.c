@@ -9,7 +9,7 @@
 #include "../module.h"
 
 typedef struct mod_csv_ctx_s {
-    int out_fd;
+    FILE *out_file;
     long var_count;
 } mod_csv_ctx_t;
 
@@ -38,8 +38,8 @@ static int accept_file(const char *filename) {
 
 static void *ctx_init(const char *filename) {
     mod_csv_ctx_t *mod_ctx = malloc(sizeof(mod_csv_ctx_t));
-    mod_ctx->out_fd = open(filename, O_CREAT | O_WRONLY | O_EXCL, 0644);
-    if (mod_ctx->out_fd == -1) {
+    mod_ctx->out_file = fopen(filename, "w");
+    if (mod_ctx->out_file == NULL) {
         fprintf(stderr, "Error opening %s for writing: %s\n", filename, strerror(errno));
         return NULL;
     }
@@ -49,8 +49,8 @@ static void *ctx_init(const char *filename) {
 static void finish_file(void *ctx) {
     mod_csv_ctx_t *mod_ctx = (mod_csv_ctx_t *)ctx;
     if (mod_ctx) {
-        if (mod_ctx->out_fd != -1)
-            close(mod_ctx->out_fd);
+        if (mod_ctx->out_file != NULL)
+            fclose(mod_ctx->out_file);
     }
 }
 
@@ -65,12 +65,12 @@ static int handle_variable(int index, readstat_variable_t *variable,
     mod_csv_ctx_t *mod_ctx = (mod_csv_ctx_t *)ctx;
     const char *name = readstat_variable_get_name(variable);
     if (index > 0) {
-        dprintf(mod_ctx->out_fd, ",\"%s\"", name);
+        fprintf(mod_ctx->out_file, ",\"%s\"", name);
     } else {
-        dprintf(mod_ctx->out_fd, "\"%s\"", name);
+        fprintf(mod_ctx->out_file, "\"%s\"", name);
     }
     if (index == mod_ctx->var_count - 1) {
-        dprintf(mod_ctx->out_fd, "\n");
+        fprintf(mod_ctx->out_file, "\n");
     }
     return 0;
 }
@@ -79,26 +79,26 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
     mod_csv_ctx_t *mod_ctx = (mod_csv_ctx_t *)ctx;
     readstat_types_t type = readstat_value_type(value);
     if (var_index > 0) {
-        dprintf(mod_ctx->out_fd, ",");
+        fprintf(mod_ctx->out_file, ",");
     }
     if (readstat_value_is_system_missing(value)) {
         /* void */
     } else if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING) {
         /* TODO escape */
-        dprintf(mod_ctx->out_fd, "\"%s\"", readstat_string_value(value));
+        fprintf(mod_ctx->out_file, "\"%s\"", readstat_string_value(value));
     } else if (type == READSTAT_TYPE_CHAR) {
-        dprintf(mod_ctx->out_fd, "%hhd", readstat_char_value(value));
+        fprintf(mod_ctx->out_file, "%hhd", readstat_char_value(value));
     } else if (type == READSTAT_TYPE_INT16) {
-        dprintf(mod_ctx->out_fd, "%hd", readstat_int16_value(value));
+        fprintf(mod_ctx->out_file, "%hd", readstat_int16_value(value));
     } else if (type == READSTAT_TYPE_INT32) {
-        dprintf(mod_ctx->out_fd, "%d", readstat_int32_value(value));
+        fprintf(mod_ctx->out_file, "%d", readstat_int32_value(value));
     } else if (type == READSTAT_TYPE_FLOAT) {
-        dprintf(mod_ctx->out_fd, "%f", readstat_float_value(value));
+        fprintf(mod_ctx->out_file, "%f", readstat_float_value(value));
     } else if (type == READSTAT_TYPE_DOUBLE) {
-        dprintf(mod_ctx->out_fd, "%lf", readstat_double_value(value));
+        fprintf(mod_ctx->out_file, "%lf", readstat_double_value(value));
     }
     if (var_index == mod_ctx->var_count - 1) {
-        dprintf(mod_ctx->out_fd, "\n");
+        fprintf(mod_ctx->out_file, "\n");
     }
     return 0;
 }
