@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/WizardMac/ReadStat.svg?branch=master)](https://travis-ci.org/WizardMac/ReadStat)
+[![Travis CI build status](https://travis-ci.org/WizardMac/ReadStat.svg?branch=master)](https://travis-ci.org/WizardMac/ReadStat)
+[![Appveyor build status](https://ci.appveyor.com/api/projects/status/76ctatpy3grlrd9x/branch/master?svg=true)](https://ci.appveyor.com/project/evanmiller/readstat/branch/master)
 
 ReadStat: Read (and write) data sets from R, SAS, Stata, and SPSS
 --
