@@ -1,12 +1,13 @@
 AC_INIT([readstat], [20160511])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
-LT_INIT([disable-static])
+LT_INIT([disable-static, win32-dll])
 AC_PROG_CC
 AC_CANONICAL_HOST
 AS_CASE([$host],
 	[*darwin*], [EXTRA_LIBS="-liconv"],
 	[*linux*], [EXTRA_LIBS="-lm"],
+	[*mingw64],  [EXTRA_LIBS="-liconv"],
 	[EXTRA_LIBS=""]
 )
 AC_SUBST([EXTRA_LIBS])
