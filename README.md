@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/WizardMac/ReadStat.svg?branch=master)](https://travis-ci.org/WizardMac/ReadStat)
+
 ReadStat: Read (and write) data sets from R, SAS, Stata, and SPSS
 --
 
