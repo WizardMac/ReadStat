@@ -700,7 +700,7 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
     while (1) {
         size_t len = 0;
         char labname[129];
-        int32_t i, n;
+        int32_t i = 0, n = 0;
 
         if (ctx->value_label_table_len_len == 2) {
             int16_t table_header_len;

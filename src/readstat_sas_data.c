@@ -646,19 +646,16 @@ static readstat_error_t sas_parse_page_pass1(const char *page, size_t page_size,
         uint64_t offset = 0, len = 0;
         uint32_t signature = 0;
         unsigned char compression = 0;
-        unsigned char is_compressed_data = 0;
         int lshp = 0;
         if (ctx->u64) {
             offset = sas_read8(&shp[0], ctx->bswap);
             len = sas_read8(&shp[8], ctx->bswap);
             compression = shp[16];
-            is_compressed_data = shp[17];
             lshp = 24;
         } else {
             offset = sas_read4(&shp[0], ctx->bswap);
             len = sas_read4(&shp[4], ctx->bswap);
             compression = shp[8];
-            is_compressed_data = shp[9];
             lshp = 12;
         }
 
