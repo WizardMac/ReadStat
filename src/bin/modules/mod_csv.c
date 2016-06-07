@@ -40,7 +40,7 @@ static void *ctx_init(const char *filename) {
     mod_csv_ctx_t *mod_ctx = malloc(sizeof(mod_csv_ctx_t));
     mod_ctx->out_fd = open(filename, O_CREAT | O_WRONLY | O_EXCL, 0644);
     if (mod_ctx->out_fd == -1) {
-        dprintf(STDERR_FILENO, "Error opening %s for writing: %s\n", filename, strerror(errno));
+        fprintf(stderr, "Error opening %s for writing: %s\n", filename, strerror(errno));
         return NULL;
     }
     return mod_ctx;

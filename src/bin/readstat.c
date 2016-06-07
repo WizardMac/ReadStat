@@ -81,7 +81,7 @@ int can_write(rs_module_t *modules, long modules_count, char *filename) {
 }
 
 static void handle_error(const char *msg, void *ctx) {
-    dprintf(STDERR_FILENO, "%s", msg);
+    fprintf(stderr, "%s", msg);
 }
 
 static int handle_fweight(int var_index, void *ctx) {
@@ -151,20 +151,20 @@ readstat_error_t parse_file(readstat_parser_t *parser, const char *input_filenam
 }
 
 void print_version() {
-    dprintf(STDERR_FILENO, "ReadStat version " RS_VERSION_STRING "\n");
+    fprintf(stderr, "ReadStat version " RS_VERSION_STRING "\n");
 }
 
 void print_usage(const char *cmd) {
     print_version();
 
-    dprintf(STDERR_FILENO, "\n  Standard usage:\n");
-    dprintf(STDERR_FILENO, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|sav|csv"
+    fprintf(stderr, "\n  Standard usage:\n");
+    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|sav|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif
             ")\n", cmd);
-    dprintf(STDERR_FILENO, "\n  Usage if your value labels are stored in a separate SAS catalog file:\n");
-    dprintf(STDERR_FILENO, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|sav|csv"
+    fprintf(stderr, "\n  Usage if your value labels are stored in a separate SAS catalog file:\n");
+    fprintf(stderr, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|sav|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
 
     gettimeofday(&end_time, NULL);
 
-    dprintf(STDERR_FILENO, "Converted %ld variables and %ld rows in %.2lf seconds\n",
+    fprintf(stderr, "Converted %ld variables and %ld rows in %.2lf seconds\n",
             rs_ctx->var_count, rs_ctx->row_count, 
             (end_time.tv_sec + 1e-6 * end_time.tv_usec) -
             (start_time.tv_sec + 1e-6 * start_time.tv_usec));
@@ -285,7 +285,7 @@ cleanup:
     free(rs_ctx);
 
     if (error != READSTAT_OK) {
-        dprintf(STDERR_FILENO, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
+        fprintf(stderr, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
         unlink(output_filename);
         return 1;
     }
