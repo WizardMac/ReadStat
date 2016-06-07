@@ -11,7 +11,11 @@ branches:
 skip_tags: true
 
 install:
-  - .appveyor\install.bat
+  - C:\msys64\usr\bin\bash --login -c "pacman -S --noconfirm mingw-w64-x86_64-cmake"
+  - C:\msys64\usr\bin\bash --login -c "pacman -S --noconfirm mingw-w64-x86_64-zlib"
 
 build_script:
-  - .appveyor\build_script.bat
+  - set MSYSTEM=MINGW64
+  - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && ./autogen.sh"
+  - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && ./configure"
+  - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && make"
