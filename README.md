@@ -30,13 +30,13 @@ Windows specific notes
 
 You need to install and configure an msys2 environment to compile ReadStat.
 
-First, download and install msys2 from [here](https://msys2.github.io/). Make ure you update your initial msys2 installation as described on tht page.
+First, download and install msys2 from [here](https://msys2.github.io/). Make sure you update your initial msys2 installation as described on that page.
 
 Second, install a number of additional packages at the msys2 command line:
 
     pacman -S autoconf automake libtool mingw-w64-x86_64-toolchain ingw-w64-x86_64-cmake mingw-w64-x86_64-libiconv
 
-Finally, start a MINGW command line (not the msys2 prompt!) and follow the eneral install instructions for this package.
+Finally, start a MINGW command line (not the msys2 prompt!) and follow the general install instructions for this package.
 
 Command-line Usage
 ==
