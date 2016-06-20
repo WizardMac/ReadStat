@@ -143,7 +143,7 @@ cleanup:
 
 static readstat_error_t dta_read_map(dta_ctx_t *ctx) {
     if (!ctx->file_is_xmlish)
-        return 0;
+        return READSTAT_OK;
 
     readstat_error_t retval = READSTAT_OK;
     uint64_t map_buffer[14];

@@ -56,5 +56,8 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_CONVERT_LONG_STRING)
         return "Unable to convert string to the requested encoding (output buffer too small)";
 
+    if (error_code == READSTAT_ERROR_VALUE_OUT_OF_RANGE)
+        return "A provided value was outside the range of representable values in the specified file format";
+
     return "Unknown error";
 }

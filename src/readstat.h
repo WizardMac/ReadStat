@@ -61,7 +61,8 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_CONVERT,
     READSTAT_ERROR_CONVERT_BAD_STRING,
     READSTAT_ERROR_CONVERT_SHORT_STRING,
-    READSTAT_ERROR_CONVERT_LONG_STRING
+    READSTAT_ERROR_CONVERT_LONG_STRING,
+    READSTAT_ERROR_VALUE_OUT_OF_RANGE
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);

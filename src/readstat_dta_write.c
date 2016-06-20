@@ -340,6 +340,9 @@ static readstat_error_t dta_write_char(void *row, const readstat_variable_t *var
     if (var->type != READSTAT_TYPE_CHAR) {
         return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
     }
+    if (value > DTA_MAX_CHAR) {
+        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+    }
     memcpy(row, &value, sizeof(char));
     return READSTAT_OK;
 }
@@ -347,6 +350,9 @@ static readstat_error_t dta_write_char(void *row, const readstat_variable_t *var
 static readstat_error_t dta_write_int16(void *row, const readstat_variable_t *var, int16_t value) {
     if (var->type != READSTAT_TYPE_INT16) {
         return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
+    }
+    if (value > DTA_MAX_INT16) {
+        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     }
     memcpy(row, &value, sizeof(int16_t));
     return READSTAT_OK;
@@ -356,6 +362,9 @@ static readstat_error_t dta_write_int32(void *row, const readstat_variable_t *va
     if (var->type != READSTAT_TYPE_INT32) {
         return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
     }
+    if (value > DTA_MAX_INT32) {
+        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+    }
     memcpy(row, &value, sizeof(int32_t));
     return READSTAT_OK;
 }
@@ -364,6 +373,12 @@ static readstat_error_t dta_write_float(void *row, const readstat_variable_t *va
     if (var->type != READSTAT_TYPE_FLOAT) {
         return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
     }
+
+    int32_t max_flt_i32 = DTA_MAX_FLOAT;
+    if (value > *((float *)&max_flt_i32)) {
+        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+    }
+
     memcpy(row, &value, sizeof(float));
     return READSTAT_OK;
 }
@@ -372,6 +387,12 @@ static readstat_error_t dta_write_double(void *row, const readstat_variable_t *v
     if (var->type != READSTAT_TYPE_DOUBLE) {
         return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
     }
+
+    int64_t max_dbl_i64 = DTA_MAX_DOUBLE;
+    if (value > *((double *)&max_dbl_i64)) {
+        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+    }
+
     memcpy(row, &value, sizeof(double));
     return READSTAT_OK;
 }
