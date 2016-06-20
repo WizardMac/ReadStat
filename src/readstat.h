@@ -73,7 +73,7 @@ typedef struct readstat_value_s {
         double      double_value;
         int16_t     i16_value;
         int32_t     i32_value;
-        char       *string_value;
+        const char *string_value;
     } v;
     readstat_types_t         type;
     char                    tag;
@@ -92,7 +92,7 @@ int16_t readstat_int16_value(readstat_value_t value);
 int32_t readstat_int32_value(readstat_value_t value);
 float readstat_float_value(readstat_value_t value);
 double readstat_double_value(readstat_value_t value);
-char *readstat_string_value(readstat_value_t value);
+const char *readstat_string_value(readstat_value_t value);
 
 /* Internal data structures */
 typedef struct readstat_value_label_s {
