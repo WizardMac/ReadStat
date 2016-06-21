@@ -62,8 +62,20 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
     for (j=0; j<file->columns_count; j++) {
         rt_column_t *column = &file->columns[j];
 
+        size_t max_len = 0;
+        if (column->type == READSTAT_TYPE_STRING) {
+            for (i=0; i<file->rows; i++) {
+                const char *value = readstat_string_value(column->values[i]);
+                if (value) {
+                    size_t len = strlen(value);
+                    if (len > max_len)
+                        max_len = len;
+                }
+            }
+        }
+
         readstat_variable_t *variable = readstat_add_variable(writer, 
-                column->name, column->type, RT_MAX_STRING);
+                column->name, column->type, max_len);
 
         readstat_variable_set_alignment(variable, column->alignment);
         readstat_variable_set_measure(variable, column->measure);

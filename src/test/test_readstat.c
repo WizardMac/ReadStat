@@ -25,6 +25,36 @@ typedef struct rt_test_group_s {
 
 rt_test_group_t _test_groups[] = {
     {
+        .label = "Long strings in DTA 117/118",
+        .tests = {
+            {
+                .label = "300-byte string in newer DTA file",
+                .test_formats = RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = { 
+                            { .type = READSTAT_TYPE_STRING, .v = 
+                                { .string_value = /* 300 bytes long */
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+        },
+    },
+    {
         .label = "Illegal column names",
         .tests = {
             {
@@ -447,9 +477,6 @@ int main(int argc, char *argv[]) {
 
 cleanup:
     if (error != READSTAT_OK) {
-        int fd = open("/tmp/test_readstat.dta", O_CREAT | O_WRONLY, 0644);
-        write(fd, buffer->bytes, buffer->used);
-        close(fd);
         printf("Error running test \"%s\" (format=0x%04x): %s\n", 
                 _test_groups[g].tests[t].label,
                 f, readstat_error_message(error));
