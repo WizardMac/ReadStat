@@ -183,7 +183,7 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
             if (mod_ctx->is_sav) {
                 error = readstat_begin_writing_sav(writer, mod_ctx, mod_ctx->row_count);
             } else if (mod_ctx->is_dta) {
-                error = readstat_begin_writing_dta(writer, 0, mod_ctx, mod_ctx->row_count);
+                error = readstat_begin_writing_dta(writer, mod_ctx, mod_ctx->row_count);
             }
             if (error != READSTAT_OK)
                 goto cleanup;

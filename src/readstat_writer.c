@@ -238,12 +238,19 @@ readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index)
     return NULL;
 }
 
-void readstat_writer_set_file_label(readstat_writer_t *writer, const char *file_label) {
+readstat_error_t readstat_writer_set_file_label(readstat_writer_t *writer, const char *file_label) {
     snprintf(writer->file_label, sizeof(writer->file_label), "%s", file_label);
+    return READSTAT_OK;
 }
 
-void readstat_writer_set_fweight_variable(readstat_writer_t *writer, const readstat_variable_t *variable) {
+readstat_error_t readstat_writer_set_fweight_variable(readstat_writer_t *writer, const readstat_variable_t *variable) {
     writer->fweight_variable = variable;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writer, long version) {
+    writer->version = version;
+    return READSTAT_OK;
 }
 
 readstat_error_t readstat_begin_row(readstat_writer_t *writer) {

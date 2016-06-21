@@ -339,13 +339,14 @@ void readstat_variable_add_missing_double_range(readstat_variable_t *variable, d
 readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index);
 
 // Optional metadata
-void readstat_writer_set_file_label(readstat_writer_t *writer, const char *file_label);
-void readstat_writer_set_fweight_variable(readstat_writer_t *writer, const readstat_variable_t *variable);
+readstat_error_t readstat_writer_set_file_label(readstat_writer_t *writer, const char *file_label);
+readstat_error_t readstat_writer_set_fweight_variable(readstat_writer_t *writer, const readstat_variable_t *variable);
+readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writer, 
+        long file_format_version); // e.g. 104-118 for DTA
 
 // Call one of these at any time before the first invocation of readstat_begin_row
 readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count);
-readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, int dta_version, // 0 for default
-        void *user_ctx, long row_count);
+readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *user_ctx, long row_count);
 
 // Start a row of data (that is, a case or observation)
 readstat_error_t readstat_begin_row(readstat_writer_t *writer);

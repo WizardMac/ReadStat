@@ -1097,13 +1097,9 @@ cleanup:
     return error;
 }
 
-readstat_error_t readstat_begin_writing_dta(
-        readstat_writer_t *writer, int version,
-        void *user_ctx, long row_count) {
+readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *user_ctx, long row_count) {
     writer->row_count = row_count;
     writer->user_ctx = user_ctx;
-
-    writer->version = version ? version : DTA_DEFAULT_FILE_VERSION;
 
     if (writer->version >= 119 || writer->version < 104) {
         return READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
