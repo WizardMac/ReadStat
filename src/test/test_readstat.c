@@ -55,6 +55,48 @@ rt_test_group_t _test_groups[] = {
         },
     },
     {
+        .label = "UTF-8 tests",
+        .tests = {
+            {
+                .label = "UTF-8 value",
+                .test_formats = RT_FORMAT_DTA_118 | RT_FORMAT_SAV,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = { 
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Stra" "\xc3\x9f" "e" } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "UTF-8 column name",
+                .test_formats = RT_FORMAT_SAV,
+                .rows = 0,
+                .columns = {
+                    {
+                        .name = "stra" "\xc3\x9f" "e",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
+                .label = "UTF-8 column label",
+                .test_formats = RT_FORMAT_DTA_118 | RT_FORMAT_SAV,
+                .rows = 0,
+                .columns = {
+                    {
+                        .name = "strasse",
+                        .label = "Stra" "\xc3\x9f" "e",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            }
+        }
+    },
+    {
         .label = "Illegal column names",
         .tests = {
             {
