@@ -111,7 +111,7 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
             "Number of variables");
 
     push_error_if_doubles_differ(rt_ctx, 
-            RT_MAX_ROWS, obs_count, 
+            rt_ctx->file->rows, obs_count, 
             "Number of observations");
 
     return 0;
@@ -142,37 +142,9 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
     rt_ctx->obs_index = obs_index;
     rt_ctx->var_index = var_index;
 
-    if (column->type == READSTAT_TYPE_STRING) {
-        push_error_if_strings_differ(rt_ctx, 
-                column->string_values[obs_index],
-                readstat_string_value(value),
-                "String values");
-    } else if (column->type == READSTAT_TYPE_DOUBLE) {
-        push_error_if_doubles_differ(rt_ctx, 
-                column->double_values[obs_index],
-                readstat_double_value(value),
-                "Double values");
-    } else if (column->type == READSTAT_TYPE_FLOAT) {
-        push_error_if_doubles_differ(rt_ctx, 
-                column->float_values[obs_index],
-                readstat_float_value(value),
-                "Float values");
-    } else if (column->type == READSTAT_TYPE_INT32) {
-        push_error_if_doubles_differ(rt_ctx, 
-                column->i32_values[obs_index],
-                readstat_int32_value(value),
-                "Int32 values");
-    } else if (column->type == READSTAT_TYPE_INT16) {
-        push_error_if_doubles_differ(rt_ctx, 
-                column->i16_values[obs_index],
-                readstat_int16_value(value),
-                "Int16 values");
-    } else if (column->type == READSTAT_TYPE_CHAR) {
-        push_error_if_doubles_differ(rt_ctx, 
-                column->i8_values[obs_index],
-                readstat_char_value(value),
-                "Int8 values");
-    }
+    push_error_if_values_differ(rt_ctx, 
+            column->values[obs_index],
+            value, "Data values");
 
     return 0;
 }

@@ -62,7 +62,8 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_CONVERT_BAD_STRING,
     READSTAT_ERROR_CONVERT_SHORT_STRING,
     READSTAT_ERROR_CONVERT_LONG_STRING,
-    READSTAT_ERROR_VALUE_OUT_OF_RANGE
+    READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+    READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);
@@ -270,6 +271,7 @@ typedef struct readstat_writer_callbacks_s {
     readstat_write_double_callback  write_double;
     readstat_write_string_callback  write_string;
     readstat_write_missing_callback write_missing;
+    readstat_write_char_callback    write_tagged_missing;
     readstat_begin_data_callback    begin_data;
     readstat_end_data_callback      end_data;
 } readstat_writer_callbacks_t;
@@ -349,6 +351,7 @@ readstat_error_t readstat_insert_float_value(readstat_writer_t *writer, const re
 readstat_error_t readstat_insert_double_value(readstat_writer_t *writer, const readstat_variable_t *variable, double value);
 readstat_error_t readstat_insert_string_value(readstat_writer_t *writer, const readstat_variable_t *variable, const char *value);
 readstat_error_t readstat_insert_missing_value(readstat_writer_t *writer, const readstat_variable_t *variable);
+readstat_error_t readstat_insert_tagged_missing_value(readstat_writer_t *writer, const readstat_variable_t *variable, char tag);
 
 // Finally, close out the row
 readstat_error_t readstat_end_row(readstat_writer_t *writer);

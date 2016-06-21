@@ -290,6 +290,10 @@ readstat_error_t readstat_insert_missing_value(readstat_writer_t *writer, const 
     return writer->callbacks.write_missing(&writer->row[variable->offset], variable);
 }
 
+readstat_error_t readstat_insert_tagged_missing_value(readstat_writer_t *writer, const readstat_variable_t *variable, char tag) {
+    return writer->callbacks.write_tagged_missing(&writer->row[variable->offset], variable, tag);
+}
+
 readstat_error_t readstat_end_row(readstat_writer_t *writer) {
     writer->current_row++;
     return readstat_write_bytes(writer, writer->row, writer->row_len);

@@ -1,4 +1,9 @@
 
+void push_error_if_values_differ(rt_parse_ctx_t *ctx, 
+        readstat_value_t expected,
+        readstat_value_t received,
+        const char *msg);
+
 void push_error_if_doubles_differ(rt_parse_ctx_t *ctx,
         double expected,
         double received,

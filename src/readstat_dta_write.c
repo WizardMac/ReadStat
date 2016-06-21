@@ -17,6 +17,8 @@
 #define DTA_DEFAULT_FORMAT_FLOAT   "9.0g"
 #define DTA_DEFAULT_FORMAT_DOUBLE "10.0g"
 
+static readstat_error_t dta_write_missing(void *row, const readstat_variable_t *var);
+
 static readstat_error_t dta_emit_header_data_label(readstat_writer_t *writer) {
     char data_label[81];
     memset(data_label, 0, sizeof(data_label));
@@ -377,6 +379,8 @@ static readstat_error_t dta_write_float(void *row, const readstat_variable_t *va
     int32_t max_flt_i32 = DTA_MAX_FLOAT;
     if (value > *((float *)&max_flt_i32)) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+    } else if (isnan(value)) {
+        return dta_write_missing(row, var);
     }
 
     memcpy(row, &value, sizeof(float));
@@ -391,6 +395,8 @@ static readstat_error_t dta_write_double(void *row, const readstat_variable_t *v
     int64_t max_dbl_i64 = DTA_MAX_DOUBLE;
     if (value > *((double *)&max_dbl_i64)) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+    } else if (isnan(value)) {
+        return dta_write_missing(row, var);
     }
 
     memcpy(row, &value, sizeof(double));
@@ -432,6 +438,32 @@ static readstat_error_t dta_write_missing(void *row, const readstat_variable_t *
     return retval;
 }
 
+static readstat_error_t dta_write_tagged_missing(void *row, const readstat_variable_t *var, char tag) {
+    readstat_error_t retval = READSTAT_OK;
+    if (tag < 'a' || tag > 'z')
+        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+
+    if (var->type == READSTAT_TYPE_CHAR) {
+        int8_t val_c = DTA_MISSING_CHAR_A + (tag - 'a');
+        memcpy(row, &val_c, sizeof(int8_t));
+    } else if (var->type == READSTAT_TYPE_INT16) {
+        int16_t val_s = DTA_MISSING_INT16_A + (tag - 'a');
+        memcpy(row, &val_s, sizeof(int16_t));
+    } else if (var->type == READSTAT_TYPE_INT32) {
+        int32_t val_i = DTA_MISSING_INT32_A + (tag - 'a');
+        memcpy(row, &val_i, sizeof(int32_t));
+    } else if (var->type == READSTAT_TYPE_FLOAT) {
+        int32_t val_i = DTA_MISSING_FLOAT_A + ((tag - 'a') << 11);
+        memcpy(row, &val_i, sizeof(int32_t));
+    } else if (var->type == READSTAT_TYPE_DOUBLE) {
+        int64_t val_l = DTA_MISSING_DOUBLE_A + ((int64_t)(tag - 'a') << 40);
+        memcpy(row, &val_l, sizeof(int64_t));
+    } else {
+        retval = READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED;
+    }
+    return retval;
+}
+
 static readstat_error_t dta_end_data(void *writer_ctx) {
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     readstat_error_t retval = READSTAT_OK;
@@ -456,6 +488,7 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
     writer->callbacks.write_double = &dta_write_double;
     writer->callbacks.write_string = &dta_write_string;
     writer->callbacks.write_missing = &dta_write_missing;
+    writer->callbacks.write_tagged_missing = &dta_write_tagged_missing;
     writer->callbacks.begin_data = &dta_begin_data;
     writer->callbacks.end_data = &dta_end_data;
 

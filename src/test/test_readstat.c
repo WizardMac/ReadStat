@@ -16,8 +16,32 @@
 #include "test_read.h"
 #include "test_write.h"
 
-rt_file_t _huge_double_fail = {
+rt_file_t _sav_tag_fail = {
+    .write_error = READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED,
+
+    .label = "SAV tagged missing values",
+
+    .rows = 1,
+
+    .test_formats = RT_FORMAT_SAV,
+
+    .columns = {
+        {
+            .name = "var1",
+            .type = READSTAT_TYPE_DOUBLE,
+            .values = { 
+                { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = NAN }, .tag = 'a' } 
+            }
+        }
+    }
+};
+
+rt_file_t _dta_tag_fail = {
     .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+
+    .label = "DTA out-of-range tagged missing values",
+
+    .rows = 1,
 
     .test_formats = RT_FORMAT_DTA,
 
@@ -25,7 +49,144 @@ rt_file_t _huge_double_fail = {
         {
             .name = "var1",
             .type = READSTAT_TYPE_DOUBLE,
-            .double_values = { HUGE_VAL }
+            .values = { 
+                { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = NAN }, .tag = '$' } 
+            }
+        }
+    }
+};
+
+rt_file_t _dta_tagged_doubles = {
+    .test_formats = RT_FORMAT_DTA,
+
+    .label = "DTA in-range tagged missing doubles",
+
+    .rows = 6,
+
+    .columns = {
+        {
+            .name = "var1",
+            .type = READSTAT_TYPE_DOUBLE,
+            .values = { 
+                { .type = READSTAT_TYPE_DOUBLE, .tag = 'a' },
+                { .type = READSTAT_TYPE_DOUBLE, .tag = 'b' },
+                { .type = READSTAT_TYPE_DOUBLE, .tag = 'c' },
+                { .type = READSTAT_TYPE_DOUBLE, .tag = 'x' },
+                { .type = READSTAT_TYPE_DOUBLE, .tag = 'y' },
+                { .type = READSTAT_TYPE_DOUBLE, .tag = 'z' }
+            }
+        }
+    }
+};
+
+rt_file_t _dta_tagged_floats = {
+    .test_formats = RT_FORMAT_DTA,
+
+    .label = "DTA in-range tagged missing floats",
+
+    .rows = 6,
+
+    .columns = {
+        {
+            .name = "var2",
+            .type = READSTAT_TYPE_FLOAT,
+            .values = { 
+                { .type = READSTAT_TYPE_FLOAT, .tag = 'a' },
+                { .type = READSTAT_TYPE_FLOAT, .tag = 'b' },
+                { .type = READSTAT_TYPE_FLOAT, .tag = 'c' },
+                { .type = READSTAT_TYPE_FLOAT, .tag = 'x' },
+                { .type = READSTAT_TYPE_FLOAT, .tag = 'y' },
+                { .type = READSTAT_TYPE_FLOAT, .tag = 'z' }
+            }
+        }
+    }
+};
+
+rt_file_t _dta_tagged_int32s = {
+    .test_formats = RT_FORMAT_DTA,
+
+    .label = "DTA in-range tagged missing int32s",
+
+    .rows = 6,
+
+    .columns = {
+        {
+            .name = "var3",
+            .type = READSTAT_TYPE_INT32,
+            .values = { 
+                { .type = READSTAT_TYPE_INT32, .tag = 'a' },
+                { .type = READSTAT_TYPE_INT32, .tag = 'b' },
+                { .type = READSTAT_TYPE_INT32, .tag = 'c' },
+                { .type = READSTAT_TYPE_INT32, .tag = 'x' },
+                { .type = READSTAT_TYPE_INT32, .tag = 'y' },
+                { .type = READSTAT_TYPE_INT32, .tag = 'z' }
+            }
+        }
+    }
+};
+
+rt_file_t _dta_tagged_int16s = {
+    .test_formats = RT_FORMAT_DTA,
+
+    .label = "DTA in-range tagged missing int16s",
+
+    .rows = 6,
+
+    .columns = {
+        {
+            .name = "var4",
+            .type = READSTAT_TYPE_INT16,
+            .values = { 
+                { .type = READSTAT_TYPE_INT16, .tag = 'a' },
+                { .type = READSTAT_TYPE_INT16, .tag = 'b' },
+                { .type = READSTAT_TYPE_INT16, .tag = 'c' },
+                { .type = READSTAT_TYPE_INT16, .tag = 'x' },
+                { .type = READSTAT_TYPE_INT16, .tag = 'y' },
+                { .type = READSTAT_TYPE_INT16, .tag = 'z' }
+            }
+        }
+    }
+};
+
+rt_file_t _dta_tagged_int8s = {
+    .test_formats = RT_FORMAT_DTA,
+
+    .label = "DTA in-range tagged missing int8s",
+
+    .rows = 6,
+
+    .columns = {
+        {
+            .name = "var5",
+            .type = READSTAT_TYPE_CHAR,
+            .values = { 
+                { .type = READSTAT_TYPE_CHAR, .tag = 'a' },
+                { .type = READSTAT_TYPE_CHAR, .tag = 'b' },
+                { .type = READSTAT_TYPE_CHAR, .tag = 'c' },
+                { .type = READSTAT_TYPE_CHAR, .tag = 'x' },
+                { .type = READSTAT_TYPE_CHAR, .tag = 'y' },
+                { .type = READSTAT_TYPE_CHAR, .tag = 'z' }
+            }
+        }
+    }
+};
+
+rt_file_t _huge_double_fail = {
+    .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+
+    .label = "DTA out-of-range double value",
+
+    .rows = 1,
+
+    .test_formats = RT_FORMAT_DTA,
+
+    .columns = {
+        {
+            .name = "var1",
+            .type = READSTAT_TYPE_DOUBLE,
+            .values = { 
+                { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = HUGE_VAL } } 
+            }
         }
     }
 };
@@ -33,13 +194,19 @@ rt_file_t _huge_double_fail = {
 rt_file_t _huge_float_fail = {
     .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
 
+    .label = "DTA out-of-range float value",
+
+    .rows = 1,
+
     .test_formats = RT_FORMAT_DTA,
 
     .columns = {
         {
             .name = "var1",
             .type = READSTAT_TYPE_FLOAT,
-            .float_values = { HUGE_VALF }
+            .values = { 
+                { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = HUGE_VALF } } 
+            }
         }
     }
 };
@@ -47,13 +214,19 @@ rt_file_t _huge_float_fail = {
 rt_file_t _huge_int32_fail = {
     .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
 
+    .label = "DTA out-of-range int32 value",
+
+    .rows = 1,
+
     .test_formats = RT_FORMAT_DTA,
 
     .columns = {
         {
             .name = "var1",
             .type = READSTAT_TYPE_INT32,
-            .i32_values = { DTA_MAX_INT32+1 }
+            .values = { 
+                { .type = READSTAT_TYPE_INT32, .v = { .i32_value = DTA_MAX_INT32+1 } } 
+            }
         }
     }
 };
@@ -61,13 +234,17 @@ rt_file_t _huge_int32_fail = {
 rt_file_t _huge_int16_fail = {
     .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
 
+    .label = "DTA out-of-range int16 value",
+
+    .rows = 1,
+
     .test_formats = RT_FORMAT_DTA,
 
     .columns = {
         {
             .name = "var1",
             .type = READSTAT_TYPE_INT16,
-            .i16_values = { DTA_MAX_INT16+1 }
+            .values = { { .type = READSTAT_TYPE_INT16, .v = { .i16_value = DTA_MAX_INT16+1 } } }
         }
     }
 };
@@ -75,13 +252,17 @@ rt_file_t _huge_int16_fail = {
 rt_file_t _huge_int8_fail = {
     .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
 
+    .label = "DTA out-of-range int8 value",
+
+    .rows = 1,
+
     .test_formats = RT_FORMAT_DTA,
 
     .columns = {
         {
             .name = "var1",
             .type = READSTAT_TYPE_CHAR,
-            .i8_values = { DTA_MAX_CHAR+1 }
+            .values = { { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_MAX_CHAR+1 } } }
         }
     }
 };
@@ -89,6 +270,10 @@ rt_file_t _huge_int8_fail = {
 rt_file_t _test_file1  = {
     .write_error = READSTAT_OK,
     
+    .label = "Generic test file with all column types",
+
+    .rows = 5,
+
     .test_formats = RT_FORMAT_ALL,
 
     .columns = {
@@ -98,7 +283,13 @@ rt_file_t _test_file1  = {
             .type = READSTAT_TYPE_DOUBLE,
             .alignment = READSTAT_ALIGNMENT_CENTER,
             .measure = READSTAT_MEASURE_SCALE,
-            .double_values = { 100.0, 10.0, -3.14159, NAN, -HUGE_VAL }
+            .values = { 
+                { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } }, 
+                { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 10.0 } }, 
+                { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -3.14159, } }, 
+                { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = NAN } }, 
+                { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -HUGE_VAL } }
+            }
         },
         { 
             .name = "var2",
@@ -106,7 +297,13 @@ rt_file_t _test_file1  = {
             .type = READSTAT_TYPE_FLOAT,
             .alignment = READSTAT_ALIGNMENT_CENTER,
             .measure = READSTAT_MEASURE_SCALE,
-            .float_values = { 20.0, 15.0, 3.14159, NAN }
+            .values = { 
+                { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 20.0 } }, 
+                { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 15.0 } },
+                { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 3.14159 } },
+                { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = NAN } },
+                { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = -HUGE_VALF } }
+            }
         },
         { 
             .name = "var3",
@@ -114,7 +311,13 @@ rt_file_t _test_file1  = {
             .type = READSTAT_TYPE_INT32,
             .alignment = READSTAT_ALIGNMENT_CENTER,
             .measure = READSTAT_MEASURE_SCALE,
-            .i32_values = { 20, 15, -281817, DTA_MAX_INT32 }
+            .values = { 
+                { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 20 } },
+                { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 15 } },
+                { .type = READSTAT_TYPE_INT32, .v = { .i32_value = -281817 } }, 
+                { .type = READSTAT_TYPE_INT32, .v = { .i32_value = DTA_MAX_INT32 } },
+                { .type = READSTAT_TYPE_INT32, .v = { .i32_value = INT32_MIN } }
+            }
         },
         { 
             .name = "var4",
@@ -122,7 +325,13 @@ rt_file_t _test_file1  = {
             .type = READSTAT_TYPE_INT16,
             .alignment = READSTAT_ALIGNMENT_CENTER,
             .measure = READSTAT_MEASURE_SCALE,
-            .i16_values = { 20, 15, -28117, DTA_MAX_INT16 }
+            .values = { 
+                { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 20 } }, 
+                { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 15 } }, 
+                { .type = READSTAT_TYPE_INT16, .v = { .i16_value = -28117 } }, 
+                { .type = READSTAT_TYPE_INT16, .v = { .i16_value = DTA_MAX_INT16 } },
+                { .type = READSTAT_TYPE_INT16, .v = { .i16_value = INT16_MIN } }
+            }
         },
         { 
             .name = "var5",
@@ -130,7 +339,13 @@ rt_file_t _test_file1  = {
             .type = READSTAT_TYPE_CHAR,
             .alignment = READSTAT_ALIGNMENT_CENTER,
             .measure = READSTAT_MEASURE_SCALE,
-            .i8_values = { 20, 15, -28, DTA_MAX_CHAR }
+            .values = { 
+                { .type = READSTAT_TYPE_CHAR, .v = { .char_value = 20 } }, 
+                { .type = READSTAT_TYPE_CHAR, .v = { .char_value = 15 } }, 
+                { .type = READSTAT_TYPE_CHAR, .v = { .char_value = -28 } }, 
+                { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_MAX_CHAR } },
+                { .type = READSTAT_TYPE_CHAR, .v = { .char_value = INT8_MIN } }
+            }
         },
         { 
             .name = "var6",
@@ -138,7 +353,13 @@ rt_file_t _test_file1  = {
             .type = READSTAT_TYPE_STRING,
             .alignment = READSTAT_ALIGNMENT_LEFT,
             .measure = READSTAT_MEASURE_ORDINAL,
-            .string_values = { "Hello", "Goodbye" }
+            .values = { 
+                { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Hello" } }, 
+                { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Goodbye" } },
+                { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Goodbye" } },
+                { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Goodbye" } },
+                { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+            }
         }
     }
 };
@@ -148,6 +369,13 @@ int main(int argc, char *argv[]) {
     readstat_error_t error = READSTAT_OK;
 
     rt_file_t *files[] = { 
+        &_sav_tag_fail,
+        &_dta_tag_fail,
+        &_dta_tagged_doubles,
+        &_dta_tagged_floats,
+        &_dta_tagged_int32s,
+        &_dta_tagged_int16s,
+        &_dta_tagged_int8s,
         &_huge_double_fail, 
         &_huge_float_fail, 
         &_huge_int32_fail,
@@ -203,7 +431,9 @@ int main(int argc, char *argv[]) {
 
 cleanup:
     if (error != READSTAT_OK) {
-        printf("Error running test (j=%d f=%d): %s\n", j, f, readstat_error_message(error));
+        printf("Error running test \"%s\" (format=%d): %s\n", 
+                files[j]->label,
+                f, readstat_error_message(error));
         return 1;
     }
 

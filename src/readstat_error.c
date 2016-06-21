@@ -59,5 +59,8 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_VALUE_OUT_OF_RANGE)
         return "A provided value was outside the range of representable values in the specified file format";
 
+    if (error_code == READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED)
+        return "The file format does not supported character tags for missing values";
+
     return "Unknown error";
 }

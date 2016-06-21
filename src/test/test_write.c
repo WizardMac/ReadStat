@@ -28,9 +28,9 @@ readstat_error_t write_file_to_buffer(rt_file_t *file, rt_buffer_t *buffer, long
     readstat_writer_set_file_label(writer, "ReadStat Test File");
 
     if (format == RT_FORMAT_DTA) {
-        error = readstat_begin_writing_dta(writer, buffer, RT_MAX_ROWS);
+        error = readstat_begin_writing_dta(writer, buffer, file->rows);
     } else if (format == RT_FORMAT_SAV) {
-        error = readstat_begin_writing_sav(writer, buffer, RT_MAX_ROWS);
+        error = readstat_begin_writing_sav(writer, buffer, file->rows);
     }
 
     if (error != READSTAT_OK)
@@ -48,7 +48,7 @@ readstat_error_t write_file_to_buffer(rt_file_t *file, rt_buffer_t *buffer, long
         readstat_variable_set_label(variable, column->label);
     }
 
-    for (i=0; i<RT_MAX_ROWS; i++) {
+    for (i=0; i<file->rows; i++) {
         error = readstat_begin_row(writer);
         if (error != READSTAT_OK)
             goto cleanup;
@@ -57,19 +57,28 @@ readstat_error_t write_file_to_buffer(rt_file_t *file, rt_buffer_t *buffer, long
             rt_column_t *column = &file->columns[j];
             readstat_variable_t *variable = readstat_get_variable(writer, j);
 
-            if (column->type == READSTAT_TYPE_STRING ||
+            if (readstat_value_tag(column->values[i])) {
+                error = readstat_insert_tagged_missing_value(writer, variable, 
+                        readstat_value_tag(column->values[i]));
+            } else if (column->type == READSTAT_TYPE_STRING ||
                     column->type == READSTAT_TYPE_LONG_STRING) {
-                error = readstat_insert_string_value(writer, variable, column->string_values[i]);
+                error = readstat_insert_string_value(writer, variable, 
+                        readstat_string_value(column->values[i]));
             } else if (column->type == READSTAT_TYPE_DOUBLE) {
-                error = readstat_insert_double_value(writer, variable, column->double_values[i]);
+                error = readstat_insert_double_value(writer, variable, 
+                        readstat_double_value(column->values[i]));
             } else if (column->type == READSTAT_TYPE_FLOAT) {
-                error = readstat_insert_float_value(writer, variable, column->float_values[i]);
+                error = readstat_insert_float_value(writer, variable, 
+                        readstat_float_value(column->values[i]));
             } else if (column->type == READSTAT_TYPE_INT32) {
-                error = readstat_insert_int32_value(writer, variable, column->i32_values[i]);
+                error = readstat_insert_int32_value(writer, variable, 
+                        readstat_int32_value(column->values[i]));
             } else if (column->type == READSTAT_TYPE_INT16) {
-                error = readstat_insert_int16_value(writer, variable, column->i16_values[i]);
+                error = readstat_insert_int16_value(writer, variable, 
+                        readstat_int16_value(column->values[i]));
             } else if (column->type == READSTAT_TYPE_CHAR) {
-                error = readstat_insert_char_value(writer, variable, column->i8_values[i]);
+                error = readstat_insert_char_value(writer, variable, 
+                        readstat_char_value(column->values[i]));
             }
             if (error != READSTAT_OK)
                 goto cleanup;
