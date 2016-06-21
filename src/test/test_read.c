@@ -19,10 +19,9 @@ static void buffer_ctx_reset(rt_buffer_ctx_t *buffer_ctx) {
     buffer_ctx->pos = 0;
 }
 
-rt_parse_ctx_t *parse_ctx_init(rt_buffer_t *buffer, long file_index, rt_file_t *file) {
+rt_parse_ctx_t *parse_ctx_init(rt_buffer_t *buffer, rt_test_file_t *file) {
     rt_parse_ctx_t *parse_ctx = calloc(1, sizeof(rt_parse_ctx_t));
     parse_ctx->buffer_ctx = buffer_ctx_init(buffer);
-    parse_ctx->file_index = file_index;
     parse_ctx->file = file;
     return parse_ctx;
 }

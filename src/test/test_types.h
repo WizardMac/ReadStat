@@ -11,7 +11,7 @@ typedef struct rt_column_s {
     readstat_value_t        values[RT_MAX_ROWS];
 } rt_column_t;
 
-typedef struct rt_file_s {
+typedef struct rt_test_file_s {
     readstat_error_t    write_error;
     long                test_formats;
 
@@ -20,15 +20,14 @@ typedef struct rt_file_s {
 
     rt_column_t         columns[RT_MAX_COLS];
     long                columns_count;
-} rt_file_t;
+} rt_test_file_t;
 
 typedef struct rt_error_s {
     readstat_value_t    received;
     readstat_value_t    expected;
 
-    rt_file_t          *file;
+    rt_test_file_t     *file;
     long                file_format;
-    long                file_index;
 
     readstat_off_t      pos;
     long                var_index;
@@ -54,9 +53,8 @@ typedef struct rt_parse_ctx_s {
     long             var_index;
     long             obs_index;
 
+    rt_test_file_t  *file;
     long             file_format;
-    long             file_index;
-    rt_file_t       *file;
 
     rt_buffer_ctx_t *buffer_ctx;
 } rt_parse_ctx_t;

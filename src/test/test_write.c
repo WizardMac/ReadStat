@@ -20,7 +20,7 @@ static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
     return len;
 }
 
-readstat_error_t write_file_to_buffer(rt_file_t *file, rt_buffer_t *buffer, long format) {
+readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer, long format) {
     readstat_error_t error = READSTAT_OK;
 
     readstat_writer_t *writer = readstat_writer_init();

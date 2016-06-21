@@ -16,7 +16,6 @@ void push_error(rt_parse_ctx_t *ctx,
     error->expected = expected;
     error->received = received;
     error->file = ctx->file;
-    error->file_index = ctx->file_index;
     error->file_format = ctx->file_format;
     error->pos = ctx->buffer_ctx->pos;
     error->var_index = ctx->var_index;
