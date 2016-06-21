@@ -358,7 +358,7 @@ int main(int argc, char *argv[]) {
             }
             rt_parse_ctx_t *parse_ctx = parse_ctx_init(buffer, file);
 
-            for (f=RT_FORMAT_DTA; f<=RT_FORMAT_SAV; f*=2) {
+            for (f=RT_FORMAT_DTA_104; f<=RT_FORMAT_SAV; f*=2) {
                 if (!(file->test_formats & f))
                     continue;
 

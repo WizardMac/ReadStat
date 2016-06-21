@@ -62,5 +62,8 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED)
         return "The file format does not supported character tags for missing values";
 
+    if (error_code == READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION)
+        return "This version of the file format is not supported";
+
     return "Unknown error";
 }

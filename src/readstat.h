@@ -63,7 +63,8 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_CONVERT_SHORT_STRING,
     READSTAT_ERROR_CONVERT_LONG_STRING,
     READSTAT_ERROR_VALUE_OUT_OF_RANGE,
-    READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED
+    READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED,
+    READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);
@@ -282,6 +283,7 @@ typedef ssize_t (*readstat_data_writer)(const void *data, size_t len, void *ctx)
 
 typedef struct readstat_writer_s {
     readstat_data_writer        data_writer;
+    long                        version;
 
     readstat_variable_t       **variables;
     long                        variables_count;
@@ -338,7 +340,8 @@ void readstat_writer_set_fweight_variable(readstat_writer_t *writer, const reads
 
 // Call one of these at any time before the first invocation of readstat_begin_row
 readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count);
-readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *user_ctx, long row_count);
+readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, int dta_version, // 0 for default
+        void *user_ctx, long row_count);
 
 // Start a row of data (that is, a case or observation)
 readstat_error_t readstat_begin_row(readstat_writer_t *writer);

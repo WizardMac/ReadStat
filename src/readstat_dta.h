@@ -25,12 +25,6 @@ typedef struct dta_short_expansion_field_s {
     int16_t          len;
 } dta_short_expansion_field_t;
 
-typedef struct dta_value_label_table_header_s {
-    int32_t          len;
-    char             labname[33];
-    char             padding[3];
-} dta_value_label_table_header_t;
-
 typedef struct dta_gso_header_s {
     char             gso[3];
     uint32_t         v;

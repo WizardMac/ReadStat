@@ -93,6 +93,10 @@ readstat_error_t readstat_write_bytes(readstat_writer_t *writer, const void *byt
     return READSTAT_OK;
 }
 
+readstat_error_t readstat_write_string(readstat_writer_t *writer, const char *bytes) {
+    return readstat_write_bytes(writer, bytes, strlen(bytes));
+}
+
 readstat_label_set_t *readstat_add_label_set(readstat_writer_t *writer, readstat_types_t type, const char *name) {
     if (writer->label_sets_count == writer->label_sets_capacity) {
         writer->label_sets_capacity *= 2;

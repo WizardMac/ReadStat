@@ -164,7 +164,7 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     readstat_set_variable_handler(parser, &handle_variable);
     readstat_set_value_handler(parser, &handle_value);
 
-    if (format == RT_FORMAT_DTA) {
+    if ((format & RT_FORMAT_DTA)) {
         error = readstat_parse_dta(parser, NULL, parse_ctx);
     } else if (format == RT_FORMAT_SAV) {
         error = readstat_parse_sav(parser, NULL, parse_ctx);

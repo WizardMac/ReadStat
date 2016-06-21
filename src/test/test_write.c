@@ -27,8 +27,18 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
     readstat_set_data_writer(writer, &write_data);
     readstat_writer_set_file_label(writer, "ReadStat Test File");
 
-    if (format == RT_FORMAT_DTA) {
-        error = readstat_begin_writing_dta(writer, buffer, file->rows);
+    if (format == RT_FORMAT_DTA_104) {
+        error = readstat_begin_writing_dta(writer, 104, buffer, file->rows);
+    } else if (format == RT_FORMAT_DTA_105) {
+        error = readstat_begin_writing_dta(writer, 105, buffer, file->rows);
+    } else if (format == RT_FORMAT_DTA_108) {
+        error = readstat_begin_writing_dta(writer, 108, buffer, file->rows);
+    } else if (format == RT_FORMAT_DTA_110) {
+        error = readstat_begin_writing_dta(writer, 110, buffer, file->rows);
+    } else if (format == RT_FORMAT_DTA_111) {
+        error = readstat_begin_writing_dta(writer, 111, buffer, file->rows);
+    } else if (format == RT_FORMAT_DTA_114) {
+        error = readstat_begin_writing_dta(writer, 114, buffer, file->rows);
     } else if (format == RT_FORMAT_SAV) {
         error = readstat_begin_writing_sav(writer, buffer, file->rows);
     }

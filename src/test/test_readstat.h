@@ -1,5 +1,11 @@
 
-#define RT_FORMAT_DTA   0x01
-#define RT_FORMAT_SAV   0x02
-#define RT_FORMAT_ALL   0xFF
+#define RT_FORMAT_DTA_104   0x0001
+#define RT_FORMAT_DTA_105   0x0002
+#define RT_FORMAT_DTA_108   0x0004
+#define RT_FORMAT_DTA_110   0x0008
+#define RT_FORMAT_DTA_111   0x0010
+#define RT_FORMAT_DTA_114   0x0020
+#define RT_FORMAT_DTA       0x003F
+#define RT_FORMAT_SAV       0x0100
+#define RT_FORMAT_ALL       0x013F
 
