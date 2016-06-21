@@ -120,6 +120,8 @@ readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
             ctx->converter = iconv_open(output_encoding, input_encoding);
         } else if (ds_format < 118) {
             ctx->converter = iconv_open(output_encoding, "WINDOWS-1252");
+        } else if (strcmp(output_encoding, "UTF-8") != 0) {
+            ctx->converter = iconv_open(output_encoding, "UTF-8");
         }
         if (ctx->converter == (iconv_t)-1) {
             ctx->converter = NULL;
