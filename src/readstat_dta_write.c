@@ -235,6 +235,41 @@ cleanup:
     return error;
 }
 
+static readstat_error_t dta_validate_name(const char *name) {
+    char first_char = name[0];
+    if (first_char != '_' &&
+            !(first_char >= 'a' && first_char <= 'z') &&
+            !(first_char >= 'A' && first_char <= 'Z')) {
+        return READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER;
+    }
+    int j;
+    for (j=1; name[j]; j++) {
+        if (name[j] != '_' &&
+                !(name[j] >= 'a' && name[j] <= 'z') &&
+                !(name[j] >= 'A' && name[j] <= 'Z') &&
+                !(name[j] >= '0' && name[j] <= '9')) {
+            return READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER;
+        }
+    }
+    if (strcmp(name, "_all") == 0 || strcmp(name, "_b") == 0 ||
+            strcmp(name, "byte") == 0 || strcmp(name, "_coef") == 0 ||
+            strcmp(name, "_cons") == 0 || strcmp(name, "double") == 0 ||
+            strcmp(name, "float") == 0 || strcmp(name, "if") == 0 ||
+            strcmp(name, "in") == 0 || strcmp(name, "int") == 0 ||
+            strcmp(name, "long") == 0 || strcmp(name, "_n") == 0 ||
+            strcmp(name, "_N") == 0 || strcmp(name, "_pi") == 0 ||
+            strcmp(name, "_pred") == 0 || strcmp(name, "_rc") == 0 ||
+            strcmp(name, "_skip") == 0 || strcmp(name, "strL") == 0 ||
+            strcmp(name, "using") == 0 || strcmp(name, "with") == 0) {
+        return READSTAT_ERROR_NAME_IS_RESERVED_WORD;
+    }
+    int len;
+    if (sscanf(name, "str%d", &len) == 1)
+        return READSTAT_ERROR_NAME_IS_RESERVED_WORD;
+
+    return READSTAT_OK;
+}
+
 static readstat_error_t dta_emit_varlist(readstat_writer_t *writer, dta_ctx_t *ctx) {
     readstat_error_t error = READSTAT_OK;
     int i;
@@ -244,6 +279,10 @@ static readstat_error_t dta_emit_varlist(readstat_writer_t *writer, dta_ctx_t *c
 
     for (i=0; i<ctx->nvar; i++) {
         readstat_variable_t *r_variable = readstat_get_variable(writer, i);
+
+        error = dta_validate_name(r_variable->name);
+        if (error != READSTAT_OK)
+            goto cleanup;
 
         strncpy(&ctx->varlist[ctx->variable_name_len*i], 
                 r_variable->name, ctx->variable_name_len);

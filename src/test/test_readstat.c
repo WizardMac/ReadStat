@@ -25,6 +25,71 @@ typedef struct rt_test_group_s {
 
 rt_test_group_t _test_groups[] = {
     {
+        .label = "Illegal column names",
+        .tests = {
+            {
+                .label = "DTA column name begins with number",
+                .write_error = READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER,
+                .test_formats = RT_FORMAT_DTA,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "1var",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "DTA column name contains dollar sign",
+                .write_error = READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
+                .test_formats = RT_FORMAT_DTA,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "var$",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "DTA column name is a reserved word",
+                .write_error = READSTAT_ERROR_NAME_IS_RESERVED_WORD,
+                .test_formats = RT_FORMAT_DTA,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "double",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "DTA column name is a reserved pattern",
+                .write_error = READSTAT_ERROR_NAME_IS_RESERVED_WORD,
+                .test_formats = RT_FORMAT_DTA,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "str123",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    {
         .label = "Tagged missing values",
         .tests = {
             {
