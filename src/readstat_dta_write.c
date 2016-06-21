@@ -17,6 +17,8 @@
 #define DTA_DEFAULT_FORMAT_FLOAT   "9.0g"
 #define DTA_DEFAULT_FORMAT_DOUBLE "10.0g"
 
+#define DTA_DEFAULT_FILE_VERSION   117
+
 #define DTA_OLD_MAX_WIDTH    128
 #define DTA_111_MAX_WIDTH    244
 #define DTA_117_MAX_WIDTH   2045
@@ -849,7 +851,7 @@ static readstat_error_t dta_begin_data(void *writer_ctx) {
     if (writer->version) {
         header.ds_format = writer->version;
     } else {
-        header.ds_format = 111;
+        header.ds_format = DTA_DEFAULT_FILE_VERSION;
     }
     header.byteorder = machine_is_little_endian() ? DTA_LOHI : DTA_HILO;
     header.filetype  = 0x01;
@@ -1101,7 +1103,7 @@ readstat_error_t readstat_begin_writing_dta(
     writer->row_count = row_count;
     writer->user_ctx = user_ctx;
 
-    writer->version = version ? version : 111;
+    writer->version = version ? version : DTA_DEFAULT_FILE_VERSION;
 
     if (writer->version >= 119 || writer->version < 104) {
         return READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
