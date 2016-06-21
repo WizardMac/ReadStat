@@ -286,6 +286,7 @@ typedef ssize_t (*readstat_data_writer)(const void *data, size_t len, void *ctx)
 
 typedef struct readstat_writer_s {
     readstat_data_writer        data_writer;
+    size_t                      bytes_written;
     long                        version;
 
     readstat_variable_t       **variables;

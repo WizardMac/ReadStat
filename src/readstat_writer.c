@@ -90,6 +90,7 @@ readstat_error_t readstat_write_bytes(readstat_writer_t *writer, const void *byt
     if (bytes_written < len) {
         return READSTAT_ERROR_WRITE;
     }
+    writer->bytes_written += bytes_written;
     return READSTAT_OK;
 }
 
@@ -304,10 +305,19 @@ readstat_error_t readstat_end_row(readstat_writer_t *writer) {
 }
 
 readstat_error_t readstat_end_writing(readstat_writer_t *writer) {
-    readstat_error_t retval = READSTAT_OK;
     if (writer->current_row != writer->row_count) {
-        retval = READSTAT_ERROR_ROW_COUNT_MISMATCH;
-    } else if (writer->callbacks.end_data) {
+        return READSTAT_ERROR_ROW_COUNT_MISMATCH;
+    }
+
+    readstat_error_t retval = READSTAT_OK;
+
+    if (writer->row_count == 0 && writer->callbacks.begin_data) {
+        retval = writer->callbacks.begin_data(writer);
+    }
+    if (retval != READSTAT_OK)
+        return retval;
+
+    if (writer->callbacks.end_data) {
         retval = writer->callbacks.end_data(writer);
     }
     return retval;

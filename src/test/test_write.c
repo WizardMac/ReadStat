@@ -39,8 +39,14 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         error = readstat_begin_writing_dta(writer, 111, buffer, file->rows);
     } else if (format == RT_FORMAT_DTA_114) {
         error = readstat_begin_writing_dta(writer, 114, buffer, file->rows);
+    } else if (format == RT_FORMAT_DTA_117) {
+        error = readstat_begin_writing_dta(writer, 117, buffer, file->rows);
+    } else if (format == RT_FORMAT_DTA_118) {
+        error = readstat_begin_writing_dta(writer, 118, buffer, file->rows);
     } else if (format == RT_FORMAT_SAV) {
         error = readstat_begin_writing_sav(writer, buffer, file->rows);
+    } else {
+        error = READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
     }
 
     if (error != READSTAT_OK)

@@ -438,7 +438,10 @@ cleanup:
     return error;
 }
 
-static readstat_error_t dta_emit_expansion_fields(readstat_writer_t *writer, dta_ctx_t *ctx) {
+static readstat_error_t dta_emit_characteristics(readstat_writer_t *writer, dta_ctx_t *ctx) {
+    if (ctx->file_is_xmlish) {
+        return readstat_write_string(writer, "<characteristics></characteristics>");
+    }
     if (ctx->expansion_len_len == 2) {
         dta_short_expansion_field_t expansion_field = { .data_type = 0, .len = 0 };
         return readstat_write_bytes(writer, &expansion_field, sizeof(dta_short_expansion_field_t));
@@ -447,6 +450,13 @@ static readstat_error_t dta_emit_expansion_fields(readstat_writer_t *writer, dta
         return readstat_write_bytes(writer, &expansion_field, sizeof(dta_expansion_field_t));
     }
     return READSTAT_OK;
+}
+
+static readstat_error_t dta_emit_strls(readstat_writer_t *writer, dta_ctx_t *ctx) {
+    if (!ctx->file_is_xmlish)
+        return READSTAT_OK;
+
+    return readstat_write_string(writer, "<strls></strls>");
 }
 
 static readstat_error_t dta_old_emit_value_labels(readstat_writer_t *writer, dta_ctx_t *ctx) {
@@ -492,6 +502,11 @@ static readstat_error_t dta_emit_value_labels(readstat_writer_t *writer, dta_ctx
     int32_t *val = NULL;
     char *txt = NULL;
     char *labname = calloc(1, ctx->value_label_table_labname_len + ctx->value_label_table_padding_len);
+
+    retval = dta_write_tag(writer, ctx, "<value_labels>");
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
     for (i=0; i<writer->label_sets_count; i++) {
         readstat_label_set_t *r_label_set = readstat_get_label_set(writer, i);
         int32_t n = r_label_set->value_labels_count;
@@ -516,7 +531,6 @@ static readstat_error_t dta_emit_value_labels(readstat_writer_t *writer, dta_ctx
                 + ctx->value_label_table_padding_len);
         if (retval != READSTAT_OK)
             goto cleanup;
-
 
         if (txtlen == 0) {
             retval = readstat_write_bytes(writer, &txtlen, sizeof(int32_t));
@@ -576,6 +590,10 @@ static readstat_error_t dta_emit_value_labels(readstat_writer_t *writer, dta_ctx
         if (retval != READSTAT_OK)
             goto cleanup;
     }
+
+    retval = dta_write_tag(writer, ctx, "</value_labels>");
+    if (retval != READSTAT_OK)
+        goto cleanup;
 
 cleanup:
     if (off)
@@ -700,11 +718,124 @@ cleanup:
     return error;
 }
 
+static size_t dta_measure_tag(dta_ctx_t *ctx, const char *tag) {
+    if (!ctx->file_is_xmlish)
+        return 0;
+
+    return strlen(tag);
+}
+
+static size_t dta_measure_map(dta_ctx_t *ctx) {
+    return (dta_measure_tag(ctx, "<map>") 
+            + 14 * sizeof(uint64_t) 
+            + dta_measure_tag(ctx, "</map>"));
+}
+
+static size_t dta_measure_typlist(dta_ctx_t *ctx) {
+    return (dta_measure_tag(ctx, "<variable_types>") 
+            + ctx->typlist_entry_len * ctx->nvar
+            + dta_measure_tag(ctx, "</variable_types>"));
+}
+
+static size_t dta_measure_varlist(dta_ctx_t *ctx) {
+    return (dta_measure_tag(ctx, "<varnames>") 
+            + ctx->varlist_len
+            + dta_measure_tag(ctx, "</varnames>"));
+}
+
+static size_t dta_measure_srtlist(dta_ctx_t *ctx) {
+    return (dta_measure_tag(ctx, "<sortlist>")
+            + ctx->srtlist_len
+            + dta_measure_tag(ctx, "</sortlist>"));
+}
+
+static size_t dta_measure_fmtlist(dta_ctx_t *ctx) {
+    return (dta_measure_tag(ctx, "<formats>")
+            + ctx->fmtlist_len
+            + dta_measure_tag(ctx, "</formats>"));
+}
+
+static size_t dta_measure_lbllist(dta_ctx_t *ctx) {
+    return (dta_measure_tag(ctx, "<value_label_names>")
+            + ctx->lbllist_len
+            + dta_measure_tag(ctx, "</value_label_names>"));
+}
+
+static size_t dta_measure_variable_labels(dta_ctx_t *ctx) {
+    return (dta_measure_tag(ctx, "<variable_labels>")
+            + ctx->variable_labels_len
+            + dta_measure_tag(ctx, "</variable_labels>"));
+}
+
+static size_t dta_measure_characteristics(dta_ctx_t *ctx) {
+    return (dta_measure_tag(ctx, "<characteristics>")
+            + dta_measure_tag(ctx, "</characteristics>"));
+}
+
+static size_t dta_measure_data(readstat_writer_t *writer, dta_ctx_t *ctx) {
+    int i;
+    for (i=0; i<ctx->nvar; i++) {
+        size_t      max_len;
+        readstat_variable_t *r_variable = readstat_get_variable(writer, i);
+        uint16_t typecode = dta_typecode_for_variable(r_variable, ctx->typlist_version);
+        dta_type_info(typecode, &max_len, ctx);
+        ctx->record_len += max_len;
+    }
+    return (dta_measure_tag(ctx, "<data>")
+            + ctx->record_len * ctx->nobs
+            + dta_measure_tag(ctx, "</data>"));
+}
+
+static size_t dta_measure_strls(dta_ctx_t *ctx) {
+    return (dta_measure_tag(ctx, "<strls>")
+            + dta_measure_tag(ctx, "</strls>"));
+}
+
+static size_t dta_measure_value_labels(readstat_writer_t *writer, dta_ctx_t *ctx) {
+    size_t len = dta_measure_tag(ctx, "<value_labels>");
+
+    int i, j;
+    for (i=0; i<writer->label_sets_count; i++) {
+        readstat_label_set_t *r_label_set = readstat_get_label_set(writer, i);
+        int32_t n = r_label_set->value_labels_count;
+        int32_t txtlen = 0;
+        for (j=0; j<n; j++) {
+            readstat_value_label_t *value_label = readstat_get_value_label(r_label_set, j);
+            txtlen += value_label->label_len + 1;
+        }
+        len += dta_measure_tag(ctx, "<lbl>");
+        len += sizeof(int32_t);
+        len += ctx->value_label_table_labname_len;
+        len += ctx->value_label_table_padding_len;
+        len += 8 + 8*n + txtlen;
+        len += dta_measure_tag(ctx, "</lbl>");
+    }
+    len += dta_measure_tag(ctx, "</value_labels>");
+    return len;
+}
+
 static readstat_error_t dta_emit_map(readstat_writer_t *writer, dta_ctx_t *ctx) {
     if (!ctx->file_is_xmlish)
         return READSTAT_OK;
 
-    return READSTAT_ERROR_WRITE; // TODO
+    uint64_t map[14];
+
+    map[0] = 0;                                         /* <stata_dta> */
+    map[1] = writer->bytes_written;                     /* <map> */
+    map[2] = map[1] + dta_measure_map(ctx);             /* <variable_types> */
+    map[3] = map[2] + dta_measure_typlist(ctx);         /* <varnames> */
+    map[4] = map[3] + dta_measure_varlist(ctx);         /* <sortlist> */
+    map[5] = map[4] + dta_measure_srtlist(ctx);         /* <formats> */
+    map[6] = map[5] + dta_measure_fmtlist(ctx);         /* <value_label_names> */
+    map[7] = map[6] + dta_measure_lbllist(ctx);         /* <variable_labels> */
+    map[8] = map[7] + dta_measure_variable_labels(ctx); /* <characteristics> */
+    map[9] = map[8] + dta_measure_characteristics(ctx); /* <data> */
+    map[10]= map[9] + dta_measure_data(writer, ctx);    /* <strls> */
+    map[11]= map[10]+ dta_measure_strls(ctx);           /* <value_labels> */
+    map[12]= map[11]+ dta_measure_value_labels(writer, ctx);    /* </stata_dta> */
+    map[13]= map[12]+ dta_measure_tag(ctx, "</stata_dta>");
+
+    return dta_write_chunk(writer, ctx, "<map>", map, sizeof(map), "</map>");
 }
 
 static readstat_error_t dta_begin_data(void *writer_ctx) {
@@ -746,7 +877,7 @@ static readstat_error_t dta_begin_data(void *writer_ctx) {
     if (error != READSTAT_OK)
         goto cleanup;
 
-    error = dta_emit_expansion_fields(writer, ctx);
+    error = dta_emit_characteristics(writer, ctx);
     if (error != READSTAT_OK)
         goto cleanup;
 
@@ -942,6 +1073,10 @@ static readstat_error_t dta_end_data(void *writer_ctx) {
     readstat_error_t error = READSTAT_OK;
 
     error = dta_write_tag(writer, ctx, "</data>");
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+    error = dta_emit_strls(writer, ctx);
     if (error != READSTAT_OK)
         goto cleanup;
 

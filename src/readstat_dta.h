@@ -134,5 +134,6 @@ dta_ctx_t *dta_ctx_alloc(readstat_io_t *io);
 readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs, 
         unsigned char byteorder, unsigned char ds_format,
         const char *input_encoding, const char *output_encoding);
-
 void dta_ctx_free(dta_ctx_t *ctx);
+
+readstat_types_t dta_type_info(uint16_t typecode, size_t *max_len, dta_ctx_t *ctx);

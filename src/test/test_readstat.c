@@ -31,14 +31,11 @@ rt_test_group_t _test_groups[] = {
                 .label = "DTA column name begins with number",
                 .write_error = READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER,
                 .test_formats = RT_FORMAT_DTA,
-                .rows = 1,
+                .rows = 0,
                 .columns = {
                     {
                         .name = "1var",
-                        .type = READSTAT_TYPE_DOUBLE,
-                        .values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } }
-                        }
+                        .type = READSTAT_TYPE_DOUBLE
                     }
                 }
             },
@@ -46,14 +43,11 @@ rt_test_group_t _test_groups[] = {
                 .label = "DTA column name contains dollar sign",
                 .write_error = READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
                 .test_formats = RT_FORMAT_DTA,
-                .rows = 1,
+                .rows = 0,
                 .columns = {
                     {
                         .name = "var$",
-                        .type = READSTAT_TYPE_DOUBLE,
-                        .values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } }
-                        }
+                        .type = READSTAT_TYPE_DOUBLE
                     }
                 }
             },
@@ -61,14 +55,11 @@ rt_test_group_t _test_groups[] = {
                 .label = "DTA column name is a reserved word",
                 .write_error = READSTAT_ERROR_NAME_IS_RESERVED_WORD,
                 .test_formats = RT_FORMAT_DTA,
-                .rows = 1,
+                .rows = 0,
                 .columns = {
                     {
                         .name = "double",
-                        .type = READSTAT_TYPE_DOUBLE,
-                        .values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } }
-                        }
+                        .type = READSTAT_TYPE_DOUBLE
                     }
                 }
             },
@@ -76,14 +67,11 @@ rt_test_group_t _test_groups[] = {
                 .label = "DTA column name is a reserved pattern",
                 .write_error = READSTAT_ERROR_NAME_IS_RESERVED_WORD,
                 .test_formats = RT_FORMAT_DTA,
-                .rows = 1,
+                .rows = 0,
                 .columns = {
                     {
                         .name = "str123",
-                        .type = READSTAT_TYPE_DOUBLE,
-                        .values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } }
-                        }
+                        .type = READSTAT_TYPE_DOUBLE
                     }
                 }
             }
@@ -459,7 +447,10 @@ int main(int argc, char *argv[]) {
 
 cleanup:
     if (error != READSTAT_OK) {
-        printf("Error running test \"%s\" (format=%d): %s\n", 
+        int fd = open("/tmp/test_readstat.dta", O_CREAT | O_WRONLY, 0644);
+        write(fd, buffer->bytes, buffer->used);
+        close(fd);
+        printf("Error running test \"%s\" (format=0x%04x): %s\n", 
                 _test_groups[g].tests[t].label,
                 f, readstat_error_message(error));
         return 1;

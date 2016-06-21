@@ -103,10 +103,10 @@ void push_error_if_codes_differ(rt_parse_ctx_t *ctx,
     if (expected == received)
         return;
 
-    readstat_value_t expected_value = { .type = READSTAT_TYPE_CHAR,
-        .v = { .char_value = expected } };
-    readstat_value_t received_value = { .type = READSTAT_TYPE_CHAR,
-        .v = { .char_value = received } };
+    readstat_value_t expected_value = { .type = READSTAT_TYPE_STRING,
+        .v = { .string_value = readstat_error_message(expected) } };
+    readstat_value_t received_value = { .type = READSTAT_TYPE_STRING,
+        .v = { .string_value = readstat_error_message(received) } };
 
     push_error(ctx, expected_value, received_value, "Error codes");
 }
@@ -135,6 +135,8 @@ void print_error(rt_error_t *error) {
     } else {
         printf("Test failed: %s\n", error->msg);
     }
+
+    printf(" * Format: 0x%04lx\n", error->file_format);
 
     printf(" * Expected: ");
     print_value(error->expected);
