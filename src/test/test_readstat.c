@@ -29,7 +29,7 @@ rt_test_group_t _test_groups[] = {
         .tests = {
             {
                 .label = "300-byte string in newer DTA file",
-                .test_formats = RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
+                .test_formats = RT_FORMAT_DTA_117_AND_NEWER,
                 .rows = 1,
                 .columns = {
                     {
@@ -171,8 +171,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Old DTA tagged missing values",
                 .write_error = READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED,
-                .test_formats = (RT_FORMAT_DTA_104 | RT_FORMAT_DTA_105 
-                        | RT_FORMAT_DTA_108 | RT_FORMAT_DTA_110 | RT_FORMAT_DTA_111),
+                .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
                 .rows = 1,
                 .columns = {
                     {
@@ -188,7 +187,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "DTA out-of-range tagged missing values",
                 .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
-                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
                 .rows = 1,
                 .columns = {
                     {
@@ -203,7 +202,7 @@ rt_test_group_t _test_groups[] = {
 
             {
                 .label = "DTA in-range tagged missing doubles",
-                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
                 .rows = 6,
                 .columns = {
                     {
@@ -223,7 +222,7 @@ rt_test_group_t _test_groups[] = {
 
             {
                 .label = "DTA in-range tagged missing floats",
-                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
                 .rows = 6,
                 .columns = {
                     {
@@ -243,7 +242,7 @@ rt_test_group_t _test_groups[] = {
 
             { 
                 .label = "DTA in-range tagged missing int32s",
-                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
                 .rows = 6,
                 .columns = {
                     {
@@ -263,7 +262,7 @@ rt_test_group_t _test_groups[] = {
 
             { 
                 .label = "DTA in-range tagged missing int16s",
-                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
                 .rows = 6,
                 .columns = {
                     {
@@ -283,7 +282,7 @@ rt_test_group_t _test_groups[] = {
 
             {
                 .label = "DTA in-range tagged missing int8s",
-                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
                 .rows = 6,
                 .columns = {
                     {
@@ -304,7 +303,7 @@ rt_test_group_t _test_groups[] = {
     },
 
     {
-        .label = "Out-of-range values",
+        .label = "Out-of-range floating-point values",
         .tests = {
             {
                 .label = "DTA out-of-range double value",
@@ -336,11 +335,16 @@ rt_test_group_t _test_groups[] = {
                         }
                     }
                 }
-            },
+            }
+        }
+    },
 
+    {
+        .label = "Out-of-range integer values (pre-113 DTA)",
+        .tests = {
             {
-                .label = "DTA out-of-range int32 value",
-                .test_formats = RT_FORMAT_DTA,
+                .label = "Pre-113 DTA out-of-range int32 value",
+                .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
                 .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
                 .rows = 1,
 
@@ -349,38 +353,173 @@ rt_test_group_t _test_groups[] = {
                         .name = "var1",
                         .type = READSTAT_TYPE_INT32,
                         .values = { 
-                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = DTA_MAX_INT32+1 } } 
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = DTA_OLD_MAX_INT32+1 } } 
                         }
                     }
                 }
             },
 
             {
-                .label = "DTA out-of-range int16 value",
-                .test_formats = RT_FORMAT_DTA,
+                .label = "Pre-113 DTA in-range int32 value",
+                .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
+                .rows = 1,
+
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .values = { 
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = DTA_OLD_MAX_INT32 } } 
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "Pre-113 DTA out-of-range int16 value",
+                .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
                 .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
                 .rows = 1,
                 .columns = {
                     {
                         .name = "var1",
                         .type = READSTAT_TYPE_INT16,
-                        .values = { { .type = READSTAT_TYPE_INT16, .v = { .i16_value = DTA_MAX_INT16+1 } } }
+                        .values = { { .type = READSTAT_TYPE_INT16, .v = { .i16_value = DTA_OLD_MAX_INT16+1 } } }
                     }
                 }
             },
+
             {
-                .label = "DTA out-of-range int8 value",
-                .test_formats = RT_FORMAT_DTA,
+                .label = "Pre-113 DTA in-range int16 value",
+                .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT16,
+                        .values = { { .type = READSTAT_TYPE_INT16, .v = { .i16_value = DTA_OLD_MAX_INT16 } } }
+                    }
+                }
+            },
+
+            {
+                .label = "Pre-113 DTA out-of-range int8 value",
+                .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
                 .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
                 .rows = 1,
                 .columns = {
                     {
                         .name = "var1",
                         .type = READSTAT_TYPE_CHAR,
-                        .values = { { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_MAX_CHAR+1 } } }
+                        .values = { { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_OLD_MAX_CHAR+1 } } }
                     }
                 }
             },
+
+            {
+                .label = "Pre-113 DTA in-range int8 value",
+                .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_CHAR,
+                        .values = { { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_OLD_MAX_CHAR } } }
+                    }
+                }
+            }
+        }
+    },
+
+    {
+        .label = "Out-of-range integer values (post-113 DTA)",
+        .tests = {
+            {
+                .label = "Post-113 DTA out-of-range int32 value",
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
+                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .rows = 1,
+
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .values = { 
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = DTA_113_MAX_INT32+1 } } 
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "Post-113 DTA in-range int32 value",
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
+                .rows = 1,
+
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .values = { 
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = DTA_113_MAX_INT32 } } 
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "Post-113 DTA out-of-range int16 value",
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
+                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT16,
+                        .values = { { .type = READSTAT_TYPE_INT16, .v = { .i16_value = DTA_113_MAX_INT16+1 } } }
+                    }
+                }
+            },
+
+            {
+                .label = "Post-113 DTA in-range int16 value",
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT16,
+                        .values = { { .type = READSTAT_TYPE_INT16, .v = { .i16_value = DTA_113_MAX_INT16 } } }
+                    }
+                }
+            },
+
+            {
+                .label = "Post-113 DTA out-of-range int8 value",
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
+                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_CHAR,
+                        .values = { { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_113_MAX_CHAR+1 } } }
+                    }
+                }
+            },
+
+            {
+                .label = "Post-113 DTA in-range int8 value",
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_CHAR,
+                        .values = { { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_113_MAX_CHAR } } }
+                    }
+                }
+            }
         }
     },
 
@@ -433,7 +572,7 @@ rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 20 } },
                             { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 15 } },
                             { .type = READSTAT_TYPE_INT32, .v = { .i32_value = -281817 } },
-                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = DTA_MAX_INT32 } },
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = DTA_113_MAX_INT32 } },
                             { .type = READSTAT_TYPE_INT32, .is_system_missing = 1 },
                             { .type = READSTAT_TYPE_INT32, .v = { .i32_value = INT32_MIN } }
                         }
@@ -448,7 +587,7 @@ rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 20 } }, 
                             { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 15 } }, 
                             { .type = READSTAT_TYPE_INT16, .v = { .i16_value = -28117 } },
-                            { .type = READSTAT_TYPE_INT16, .v = { .i16_value = DTA_MAX_INT16 } },
+                            { .type = READSTAT_TYPE_INT16, .v = { .i16_value = DTA_113_MAX_INT16 } },
                             { .type = READSTAT_TYPE_INT16, .is_system_missing = 1 },
                             { .type = READSTAT_TYPE_INT16, .v = { .i16_value = INT16_MIN } }
                         }
@@ -463,7 +602,7 @@ rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_CHAR, .v = { .char_value = 20 } },
                             { .type = READSTAT_TYPE_CHAR, .v = { .char_value = 15 } },
                             { .type = READSTAT_TYPE_CHAR, .v = { .char_value = -28 } },
-                            { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_MAX_CHAR } },
+                            { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_113_MAX_CHAR } },
                             { .type = READSTAT_TYPE_CHAR, .is_system_missing = 1 },
                             { .type = READSTAT_TYPE_CHAR, .v = { .char_value = INT8_MIN } }
                         }
