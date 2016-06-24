@@ -94,6 +94,8 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
             if (readstat_value_tag(column->values[i])) {
                 error = readstat_insert_tagged_missing_value(writer, variable, 
                         readstat_value_tag(column->values[i]));
+            } else if (readstat_value_is_system_missing(column->values[i])) {
+                error = readstat_insert_missing_value(writer, variable);
             } else if (column->type == READSTAT_TYPE_STRING ||
                     column->type == READSTAT_TYPE_LONG_STRING) {
                 error = readstat_insert_string_value(writer, variable, 

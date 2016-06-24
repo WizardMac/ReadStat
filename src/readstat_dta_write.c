@@ -1005,11 +1005,14 @@ static readstat_error_t dta_old_write_string(void *row, const readstat_variable_
 static readstat_error_t dta_write_numeric_missing(void *row, const readstat_variable_t *var) {
     readstat_error_t retval = READSTAT_OK;
     if (var->type == READSTAT_TYPE_CHAR) {
-        retval = dta_write_char(row, var, DTA_MISSING_CHAR);
+        int8_t val_c = DTA_MISSING_CHAR;
+        memcpy(row, &val_c, sizeof(int8_t));
     } else if (var->type == READSTAT_TYPE_INT16) {
-        retval = dta_write_int16(row, var, DTA_MISSING_INT16);
+        int16_t val_s = DTA_MISSING_INT16;
+        memcpy(row, &val_s, sizeof(int16_t));
     } else if (var->type == READSTAT_TYPE_INT32) {
-        retval = dta_write_int32(row, var, DTA_MISSING_INT32);
+        int32_t val_i = DTA_MISSING_INT32;
+        memcpy(row, &val_i, sizeof(int32_t));
     } else if (var->type == READSTAT_TYPE_FLOAT) {
         int32_t val_i = DTA_MISSING_FLOAT;
         memcpy(row, &val_i, sizeof(int32_t));

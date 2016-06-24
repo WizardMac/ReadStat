@@ -64,6 +64,10 @@ void push_error_if_values_differ(rt_parse_ctx_t *ctx,
             if (readstat_value_tag(expected) != readstat_value_tag(received)) {
                 push_error(ctx, expected, received, msg);
             }
+        } else if (readstat_value_is_system_missing(expected) || readstat_value_is_system_missing(received)) {
+            if (readstat_value_is_system_missing(expected) != readstat_value_is_system_missing(received)) {
+                push_error(ctx, expected, received, msg);
+            }
         } else if (received_type == READSTAT_TYPE_DOUBLE || received_type == READSTAT_TYPE_FLOAT) {
             push_error_if_doubles_differ(ctx,
                     readstat_double_value(expected),
