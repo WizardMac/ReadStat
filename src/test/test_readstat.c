@@ -169,9 +169,26 @@ rt_test_group_t _test_groups[] = {
             },
 
             {
+                .label = "Old DTA tagged missing values",
+                .write_error = READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED,
+                .test_formats = (RT_FORMAT_DTA_104 | RT_FORMAT_DTA_105 
+                        | RT_FORMAT_DTA_108 | RT_FORMAT_DTA_110 | RT_FORMAT_DTA_111),
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .tag = 'a' } 
+                        }
+                    }
+                }
+            },
+
+            {
                 .label = "DTA out-of-range tagged missing values",
                 .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
-                .test_formats = RT_FORMAT_DTA,
+                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
                 .rows = 1,
                 .columns = {
                     {
@@ -186,7 +203,7 @@ rt_test_group_t _test_groups[] = {
 
             {
                 .label = "DTA in-range tagged missing doubles",
-                .test_formats = RT_FORMAT_DTA,
+                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
                 .rows = 6,
                 .columns = {
                     {
@@ -206,7 +223,7 @@ rt_test_group_t _test_groups[] = {
 
             {
                 .label = "DTA in-range tagged missing floats",
-                .test_formats = RT_FORMAT_DTA,
+                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
                 .rows = 6,
                 .columns = {
                     {
@@ -225,8 +242,8 @@ rt_test_group_t _test_groups[] = {
             },
 
             { 
-                .test_formats = RT_FORMAT_DTA,
                 .label = "DTA in-range tagged missing int32s",
+                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
                 .rows = 6,
                 .columns = {
                     {
@@ -246,7 +263,7 @@ rt_test_group_t _test_groups[] = {
 
             { 
                 .label = "DTA in-range tagged missing int16s",
-                .test_formats = RT_FORMAT_DTA,
+                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
                 .rows = 6,
                 .columns = {
                     {
@@ -266,7 +283,7 @@ rt_test_group_t _test_groups[] = {
 
             {
                 .label = "DTA in-range tagged missing int8s",
-                .test_formats = RT_FORMAT_DTA,
+                .test_formats = RT_FORMAT_DTA_114 | RT_FORMAT_DTA_117 | RT_FORMAT_DTA_118,
                 .rows = 6,
                 .columns = {
                     {

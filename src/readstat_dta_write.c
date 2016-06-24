@@ -1069,6 +1069,12 @@ static readstat_error_t dta_write_tagged_missing(void *row, const readstat_varia
     return retval;
 }
 
+static readstat_error_t dta_write_tagged_missing_illegally(void *row, const readstat_variable_t *var, char tag) {
+    /* Write it anyway, but return an error */
+    dta_write_numeric_missing(row, var);
+    return READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED;
+}
+
 static readstat_error_t dta_end_data(void *writer_ctx) {
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     dta_ctx_t *ctx = writer->module_ctx;
@@ -1121,7 +1127,11 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
     writer->callbacks.write_int32 = &dta_write_int32;
     writer->callbacks.write_float = &dta_write_float;
     writer->callbacks.write_double = &dta_write_double;
-    writer->callbacks.write_tagged_missing = &dta_write_tagged_missing;
+    if (writer->version >= 113) {
+        writer->callbacks.write_tagged_missing = &dta_write_tagged_missing;
+    } else {
+        writer->callbacks.write_tagged_missing = &dta_write_tagged_missing_illegally;
+    }
     writer->callbacks.begin_data = &dta_begin_data;
     writer->callbacks.end_data = &dta_end_data;
 
