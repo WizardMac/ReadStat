@@ -843,16 +843,14 @@ static readstat_error_t dta_emit_map(readstat_writer_t *writer, dta_ctx_t *ctx) 
 static readstat_error_t dta_begin_data(void *writer_ctx) {
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     readstat_error_t error = READSTAT_OK;
+    if (!writer->initialized)
+        return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
     
     dta_ctx_t *ctx = dta_ctx_alloc(NULL);
     dta_header_t header;
     memset(&header, 0, sizeof(dta_header_t));
 
-    if (writer->version) {
-        header.ds_format = writer->version;
-    } else {
-        header.ds_format = DTA_DEFAULT_FILE_VERSION;
-    }
+    header.ds_format = writer->version;
     header.byteorder = machine_is_little_endian() ? DTA_LOHI : DTA_HILO;
     header.filetype  = 0x01;
     header.unused    = 0x00;
@@ -1080,6 +1078,9 @@ static readstat_error_t dta_end_data(void *writer_ctx) {
     dta_ctx_t *ctx = writer->module_ctx;
     readstat_error_t error = READSTAT_OK;
 
+    if (!writer->initialized)
+        return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
+
     error = dta_write_tag(writer, ctx, "</data>");
     if (error != READSTAT_OK)
         goto cleanup;
@@ -1106,6 +1107,9 @@ cleanup:
 readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *user_ctx, long row_count) {
     writer->row_count = row_count;
     writer->user_ctx = user_ctx;
+
+    if (writer->version == 0)
+        writer->version = DTA_DEFAULT_FILE_VERSION;
 
     if (writer->version >= 119 || writer->version < 104) {
         return READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
@@ -1134,6 +1138,7 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
     }
     writer->callbacks.begin_data = &dta_begin_data;
     writer->callbacks.end_data = &dta_end_data;
+    writer->initialized = 1;
 
     return READSTAT_OK;
 }
