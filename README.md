@@ -157,12 +157,12 @@ int handle_variable(int index, readstat_variable_t *variable,
 
 int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
     int *my_var_count = (int *)ctx;
-    readstat_types_t type = readstat_value_type(value);
+    readstat_type_t type = readstat_value_type(value);
     if (!readstat_value_is_missing(value)) {
         if (type == READSTAT_TYPE_STRING) {
             printf("%s", readstat_string_value(value));
-        } else if (type == READSTAT_TYPE_CHAR) {
-            printf("%hhd", readstat_char_value(value));
+        } else if (type == READSTAT_TYPE_INT8) {
+            printf("%hhd", readstat_int8_value(value));
         } else if (type == READSTAT_TYPE_INT16) {
             printf("%hd", readstat_int16_value(value));
         } else if (type == READSTAT_TYPE_INT32) {
