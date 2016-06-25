@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
+#include <locale.h>
 #include <xlocale.h>
 
 #include "readstat.h"

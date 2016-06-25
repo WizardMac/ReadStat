@@ -8,6 +8,7 @@
 #include <math.h>
 #include <float.h>
 #include <time.h>
+#include <locale.h>
 #include <xlocale.h>
 
 #include "readstat_sav.h"
