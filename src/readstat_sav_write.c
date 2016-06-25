@@ -84,7 +84,7 @@ cleanup:
 
 static readstat_error_t sav_emit_header(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
-    time_t now = time(NULL);
+    time_t now = writer->timestamp;
     struct tm *time_s = localtime(&now);
 
     sav_file_header_record_t header;

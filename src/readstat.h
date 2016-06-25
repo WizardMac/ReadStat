@@ -68,7 +68,8 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION,
     READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER,
     READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
-    READSTAT_ERROR_NAME_IS_RESERVED_WORD
+    READSTAT_ERROR_NAME_IS_RESERVED_WORD,
+    READSTAT_ERROR_BAD_TIMESTAMP
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);
@@ -290,6 +291,7 @@ typedef struct readstat_writer_s {
     readstat_data_writer        data_writer;
     size_t                      bytes_written;
     long                        version;
+    time_t                      timestamp;
 
     readstat_variable_t       **variables;
     long                        variables_count;
@@ -344,6 +346,7 @@ readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index)
 
 // Optional metadata
 readstat_error_t readstat_writer_set_file_label(readstat_writer_t *writer, const char *file_label);
+readstat_error_t readstat_writer_set_file_timestamp(readstat_writer_t *writer, time_t timestamp);
 readstat_error_t readstat_writer_set_fweight_variable(readstat_writer_t *writer, const readstat_variable_t *variable);
 readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writer, 
         long file_format_version); // e.g. 104-118 for DTA

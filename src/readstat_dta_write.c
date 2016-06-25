@@ -93,7 +93,7 @@ static readstat_error_t dta_emit_header_time_stamp(readstat_writer_t *writer, dt
         return READSTAT_OK;
 
     readstat_error_t error = READSTAT_OK;
-    time_t now = time(NULL);
+    time_t now = writer->timestamp;
     struct tm *time_s = localtime(&now);
     char *time_stamp = calloc(1, ctx->time_stamp_len);
     uint8_t actual_time_stamp_len = strftime(time_stamp, ctx->time_stamp_len, "%d %b %Y %H:%M", time_s);

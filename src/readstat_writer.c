@@ -1,5 +1,6 @@
 
 #include <stdlib.h>
+#include <time.h>
 #include "readstat.h"
 #include "readstat_writer.h"
 
@@ -16,6 +17,8 @@ readstat_writer_t *readstat_writer_init() {
 
     writer->label_sets = calloc(LABEL_SETS_INITIAL_CAPACITY, sizeof(readstat_label_set_t *));
     writer->label_sets_capacity = LABEL_SETS_INITIAL_CAPACITY;
+
+    writer->timestamp = time(NULL);
 
     return writer;
 }
@@ -240,6 +243,11 @@ readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index)
 
 readstat_error_t readstat_writer_set_file_label(readstat_writer_t *writer, const char *file_label) {
     snprintf(writer->file_label, sizeof(writer->file_label), "%s", file_label);
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_writer_set_file_timestamp(readstat_writer_t *writer, time_t timestamp) {
+    writer->timestamp = timestamp;
     return READSTAT_OK;
 }
 

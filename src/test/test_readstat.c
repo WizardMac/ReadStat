@@ -524,6 +524,23 @@ rt_test_group_t _test_groups[] = {
     },
 
     {
+        .label = "Timestamps",
+        .tests = {
+            {
+                .label = "Custom timestamp",
+                .test_formats = RT_FORMAT_ALL,
+                .timestamp = { .tm_year = /* 19 */84, .tm_mon = 7, .tm_mday = 2 },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            }
+        }
+    },
+
+    {
         .label = "Generic tests",
         .tests = {
             {

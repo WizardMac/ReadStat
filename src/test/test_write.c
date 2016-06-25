@@ -25,7 +25,10 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
 
     readstat_writer_t *writer = readstat_writer_init();
     readstat_set_data_writer(writer, &write_data);
-    readstat_writer_set_file_label(writer, "ReadStat Test File");
+    readstat_writer_set_file_label(writer, file->label);
+    if (file->timestamp.tm_year) {
+        readstat_writer_set_file_timestamp(writer, mktime(&file->timestamp));
+    }
 
     if ((format & RT_FORMAT_DTA)) {
         if (format == RT_FORMAT_DTA_104) {

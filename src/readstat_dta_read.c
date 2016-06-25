@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
@@ -361,6 +362,10 @@ cleanup:
 static readstat_error_t dta_skip_label_and_timestamp(dta_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
     readstat_error_t retval = READSTAT_OK;
+    char timestamp[18];
+    /* Read and validate timestamp, even if we don't use it */
+    struct tm timestamp_fields;
+
     if (ctx->file_is_xmlish) {
         uint16_t label_len = 0;
         unsigned char timestamp_len;
@@ -402,9 +407,21 @@ static readstat_error_t dta_skip_label_and_timestamp(dta_ctx_t *ctx) {
             goto cleanup;
         }
         
-        if (io->seek(timestamp_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
-            retval = READSTAT_ERROR_SEEK;
-            goto cleanup;
+        if (timestamp_len == 17) {
+            if (io->read(timestamp, timestamp_len, io->io_ctx) != timestamp_len) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
+            }
+            timestamp[timestamp_len] = '\0';
+            if (strptime(timestamp, "%d %b %Y %H:%M", &timestamp_fields) == NULL) {
+                retval = READSTAT_ERROR_BAD_TIMESTAMP;
+                goto cleanup;
+            }
+        } else {
+            if (io->seek(timestamp_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+                retval = READSTAT_ERROR_SEEK;
+                goto cleanup;
+            }
         }
 
         if ((retval = dta_read_tag(ctx, "</timestamp>")) != READSTAT_OK) {
@@ -416,7 +433,17 @@ static readstat_error_t dta_skip_label_and_timestamp(dta_ctx_t *ctx) {
             goto cleanup;
         }
         
-        if (ctx->time_stamp_len) {
+        if (ctx->time_stamp_len == 18) {
+            if (io->read(timestamp, ctx->time_stamp_len, io->io_ctx) != ctx->time_stamp_len) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
+            }
+            timestamp[ctx->time_stamp_len-1] = '\0';
+            if (strptime(timestamp, "%d %b %Y %H:%M", &timestamp_fields) == NULL) {
+                retval = READSTAT_ERROR_BAD_TIMESTAMP;
+                goto cleanup;
+            }
+        } else if (ctx->time_stamp_len) {
             if (io->seek(ctx->time_stamp_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
                 retval = READSTAT_ERROR_SEEK;
                 goto cleanup;

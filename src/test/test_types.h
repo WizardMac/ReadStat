@@ -1,3 +1,5 @@
+#include <time.h>
+
 #define RT_MAX_ROWS     10
 #define RT_MAX_COLS     10
 #define RT_MAX_STRING   64
@@ -16,6 +18,7 @@ typedef struct rt_test_file_s {
     long                test_formats;
 
     char                label[80];
+    struct tm           timestamp;
     long                rows;
 
     rt_column_t         columns[RT_MAX_COLS];
