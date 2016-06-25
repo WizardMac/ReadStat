@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <math.h>
+#include <time.h>
 
 #include "readstat.h"
 #include "readstat_por_parse.h"
@@ -52,6 +53,7 @@ static uint16_t unicode_lookup[256] = {
 
 typedef struct readstat_por_ctx_s {
     readstat_info_handler           info_handler;
+    readstat_metadata_handler       metadata_handler;
     readstat_variable_handler       variable_handler;
     readstat_value_handler          value_handler;
     readstat_value_label_handler    value_label_handler;
@@ -602,6 +604,44 @@ cleanup:
     return rs_retval;
 }
 
+readstat_error_t read_version_and_timestamp(readstat_por_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
+    char string[256];
+    struct tm timestamp = { .tm_isdst = -1 };
+    unsigned char version;
+
+    if (read_bytes(ctx, &version, sizeof(version)) != sizeof(version)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+    if (read_string(ctx, string, sizeof(string)) == -1) { /* creation date */
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    if (sscanf(string, "%4d%2d%2d", &timestamp.tm_year, &timestamp.tm_mon, &timestamp.tm_mday) != 3) {
+        retval = READSTAT_ERROR_BAD_TIMESTAMP;
+        goto cleanup;
+    }
+    if (read_string(ctx, string, sizeof(string)) == -1) { /* creation time */
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    if (sscanf(string, "%2d%2d%2d", &timestamp.tm_hour, &timestamp.tm_min, &timestamp.tm_sec) != 3) {
+        retval = READSTAT_ERROR_BAD_TIMESTAMP;
+        goto cleanup;
+    }
+
+    if (ctx->metadata_handler) {
+        if (ctx->metadata_handler(NULL, mktime(&timestamp), version - 'A', ctx->user_ctx)) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    return retval;
+}
+
 readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = parser->io;
@@ -614,6 +654,7 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
     ctx->var_dict = ck_hash_table_init(1024);
     ctx->info_handler = parser->info_handler;
     ctx->variable_handler = parser->variable_handler;
+    ctx->metadata_handler = parser->metadata_handler;
     ctx->value_handler = parser->value_handler;
     ctx->value_label_handler = parser->value_label_handler;
     ctx->error_handler = parser->error_handler;
@@ -673,21 +714,11 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
     
     ctx->var_offset = -1;
     
-    unsigned char version;
     char string[256];
 
-    if (read_bytes(ctx, &version, sizeof(version)) != sizeof(version)) {
-        retval = READSTAT_ERROR_READ;
+    retval = read_version_and_timestamp(ctx);
+    if (retval != READSTAT_OK)
         goto cleanup;
-    }
-    if (read_string(ctx, string, sizeof(string)) == -1) { /* creation date */
-        retval = READSTAT_ERROR_PARSE;
-        goto cleanup;
-    }
-    if (read_string(ctx, string, sizeof(string)) == -1) { /* creation time */
-        retval = READSTAT_ERROR_PARSE;
-        goto cleanup;
-    }
         
     while (1) {
         uint16_t tr_tag = read_tag(ctx);

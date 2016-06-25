@@ -36,9 +36,11 @@ typedef struct dta_gso_header_s {
 #pragma pack(pop)
 
 typedef struct dta_ctx_s {
+    char          *data_label;
     size_t         data_label_len;
     size_t         data_label_len_len;
-    size_t         time_stamp_len;
+    time_t         timestamp;
+    size_t         timestamp_len;
     char           typlist_version;
     size_t         typlist_entry_len;
     uint16_t      *typlist;
@@ -84,6 +86,7 @@ typedef struct dta_ctx_s {
     int64_t        max_double;
 
     iconv_t        converter;
+    readstat_error_handler error_handler;
     readstat_progress_handler progress_handler;
     readstat_variable_handler variable_handler;
     readstat_value_handler value_handler;

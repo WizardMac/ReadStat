@@ -72,7 +72,7 @@ static readstat_error_t dta_emit_header_data_label(readstat_writer_t *writer, dt
             goto cleanup;
     } else {
         data_label = calloc(1, ctx->data_label_len);
-        snprintf(data_label, ctx->data_label_len, "%s", writer->file_label);
+        strncpy(data_label, writer->file_label, ctx->data_label_len);
 
         if ((error = readstat_write_bytes(writer, data_label, ctx->data_label_len)) != READSTAT_OK)
             goto cleanup;
@@ -89,16 +89,16 @@ cleanup:
 }
 
 static readstat_error_t dta_emit_header_time_stamp(readstat_writer_t *writer, dta_ctx_t *ctx) {
-    if (!ctx->time_stamp_len)
+    if (!ctx->timestamp_len)
         return READSTAT_OK;
 
     readstat_error_t error = READSTAT_OK;
     time_t now = writer->timestamp;
     struct tm *time_s = localtime(&now);
-    char *time_stamp = calloc(1, ctx->time_stamp_len);
-    uint8_t actual_time_stamp_len = strftime(time_stamp, ctx->time_stamp_len, 
+    char *timestamp = calloc(1, ctx->timestamp_len);
+    uint8_t actual_timestamp_len = strftime(timestamp, ctx->timestamp_len, 
             "%d %b %Y %H:%M", time_s);
-    if (actual_time_stamp_len == 0) {
+    if (actual_timestamp_len == 0) {
         error = READSTAT_ERROR_WRITE;
         goto cleanup;
     }
@@ -107,20 +107,20 @@ static readstat_error_t dta_emit_header_time_stamp(readstat_writer_t *writer, dt
         if ((error = dta_write_tag(writer, ctx, "<timestamp>")) != READSTAT_OK)
             goto cleanup;
 
-        if ((error = readstat_write_bytes(writer, &actual_time_stamp_len, sizeof(uint8_t))) != READSTAT_OK)
+        if ((error = readstat_write_bytes(writer, &actual_timestamp_len, sizeof(uint8_t))) != READSTAT_OK)
             goto cleanup;
 
-        if ((error = readstat_write_bytes(writer, time_stamp, actual_time_stamp_len)) != READSTAT_OK)
+        if ((error = readstat_write_bytes(writer, timestamp, actual_timestamp_len)) != READSTAT_OK)
             goto cleanup;
 
         if ((error = dta_write_tag(writer, ctx, "</timestamp>")) != READSTAT_OK)
             goto cleanup;
     } else {
-        error = readstat_write_bytes(writer, time_stamp, ctx->time_stamp_len);
+        error = readstat_write_bytes(writer, timestamp, ctx->timestamp_len);
     }
 
 cleanup:
-    free(time_stamp);
+    free(timestamp);
     return error;
 }
 

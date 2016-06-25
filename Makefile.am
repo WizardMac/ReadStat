@@ -5,6 +5,7 @@ libreadstat_la_SOURCES = \
 	src/readstat_bits.c \
 	src/readstat_convert.c \
 	src/readstat_dta.c \
+	src/readstat_dta_parse_timestamp.c \
 	src/readstat_dta_read.c \
 	src/readstat_dta_write.c \
 	src/readstat_error.c \
@@ -18,6 +19,7 @@ libreadstat_la_SOURCES = \
 	src/readstat_sas_data.c \
 	src/readstat_sav.c \
 	src/readstat_sav_parse.c \
+	src/readstat_sav_parse_timestamp.c \
 	src/readstat_sav_read.c \
 	src/readstat_sav_write.c \
 	src/readstat_spss.c \

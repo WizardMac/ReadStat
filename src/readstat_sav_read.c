@@ -10,6 +10,7 @@
 
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
+#include "readstat_sav_parse_timestamp.h"
 #include "readstat_convert.h"
 
 #define DATA_BUFFER_SIZE            65536
@@ -1313,6 +1314,24 @@ cleanup:
     return retval;
 }
 
+readstat_error_t sav_parse_timestamp(sav_ctx_t *ctx, sav_file_header_record_t *header) {
+    readstat_error_t retval = READSTAT_OK;
+    struct tm timestamp = { .tm_isdst = -1 };
+
+    if ((retval = sav_parse_time(header->creation_time, sizeof(header->creation_time), &timestamp, ctx)) 
+            != READSTAT_OK)
+        goto cleanup;
+
+    if ((retval = sav_parse_date(header->creation_date, sizeof(header->creation_date), &timestamp, ctx)) 
+            != READSTAT_OK)
+        goto cleanup;
+
+    ctx->timestamp = mktime(&timestamp);
+
+cleanup:
+    return retval;
+}
+
 readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = parser->io;
@@ -1361,6 +1380,9 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
         ctx->row_limit = ctx->record_count;
     }
     
+    if ((retval = sav_parse_timestamp(ctx, &header)) != READSTAT_OK)
+        goto cleanup;
+
     if ((retval = sav_parse_records_pass1(ctx)) != READSTAT_OK)
         goto cleanup;
     
@@ -1380,6 +1402,17 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
     if (parser->info_handler) {
         if (parser->info_handler(ctx->record_count == -1 ? -1 : ctx->row_limit,
                     ctx->var_count, ctx->user_ctx)) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+    }
+
+    if (parser->metadata_handler) {
+        if ((retval = readstat_convert(ctx->file_label, sizeof(ctx->file_label),
+                        header.file_label, sizeof(header.file_label), ctx->converter)) != READSTAT_OK)
+            goto cleanup;
+
+        if (parser->metadata_handler(ctx->file_label, ctx->timestamp, 2, ctx->user_ctx)) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }

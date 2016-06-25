@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "readstat_dta.h"
+#include "readstat_dta_parse_timestamp.h"
 #include "readstat_convert.h"
 
 static readstat_error_t dta_update_progress(dta_ctx_t *ctx);
@@ -359,14 +360,16 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t dta_skip_label_and_timestamp(dta_ctx_t *ctx) {
+static readstat_error_t dta_read_label_and_timestamp(dta_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
     readstat_error_t retval = READSTAT_OK;
+    char *data_label_buffer = NULL;
+    char *timestamp_buffer = NULL;
+    uint16_t label_len = 0;
+    unsigned char timestamp_len = 0;
+    struct tm timestamp = { .tm_isdst = -1 };
 
     if (ctx->file_is_xmlish) {
-        uint16_t label_len = 0;
-        unsigned char timestamp_len;
-
         if ((retval = dta_read_tag(ctx, "<label>")) != READSTAT_OK) {
             goto cleanup;
         }
@@ -385,12 +388,30 @@ static readstat_error_t dta_skip_label_and_timestamp(dta_ctx_t *ctx) {
             }
             label_len = label_len_char;
         }
-        
-        if (io->seek(label_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
-            retval = READSTAT_ERROR_SEEK;
-            goto cleanup;
-        }
-        
+    } else {
+        label_len = ctx->data_label_len;
+    }
+
+    if ((data_label_buffer = malloc(label_len)) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
+
+    if (io->read(data_label_buffer, label_len, io->io_ctx) != label_len) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+
+    if ((ctx->data_label = malloc(4*label_len+1)) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
+
+    if ((retval = readstat_convert(ctx->data_label, 4*label_len+1,
+                    data_label_buffer, label_len, ctx->converter)) != READSTAT_OK)
+        goto cleanup;
+
+    if (ctx->file_is_xmlish) {
         if ((retval = dta_read_tag(ctx, "</label>")) != READSTAT_OK) {
             goto cleanup;
         }
@@ -403,30 +424,37 @@ static readstat_error_t dta_skip_label_and_timestamp(dta_ctx_t *ctx) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
+    } else {
+        timestamp_len = ctx->timestamp_len;
+    }
+
+    if (timestamp_len) {
+        timestamp_buffer = malloc(timestamp_len);
         
-        if (io->seek(timestamp_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
-            retval = READSTAT_ERROR_SEEK;
+        if (io->read(timestamp_buffer, timestamp_len, io->io_ctx) != timestamp_len) {
+            retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
-        if ((retval = dta_read_tag(ctx, "</timestamp>")) != READSTAT_OK) {
+        if (!ctx->file_is_xmlish)
+            timestamp_len--;
+
+        if ((retval = dta_parse_timestamp(timestamp_buffer, timestamp_len, &timestamp, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
-    } else {
-        if (io->seek(ctx->data_label_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
-            retval = READSTAT_ERROR_SEEK;
-            goto cleanup;
-        }
-        
-        if (ctx->time_stamp_len) {
-            if (io->seek(ctx->time_stamp_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
-                retval = READSTAT_ERROR_SEEK;
-                goto cleanup;
-            }
-        }
+
+        ctx->timestamp = mktime(&timestamp);
+    }
+
+    if ((retval = dta_read_tag(ctx, "</timestamp>")) != READSTAT_OK) {
+        goto cleanup;
     }
 
 cleanup:
+    if (data_label_buffer)
+        free(data_label_buffer);
+    if (timestamp_buffer)
+        free(timestamp_buffer);
 
     return retval;
 }
@@ -805,6 +833,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
 
     ctx->user_ctx = user_ctx;
     ctx->file_size = file_size;
+    ctx->error_handler = parser->error_handler;
     ctx->progress_handler = parser->progress_handler;
     ctx->variable_handler = parser->variable_handler;
     ctx->value_handler = parser->value_handler;
@@ -824,11 +853,18 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
         }
     }
     
-    if ((retval = dta_skip_label_and_timestamp(ctx)) != READSTAT_OK)
+    if ((retval = dta_read_label_and_timestamp(ctx)) != READSTAT_OK)
         goto cleanup;
 
     if ((retval = dta_read_tag(ctx, "</header>")) != READSTAT_OK) {
         goto cleanup;
+    }
+
+    if (parser->metadata_handler) {
+        if (parser->metadata_handler(ctx->data_label, ctx->timestamp, header.ds_format, user_ctx)) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
     }
 
     if (dta_read_map(ctx) != READSTAT_OK) {

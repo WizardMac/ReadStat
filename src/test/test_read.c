@@ -116,6 +116,19 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
     return 0;
 }
 
+static int handle_metadata(const char *file_label, time_t timestamp, long file_format_version, void *ctx) {
+    rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
+
+    push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->label, file_label, 32, "File labels");
+    if (rt_ctx->file->timestamp.tm_year) {
+        struct tm timestamp_s = rt_ctx->file->timestamp;
+        timestamp_s.tm_isdst = -1;
+        push_error_if_doubles_differ(rt_ctx, mktime(&timestamp_s), timestamp, "File timestamps");
+    }
+
+    return 0;
+}
+
 static int handle_variable(int index, readstat_variable_t *variable,
                            const char *val_labels, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
@@ -148,6 +161,10 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
     return 0;
 }
 
+static void handle_error(const char *error_message, void *ctx) {
+    printf("%s\n", error_message);
+}
+
 readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     readstat_error_t error = READSTAT_OK;
 
@@ -161,8 +178,10 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     readstat_set_io_ctx(parser, parse_ctx->buffer_ctx);
 
     readstat_set_info_handler(parser, &handle_info);
+    readstat_set_metadata_handler(parser, &handle_metadata);
     readstat_set_variable_handler(parser, &handle_variable);
     readstat_set_value_handler(parser, &handle_value);
+    readstat_set_error_handler(parser, &handle_error);
 
     if ((format & RT_FORMAT_DTA)) {
         error = readstat_parse_dta(parser, NULL, parse_ctx);

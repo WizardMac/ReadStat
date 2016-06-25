@@ -164,6 +164,7 @@ readstat_value_t readstat_variable_get_missing_range_hi(readstat_variable_t *var
 
 /* Callbacks should return 0 on success and non-zero to abort */
 typedef int (*readstat_info_handler)(int obs_count, int var_count, void *ctx);
+typedef int (*readstat_metadata_handler)(const char *file_label, time_t timestamp, long file_format_version, void *ctx);
 typedef int (*readstat_variable_handler)(int index, readstat_variable_t *variable, 
         const char *val_labels, void *ctx);
 typedef int (*readstat_fweight_handler)(int var_index, void *ctx);
@@ -206,6 +207,7 @@ typedef struct readstat_io_s {
 
 typedef struct readstat_parser_s {
     readstat_info_handler          info_handler;
+    readstat_metadata_handler      metadata_handler;
     readstat_variable_handler      variable_handler;
     readstat_fweight_handler       fweight_handler;
     readstat_value_handler         value_handler;
@@ -223,6 +225,7 @@ void readstat_parser_free(readstat_parser_t *parser);
 void readstat_io_free(readstat_io_t *io);
 
 readstat_error_t readstat_set_info_handler(readstat_parser_t *parser, readstat_info_handler info_handler);
+readstat_error_t readstat_set_metadata_handler(readstat_parser_t *parser, readstat_metadata_handler metadata_handler);
 readstat_error_t readstat_set_variable_handler(readstat_parser_t *parser, readstat_variable_handler variable_handler);
 readstat_error_t readstat_set_fweight_handler(readstat_parser_t *parser, readstat_fweight_handler fweight_handler);
 readstat_error_t readstat_set_value_handler(readstat_parser_t *parser, readstat_value_handler value_handler);

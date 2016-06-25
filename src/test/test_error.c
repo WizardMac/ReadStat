@@ -44,6 +44,26 @@ void push_error_if_strings_differ(rt_parse_ctx_t *ctx,
     push_error(ctx, expected_value, received_value, msg);
 }
 
+void push_error_if_strings_differ_n(rt_parse_ctx_t *ctx, 
+        const char *expected,
+        const char *received,
+        size_t len,
+        const char *msg) {
+    if ((expected == NULL || expected[0] == '\0') && 
+            (received == NULL || received[0] == '\0'))
+        return;
+
+    if (expected && received && strncmp(expected, received, len) == 0)
+        return;
+
+    readstat_value_t expected_value = { .type = READSTAT_TYPE_STRING,
+        .v = { .string_value = expected } };
+    readstat_value_t received_value = { .type = READSTAT_TYPE_STRING,
+        .v = { .string_value = received } };
+
+    push_error(ctx, expected_value, received_value, msg);
+}
+
 void push_error_if_values_differ(rt_parse_ctx_t *ctx, 
         readstat_value_t expected,
         readstat_value_t received,

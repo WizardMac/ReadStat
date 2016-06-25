@@ -527,9 +527,21 @@ rt_test_group_t _test_groups[] = {
         .label = "Timestamps",
         .tests = {
             {
-                .label = "Custom timestamp",
-                .test_formats = RT_FORMAT_ALL,
-                .timestamp = { .tm_year = /* 19 */84, .tm_mon = 7, .tm_mday = 2, .tm_hour = 3, .tm_min = 4, .tm_sec = 5 },
+                .label = "Unix epoch",
+                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SAV,
+                .timestamp = { .tm_year = /* 19 */70, .tm_mon = 0, .tm_mday = 1, .tm_hour = 0, .tm_min = 0 },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+
+            {
+                .label = "Evan's birthday",
+                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SAV,
+                .timestamp = { .tm_year = /* 19 */84, .tm_mon = 7, .tm_mday = 2, .tm_hour = 3, .tm_min = 4 },
                 .columns = {
                     {
                         .name = "var1",
