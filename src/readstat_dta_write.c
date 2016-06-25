@@ -96,19 +96,17 @@ static readstat_error_t dta_emit_header_time_stamp(readstat_writer_t *writer, dt
     time_t now = time(NULL);
     struct tm *time_s = localtime(&now);
     char *time_stamp = calloc(1, ctx->time_stamp_len);
-    size_t actual_time_stamp_len = strftime(time_stamp, ctx->time_stamp_len, "%d %b %Y %H:%M", time_s);
+    uint8_t actual_time_stamp_len = strftime(time_stamp, ctx->time_stamp_len, "%d %b %Y %H:%M", time_s);
     if (actual_time_stamp_len == 0) {
         error = READSTAT_ERROR_WRITE;
         goto cleanup;
     }
 
     if (ctx->file_is_xmlish) {
-        uint8_t time_stamp_len_byte = actual_time_stamp_len;
-
         if ((error = dta_write_tag(writer, ctx, "<timestamp>")) != READSTAT_OK)
             goto cleanup;
 
-        if ((error = readstat_write_bytes(writer, &time_stamp_len_byte, sizeof(uint8_t))) != READSTAT_OK)
+        if ((error = readstat_write_bytes(writer, &actual_time_stamp_len, sizeof(uint8_t))) != READSTAT_OK)
             goto cleanup;
 
         if ((error = readstat_write_bytes(writer, time_stamp, actual_time_stamp_len)) != READSTAT_OK)
