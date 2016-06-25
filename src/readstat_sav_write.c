@@ -107,8 +107,11 @@ static readstat_error_t sav_emit_header(readstat_writer_t *writer) {
     header.ncases = writer->row_count;
     header.bias = 100.0;
     
-    strftime(header.creation_date, sizeof(header.creation_date),
-            "%d %b %y", time_s);
+    /* There are portability issues with %y so this is a hack */
+    strftime(&header.creation_date[sizeof(header.creation_date)-4], 4,
+            "%Y", time_s);
+    strftime(header.creation_date, sizeof(header.creation_date)-2,
+            "%d %b ", time_s);
 
     /* There are portability issues with strftime("%S") so use snprintf instead */
     char creation_time[sizeof(header.creation_time)+1];
