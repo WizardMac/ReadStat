@@ -529,7 +529,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Custom timestamp",
                 .test_formats = RT_FORMAT_ALL,
-                .timestamp = { .tm_year = /* 19 */84, .tm_mon = 7, .tm_mday = 2 },
+                .timestamp = { .tm_year = /* 19 */84, .tm_mon = 7, .tm_mday = 2, .tm_hour = 3, .tm_min = 4, .tm_sec = 5 },
                 .columns = {
                     {
                         .name = "var1",

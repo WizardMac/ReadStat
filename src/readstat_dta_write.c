@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
+#include <xlocale.h>
 
 #include "readstat.h"
 #include "readstat_dta.h"
@@ -96,7 +97,9 @@ static readstat_error_t dta_emit_header_time_stamp(readstat_writer_t *writer, dt
     time_t now = writer->timestamp;
     struct tm *time_s = localtime(&now);
     char *time_stamp = calloc(1, ctx->time_stamp_len);
-    uint8_t actual_time_stamp_len = strftime(time_stamp, ctx->time_stamp_len, "%d %b %Y %H:%M", time_s);
+    locale_t c_locale = newlocale(LC_ALL_MASK, NULL, NULL);
+    uint8_t actual_time_stamp_len = strftime_l(time_stamp, ctx->time_stamp_len, 
+            "%d %b %Y %H:%M", time_s, c_locale);
     if (actual_time_stamp_len == 0) {
         error = READSTAT_ERROR_WRITE;
         goto cleanup;
@@ -120,6 +123,7 @@ static readstat_error_t dta_emit_header_time_stamp(readstat_writer_t *writer, dt
 
 cleanup:
     free(time_stamp);
+    freelocale(c_locale);
     return error;
 }
 

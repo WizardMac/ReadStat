@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <xlocale.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
@@ -365,6 +366,7 @@ static readstat_error_t dta_skip_label_and_timestamp(dta_ctx_t *ctx) {
     char timestamp[18];
     /* Read and validate timestamp, even if we don't use it */
     struct tm timestamp_fields;
+    locale_t c_locale = newlocale(LC_ALL_MASK, NULL, NULL);
 
     if (ctx->file_is_xmlish) {
         uint16_t label_len = 0;
@@ -413,7 +415,7 @@ static readstat_error_t dta_skip_label_and_timestamp(dta_ctx_t *ctx) {
                 goto cleanup;
             }
             timestamp[timestamp_len] = '\0';
-            if (strptime(timestamp, "%d %b %Y %H:%M", &timestamp_fields) == NULL) {
+            if (strptime_l(timestamp, "%d %b %Y %H:%M", &timestamp_fields, c_locale) == NULL) {
                 retval = READSTAT_ERROR_BAD_TIMESTAMP;
                 goto cleanup;
             }
@@ -439,7 +441,7 @@ static readstat_error_t dta_skip_label_and_timestamp(dta_ctx_t *ctx) {
                 goto cleanup;
             }
             timestamp[ctx->time_stamp_len-1] = '\0';
-            if (strptime(timestamp, "%d %b %Y %H:%M", &timestamp_fields) == NULL) {
+            if (strptime_l(timestamp, "%d %b %Y %H:%M", &timestamp_fields, c_locale) == NULL) {
                 retval = READSTAT_ERROR_BAD_TIMESTAMP;
                 goto cleanup;
             }
@@ -452,6 +454,8 @@ static readstat_error_t dta_skip_label_and_timestamp(dta_ctx_t *ctx) {
     }
 
 cleanup:
+    freelocale(c_locale);
+
     return retval;
 }
 

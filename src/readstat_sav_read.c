@@ -7,6 +7,7 @@
 #include <math.h>
 #include <float.h>
 #include <time.h>
+#include <xlocale.h>
 
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
@@ -1314,9 +1315,11 @@ cleanup:
 }
 
 readstat_error_t sav_parse_timestamp(sav_file_header_record_t *header) {
+    readstat_error_t error = READSTAT_OK;
     char date_string[10];
     char time_string[9];
     struct tm timestamp_fields;
+    locale_t c_locale = newlocale(LC_ALL_MASK, NULL, NULL);
 
     memcpy(date_string, header->creation_date, sizeof(header->creation_date));
     date_string[9] = '\0';
@@ -1324,11 +1327,17 @@ readstat_error_t sav_parse_timestamp(sav_file_header_record_t *header) {
     memcpy(time_string, header->creation_time, sizeof(header->creation_time));
     time_string[8] = '\0';
 
-    if (strptime(date_string, "%d %b %y", &timestamp_fields) == NULL ||
-            strptime(time_string, "%H:%M:%S", &timestamp_fields) == NULL)
-        return READSTAT_ERROR_BAD_TIMESTAMP;
+    if (strptime_l(date_string, "%d %b %y", &timestamp_fields, c_locale) == NULL ||
+            strptime_l(time_string, "%H:%M:%S", &timestamp_fields, c_locale) == NULL) {
+        error = READSTAT_ERROR_BAD_TIMESTAMP;
+        goto cleanup;
+    }
 
-    return READSTAT_OK;
+cleanup:
+    if (c_locale)
+        freelocale(c_locale);
+
+    return error;
 }
 
 readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path, void *user_ctx) {
