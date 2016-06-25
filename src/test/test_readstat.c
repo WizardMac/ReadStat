@@ -287,14 +287,14 @@ rt_test_group_t _test_groups[] = {
                 .columns = {
                     {
                         .name = "var5",
-                        .type = READSTAT_TYPE_CHAR,
+                        .type = READSTAT_TYPE_INT8,
                         .values = { 
-                            { .type = READSTAT_TYPE_CHAR, .tag = 'a' },
-                            { .type = READSTAT_TYPE_CHAR, .tag = 'b' },
-                            { .type = READSTAT_TYPE_CHAR, .tag = 'c' },
-                            { .type = READSTAT_TYPE_CHAR, .tag = 'x' },
-                            { .type = READSTAT_TYPE_CHAR, .tag = 'y' },
-                            { .type = READSTAT_TYPE_CHAR, .tag = 'z' }
+                            { .type = READSTAT_TYPE_INT8, .tag = 'a' },
+                            { .type = READSTAT_TYPE_INT8, .tag = 'b' },
+                            { .type = READSTAT_TYPE_INT8, .tag = 'c' },
+                            { .type = READSTAT_TYPE_INT8, .tag = 'x' },
+                            { .type = READSTAT_TYPE_INT8, .tag = 'y' },
+                            { .type = READSTAT_TYPE_INT8, .tag = 'z' }
                         }
                     }
                 }
@@ -410,8 +410,8 @@ rt_test_group_t _test_groups[] = {
                 .columns = {
                     {
                         .name = "var1",
-                        .type = READSTAT_TYPE_CHAR,
-                        .values = { { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_OLD_MAX_CHAR+1 } } }
+                        .type = READSTAT_TYPE_INT8,
+                        .values = { { .type = READSTAT_TYPE_INT8, .v = { .i8_value = DTA_OLD_MAX_INT8+1 } } }
                     }
                 }
             },
@@ -423,8 +423,8 @@ rt_test_group_t _test_groups[] = {
                 .columns = {
                     {
                         .name = "var1",
-                        .type = READSTAT_TYPE_CHAR,
-                        .values = { { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_OLD_MAX_CHAR } } }
+                        .type = READSTAT_TYPE_INT8,
+                        .values = { { .type = READSTAT_TYPE_INT8, .v = { .i8_value = DTA_OLD_MAX_INT8 } } }
                     }
                 }
             }
@@ -502,8 +502,8 @@ rt_test_group_t _test_groups[] = {
                 .columns = {
                     {
                         .name = "var1",
-                        .type = READSTAT_TYPE_CHAR,
-                        .values = { { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_113_MAX_CHAR+1 } } }
+                        .type = READSTAT_TYPE_INT8,
+                        .values = { { .type = READSTAT_TYPE_INT8, .v = { .i8_value = DTA_113_MAX_INT8+1 } } }
                     }
                 }
             },
@@ -515,8 +515,8 @@ rt_test_group_t _test_groups[] = {
                 .columns = {
                     {
                         .name = "var1",
-                        .type = READSTAT_TYPE_CHAR,
-                        .values = { { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_113_MAX_CHAR } } }
+                        .type = READSTAT_TYPE_INT8,
+                        .values = { { .type = READSTAT_TYPE_INT8, .v = { .i8_value = DTA_113_MAX_INT8 } } }
                     }
                 }
             }
@@ -684,16 +684,16 @@ rt_test_group_t _test_groups[] = {
                     { 
                         .name = "var5",
                         .label = "Int8 variable",
-                        .type = READSTAT_TYPE_CHAR,
+                        .type = READSTAT_TYPE_INT8,
                         .alignment = READSTAT_ALIGNMENT_CENTER,
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
-                            { .type = READSTAT_TYPE_CHAR, .v = { .char_value = 20 } },
-                            { .type = READSTAT_TYPE_CHAR, .v = { .char_value = 15 } },
-                            { .type = READSTAT_TYPE_CHAR, .v = { .char_value = -28 } },
-                            { .type = READSTAT_TYPE_CHAR, .v = { .char_value = DTA_113_MAX_CHAR } },
-                            { .type = READSTAT_TYPE_CHAR, .is_system_missing = 1 },
-                            { .type = READSTAT_TYPE_CHAR, .v = { .char_value = INT8_MIN } }
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 20 } },
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 15 } },
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = -28 } },
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = DTA_113_MAX_INT8 } },
+                            { .type = READSTAT_TYPE_INT8, .is_system_missing = 1 },
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = INT8_MIN } }
                         }
                     },
                     { 

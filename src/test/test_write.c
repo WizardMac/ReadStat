@@ -117,9 +117,9 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
             } else if (column->type == READSTAT_TYPE_INT16) {
                 error = readstat_insert_int16_value(writer, variable, 
                         readstat_int16_value(column->values[i]));
-            } else if (column->type == READSTAT_TYPE_CHAR) {
-                error = readstat_insert_char_value(writer, variable, 
-                        readstat_char_value(column->values[i]));
+            } else if (column->type == READSTAT_TYPE_INT8) {
+                error = readstat_insert_int8_value(writer, variable, 
+                        readstat_int8_value(column->values[i]));
             }
             if (error != READSTAT_OK)
                 goto cleanup;

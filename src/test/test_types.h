@@ -9,7 +9,7 @@ typedef struct rt_column_s {
     char                    label[RT_MAX_STRING];
     readstat_alignment_t    alignment;
     readstat_measure_t      measure;
-    readstat_types_t        type;
+    readstat_type_t         type;
     readstat_value_t        values[RT_MAX_ROWS];
 } rt_column_t;
 

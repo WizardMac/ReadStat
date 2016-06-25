@@ -68,8 +68,8 @@ void push_error_if_values_differ(rt_parse_ctx_t *ctx,
         readstat_value_t expected,
         readstat_value_t received,
         const char *msg) {
-    readstat_types_t expected_type = readstat_value_type(expected);
-    readstat_types_t received_type = readstat_value_type(received);
+    readstat_type_t expected_type = readstat_value_type(expected);
+    readstat_type_t received_type = readstat_value_type(received);
     if (expected_type == READSTAT_TYPE_STRING || expected_type == READSTAT_TYPE_LONG_STRING) {
         if (received_type == READSTAT_TYPE_STRING || received_type == READSTAT_TYPE_LONG_STRING) {
             push_error_if_strings_differ(ctx,
@@ -144,8 +144,8 @@ static void print_value(readstat_value_t value) {
         printf("%lf (double)", readstat_double_value(value));
     } else if (value.type == READSTAT_TYPE_FLOAT) {
         printf("%f (float)", readstat_float_value(value));
-    } else if (value.type == READSTAT_TYPE_CHAR) {
-        printf("%hhd (int8)", readstat_char_value(value));
+    } else if (value.type == READSTAT_TYPE_INT8) {
+        printf("%hhd (int8)", readstat_int8_value(value));
     } else if (value.type == READSTAT_TYPE_INT16) {
         printf("%hd (int16)", readstat_int16_value(value));
     } else if (value.type == READSTAT_TYPE_INT32) {

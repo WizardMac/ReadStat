@@ -66,7 +66,7 @@ typedef struct spss_format_s {
 } spss_format_t;
 
 typedef struct spss_varinfo_s {
-    readstat_types_t type;
+    readstat_type_t  type;
     int              labels_index;
     int              index;
     int              offset;

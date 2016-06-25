@@ -79,7 +79,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
 
 static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
     mod_xlsx_ctx_t *mod_ctx = (mod_xlsx_ctx_t *)ctx;
-    readstat_types_t type = readstat_value_type(value);
+    readstat_type_t type = readstat_value_type(value);
     lxw_format *value_fmt = readstat_value_is_considered_missing(value) ? mod_ctx->missing_fmt : NULL;
 
     if (var_index == 0) {
@@ -89,7 +89,7 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
         worksheet_write_blank(mod_ctx->worksheet, obs_index+1, var_index, NULL);
     } else if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING) {
         worksheet_write_string(mod_ctx->worksheet, obs_index+1, var_index, readstat_string_value(value), value_fmt);
-    } else if (type == READSTAT_TYPE_CHAR ||
+    } else if (type == READSTAT_TYPE_INT8 ||
             type == READSTAT_TYPE_INT16 ||
             type == READSTAT_TYPE_INT32 ||
             type == READSTAT_TYPE_FLOAT ||

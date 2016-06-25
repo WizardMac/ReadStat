@@ -36,7 +36,7 @@ const char *readstat_variable_get_format(readstat_variable_t *variable) {
     return NULL;
 }
 
-readstat_types_t readstat_variable_get_type(readstat_variable_t *variable) {
+readstat_type_t readstat_variable_get_type(readstat_variable_t *variable) {
     return variable->type;
 }
 

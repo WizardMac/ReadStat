@@ -77,7 +77,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
 
 static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
     mod_csv_ctx_t *mod_ctx = (mod_csv_ctx_t *)ctx;
-    readstat_types_t type = readstat_value_type(value);
+    readstat_type_t type = readstat_value_type(value);
     if (var_index > 0) {
         fprintf(mod_ctx->out_file, ",");
     }
@@ -86,8 +86,8 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
     } else if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING) {
         /* TODO escape */
         fprintf(mod_ctx->out_file, "\"%s\"", readstat_string_value(value));
-    } else if (type == READSTAT_TYPE_CHAR) {
-        fprintf(mod_ctx->out_file, "%hhd", readstat_char_value(value));
+    } else if (type == READSTAT_TYPE_INT8) {
+        fprintf(mod_ctx->out_file, "%hhd", readstat_int8_value(value));
     } else if (type == READSTAT_TYPE_INT16) {
         fprintf(mod_ctx->out_file, "%hd", readstat_int16_value(value));
     } else if (type == READSTAT_TYPE_INT32) {

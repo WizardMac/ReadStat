@@ -503,7 +503,7 @@ static readstat_error_t read_value_label_record(readstat_por_ctx_t *ctx) {
     char label_name_buf[256];
     char label_buf[256];
     snprintf(label_name_buf, sizeof(label_name_buf), POR_LABEL_NAME_PREFIX "%d", ctx->labels_offset);
-    readstat_types_t value_type = READSTAT_TYPE_DOUBLE;
+    readstat_type_t value_type = READSTAT_TYPE_DOUBLE;
     if (read_double(ctx, &dval) == -1) {
         return READSTAT_ERROR_PARSE;
     }

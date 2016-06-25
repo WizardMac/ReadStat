@@ -187,7 +187,7 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     variable.print = ctx->machine_needs_byte_swap ? byteswap4(variable.print) : variable.print;
     variable.write = ctx->machine_needs_byte_swap ? byteswap4(variable.write) : variable.write;
 
-    readstat_types_t dta_type = READSTAT_TYPE_DOUBLE;
+    readstat_type_t dta_type = READSTAT_TYPE_DOUBLE;
     int32_t type = ctx->machine_needs_byte_swap ? byteswap4(variable.type) : variable.type;
     int i;
     if (type < 0) {
@@ -345,7 +345,7 @@ cleanup:
 }
 
 static readstat_error_t sav_submit_value_labels(value_label_t *value_labels, int32_t label_count, 
-        readstat_types_t value_type, readstat_missingness_t *missingness, sav_ctx_t *ctx) {
+        readstat_type_t value_type, readstat_missingness_t *missingness, sav_ctx_t *ctx) {
     char label_name_buf[256];
     readstat_error_t retval = READSTAT_OK;
     int32_t i;
@@ -383,7 +383,7 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
     int32_t *vars = NULL;
     int32_t rec_type;
     int32_t var_count;
-    readstat_types_t value_type = READSTAT_TYPE_STRING;
+    readstat_type_t value_type = READSTAT_TYPE_STRING;
     char label_buf[256];
     value_label_t *value_labels = NULL;
     readstat_missingness_t *missingness = NULL;

@@ -294,7 +294,7 @@ static readstat_error_t sav_emit_value_label_records(readstat_writer_t *writer) 
         if (!readstat_label_set_needs_short_value_labels_record(r_label_set))
             continue;
 
-        readstat_types_t user_type = r_label_set->type;
+        readstat_type_t user_type = r_label_set->type;
         int32_t label_count = r_label_set->value_labels_count;
         int32_t rec_type = 0;
 
@@ -670,8 +670,8 @@ static readstat_error_t sav_emit_termination_record(readstat_writer_t *writer) {
     return readstat_write_bytes(writer, &termination_record, sizeof(termination_record));
 }
 
-static readstat_error_t sav_write_char(void *row, const readstat_variable_t *var, char value) {
-    if (var->type != READSTAT_TYPE_CHAR) {
+static readstat_error_t sav_write_int8(void *row, const readstat_variable_t *var, int8_t value) {
+    if (var->type != READSTAT_TYPE_INT8) {
         return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
     }
     double dval = value;
@@ -744,7 +744,7 @@ static readstat_error_t sav_write_missing_tagged(void *row, const readstat_varia
     return READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED;
 }
 
-static size_t sav_variable_width(readstat_types_t type, size_t user_width) {
+static size_t sav_variable_width(readstat_type_t type, size_t user_width) {
     if (type == READSTAT_TYPE_STRING) {
         if (user_width > 255 || user_width == 0)
             user_width = 255;
@@ -804,7 +804,7 @@ readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *use
     writer->user_ctx = user_ctx;
 
     writer->callbacks.variable_width = &sav_variable_width;
-    writer->callbacks.write_char = &sav_write_char;
+    writer->callbacks.write_int8 = &sav_write_int8;
     writer->callbacks.write_int16 = &sav_write_int16;
     writer->callbacks.write_int32 = &sav_write_int32;
     writer->callbacks.write_float = &sav_write_float;

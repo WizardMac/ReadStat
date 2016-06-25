@@ -107,7 +107,7 @@ static int handle_value_label(const char *val_labels, readstat_value_t value,
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
     readstat_writer_t *writer = mod_ctx->writer;
     readstat_label_set_t *label_set = NULL;
-    readstat_types_t type = readstat_value_type(value);
+    readstat_type_t type = readstat_value_type(value);
 
     label_set = (readstat_label_set_t *)ck_str_hash_lookup(val_labels, mod_ctx->label_set_dict);
     if (label_set == NULL) {
@@ -131,7 +131,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
     readstat_writer_t *writer = mod_ctx->writer;
 
-    readstat_types_t type = readstat_variable_get_type(variable);
+    readstat_type_t type = readstat_variable_get_type(variable);
     const char *name = readstat_variable_get_name(variable);
     const char *label = readstat_variable_get_label(variable);
     size_t storage_width = readstat_variable_get_storage_width(variable);
@@ -175,7 +175,7 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
     readstat_writer_t *writer = mod_ctx->writer;
 
     readstat_variable_t *variable = readstat_get_variable(writer, var_index);
-    readstat_types_t type = readstat_value_type(value);
+    readstat_type_t type = readstat_value_type(value);
     readstat_error_t error = READSTAT_OK;
 
     if (var_index == 0) {
@@ -199,8 +199,8 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
         error = readstat_insert_missing_value(writer, variable);
     } else if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING) {
         error = readstat_insert_string_value(writer, variable, readstat_string_value(value));
-    } else if (type == READSTAT_TYPE_CHAR) {
-        error = readstat_insert_char_value(writer, variable, readstat_char_value(value));
+    } else if (type == READSTAT_TYPE_INT8) {
+        error = readstat_insert_int8_value(writer, variable, readstat_int8_value(value));
     } else if (type == READSTAT_TYPE_INT16) {
         error = readstat_insert_int16_value(writer, variable, readstat_int16_value(value));
     } else if (type == READSTAT_TYPE_INT32) {

@@ -128,8 +128,8 @@ static uint16_t dta_111_typecode_for_variable(readstat_variable_t *r_variable) {
     size_t max_len = r_variable->storage_width;
     uint16_t typecode = 0;
     switch (r_variable->type) {
-        case READSTAT_TYPE_CHAR: 
-            typecode = DTA_111_TYPE_CODE_CHAR; break;
+        case READSTAT_TYPE_INT8: 
+            typecode = DTA_111_TYPE_CODE_INT8; break;
         case READSTAT_TYPE_INT16:
             typecode = DTA_111_TYPE_CODE_INT16; break;
         case READSTAT_TYPE_INT32:
@@ -153,8 +153,8 @@ static uint16_t dta_117_typecode_for_variable(readstat_variable_t *r_variable) {
     size_t max_len = r_variable->storage_width;
     uint16_t typecode = 0;
     switch (r_variable->type) {
-        case READSTAT_TYPE_CHAR: 
-            typecode = DTA_117_TYPE_CODE_CHAR; break;
+        case READSTAT_TYPE_INT8: 
+            typecode = DTA_117_TYPE_CODE_INT8; break;
         case READSTAT_TYPE_INT16:
             typecode = DTA_117_TYPE_CODE_INT16; break;
         case READSTAT_TYPE_INT32:
@@ -178,8 +178,8 @@ static uint16_t dta_old_typecode_for_variable(readstat_variable_t *r_variable) {
     size_t max_len = r_variable->storage_width;
     uint16_t typecode = 0;
     switch (r_variable->type) {
-        case READSTAT_TYPE_CHAR: 
-            typecode = DTA_OLD_TYPE_CODE_CHAR; break;
+        case READSTAT_TYPE_INT8: 
+            typecode = DTA_OLD_TYPE_CODE_INT8; break;
         case READSTAT_TYPE_INT16:
             typecode = DTA_OLD_TYPE_CODE_INT16; break;
         case READSTAT_TYPE_INT32:
@@ -336,7 +336,7 @@ static readstat_error_t dta_emit_fmtlist(readstat_writer_t *writer, dta_ctx_t *c
                     r_variable->format, ctx->fmtlist_entry_len);
         } else {
             char *format_spec = "9s";
-            if (r_variable->type == READSTAT_TYPE_CHAR) {
+            if (r_variable->type == READSTAT_TYPE_INT8) {
                 format_spec = DTA_DEFAULT_FORMAT_BYTE;
             } else if (r_variable->type == READSTAT_TYPE_INT16) {
                 format_spec = DTA_DEFAULT_FORMAT_INT16;
@@ -613,7 +613,7 @@ cleanup:
     return retval;
 }
 
-static size_t dta_numeric_variable_width(readstat_types_t type, size_t user_width) {
+static size_t dta_numeric_variable_width(readstat_type_t type, size_t user_width) {
     size_t len = 0;
     if (type == READSTAT_TYPE_DOUBLE) {
         len = 8;
@@ -623,13 +623,13 @@ static size_t dta_numeric_variable_width(readstat_types_t type, size_t user_widt
         len = 4;
     } else if (type == READSTAT_TYPE_INT16) {
         len = 2;
-    } else if (type == READSTAT_TYPE_CHAR) {
+    } else if (type == READSTAT_TYPE_INT8) {
         len = 1;
     }
     return len;
 }
 
-static size_t dta_111_variable_width(readstat_types_t type, size_t user_width) {
+static size_t dta_111_variable_width(readstat_type_t type, size_t user_width) {
     if (type == READSTAT_TYPE_STRING) {
         if (user_width > DTA_111_MAX_WIDTH || user_width == 0)
             user_width = DTA_111_MAX_WIDTH;
@@ -638,7 +638,7 @@ static size_t dta_111_variable_width(readstat_types_t type, size_t user_width) {
     return dta_numeric_variable_width(type, user_width);
 }
 
-static size_t dta_117_variable_width(readstat_types_t type, size_t user_width) {
+static size_t dta_117_variable_width(readstat_type_t type, size_t user_width) {
     if (type == READSTAT_TYPE_STRING) {
         if (user_width > DTA_117_MAX_WIDTH || user_width == 0)
             user_width = DTA_117_MAX_WIDTH;
@@ -647,7 +647,7 @@ static size_t dta_117_variable_width(readstat_types_t type, size_t user_width) {
     return dta_numeric_variable_width(type, user_width);
 }
 
-static size_t dta_old_variable_width(readstat_types_t type, size_t user_width) {
+static size_t dta_old_variable_width(readstat_type_t type, size_t user_width) {
     if (type == READSTAT_TYPE_STRING) {
         if (user_width > DTA_OLD_MAX_WIDTH || user_width == 0)
             user_width = DTA_OLD_MAX_WIDTH;
@@ -898,7 +898,7 @@ cleanup:
     return error;
 }
 
-static readstat_error_t dta_write_raw_char(void *row, char value) {
+static readstat_error_t dta_write_raw_int8(void *row, int8_t value) {
     memcpy(row, &value, sizeof(char));
     return READSTAT_OK;
 }
@@ -928,24 +928,24 @@ static readstat_error_t dta_write_raw_double(void *row, double value) {
     return READSTAT_OK;
 }
 
-static readstat_error_t dta_113_write_char(void *row, const readstat_variable_t *var, char value) {
-    if (var->type != READSTAT_TYPE_CHAR) {
+static readstat_error_t dta_113_write_int8(void *row, const readstat_variable_t *var, int8_t value) {
+    if (var->type != READSTAT_TYPE_INT8) {
         return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
     }
-    if (value > DTA_113_MAX_CHAR) {
+    if (value > DTA_113_MAX_INT8) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     }
-    return dta_write_raw_char(row, value);
+    return dta_write_raw_int8(row, value);
 }
 
-static readstat_error_t dta_old_write_char(void *row, const readstat_variable_t *var, char value) {
-    if (var->type != READSTAT_TYPE_CHAR) {
+static readstat_error_t dta_old_write_int8(void *row, const readstat_variable_t *var, int8_t value) {
+    if (var->type != READSTAT_TYPE_INT8) {
         return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
     }
-    if (value > DTA_OLD_MAX_CHAR) {
+    if (value > DTA_OLD_MAX_INT8) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     }
-    return dta_write_raw_char(row, value);
+    return dta_write_raw_int8(row, value);
 }
 
 static readstat_error_t dta_113_write_int16(void *row, const readstat_variable_t *var, int16_t value) {
@@ -1064,8 +1064,8 @@ static readstat_error_t dta_old_write_string(void *row, const readstat_variable_
 
 static readstat_error_t dta_113_write_missing_numeric(void *row, const readstat_variable_t *var) {
     readstat_error_t retval = READSTAT_OK;
-    if (var->type == READSTAT_TYPE_CHAR) {
-        retval = dta_write_raw_char(row, DTA_113_MISSING_CHAR);
+    if (var->type == READSTAT_TYPE_INT8) {
+        retval = dta_write_raw_int8(row, DTA_113_MISSING_INT8);
     } else if (var->type == READSTAT_TYPE_INT16) {
         retval = dta_write_raw_int16(row, DTA_113_MISSING_INT16);
     } else if (var->type == READSTAT_TYPE_INT32) {
@@ -1080,8 +1080,8 @@ static readstat_error_t dta_113_write_missing_numeric(void *row, const readstat_
 
 static readstat_error_t dta_old_write_missing_numeric(void *row, const readstat_variable_t *var) {
     readstat_error_t retval = READSTAT_OK;
-    if (var->type == READSTAT_TYPE_CHAR) {
-        retval = dta_write_raw_char(row, DTA_OLD_MISSING_CHAR);
+    if (var->type == READSTAT_TYPE_INT8) {
+        retval = dta_write_raw_int8(row, DTA_OLD_MISSING_INT8);
     } else if (var->type == READSTAT_TYPE_INT16) {
         retval = dta_write_raw_int16(row, DTA_OLD_MISSING_INT16);
     } else if (var->type == READSTAT_TYPE_INT32) {
@@ -1111,8 +1111,8 @@ static readstat_error_t dta_113_write_missing_tagged(void *row, const readstat_v
     if (tag < 'a' || tag > 'z')
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
 
-    if (var->type == READSTAT_TYPE_CHAR) {
-        retval = dta_write_raw_char(row, DTA_113_MISSING_CHAR_A + (tag - 'a'));
+    if (var->type == READSTAT_TYPE_INT8) {
+        retval = dta_write_raw_int8(row, DTA_113_MISSING_INT8_A + (tag - 'a'));
     } else if (var->type == READSTAT_TYPE_INT16) {
         retval = dta_write_raw_int16(row, DTA_113_MISSING_INT16_A + (tag - 'a'));
     } else if (var->type == READSTAT_TYPE_INT32) {
@@ -1188,13 +1188,13 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
     }
 
     if (writer->version >= 113) {
-        writer->callbacks.write_char = &dta_113_write_char;
+        writer->callbacks.write_int8 = &dta_113_write_int8;
         writer->callbacks.write_int16 = &dta_113_write_int16;
         writer->callbacks.write_int32 = &dta_113_write_int32;
         writer->callbacks.write_missing_number = &dta_113_write_missing_numeric;
         writer->callbacks.write_missing_tagged = &dta_113_write_missing_tagged;
     } else {
-        writer->callbacks.write_char = &dta_old_write_char;
+        writer->callbacks.write_int8 = &dta_old_write_int8;
         writer->callbacks.write_int16 = &dta_old_write_int16;
         writer->callbacks.write_int32 = &dta_old_write_int32;
         writer->callbacks.write_missing_number = &dta_old_write_missing_numeric;

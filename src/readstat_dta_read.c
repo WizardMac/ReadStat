@@ -21,7 +21,7 @@ static readstat_error_t dta_update_progress(dta_ctx_t *ctx) {
     return io->update(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
 }
 
-static readstat_variable_t *dta_init_variable(dta_ctx_t *ctx, int i, readstat_types_t type, size_t max_len) {
+static readstat_variable_t *dta_init_variable(dta_ctx_t *ctx, int i, readstat_type_t type, size_t max_len) {
     readstat_variable_t *variable = calloc(1, sizeof(readstat_variable_t));
 
     variable->type = type;
@@ -468,7 +468,7 @@ static readstat_error_t dta_handle_variables(dta_ctx_t *ctx) {
 
     for (i=0; i<ctx->nvar; i++) {
         size_t      max_len;
-        readstat_types_t type = dta_type_info(ctx->typlist[i], &max_len, ctx);
+        readstat_type_t type = dta_type_info(ctx->typlist[i], &max_len, ctx);
 
         if (type == READSTAT_TYPE_STRING)
             max_len++; /* might append NULL */
@@ -554,18 +554,18 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
                         goto cleanup;
                     }
                 }
-            } else if (value.type == READSTAT_TYPE_CHAR) {
-                char byte = buf[offset];
+            } else if (value.type == READSTAT_TYPE_INT8) {
+                int8_t byte = buf[offset];
                 if (ctx->machine_is_twos_complement) {
                     byte = ones_to_twos_complement1(byte);
                 }
-                if (byte > ctx->max_char) {
+                if (byte > ctx->max_int8) {
                     value.is_system_missing = 1;
-                    if (ctx->supports_tagged_missing && byte > DTA_113_MISSING_CHAR) {
-                        value.tag = 'a' + (byte - DTA_113_MISSING_CHAR_A);
+                    if (ctx->supports_tagged_missing && byte > DTA_113_MISSING_INT8) {
+                        value.tag = 'a' + (byte - DTA_113_MISSING_INT8_A);
                     }
                 }
-                value.v.char_value = byte;
+                value.v.i8_value = byte;
             } else if (value.type == READSTAT_TYPE_INT16) {
                 int16_t num = *((int16_t *)&buf[offset]);
                 if (ctx->machine_needs_byte_swap) {
