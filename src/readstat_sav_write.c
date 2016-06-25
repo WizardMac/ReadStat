@@ -8,8 +8,6 @@
 #include <math.h>
 #include <float.h>
 #include <time.h>
-#include <locale.h>
-#include <xlocale.h>
 
 #include "readstat_sav.h"
 #include "readstat_spss_parse.h"
@@ -109,12 +107,10 @@ static readstat_error_t sav_emit_header(readstat_writer_t *writer) {
     header.ncases = writer->row_count;
     header.bias = 100.0;
     
-    locale_t c_locale = newlocale(LC_ALL_MASK, NULL, NULL);
-    strftime_l(header.creation_date, sizeof(header.creation_date),
-            "%d %b %y", time_s, c_locale);
-    strftime_l(header.creation_time, sizeof(header.creation_time),
-            "%H:%M:%S", time_s, c_locale);
-    freelocale(c_locale);
+    strftime(header.creation_date, sizeof(header.creation_date),
+            "%d %b %y", time_s);
+    strftime(header.creation_time, sizeof(header.creation_time),
+            "%H:%M:%S", time_s);
     
     memset(header.file_label, ' ', sizeof(header.file_label));
 
