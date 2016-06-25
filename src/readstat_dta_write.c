@@ -991,7 +991,9 @@ static readstat_error_t dta_write_float(void *row, const readstat_variable_t *va
     }
 
     int32_t max_flt_i32 = DTA_113_MAX_FLOAT;
-    if (value > *((float *)&max_flt_i32)) {
+    float max_flt;
+    memcpy(&max_flt, &max_flt_i32, sizeof(float));
+    if (value > max_flt) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     } else if (isnan(value)) {
         return dta_113_write_missing_numeric(row, var);
@@ -1005,6 +1007,8 @@ static readstat_error_t dta_write_double(void *row, const readstat_variable_t *v
     }
 
     int64_t max_dbl_i64 = DTA_113_MAX_DOUBLE;
+    double max_dbl;
+    memcpy(&max_dbl, &max_dbl_i64, sizeof(double));
     if (value > *((double *)&max_dbl_i64)) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     } else if (isnan(value)) {
