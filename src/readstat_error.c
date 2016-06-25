@@ -77,5 +77,8 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_NAME_IS_RESERVED_WORD)
         return "A provided column name is a reserved word";
 
+    if (error_code == READSTAT_ERROR_BAD_TIMESTAMP)
+        return "The file's timestamp string is invalid";
+
     return "Unknown error";
 }
