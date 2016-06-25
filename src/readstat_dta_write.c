@@ -1009,7 +1009,7 @@ static readstat_error_t dta_write_double(void *row, const readstat_variable_t *v
     int64_t max_dbl_i64 = DTA_113_MAX_DOUBLE;
     double max_dbl;
     memcpy(&max_dbl, &max_dbl_i64, sizeof(double));
-    if (value > *((double *)&max_dbl_i64)) {
+    if (value > max_dbl) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     } else if (isnan(value)) {
         return dta_113_write_missing_numeric(row, var);
