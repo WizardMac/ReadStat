@@ -5,6 +5,7 @@
 #include "test_types.h"
 #include "test_buffer.h"
 #include "test_readstat.h"
+#include "test_dta.h"
 
 static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
     rt_buffer_t *buffer = (rt_buffer_t *)ctx;
@@ -33,26 +34,12 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
     }
 
     if ((format & RT_FORMAT_DTA)) {
-        if (format == RT_FORMAT_DTA_104) {
-            readstat_writer_set_file_format_version(writer, 104);
-        } else if (format == RT_FORMAT_DTA_105) {
-            readstat_writer_set_file_format_version(writer, 105);
-        } else if (format == RT_FORMAT_DTA_108) {
-            readstat_writer_set_file_format_version(writer, 108);
-        } else if (format == RT_FORMAT_DTA_110) {
-            readstat_writer_set_file_format_version(writer, 110);
-        } else if (format == RT_FORMAT_DTA_111) {
-            readstat_writer_set_file_format_version(writer, 111);
-        } else if (format == RT_FORMAT_DTA_114) {
-            readstat_writer_set_file_format_version(writer, 114);
-        } else if (format == RT_FORMAT_DTA_117) {
-            readstat_writer_set_file_format_version(writer, 117);
-        } else if (format == RT_FORMAT_DTA_118) {
-            readstat_writer_set_file_format_version(writer, 118);
-        } else {
+        long version = dta_file_format_version(format);
+        if (version == -1) {
             error = READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
             goto cleanup;
         }
+        readstat_writer_set_file_format_version(writer, version);
         error = readstat_begin_writing_dta(writer, buffer, file->rows);
     } else if (format == RT_FORMAT_SAV) {
         error = readstat_begin_writing_sav(writer, buffer, file->rows);

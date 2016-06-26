@@ -164,7 +164,7 @@ readstat_value_t readstat_variable_get_missing_range_hi(readstat_variable_t *var
 
 /* Callbacks should return 0 on success and non-zero to abort */
 typedef int (*readstat_info_handler)(int obs_count, int var_count, void *ctx);
-typedef int (*readstat_metadata_handler)(const char *file_label, time_t timestamp, long file_format_version, void *ctx);
+typedef int (*readstat_metadata_handler)(const char *file_label, time_t timestamp, long format_version, void *ctx);
 typedef int (*readstat_variable_handler)(int index, readstat_variable_t *variable, 
         const char *val_labels, void *ctx);
 typedef int (*readstat_fweight_handler)(int var_index, void *ctx);

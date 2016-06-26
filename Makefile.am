@@ -61,11 +61,12 @@ check_PROGRAMS = \
 	test_readstat
 
 test_readstat_SOURCES = \
-	src/test/test_readstat.c \
-	src/test/test_read.c \
-	src/test/test_write.c \
 	src/test/test_buffer.c \
-	src/test/test_error.c
+	src/test/test_dta.c \
+	src/test/test_error.c \
+	src/test/test_read.c \
+	src/test/test_readstat.c \
+	src/test/test_write.c
 
 test_readstat_LDADD = libreadstat.la
 test_readstat_CFLAGS = -g

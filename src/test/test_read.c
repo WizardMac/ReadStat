@@ -7,6 +7,7 @@
 #include "test_buffer.h"
 #include "test_readstat.h"
 #include "test_read.h"
+#include "test_dta.h"
 
 static rt_buffer_ctx_t *buffer_ctx_init(rt_buffer_t *buffer) {
     rt_buffer_ctx_t *buffer_ctx = calloc(1, sizeof(rt_buffer_ctx_t));
@@ -116,7 +117,7 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
     return 0;
 }
 
-static int handle_metadata(const char *file_label, time_t timestamp, long file_format_version, void *ctx) {
+static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
 
     push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->label, file_label, 32, "File labels");
@@ -124,6 +125,10 @@ static int handle_metadata(const char *file_label, time_t timestamp, long file_f
         struct tm timestamp_s = rt_ctx->file->timestamp;
         timestamp_s.tm_isdst = -1;
         push_error_if_doubles_differ(rt_ctx, mktime(&timestamp_s), timestamp, "File timestamps");
+    }
+    if (rt_ctx->file_format_version) {
+        push_error_if_doubles_differ(rt_ctx, rt_ctx->file_format_version, 
+                format_version, "Format versions");
     }
 
     return 0;
@@ -184,8 +189,10 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     readstat_set_error_handler(parser, &handle_error);
 
     if ((format & RT_FORMAT_DTA)) {
+        parse_ctx->file_format_version = dta_file_format_version(format);
         error = readstat_parse_dta(parser, NULL, parse_ctx);
     } else if (format == RT_FORMAT_SAV) {
+        parse_ctx->file_format_version = 2;
         error = readstat_parse_sav(parser, NULL, parse_ctx);
     }
     if (error != READSTAT_OK)
