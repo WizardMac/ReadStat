@@ -17,76 +17,83 @@ static const char _dta_timestamp_parse_actions[] = {
 };
 
 static const char _dta_timestamp_parse_key_offsets[] = {
-	0, 0, 2, 5, 13, 15, 16, 17, 
-	19, 22, 24, 27, 29, 30, 31, 32, 
-	33, 34, 35, 36, 37, 39, 40, 41, 
-	43, 44, 45, 46, 48, 49, 50, 51, 
-	52, 53, 54, 55, 56, 57, 58, 59
+	0, 0, 3, 5, 8, 16, 18, 19, 
+	20, 22, 25, 28, 31, 33, 34, 35, 
+	36, 37, 38, 39, 40, 41, 43, 44, 
+	45, 47, 48, 49, 50, 52, 53, 54, 
+	55, 56, 57, 58, 59, 60, 61, 62, 
+	63
 };
 
 static const char _dta_timestamp_parse_trans_keys[] = {
-	48, 57, 32, 48, 57, 65, 68, 70, 
-	74, 77, 78, 79, 83, 112, 117, 114, 
-	32, 48, 57, 32, 48, 57, 48, 57, 
-	58, 48, 57, 48, 57, 103, 32, 101, 
-	99, 32, 101, 98, 32, 97, 117, 110, 
-	32, 108, 110, 32, 32, 97, 114, 121, 
-	32, 32, 111, 118, 32, 99, 116, 32, 
-	101, 112, 32, 48, 57, 0
+	32, 48, 57, 48, 57, 32, 48, 57, 
+	65, 68, 70, 74, 77, 78, 79, 83, 
+	112, 117, 114, 32, 48, 57, 32, 48, 
+	57, 32, 48, 57, 58, 48, 57, 48, 
+	57, 103, 32, 101, 99, 32, 101, 98, 
+	32, 97, 117, 110, 32, 108, 110, 32, 
+	32, 97, 114, 121, 32, 32, 111, 118, 
+	32, 99, 116, 32, 101, 112, 32, 48, 
+	57, 0
 };
 
 static const char _dta_timestamp_parse_single_lengths[] = {
-	0, 0, 1, 8, 2, 1, 1, 0, 
-	1, 0, 1, 0, 1, 1, 1, 1, 
-	1, 1, 1, 1, 2, 1, 1, 2, 
-	1, 1, 1, 2, 1, 1, 1, 1, 
-	1, 1, 1, 1, 1, 1, 1, 0
+	0, 1, 0, 1, 8, 2, 1, 1, 
+	0, 1, 1, 1, 0, 1, 1, 1, 
+	1, 1, 1, 1, 1, 2, 1, 1, 
+	2, 1, 1, 1, 2, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 1, 1, 
+	0
 };
 
 static const char _dta_timestamp_parse_range_lengths[] = {
-	0, 1, 1, 0, 0, 0, 0, 1, 
-	1, 1, 1, 1, 0, 0, 0, 0, 
+	0, 1, 1, 1, 0, 0, 0, 0, 
+	1, 1, 1, 1, 1, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
-	0, 0, 0, 0, 0, 0, 0, 1
+	0, 0, 0, 0, 0, 0, 0, 0, 
+	1
 };
 
 static const unsigned char _dta_timestamp_parse_index_offsets[] = {
-	0, 0, 2, 5, 14, 17, 19, 21, 
-	23, 26, 28, 31, 33, 35, 37, 39, 
-	41, 43, 45, 47, 49, 52, 54, 56, 
-	59, 61, 63, 65, 68, 70, 72, 74, 
-	76, 78, 80, 82, 84, 86, 88, 90
+	0, 0, 3, 5, 8, 17, 20, 22, 
+	24, 26, 29, 32, 35, 37, 39, 41, 
+	43, 45, 47, 49, 51, 53, 56, 58, 
+	60, 63, 65, 67, 69, 72, 74, 76, 
+	78, 80, 82, 84, 86, 88, 90, 92, 
+	94
 };
 
 static const char _dta_timestamp_parse_trans_targs[] = {
-	2, 0, 3, 2, 0, 4, 14, 17, 
-	20, 26, 30, 33, 36, 0, 5, 12, 
-	0, 6, 0, 7, 0, 8, 0, 9, 
-	8, 0, 10, 0, 11, 10, 0, 39, 
-	0, 13, 0, 7, 0, 15, 0, 16, 
-	0, 7, 0, 18, 0, 19, 0, 7, 
-	0, 21, 23, 0, 22, 0, 7, 0, 
-	24, 25, 0, 7, 0, 7, 0, 27, 
-	0, 28, 29, 0, 7, 0, 7, 0, 
-	31, 0, 32, 0, 7, 0, 34, 0, 
-	35, 0, 7, 0, 37, 0, 38, 0, 
-	7, 0, 39, 0, 0
+	2, 3, 0, 3, 0, 4, 3, 0, 
+	5, 15, 18, 21, 27, 31, 34, 37, 
+	0, 6, 13, 0, 7, 0, 8, 0, 
+	9, 0, 10, 9, 0, 10, 11, 0, 
+	12, 11, 0, 40, 0, 14, 0, 8, 
+	0, 16, 0, 17, 0, 8, 0, 19, 
+	0, 20, 0, 8, 0, 22, 24, 0, 
+	23, 0, 8, 0, 25, 26, 0, 8, 
+	0, 8, 0, 28, 0, 29, 30, 0, 
+	8, 0, 8, 0, 32, 0, 33, 0, 
+	8, 0, 35, 0, 36, 0, 8, 0, 
+	38, 0, 39, 0, 8, 0, 40, 0, 
+	0
 };
 
 static const char _dta_timestamp_parse_trans_actions[] = {
-	35, 0, 3, 1, 0, 0, 0, 0, 
+	0, 35, 0, 35, 0, 3, 1, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
-	0, 0, 0, 11, 0, 35, 0, 29, 
-	1, 0, 35, 0, 31, 1, 0, 35, 
-	0, 0, 0, 19, 0, 0, 0, 0, 
-	0, 27, 0, 0, 0, 0, 0, 7, 
-	0, 0, 0, 0, 0, 0, 5, 0, 
-	0, 0, 0, 17, 0, 15, 0, 0, 
-	0, 0, 0, 0, 9, 0, 13, 0, 
-	0, 0, 0, 0, 25, 0, 0, 0, 
-	0, 0, 23, 0, 0, 0, 0, 0, 
-	21, 0, 1, 0, 0
+	0, 0, 0, 0, 0, 0, 11, 0, 
+	35, 0, 29, 1, 0, 0, 35, 0, 
+	31, 1, 0, 35, 0, 0, 0, 19, 
+	0, 0, 0, 0, 0, 27, 0, 0, 
+	0, 0, 0, 7, 0, 0, 0, 0, 
+	0, 0, 5, 0, 0, 0, 0, 17, 
+	0, 15, 0, 0, 0, 0, 0, 0, 
+	9, 0, 13, 0, 0, 0, 0, 0, 
+	25, 0, 0, 0, 0, 0, 23, 0, 
+	0, 0, 0, 0, 21, 0, 1, 0, 
+	0
 };
 
 static const char _dta_timestamp_parse_eof_actions[] = {
@@ -94,7 +101,8 @@ static const char _dta_timestamp_parse_eof_actions[] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 
-	0, 0, 0, 0, 0, 0, 0, 33
+	0, 0, 0, 0, 0, 0, 0, 0, 
+	33
 };
 
 static const int dta_timestamp_parse_start = 1;
@@ -114,12 +122,12 @@ readstat_error_t dta_parse_timestamp(const char *data, size_t len, struct tm *ti
     int cs;
     int temp_val = 0;
     
-#line 118 "src/readstat_dta_parse_timestamp.c"
+#line 126 "src/readstat_dta_parse_timestamp.c"
 	{
 	cs = dta_timestamp_parse_start;
 	}
 
-#line 123 "src/readstat_dta_parse_timestamp.c"
+#line 131 "src/readstat_dta_parse_timestamp.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -262,7 +270,7 @@ _match:
 #line 45 "src/readstat_dta_parse_timestamp.rl"
 	{ timestamp->tm_hour = temp_val; }
 	break;
-#line 266 "src/readstat_dta_parse_timestamp.c"
+#line 274 "src/readstat_dta_parse_timestamp.c"
 		}
 	}
 
@@ -282,7 +290,7 @@ _again:
 #line 47 "src/readstat_dta_parse_timestamp.rl"
 	{ timestamp->tm_min = temp_val; }
 	break;
-#line 286 "src/readstat_dta_parse_timestamp.c"
+#line 294 "src/readstat_dta_parse_timestamp.c"
 		}
 	}
 	}
@@ -293,7 +301,7 @@ _again:
 #line 53 "src/readstat_dta_parse_timestamp.rl"
 
 
-    if (cs < 39|| p != pe) {
+    if (cs < 40|| p != pe) {
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "Invalid timestamp string (length=%d): %*s", (int)len, (int)-len, data);
             ctx->error_handler(error_buf, ctx->user_ctx);

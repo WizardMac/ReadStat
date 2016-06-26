@@ -46,7 +46,7 @@ readstat_error_t dta_parse_timestamp(const char *data, size_t len, struct tm *ti
 
         minute = integer %{ timestamp->tm_min = temp_val; };
 
-        main := day " " month " " year " " hour ":" minute;
+        main := " "? day " " month " " year " "+ hour ":" minute;
 
         write init;
         write exec;
