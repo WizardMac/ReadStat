@@ -613,6 +613,52 @@ rt_test_group_t _test_groups[] = {
     },
 
     {
+        .label = "Frequency weights",
+        .tests = {
+            {
+                .label = "Good frequency weight",
+                .test_formats = RT_FORMAT_SAV,
+                .fweight = "var1",
+                .columns = {
+                    {
+                        .name = "var1",
+                        .label = "Double-precision variable",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+
+            {
+                .label = "Non-existent frequency weight",
+                .write_error = READSTAT_ERROR_BAD_FREQUENCY_WEIGHT,
+                .test_formats = RT_FORMAT_SAV,
+                .fweight = "var2",
+                .columns = {
+                    {
+                        .name = "var1",
+                        .label = "Double-precision variable",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+
+            {
+                .label = "String frequency weight",
+                .write_error = READSTAT_ERROR_BAD_FREQUENCY_WEIGHT,
+                .test_formats = RT_FORMAT_SAV,
+                .fweight = "var1",
+                .columns = {
+                    {
+                        .name = "var1",
+                        .label = "String variable",
+                        .type = READSTAT_TYPE_STRING
+                    }
+                }
+            }
+        }
+    },
+
+    {
         .label = "Generic tests",
         .tests = {
             {

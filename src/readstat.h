@@ -69,7 +69,8 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER,
     READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
     READSTAT_ERROR_NAME_IS_RESERVED_WORD,
-    READSTAT_ERROR_BAD_TIMESTAMP
+    READSTAT_ERROR_BAD_TIMESTAMP,
+    READSTAT_ERROR_BAD_FREQUENCY_WEIGHT
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);
@@ -149,18 +150,18 @@ typedef struct readstat_variable_s {
 } readstat_variable_t;
 
 /* Accessor methods for use inside a variable handler */
-const char *readstat_variable_get_name(readstat_variable_t *variable);
-const char *readstat_variable_get_label(readstat_variable_t *variable);
-const char *readstat_variable_get_format(readstat_variable_t *variable);
-readstat_type_t readstat_variable_get_type(readstat_variable_t *variable);
-size_t readstat_variable_get_storage_width(readstat_variable_t *variable);
-int readstat_variable_get_display_width(readstat_variable_t *variable);
-readstat_measure_t readstat_variable_get_measure(readstat_variable_t *variable);
-readstat_alignment_t readstat_variable_get_alignment(readstat_variable_t *variable);
+const char *readstat_variable_get_name(const readstat_variable_t *variable);
+const char *readstat_variable_get_label(const readstat_variable_t *variable);
+const char *readstat_variable_get_format(const readstat_variable_t *variable);
+readstat_type_t readstat_variable_get_type(const readstat_variable_t *variable);
+size_t readstat_variable_get_storage_width(const readstat_variable_t *variable);
+int readstat_variable_get_display_width(const readstat_variable_t *variable);
+readstat_measure_t readstat_variable_get_measure(const readstat_variable_t *variable);
+readstat_alignment_t readstat_variable_get_alignment(const readstat_variable_t *variable);
 
-int readstat_variable_get_missing_ranges_count(readstat_variable_t *variable);
-readstat_value_t readstat_variable_get_missing_range_lo(readstat_variable_t *variable, int i);
-readstat_value_t readstat_variable_get_missing_range_hi(readstat_variable_t *variable, int i);
+int readstat_variable_get_missing_ranges_count(const readstat_variable_t *variable);
+readstat_value_t readstat_variable_get_missing_range_lo(const readstat_variable_t *variable, int i);
+readstat_value_t readstat_variable_get_missing_range_hi(const readstat_variable_t *variable, int i);
 
 /* Callbacks should return 0 on success and non-zero to abort */
 typedef int (*readstat_info_handler)(int obs_count, int var_count, void *ctx);

@@ -23,6 +23,8 @@ typedef struct rt_test_file_s {
 
     rt_column_t         columns[RT_MAX_COLS];
     long                columns_count;
+
+    char                fweight[RT_MAX_STRING];
 } rt_test_file_t;
 
 typedef struct rt_error_s {

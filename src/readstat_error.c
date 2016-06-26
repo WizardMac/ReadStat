@@ -80,5 +80,8 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_BAD_TIMESTAMP)
         return "The file's timestamp string is invalid";
 
+    if (error_code == READSTAT_ERROR_BAD_FREQUENCY_WEIGHT)
+        return "The provided variable can't be used as a frequency weight";
+
     return "Unknown error";
 }

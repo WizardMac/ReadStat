@@ -252,6 +252,10 @@ readstat_error_t readstat_writer_set_file_timestamp(readstat_writer_t *writer, t
 }
 
 readstat_error_t readstat_writer_set_fweight_variable(readstat_writer_t *writer, const readstat_variable_t *variable) {
+    readstat_type_t type = readstat_variable_get_type(variable);
+    if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING)
+        return READSTAT_ERROR_BAD_FREQUENCY_WEIGHT;
+
     writer->fweight_variable = variable;
     return READSTAT_OK;
 }

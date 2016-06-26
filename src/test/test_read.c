@@ -134,6 +134,16 @@ static int handle_metadata(const char *file_label, time_t timestamp, long format
     return 0;
 }
 
+int handle_fweight(int var_index, void *ctx) {
+    rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
+    rt_column_t *column = &rt_ctx->file->columns[var_index];
+
+    push_error_if_strings_differ(rt_ctx, rt_ctx->file->fweight,
+            column->name, "Frequency weight");
+
+    return 0;
+}
+
 static int handle_variable(int index, readstat_variable_t *variable,
                            const char *val_labels, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
@@ -185,6 +195,7 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     readstat_set_info_handler(parser, &handle_info);
     readstat_set_metadata_handler(parser, &handle_metadata);
     readstat_set_variable_handler(parser, &handle_variable);
+    readstat_set_fweight_handler(parser, &handle_fweight);
     readstat_set_value_handler(parser, &handle_value);
     readstat_set_error_handler(parser, &handle_error);
 

@@ -51,6 +51,7 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         goto cleanup;
 
     int i, j;
+    int did_set_fweight = 0;
     for (j=0; j<file->columns_count; j++) {
         rt_column_t *column = &file->columns[j];
 
@@ -72,6 +73,19 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_variable_set_alignment(variable, column->alignment);
         readstat_variable_set_measure(variable, column->measure);
         readstat_variable_set_label(variable, column->label);
+
+        if (strcmp(column->name, file->fweight) == 0) {
+            error = readstat_writer_set_fweight_variable(writer, variable);
+            if (error != READSTAT_OK)
+                goto cleanup;
+
+            did_set_fweight = 1;
+        }
+    }
+
+    if (file->fweight[0] && !did_set_fweight) {
+        error = READSTAT_ERROR_BAD_FREQUENCY_WEIGHT;
+        goto cleanup;
     }
 
     for (i=0; i<file->rows; i++) {
