@@ -19,8 +19,8 @@
 #include "readstat_spss.h"
 #include "CKHashTable.h"
 
-#define POR_LINE_LENGTH 80
-#define POR_LABEL_NAME_PREFIX         "labels"
+#define POR_LINE_LENGTH         80
+#define POR_LABEL_NAME_PREFIX   "labels"
 
 static uint16_t unicode_lookup[256] = {
     '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
@@ -55,6 +55,7 @@ typedef struct readstat_por_ctx_s {
     readstat_info_handler           info_handler;
     readstat_metadata_handler       metadata_handler;
     readstat_variable_handler       variable_handler;
+    readstat_fweight_handler        fweight_handler;
     readstat_value_handler          value_handler;
     readstat_value_label_handler    value_label_handler;
     readstat_error_handler          error_handler;
@@ -84,7 +85,7 @@ typedef struct readstat_por_ctx_s {
 static int skip_newline(readstat_io_t *io);
 static int utf8_encode(const unsigned char *input, size_t input_len, char *output, size_t output_len, uint16_t lookup[256]);
 static int read_bytes(readstat_por_ctx_t *ctx, void *dst, size_t len);
-static int read_string(readstat_por_ctx_t *ctx, char *data, size_t len);
+static readstat_error_t read_string(readstat_por_ctx_t *ctx, char *data, size_t len);
 
 static void por_ctx_free(readstat_por_ctx_t *ctx) {
     if (ctx->string_buffer)
@@ -205,12 +206,12 @@ static uint16_t read_tag(readstat_por_ctx_t *ctx) {
     return tr_tag;
 }
 
-static int read_double(readstat_por_ctx_t *ctx, double *out_double) {
+static readstat_error_t prepare_buffer_for_double(readstat_por_ctx_t *ctx) {
     size_t bytes_read = 0;
     if (ctx->buf_used == 0) {
         bytes_read = read_bytes(ctx, ctx->buf, 100);
         if (bytes_read == -1) {
-            return -1;
+            return READSTAT_ERROR_READ;
         }
         ctx->buf_used = bytes_read;
         ctx->buf_pos = 0;
@@ -221,41 +222,74 @@ static int read_double(readstat_por_ctx_t *ctx, double *out_double) {
         ctx->buf_pos = 0;
         bytes_read = read_bytes(ctx, &ctx->buf[ctx->buf_used], sizeof(ctx->buf)-ctx->buf_used);
         if (bytes_read == -1) {
-            return -1;
+            return READSTAT_ERROR_READ;
         }
         ctx->buf_used += bytes_read;
     }
+    return READSTAT_OK;
+}
+
+static readstat_error_t read_double(readstat_por_ctx_t *ctx, double *out_double) {
+    readstat_error_t retval = READSTAT_OK;
+    double value = NAN;
     char utf8_buffer[300];
-    size_t len = utf8_encode(ctx->buf + ctx->buf_pos, ctx->buf_used - ctx->buf_pos, utf8_buffer, sizeof(utf8_buffer), ctx->lookup);
+    size_t len = 0;
+    int bytes_read = 0;
+
+    if ((retval = prepare_buffer_for_double(ctx)) != READSTAT_OK)
+        goto cleanup;
     
-    if (utf8_buffer[0] == 'Z')
-        return 1;
+    len = utf8_encode(ctx->buf + ctx->buf_pos, ctx->buf_used - ctx->buf_pos, utf8_buffer, sizeof(utf8_buffer), ctx->lookup);
     
-    double value;
     bytes_read = readstat_por_parse_double(utf8_buffer, len, &value, ctx->error_handler, ctx->user_ctx);
     if (bytes_read == -1) {
-        return -1;
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
     }
     
     ctx->buf_pos += bytes_read;
     
-    if (out_double) {
+cleanup:
+    if (out_double)
         *out_double = value;
-    }
-//    printf("Read double: %lf\n", value);
-    return 0;
+
+    return READSTAT_OK;
 }
 
-static int read_string(readstat_por_ctx_t *ctx, char *data, size_t len) {
-    int retval = 0;
-    double value;
-    retval = read_double(ctx, &value);
-    if (retval != 0)
+static readstat_error_t maybe_read_double(readstat_por_ctx_t *ctx, double *out_double, int *out_finished) {
+    readstat_error_t retval = READSTAT_OK;
+    if ((retval = prepare_buffer_for_double(ctx)) != READSTAT_OK)
         return retval;
+
+    if (ctx->lookup[ctx->buf[ctx->buf_pos]] == 'Z') {
+        if (out_double)
+            *out_double = NAN;
+        if (out_finished)
+            *out_finished = 1;
+        return READSTAT_OK;
+    }
+
+    if (out_finished)
+        *out_finished = 0;
+
+    return read_double(ctx, out_double);
+}
+
+static readstat_error_t maybe_read_string(readstat_por_ctx_t *ctx, char *data, size_t len, int *out_finished) {
+    readstat_error_t retval = READSTAT_OK;
+    double value;
+    int finished = 0;
+    retval = maybe_read_double(ctx, &value, &finished);
+    if (retval != READSTAT_OK || finished) {
+        if (out_finished)
+            *out_finished = finished;
+
+        return retval;
+    }
     
     size_t string_length = (size_t)value;
     if (string_length <= 0 || string_length > 20000)
-        return -1;
+        return READSTAT_ERROR_PARSE;
     
     if (string_length > ctx->string_buffer_len) {
         ctx->string_buffer_len = string_length;
@@ -281,14 +315,24 @@ static int read_string(readstat_por_ctx_t *ctx, char *data, size_t len) {
     
     if (string_length > bytes_copied) {
         if (read_bytes(ctx, ctx->string_buffer, string_length - bytes_copied) == -1) {
-            return -1;
+            return READSTAT_ERROR_READ;
         }
         bytes_encoded = utf8_encode(ctx->string_buffer, string_length - bytes_copied, data + bytes_copied, len - bytes_copied -1, ctx->lookup);
     }
     
     data[bytes_copied + bytes_encoded] = '\0';
-//    printf("Read string: %s\n", data);
-    return bytes_encoded;
+    if (out_finished)
+        *out_finished = 0;
+    return READSTAT_OK;
+}
+
+static readstat_error_t read_string(readstat_por_ctx_t *ctx, char *data, size_t len) {
+    int finished = 0;
+    readstat_error_t retval = maybe_read_string(ctx, data, len, &finished);
+    if (retval == READSTAT_OK && finished) {
+        return READSTAT_ERROR_PARSE;
+    }
+    return retval;
 }
 
 static int utf8_encode(const unsigned char *input, size_t input_len, 
@@ -323,25 +367,31 @@ static int utf8_encode(const unsigned char *input, size_t input_len,
 
 static readstat_error_t read_variable_count_record(readstat_por_ctx_t *ctx) {
     double value;
-    if (read_double(ctx, &value) == -1) {
-        return READSTAT_ERROR_PARSE;
+    readstat_error_t retval = READSTAT_OK;
+    if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+        goto cleanup;
     }
     ctx->var_count = (int)value;
     ctx->varinfo = calloc(ctx->var_count, sizeof(spss_varinfo_t));
-    if (read_double(ctx, NULL) == -1) {
-        return READSTAT_ERROR_PARSE;
+    if ((retval = read_double(ctx, NULL)) != READSTAT_OK) {
+        goto cleanup;
     }
-    return READSTAT_OK;
+    if (ctx->info_handler) {
+        if (ctx->info_handler(-1, ctx->var_count, ctx->user_ctx)) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+    }
+cleanup:
+    return retval;
 }
 
 static readstat_error_t read_case_weight_record(readstat_por_ctx_t *ctx) {
-    if (read_string(ctx, ctx->fweight_name, sizeof(ctx->fweight_name)) == -1)
-        return READSTAT_ERROR_PARSE;
-
-    return READSTAT_OK;
+    return read_string(ctx, ctx->fweight_name, sizeof(ctx->fweight_name));
 }
 
 static readstat_error_t read_variable_record(readstat_por_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
     double value;
     int i;
     ctx->var_offset++;
@@ -349,8 +399,8 @@ static readstat_error_t read_variable_record(readstat_por_ctx_t *ctx) {
     spss_varinfo_t *varinfo = &ctx->varinfo[ctx->var_offset];
     spss_format_t *formats[2] = { &varinfo->print_format, &varinfo->write_format };
 
-    if (read_double(ctx, &value) == -1) {
-        return READSTAT_ERROR_PARSE;
+    if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+        goto cleanup;
     }
     varinfo->labels_index = -1;
     varinfo->width = (int)value;
@@ -359,143 +409,158 @@ static readstat_error_t read_variable_record(readstat_por_ctx_t *ctx) {
     } else {
         varinfo->type = READSTAT_TYPE_STRING;
     }
-    if (read_string(ctx, varinfo->name, sizeof(varinfo->name)) == -1) {
-        return READSTAT_ERROR_PARSE;
+    if ((retval = read_string(ctx, varinfo->name, sizeof(varinfo->name))) != READSTAT_OK) {
+        goto cleanup;
     }
     ck_str_hash_insert(varinfo->name, varinfo, ctx->var_dict);
 
     for (i=0; i<sizeof(formats)/sizeof(spss_format_t *); i++) {
         spss_format_t *format = formats[i];
-        if (read_double(ctx, &value) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+            goto cleanup;
         }
         format->type = (int)value;
 
-        if (read_double(ctx, &value) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+            goto cleanup;
         }
         format->width = (int)value;
 
-        if (read_double(ctx, &value) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+            goto cleanup;
         }
         format->decimal_places = (int)value;
     }
 
-    return READSTAT_OK;
+cleanup:
+    return retval;
 }
 
 static readstat_error_t read_missing_value_record(readstat_por_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
     double value;
     char string[256];
     if (ctx->varinfo[ctx->var_offset].type == READSTAT_TYPE_DOUBLE) {
-        if (read_double(ctx, &value) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+            goto cleanup;
         }
         ctx->varinfo[ctx->var_offset].missing_values[ctx->varinfo[ctx->var_offset].n_missing_values++] = value;
         if (ctx->varinfo[ctx->var_offset].n_missing_values > 3) {
-            return READSTAT_ERROR_PARSE;
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
         }
     } else {
-        if (read_string(ctx, string, sizeof(string))) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
+            goto cleanup;
         }
     }
+cleanup:
     return READSTAT_OK;
 }
 
 static readstat_error_t read_missing_value_range_record(readstat_por_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
     double value;
     char string[256];
     if (ctx->varinfo[ctx->var_offset].type == READSTAT_TYPE_DOUBLE) {
         ctx->varinfo[ctx->var_offset].missing_range = 1;
-        if (read_double(ctx, &value) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+            goto cleanup;
         }
         ctx->varinfo[ctx->var_offset].missing_values[0] = value;
-        if (read_double(ctx, &value) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+            goto cleanup;
         }
         ctx->varinfo[ctx->var_offset].missing_values[1] = value;
         ctx->varinfo[ctx->var_offset].n_missing_values = 2;
     } else {
-        if (read_string(ctx, string, sizeof(string))) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
+            goto cleanup;
         }
-        if (read_string(ctx, string, sizeof(string))) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
+            goto cleanup;
         }
     }
-    return READSTAT_OK;
+cleanup:
+    return retval;
 }
 
 static readstat_error_t read_missing_value_lo_range_record(readstat_por_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
     double value;
     char string[256];
     if (ctx->varinfo[ctx->var_offset].type == READSTAT_TYPE_DOUBLE) {
         ctx->varinfo[ctx->var_offset].missing_range = 1;
-        if (read_double(ctx, &value) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+            goto cleanup;
         }
         ctx->varinfo[ctx->var_offset].missing_values[0] = -HUGE_VAL;
         ctx->varinfo[ctx->var_offset].missing_values[1] = value;
         ctx->varinfo[ctx->var_offset].n_missing_values = 2;
     } else {
-        if (read_string(ctx, string, sizeof(string))) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
+            goto cleanup;
         }
     }
-    return READSTAT_OK;
+cleanup:
+    return retval;
 }
 
 static readstat_error_t read_missing_value_hi_range_record(readstat_por_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
     double value;
     char string[256];
     if (ctx->varinfo[ctx->var_offset].type == READSTAT_TYPE_DOUBLE) {
-        if (read_double(ctx, &value) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+            goto cleanup;
         }
         ctx->varinfo[ctx->var_offset].missing_values[0] = value;
         ctx->varinfo[ctx->var_offset].missing_values[1] = HUGE_VAL;
         ctx->varinfo[ctx->var_offset].n_missing_values = 2;
     } else {
-        if (read_string(ctx, string, sizeof(string)) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
+            goto cleanup;
         }
     }
-    return READSTAT_OK;
+cleanup:
+    return retval;
 }
 
 static readstat_error_t read_document_record(readstat_por_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
     double value;
     char string[256];
     int i;
     int line_count = 0;
-    if (read_double(ctx, &value) == -1) {
-        return READSTAT_ERROR_PARSE;
+    if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
+        goto cleanup;
     }
     line_count = (int)value;
     for (i=0; i<line_count; i++) {
-        if (read_string(ctx, string, sizeof(string)) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
+            goto cleanup;
         }
     }
-    return READSTAT_OK;
+cleanup:
+    return retval;
 }
 
 static readstat_error_t read_variable_label_record(readstat_por_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
     char string[256];
-    if (read_string(ctx, string, sizeof(string)) == -1) {
-        return READSTAT_ERROR_PARSE;
+    if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
+        goto cleanup;
     }
 
     ctx->varinfo[ctx->var_offset].label = malloc(strlen(string) + 1);
     strcpy(ctx->varinfo[ctx->var_offset].label, string);
 
-    return READSTAT_OK;
+cleanup:
+    return retval;
 }
 
 static readstat_error_t read_value_label_record(readstat_por_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
     double dval;
     int i;
     char string[256];
@@ -504,13 +569,13 @@ static readstat_error_t read_value_label_record(readstat_por_ctx_t *ctx) {
     char label_buf[256];
     snprintf(label_name_buf, sizeof(label_name_buf), POR_LABEL_NAME_PREFIX "%d", ctx->labels_offset);
     readstat_type_t value_type = READSTAT_TYPE_DOUBLE;
-    if (read_double(ctx, &dval) == -1) {
-        return READSTAT_ERROR_PARSE;
+    if ((retval = read_double(ctx, &dval)) != READSTAT_OK) {
+        goto cleanup;
     }
     count = (int)dval;
     for (i=0; i<count; i++) {
-        if (read_string(ctx, string, sizeof(string)) == -1) {
-            return READSTAT_ERROR_PARSE;
+        if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
+            goto cleanup;
         }
         spss_varinfo_t *info = (spss_varinfo_t *)ck_str_hash_lookup(string, ctx->var_dict);
         if (info) {
@@ -518,78 +583,85 @@ static readstat_error_t read_value_label_record(readstat_por_ctx_t *ctx) {
             info->labels_index = ctx->labels_offset;
         }
     }
-    if (read_double(ctx, &dval) == -1) {
-        return READSTAT_ERROR_PARSE;
+    if ((retval = read_double(ctx, &dval)) != READSTAT_OK) {
+        goto cleanup;
     }
     label_count = (int)dval;
     for (i=0; i<label_count; i++) {
         readstat_value_t value = { .type = value_type };
         if (value_type == READSTAT_TYPE_STRING) {
-            if (read_string(ctx, string, sizeof(string)) == -1) {
-                return READSTAT_ERROR_PARSE;
+            if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
+                goto cleanup;
             }
-            if (read_string(ctx, label_buf, sizeof(label_buf)) == -1) {
-                return READSTAT_ERROR_PARSE;
+            if ((retval = read_string(ctx, label_buf, sizeof(label_buf))) != READSTAT_OK) {
+                goto cleanup;
             }
             value.v.string_value = string;
         } else {
-            if (read_double(ctx, &dval) == -1) {
-                return READSTAT_ERROR_PARSE;
+            if ((retval = read_double(ctx, &dval)) != READSTAT_OK) {
+                goto cleanup;
             }
-            if (read_string(ctx, label_buf, sizeof(label_buf)) == -1) {
-                return READSTAT_ERROR_PARSE;
+            if ((retval = read_string(ctx, label_buf, sizeof(label_buf))) != READSTAT_OK) {
+                goto cleanup;
             }
             value.v.double_value = dval;
         }
         ctx->value_label_handler(label_name_buf, value, label_buf, ctx->user_ctx);
     }
     ctx->labels_offset++;
-    return READSTAT_OK;
+
+cleanup:
+    return retval;
 }
 
 static readstat_error_t read_por_file_data(readstat_por_ctx_t *ctx) {
     int i;
     char string[256];
     char error_buf[1024];
-    int retval = 0;
     readstat_error_t rs_retval = READSTAT_OK;
 
     while (1) {
+        int finished = 0;
         for (i=0; i<ctx->var_count; i++) {
             spss_varinfo_t *info = &ctx->varinfo[i];
             readstat_value_t value = { .type = info->type };
 
             if (info->type == READSTAT_TYPE_STRING) {
-                retval = read_string(ctx, string, sizeof(string));
-                if (i == 0 && retval == 1) {
-                    return 0;
-                } else if (retval == -1) {
+                rs_retval = maybe_read_string(ctx, string, sizeof(string), &finished);
+                if (rs_retval != READSTAT_OK) {
                     if (ctx->error_handler) {
                         snprintf(error_buf, sizeof(error_buf), "Error in %s\n", info->name);
                         ctx->error_handler(error_buf, ctx->user_ctx);
                     }
-                    rs_retval = READSTAT_ERROR_PARSE;
+                    goto cleanup;
+                } else if (finished) {
+                    if (i != 0)
+                        rs_retval = READSTAT_ERROR_PARSE;
                     goto cleanup;
                 }
                 value.v.string_value = string;
-//                printf("String value: %s\n", string);
             } else if (info->type == READSTAT_TYPE_DOUBLE) {
-                retval = read_double(ctx, &value.v.double_value);
-                if (i == 0 && retval == 1) {
-                    return READSTAT_OK;
-                } else if (retval != 0) {
+                rs_retval = maybe_read_double(ctx, &value.v.double_value, &finished);
+                if (rs_retval != READSTAT_OK) {
                     if (ctx->error_handler) {
                         snprintf(error_buf, sizeof(error_buf), "Error in %s\n", info->name);
                         ctx->error_handler(error_buf, ctx->user_ctx);
                     }
-                    rs_retval = READSTAT_ERROR_PARSE;
+                    goto cleanup;
+                } else if (finished) {
+                    if (i != 0)
+                        rs_retval = READSTAT_ERROR_PARSE;
                     goto cleanup;
                 }
                 spss_tag_missing_double(&value, &info->missingness);
             }
             if (ctx->value_handler) {
-                ctx->value_handler(ctx->obs_count, i, value, ctx->user_ctx);
+                if (ctx->value_handler(ctx->obs_count, i, value, ctx->user_ctx)) {
+                    rs_retval = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
+                }
             }
+
         }
         ctx->obs_count++;
 
@@ -614,16 +686,14 @@ readstat_error_t read_version_and_timestamp(readstat_por_ctx_t *ctx) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
-    if (read_string(ctx, string, sizeof(string)) == -1) { /* creation date */
-        retval = READSTAT_ERROR_PARSE;
+    if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) { /* creation date */
         goto cleanup;
     }
     if (sscanf(string, "%4d%2d%2d", &timestamp.tm_year, &timestamp.tm_mon, &timestamp.tm_mday) != 3) {
         retval = READSTAT_ERROR_BAD_TIMESTAMP;
         goto cleanup;
     }
-    if (read_string(ctx, string, sizeof(string)) == -1) { /* creation time */
-        retval = READSTAT_ERROR_PARSE;
+    if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) { /* creation time */
         goto cleanup;
     }
     if (sscanf(string, "%2d%2d%2d", &timestamp.tm_hour, &timestamp.tm_min, &timestamp.tm_sec) != 3) {
@@ -642,6 +712,49 @@ cleanup:
     return retval;
 }
 
+readstat_error_t handle_variables(readstat_por_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
+    int i;
+    for (i=0; i<ctx->var_count; i++) {
+        char label_name_buf[256];
+        spss_varinfo_t *info = &ctx->varinfo[i];
+        info->missingness = spss_missingness_for_info(info);
+
+        readstat_variable_t *variable = spss_init_variable_for_info(info);
+
+        snprintf(label_name_buf, sizeof(label_name_buf), POR_LABEL_NAME_PREFIX "%d", info->labels_index);
+
+        int cb_retval = 0;
+
+        if (ctx->variable_handler) {
+            cb_retval = ctx->variable_handler(i, variable,
+                    info->labels_index == -1 ? NULL : label_name_buf,
+                    ctx->user_ctx);
+        }
+
+        spss_free_variable(variable);
+
+        if (cb_retval) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+    }
+    if (ctx->fweight_handler && ctx->fweight_name[0]) {
+        for (i=0; i<ctx->var_count; i++) {
+            spss_varinfo_t *info = &ctx->varinfo[i];
+            if (strcmp(info->name, ctx->fweight_name) == 0) {
+                if (ctx->fweight_handler(i, ctx->user_ctx)) {
+                    retval = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
+                }
+                break;
+            }
+        }
+    }
+cleanup:
+    return retval;
+}
+
 readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = parser->io;
@@ -655,6 +768,7 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
     ctx->info_handler = parser->info_handler;
     ctx->variable_handler = parser->variable_handler;
     ctx->metadata_handler = parser->metadata_handler;
+    ctx->fweight_handler = parser->fweight_handler;
     ctx->value_handler = parser->value_handler;
     ctx->value_label_handler = parser->value_label_handler;
     ctx->error_handler = parser->error_handler;
@@ -726,122 +840,58 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
             case '1': /* product ID */
             case '2': /* author ID */
             case '3': /* sub-product ID */
-                if (read_string(ctx, string, sizeof(string)) == -1) {
-                    retval = READSTAT_ERROR_PARSE;
-                    goto cleanup;
-                }
+                retval = read_string(ctx, string, sizeof(string));
                 break;
             case '4': /* variable count */
                 retval = read_variable_count_record(ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
                 break;
             case '6': /* case weight */
                 retval = read_case_weight_record(ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
                 break;
             case '7': /* variable */
                 retval = read_variable_record(ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
                 break;
             case '8': /* missing value */
                 retval = read_missing_value_record(ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
                 break;
             case 'B': /* missing value range */
                 retval = read_missing_value_range_record(ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
                 break;
             case '9': /* LO THRU x */
                 retval = read_missing_value_lo_range_record(ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
                 break;
             case 'A': /* x THRU HI */
                 retval = read_missing_value_hi_range_record(ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
                 break;
             case 'C': /* variable label */
                 retval = read_variable_label_record(ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
                 break;
             case 'D': /* value label */
                 retval = read_value_label_record(ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
                 break;
             case 'E': /* document record */
                 retval = read_document_record(ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
                 break;
             case 'F': /* file data */
                 if (ctx->var_offset != ctx->var_count - 1) {
                     retval = READSTAT_ERROR_PARSE;
                     goto cleanup;
                 }
-                for (i=0; i<ctx->var_count; i++) {
-                    char label_name_buf[256];
-                    spss_varinfo_t *info = &ctx->varinfo[i];
-                    info->missingness = spss_missingness_for_info(info);
 
-                    readstat_variable_t *variable = spss_init_variable_for_info(info);
-
-                    snprintf(label_name_buf, sizeof(label_name_buf), POR_LABEL_NAME_PREFIX "%d", info->labels_index);
-
-                    int cb_retval = 0;
-                    
-                    if (ctx->variable_handler) {
-                        ctx->variable_handler(i, variable,
-                                info->labels_index == -1 ? NULL : label_name_buf,
-                                user_ctx);
-                    }
-
-                    spss_free_variable(variable);
-
-                    if (cb_retval) {
-                        retval = READSTAT_ERROR_USER_ABORT;
-                        goto cleanup;
-                    }
-                }
-                if (parser->fweight_handler && ctx->fweight_name[0]) {
-                    for (i=0; i<ctx->var_count; i++) {
-                        spss_varinfo_t *info = &ctx->varinfo[i];
-                        if (strcmp(info->name, ctx->fweight_name) == 0) {
-                            if (parser->fweight_handler(i, user_ctx)) {
-                                retval = READSTAT_ERROR_USER_ABORT;
-                                goto cleanup;
-                            }
-                            break;
-                        }
-                    }
-                }
-                retval = read_por_file_data(ctx);
+                retval = handle_variables(ctx);
                 if (retval != READSTAT_OK)
                     goto cleanup;
-                
-                if (parser->info_handler) {
-                    if (parser->info_handler(ctx->obs_count, ctx->var_count, ctx->user_ctx)) {
-                        retval = READSTAT_ERROR_USER_ABORT;
-                    }
-                }
+
+                retval = read_por_file_data(ctx);
                 goto cleanup;
-                
-                break;
             default:
                 retval = READSTAT_ERROR_PARSE;
                 goto cleanup;
-                
-                break;
         }
+        if (retval != READSTAT_OK)
+            break;
     }
-    
+
 cleanup:
     io->close(io->io_ctx);
     por_ctx_free(ctx);
