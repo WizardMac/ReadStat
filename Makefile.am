@@ -13,6 +13,7 @@ libreadstat_la_SOURCES = \
 	src/readstat_parser.c \
 	src/readstat_por.c \
 	src/readstat_por_parse.c \
+	src/readstat_por_read.c \
 	src/readstat_rdata.c \
 	src/readstat_sas.c \
 	src/readstat_sas_catalog.c \
