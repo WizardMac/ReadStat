@@ -156,7 +156,7 @@ static readstat_error_t prepare_buffer_for_double(por_ctx_t *ctx) {
         ctx->buf_pos = 0;
     }
     if (ctx->buf_used - ctx->buf_pos < ctx->base30_precision + 10) {
-        memcpy(ctx->buf, &ctx->buf[ctx->buf_pos], ctx->buf_used - ctx->buf_pos);
+        memmove(ctx->buf, &ctx->buf[ctx->buf_pos], ctx->buf_used - ctx->buf_pos);
         ctx->buf_used -= ctx->buf_pos;
         ctx->buf_pos = 0;
         bytes_read = read_bytes(ctx, &ctx->buf[ctx->buf_used], sizeof(ctx->buf)-ctx->buf_used);
