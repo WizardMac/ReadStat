@@ -10,7 +10,7 @@
 #include "readstat_por.h"
 #include "readstat_writer.h"
 
-#define POR_BASE30_PRECISION  100
+#define POR_BASE30_PRECISION  50
 
 typedef struct por_write_ctx_s {
     unsigned char   *unicode2byte;
