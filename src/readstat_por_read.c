@@ -54,38 +54,44 @@ static readstat_error_t skip_newline(readstat_io_t *io) {
 static int read_bytes(por_ctx_t *ctx, void *dst, size_t len) {
     int bytes_left = len;
     int offset = 0;
-    char buf[82];
+    char buf[POR_LINE_LENGTH+2];
     int i;
     readstat_io_t *io = ctx->io;
 
     while (bytes_left > POR_LINE_LENGTH - ctx->pos) {
         int line_len = POR_LINE_LENGTH - ctx->pos;
+        int line_len_plus_2 = line_len + 2;
+        int crlf_len = 0;
 
-        ssize_t bytes_read = io->read(buf, line_len, io->io_ctx);
+        ssize_t bytes_read = io->read(buf, line_len_plus_2, io->io_ctx);
         
         if (bytes_read == 0)
             break;
 
-        if (bytes_read == -1 || bytes_read != line_len) {
+        if (bytes_read == -1 || bytes_read != line_len_plus_2) {
             return -1;
         }
         
-        for (i=0; i<line_len; i++) {
-            if (buf[i] == '\n' || (buf[i] == '\r' && buf[i+1] == '\n')) {
+        for (i=0; i<line_len_plus_2-1; i++) {
+            if (buf[i] == '\n') {
+                crlf_len = 1;
+                break;
+            } else if (buf[i] == '\r' && buf[i+1] == '\n') {
+                crlf_len = 2;
                 break;
             }
         }
+        
+        if (crlf_len == 0)
+            return -1;
 
-        if (io->seek(i - line_len, READSTAT_SEEK_CUR, io->io_ctx) == -1)
+        if (io->seek(i + crlf_len - line_len_plus_2, READSTAT_SEEK_CUR, io->io_ctx) == -1)
             return -1;
 
         for (; i<line_len; i++) {
             buf[i] = ctx->space;
         }
 
-        if (skip_newline(ctx->io) != READSTAT_OK)
-            return -1;
-        
         memcpy((char *)dst + offset, buf, line_len);
         
         ctx->pos = 0;
