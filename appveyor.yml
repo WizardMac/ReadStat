@@ -20,5 +20,9 @@ build_script:
   - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && ./autogen.sh"
   - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && ./configure"
   - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && make"
+
+test_script:
   - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && make check"
+
+after_test:
   - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && cat ./test-suite.log"
