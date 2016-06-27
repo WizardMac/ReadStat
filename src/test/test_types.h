@@ -61,6 +61,7 @@ typedef struct rt_parse_ctx_s {
     rt_test_file_t  *file;
     long             file_format;
     long             file_format_version;
+    size_t           max_file_label_len;
 
     rt_buffer_ctx_t *buffer_ctx;
 } rt_parse_ctx_t;

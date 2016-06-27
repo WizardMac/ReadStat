@@ -9,6 +9,10 @@
 #define VALUE_LABELS_INITIAL_CAPACITY 10
 #define LABEL_SET_VARIABLES_INITIAL_CAPACITY 2
 
+static readstat_error_t readstat_write_row_default_callback(void *writer_ctx, void *bytes, size_t len) {
+    return readstat_write_bytes((readstat_writer_t *)writer_ctx, bytes, len);
+}
+
 readstat_writer_t *readstat_writer_init() {
     readstat_writer_t *writer = calloc(1, sizeof(readstat_writer_t));
 
@@ -19,6 +23,7 @@ readstat_writer_t *readstat_writer_init() {
     writer->label_sets_capacity = LABEL_SETS_INITIAL_CAPACITY;
 
     writer->timestamp = time(NULL);
+    writer->callbacks.write_row = &readstat_write_row_default_callback;
 
     return writer;
 }
@@ -285,6 +290,7 @@ readstat_error_t readstat_begin_row(readstat_writer_t *writer) {
         writer->row = malloc(row_len);
         writer->row_len = row_len;
     }
+    memset(writer->row, '\0', writer->row_len);
     return retval;
 }
 
@@ -292,6 +298,8 @@ readstat_error_t readstat_begin_row(readstat_writer_t *writer) {
 readstat_error_t readstat_insert_int8_value(readstat_writer_t *writer, const readstat_variable_t *variable, int8_t value) {
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
+    if (variable->type != READSTAT_TYPE_INT8)
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
 
     return writer->callbacks.write_int8(&writer->row[variable->offset], variable, value);
 }
@@ -299,6 +307,8 @@ readstat_error_t readstat_insert_int8_value(readstat_writer_t *writer, const rea
 readstat_error_t readstat_insert_int16_value(readstat_writer_t *writer, const readstat_variable_t *variable, int16_t value) {
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
+    if (variable->type != READSTAT_TYPE_INT16)
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
 
     return writer->callbacks.write_int16(&writer->row[variable->offset], variable, value);
 }
@@ -306,6 +316,8 @@ readstat_error_t readstat_insert_int16_value(readstat_writer_t *writer, const re
 readstat_error_t readstat_insert_int32_value(readstat_writer_t *writer, const readstat_variable_t *variable, int32_t value) {
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
+    if (variable->type != READSTAT_TYPE_INT32)
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
 
     return writer->callbacks.write_int32(&writer->row[variable->offset], variable, value);
 }
@@ -313,6 +325,8 @@ readstat_error_t readstat_insert_int32_value(readstat_writer_t *writer, const re
 readstat_error_t readstat_insert_float_value(readstat_writer_t *writer, const readstat_variable_t *variable, float value) {
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
+    if (variable->type != READSTAT_TYPE_FLOAT)
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
 
     return writer->callbacks.write_float(&writer->row[variable->offset], variable, value);
 }
@@ -320,6 +334,8 @@ readstat_error_t readstat_insert_float_value(readstat_writer_t *writer, const re
 readstat_error_t readstat_insert_double_value(readstat_writer_t *writer, const readstat_variable_t *variable, double value) {
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
+    if (variable->type != READSTAT_TYPE_DOUBLE)
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
 
     return writer->callbacks.write_double(&writer->row[variable->offset], variable, value);
 }
@@ -327,6 +343,8 @@ readstat_error_t readstat_insert_double_value(readstat_writer_t *writer, const r
 readstat_error_t readstat_insert_string_value(readstat_writer_t *writer, const readstat_variable_t *variable, const char *value) {
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
+    if (variable->type != READSTAT_TYPE_STRING)
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
 
     return writer->callbacks.write_string(&writer->row[variable->offset], variable, value);
 }
@@ -352,8 +370,10 @@ readstat_error_t readstat_end_row(readstat_writer_t *writer) {
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
 
-    writer->current_row++;
-    return readstat_write_bytes(writer, writer->row, writer->row_len);
+    readstat_error_t error = writer->callbacks.write_row(writer, writer->row, writer->row_len);
+    if (error == READSTAT_OK)
+        writer->current_row++;
+    return error;
 }
 
 readstat_error_t readstat_end_writing(readstat_writer_t *writer) {

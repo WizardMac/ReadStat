@@ -1,3 +1,4 @@
+#include <sys/types.h>
 
 #include "readstat.h"
 #include "readstat_por_parse.h"
@@ -7,21 +8,19 @@
     write data nofinal noerror;
 }%%
 
-int readstat_por_parse_double(const char *data, size_t len, double *result, 
+ssize_t readstat_por_parse_double(const char *data, size_t len, double *result, 
         readstat_error_handler error_cb, void *user_ctx) {
-    int retval = 0;
+    ssize_t retval = 0;
     double val = 0.0;
+    double denom = 30.0;
+    double temp_frac = 0.0;
     long num = 0;
-    long frac = 0;
     long exp = 0;
     
     long temp_val = 0;
-    long frac_len = 0;
-    
-    const unsigned char *val_start = NULL;
     
     const unsigned char *p = (const unsigned char *)data;
-    const unsigned char *eof = p + len;
+    // const unsigned char *eof = p + len;
     
     int cs;
     int is_negative = 0, exp_is_negative = 0;
@@ -35,17 +34,28 @@ int readstat_por_parse_double(const char *data, size_t len, double *result,
                 temp_val = 30 * temp_val + (10 + fc - 'A');
             }
         }
-        
-        value = [0-9A-T]+ >{ temp_val = 0; val_start = fpc; } $incr_val;
 
-        fraction = "." value %{ frac = temp_val; frac_len = (fpc - val_start); };
+        action incr_frac {
+            if (fc >= '0' && fc <= '9') {
+                temp_frac += (fc - '0') / denom;
+            } else if (fc >= 'A' && fc <= 'T') {
+                temp_frac += (10 + fc - 'A') / denom;
+            }
+            denom *= 30.0;
+        }
+        
+        value = [0-9A-T]+ >{ temp_val = 0; } $incr_val;
+
+        frac_value = [0-9A-T]+ >{ temp_frac = 0.0; } $incr_frac;
+
+        fraction = "." frac_value;
         
         nonmissing_value = (("-" %{ is_negative = 1; })? value %{ num = temp_val; } fraction?
                             ( ("+" | "-" %{ exp_is_negative = 1; }) value %{ exp = temp_val; })?) "/";
 
         nonmissing_fraction = ("-" %{ is_negative = 1; })? fraction "/";
         
-        missing_value = "*." %{ val = NAN; };
+        missing_value = "*." >{ val = NAN; };
         
         main := " "* (missing_value | nonmissing_value | nonmissing_fraction ) @{ success = 1; fbreak; };
         
@@ -53,22 +63,22 @@ int readstat_por_parse_double(const char *data, size_t len, double *result,
         write exec noend;
     }%%
 
-    val = 1.0 * num;
-    if (frac_len)
-        val += frac / pow(30.0, frac_len);
-    if (exp_is_negative)
-        exp *= -1;
-    if (exp) {
-        val *= pow(10.0, exp);
+    if (!isnan(val)) {
+        val = 1.0 * num + temp_frac;
+        if (exp_is_negative)
+            exp *= -1;
+        if (exp) {
+            val *= pow(10.0, exp);
+        }
+        if (is_negative)
+            val *= -1;
     }
-    if (is_negative)
-        val *= -1;
-    
+
     if (!success) {
         retval = -1;
         if (error_cb) {
             char error_buf[1024];
-            snprintf(error_buf, sizeof(error_buf), "Read bytes: %ld Ending state: %d\n", (long)(p - (const unsigned char *)data), cs);
+            snprintf(error_buf, sizeof(error_buf), "Read bytes: %ld   String: %s  Ending state: %d\n", (long)(p - (const unsigned char *)data), data, cs);
             error_cb(error_buf, user_ctx);
         }
     }

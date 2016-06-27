@@ -12,14 +12,19 @@ typedef struct por_ctx_s {
     readstat_progress_handler       progress_handler;
     size_t                          file_size;
     void                           *user_ctx;
+
     int            pos;
     readstat_io_t *io;
-    unsigned char  buf[100];
+    unsigned char  buf[128];
     size_t         buf_used;
     size_t         buf_pos;
     char           space;
+    time_t         timestamp;
+    long           version;
     char           fweight_name[9];
-    uint16_t       lookup[256];
+    uint16_t       byte2unicode[256];
+    size_t         base30_precision;
+    iconv_t        converter;
     unsigned char *string_buffer;
     size_t         string_buffer_len;
     int            labels_offset;
@@ -33,5 +38,9 @@ typedef struct por_ctx_s {
 
 por_ctx_t *por_ctx_init();
 void por_ctx_free(por_ctx_t *ctx);
-size_t por_utf8_encode(const unsigned char *input, size_t input_len, 
+ssize_t por_utf8_encode(const unsigned char *input, size_t input_len, 
         char *output, size_t output_len, uint16_t lookup[256]);
+ssize_t por_utf8_decode(
+        const char *input, size_t input_len,
+        char *output, size_t output_len,
+        uint8_t *lookup, size_t lookup_len);

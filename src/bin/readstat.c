@@ -158,13 +158,13 @@ void print_usage(const char *cmd) {
     print_version();
 
     fprintf(stderr, "\n  Standard usage:\n");
-    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|sav|csv"
+    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|por|sav|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif
             ")\n", cmd);
     fprintf(stderr, "\n  Usage if your value labels are stored in a separate SAS catalog file:\n");
-    fprintf(stderr, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|sav|csv"
+    fprintf(stderr, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|por|sav|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif

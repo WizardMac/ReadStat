@@ -29,6 +29,17 @@ rt_parse_ctx_t *parse_ctx_init(rt_buffer_t *buffer, rt_test_file_t *file) {
 
 void parse_ctx_reset(rt_parse_ctx_t *parse_ctx, long file_format) {
     parse_ctx->file_format = file_format;
+    if ((file_format & RT_FORMAT_DTA_118)) {
+        parse_ctx->max_file_label_len = 321;
+    } else if ((file_format & RT_FORMAT_DTA_105_AND_OLDER)) {
+        parse_ctx->max_file_label_len = 32;
+    } else if ((file_format & RT_FORMAT_DTA)) {
+        parse_ctx->max_file_label_len = 81;
+    } else if (file_format == RT_FORMAT_SAV) {
+        parse_ctx->max_file_label_len = 64;
+    } else {
+        parse_ctx->max_file_label_len = 20;
+    }
     parse_ctx->var_index = -1;
     parse_ctx->obs_index = -1;
     buffer_ctx_reset(parse_ctx->buffer_ctx);
@@ -73,7 +84,7 @@ static readstat_off_t rt_seek_handler(readstat_off_t offset,
 
 static ssize_t rt_read_handler(void *buf, size_t nbytes, void *io_ctx) {
     rt_buffer_ctx_t *buffer_ctx = (rt_buffer_ctx_t *)io_ctx;
-    ssize_t bytes_copied = -1;
+    ssize_t bytes_copied = 0;
     ssize_t bytes_left = buffer_ctx->buffer->used - buffer_ctx->pos;
     if (nbytes <= bytes_left) {
         memcpy(buf, buffer_ctx->buffer->bytes + buffer_ctx->pos, nbytes);
@@ -110,9 +121,11 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
             rt_ctx->file->columns_count, var_count, 
             "Number of variables");
 
-    push_error_if_doubles_differ(rt_ctx, 
-            rt_ctx->file->rows, obs_count, 
-            "Number of observations");
+    if (obs_count != -1) {
+        push_error_if_doubles_differ(rt_ctx, 
+                rt_ctx->file->rows, obs_count, 
+                "Number of observations");
+    }
 
     return 0;
 }
@@ -120,7 +133,8 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
 static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
 
-    push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->label, file_label, 32, "File labels");
+    push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->label, file_label, 
+            rt_ctx->max_file_label_len, "File labels");
     if (rt_ctx->file->timestamp.tm_year) {
         struct tm timestamp_s = rt_ctx->file->timestamp;
         timestamp_s.tm_isdst = -1;
@@ -205,6 +219,9 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     } else if (format == RT_FORMAT_SAV) {
         parse_ctx->file_format_version = 2;
         error = readstat_parse_sav(parser, NULL, parse_ctx);
+    } else if (format == RT_FORMAT_POR) {
+        parse_ctx->file_format_version = 0;
+        error = readstat_parse_por(parser, NULL, parse_ctx);
     }
     if (error != READSTAT_OK)
         goto cleanup;

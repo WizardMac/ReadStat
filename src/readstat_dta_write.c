@@ -241,20 +241,20 @@ cleanup:
 }
 
 static readstat_error_t dta_validate_name(const char *name) {
-    char first_char = name[0];
-    if (first_char != '_' &&
-            !(first_char >= 'a' && first_char <= 'z') &&
-            !(first_char >= 'A' && first_char <= 'Z')) {
-        return READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER;
-    }
     int j;
-    for (j=1; name[j]; j++) {
+    for (j=0; name[j]; j++) {
         if (name[j] != '_' &&
                 !(name[j] >= 'a' && name[j] <= 'z') &&
                 !(name[j] >= 'A' && name[j] <= 'Z') &&
                 !(name[j] >= '0' && name[j] <= '9')) {
             return READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER;
         }
+    }
+    char first_char = name[0];
+    if (first_char != '_' &&
+            !(first_char >= 'a' && first_char <= 'z') &&
+            !(first_char >= 'A' && first_char <= 'Z')) {
+        return READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER;
     }
     if (strcmp(name, "_all") == 0 || strcmp(name, "_b") == 0 ||
             strcmp(name, "byte") == 0 || strcmp(name, "_coef") == 0 ||
@@ -929,9 +929,6 @@ static readstat_error_t dta_write_raw_double(void *row, double value) {
 }
 
 static readstat_error_t dta_113_write_int8(void *row, const readstat_variable_t *var, int8_t value) {
-    if (var->type != READSTAT_TYPE_INT8) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     if (value > DTA_113_MAX_INT8) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     }
@@ -939,9 +936,6 @@ static readstat_error_t dta_113_write_int8(void *row, const readstat_variable_t 
 }
 
 static readstat_error_t dta_old_write_int8(void *row, const readstat_variable_t *var, int8_t value) {
-    if (var->type != READSTAT_TYPE_INT8) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     if (value > DTA_OLD_MAX_INT8) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     }
@@ -949,9 +943,6 @@ static readstat_error_t dta_old_write_int8(void *row, const readstat_variable_t 
 }
 
 static readstat_error_t dta_113_write_int16(void *row, const readstat_variable_t *var, int16_t value) {
-    if (var->type != READSTAT_TYPE_INT16) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     if (value > DTA_113_MAX_INT16) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     }
@@ -959,9 +950,6 @@ static readstat_error_t dta_113_write_int16(void *row, const readstat_variable_t
 }
 
 static readstat_error_t dta_old_write_int16(void *row, const readstat_variable_t *var, int16_t value) {
-    if (var->type != READSTAT_TYPE_INT16) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     if (value > DTA_OLD_MAX_INT16) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     }
@@ -969,9 +957,6 @@ static readstat_error_t dta_old_write_int16(void *row, const readstat_variable_t
 }
 
 static readstat_error_t dta_113_write_int32(void *row, const readstat_variable_t *var, int32_t value) {
-    if (var->type != READSTAT_TYPE_INT32) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     if (value > DTA_113_MAX_INT32) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     }
@@ -979,9 +964,6 @@ static readstat_error_t dta_113_write_int32(void *row, const readstat_variable_t
 }
 
 static readstat_error_t dta_old_write_int32(void *row, const readstat_variable_t *var, int32_t value) {
-    if (var->type != READSTAT_TYPE_INT32) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     if (value > DTA_OLD_MAX_INT32) {
         return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
     }
@@ -989,10 +971,6 @@ static readstat_error_t dta_old_write_int32(void *row, const readstat_variable_t
 }
 
 static readstat_error_t dta_write_float(void *row, const readstat_variable_t *var, float value) {
-    if (var->type != READSTAT_TYPE_FLOAT) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
-
     int32_t max_flt_i32 = DTA_113_MAX_FLOAT;
     float max_flt;
     memcpy(&max_flt, &max_flt_i32, sizeof(float));
@@ -1005,10 +983,6 @@ static readstat_error_t dta_write_float(void *row, const readstat_variable_t *va
 }
 
 static readstat_error_t dta_write_double(void *row, const readstat_variable_t *var, double value) {
-    if (var->type != READSTAT_TYPE_DOUBLE) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
-
     int64_t max_dbl_i64 = DTA_113_MAX_DOUBLE;
     double max_dbl;
     memcpy(&max_dbl, &max_dbl_i64, sizeof(double));
@@ -1031,9 +1005,6 @@ static readstat_error_t dta_write_string(void *row, const char *value, size_t ma
 
 static readstat_error_t dta_111_write_string(void *row, const readstat_variable_t *var, 
         const char *value) {
-    if (var->type != READSTAT_TYPE_STRING) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     size_t value_len = var->storage_width;
     if (value_len > DTA_111_MAX_WIDTH)
         value_len = DTA_111_MAX_WIDTH;
@@ -1042,9 +1013,6 @@ static readstat_error_t dta_111_write_string(void *row, const readstat_variable_
 
 static readstat_error_t dta_117_write_string(void *row, const readstat_variable_t *var, 
         const char *value) {
-    if (var->type != READSTAT_TYPE_STRING) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     size_t value_len = var->storage_width;
     if (value_len > DTA_117_MAX_WIDTH)
         value_len = DTA_117_MAX_WIDTH;
@@ -1053,9 +1021,6 @@ static readstat_error_t dta_117_write_string(void *row, const readstat_variable_
 
 static readstat_error_t dta_old_write_string(void *row, const readstat_variable_t *var, 
         const char *value) {
-    if (var->type != READSTAT_TYPE_STRING) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     size_t value_len = var->storage_width;
     if (value_len > DTA_OLD_MAX_WIDTH)
         value_len = DTA_OLD_MAX_WIDTH;

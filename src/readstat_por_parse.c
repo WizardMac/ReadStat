@@ -1,22 +1,23 @@
 
 #line 1 "src/readstat_por_parse.rl"
+#include <sys/types.h>
 
 #include "readstat.h"
 #include "readstat_por_parse.h"
 
 
-#line 9 "src/readstat_por_parse.c"
+#line 10 "src/readstat_por_parse.c"
 static const char _por_field_parse_actions[] = {
-	0, 1, 0, 1, 2, 1, 4, 1, 
-	7, 1, 8, 1, 9, 2, 1, 0, 
-	2, 2, 9, 2, 4, 9, 2, 6, 
-	9, 3, 3, 1, 0, 3, 5, 1, 
+	0, 1, 0, 1, 1, 1, 5, 1, 
+	8, 1, 9, 1, 10, 2, 2, 0, 
+	2, 3, 1, 2, 5, 10, 2, 7, 
+	10, 3, 4, 2, 0, 3, 6, 2, 
 	0
 };
 
 static const char _por_field_parse_key_offsets[] = {
 	0, 0, 8, 9, 14, 18, 23, 31, 
-	35, 40, 44, 48, 55, 55
+	35, 40, 44, 48, 55
 };
 
 static const char _por_field_parse_trans_keys[] = {
@@ -31,42 +32,35 @@ static const char _por_field_parse_trans_keys[] = {
 
 static const char _por_field_parse_single_lengths[] = {
 	0, 4, 1, 1, 0, 1, 4, 0, 
-	1, 0, 0, 3, 0, 0
+	1, 0, 0, 3, 0
 };
 
 static const char _por_field_parse_range_lengths[] = {
 	0, 2, 0, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 0, 0
+	2, 2, 2, 2, 0
 };
 
 static const char _por_field_parse_index_offsets[] = {
 	0, 0, 7, 9, 13, 16, 20, 27, 
-	30, 34, 37, 40, 46, 47
+	30, 34, 37, 40, 46
 };
 
 static const char _por_field_parse_trans_targs[] = {
 	1, 2, 3, 4, 6, 6, 0, 12, 
 	0, 4, 6, 6, 0, 5, 5, 0, 
-	13, 5, 5, 0, 7, 9, 10, 13, 
-	6, 6, 0, 8, 8, 0, 13, 8, 
+	12, 5, 5, 0, 7, 9, 10, 12, 
+	6, 6, 0, 8, 8, 0, 12, 8, 
 	8, 0, 8, 8, 0, 11, 11, 0, 
-	7, 9, 13, 11, 11, 0, 0, 0, 
-	0
+	7, 9, 12, 11, 11, 0, 0, 0
 };
 
 static const char _por_field_parse_trans_actions[] = {
-	0, 0, 0, 0, 13, 13, 0, 11, 
-	0, 7, 25, 25, 0, 13, 13, 0, 
-	16, 1, 1, 0, 5, 5, 5, 19, 
+	0, 9, 0, 0, 13, 13, 0, 11, 
+	0, 7, 25, 25, 0, 16, 16, 0, 
+	11, 3, 3, 0, 5, 5, 5, 19, 
 	1, 1, 0, 13, 13, 0, 22, 1, 
-	1, 0, 29, 29, 0, 13, 13, 0, 
-	3, 3, 16, 1, 1, 0, 0, 0, 
-	0
-};
-
-static const char _por_field_parse_eof_actions[] = {
-	0, 0, 0, 0, 0, 0, 0, 0, 
-	0, 0, 0, 0, 9, 0
+	1, 0, 29, 29, 0, 16, 16, 0, 
+	0, 0, 11, 3, 3, 0, 0, 0
 };
 
 static const int por_field_parse_start = 1;
@@ -74,36 +68,34 @@ static const int por_field_parse_start = 1;
 static const int por_field_parse_en_main = 1;
 
 
-#line 8 "src/readstat_por_parse.rl"
+#line 9 "src/readstat_por_parse.rl"
 
 
-int readstat_por_parse_double(const char *data, size_t len, double *result, 
+ssize_t readstat_por_parse_double(const char *data, size_t len, double *result, 
         readstat_error_handler error_cb, void *user_ctx) {
-    int retval = 0;
+    ssize_t retval = 0;
     double val = 0.0;
+    double denom = 30.0;
+    double temp_frac = 0.0;
     long num = 0;
-    long frac = 0;
     long exp = 0;
     
     long temp_val = 0;
-    long frac_len = 0;
-    
-    const unsigned char *val_start = NULL;
     
     const unsigned char *p = (const unsigned char *)data;
-    const unsigned char *eof = p + len;
+    // const unsigned char *eof = p + len;
     
     int cs;
     int is_negative = 0, exp_is_negative = 0;
     int success = 0;
     
     
-#line 102 "src/readstat_por_parse.c"
+#line 94 "src/readstat_por_parse.c"
 	{
 	cs = por_field_parse_start;
 	}
 
-#line 107 "src/readstat_por_parse.c"
+#line 99 "src/readstat_por_parse.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -175,7 +167,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 31 "src/readstat_por_parse.rl"
+#line 30 "src/readstat_por_parse.rl"
 	{
             if ((*p) >= '0' && (*p) <= '9') {
                 temp_val = 30 * temp_val + ((*p) - '0');
@@ -185,38 +177,53 @@ _match:
         }
 	break;
 	case 1:
-#line 39 "src/readstat_por_parse.rl"
-	{ temp_val = 0; val_start = p; }
+#line 38 "src/readstat_por_parse.rl"
+	{
+            if ((*p) >= '0' && (*p) <= '9') {
+                temp_frac += ((*p) - '0') / denom;
+            } else if ((*p) >= 'A' && (*p) <= 'T') {
+                temp_frac += (10 + (*p) - 'A') / denom;
+            }
+            denom *= 30.0;
+        }
 	break;
 	case 2:
-#line 41 "src/readstat_por_parse.rl"
-	{ frac = temp_val; frac_len = (p - val_start); }
+#line 47 "src/readstat_por_parse.rl"
+	{ temp_val = 0; }
 	break;
 	case 3:
-#line 43 "src/readstat_por_parse.rl"
-	{ is_negative = 1; }
+#line 49 "src/readstat_por_parse.rl"
+	{ temp_frac = 0.0; }
 	break;
 	case 4:
-#line 43 "src/readstat_por_parse.rl"
-	{ num = temp_val; }
+#line 53 "src/readstat_por_parse.rl"
+	{ is_negative = 1; }
 	break;
 	case 5:
-#line 44 "src/readstat_por_parse.rl"
-	{ exp_is_negative = 1; }
+#line 53 "src/readstat_por_parse.rl"
+	{ num = temp_val; }
 	break;
 	case 6:
-#line 44 "src/readstat_por_parse.rl"
-	{ exp = temp_val; }
+#line 54 "src/readstat_por_parse.rl"
+	{ exp_is_negative = 1; }
 	break;
 	case 7:
-#line 46 "src/readstat_por_parse.rl"
+#line 54 "src/readstat_por_parse.rl"
+	{ exp = temp_val; }
+	break;
+	case 8:
+#line 56 "src/readstat_por_parse.rl"
 	{ is_negative = 1; }
 	break;
 	case 9:
-#line 50 "src/readstat_por_parse.rl"
+#line 58 "src/readstat_por_parse.rl"
+	{ val = NAN; }
+	break;
+	case 10:
+#line 60 "src/readstat_por_parse.rl"
 	{ success = 1; {p++; goto _out; } }
 	break;
-#line 220 "src/readstat_por_parse.c"
+#line 227 "src/readstat_por_parse.c"
 		}
 	}
 
@@ -225,43 +232,28 @@ _again:
 		goto _out;
 	p += 1;
 	goto _resume;
-	if ( p == eof )
-	{
-	const char *__acts = _por_field_parse_actions + _por_field_parse_eof_actions[cs];
-	unsigned int __nacts = (unsigned int) *__acts++;
-	while ( __nacts-- > 0 ) {
-		switch ( *__acts++ ) {
-	case 8:
-#line 48 "src/readstat_por_parse.rl"
-	{ val = NAN; }
-	break;
-#line 239 "src/readstat_por_parse.c"
-		}
-	}
-	}
-
 	_out: {}
 	}
 
-#line 54 "src/readstat_por_parse.rl"
+#line 64 "src/readstat_por_parse.rl"
 
 
-    val = 1.0 * num;
-    if (frac_len)
-        val += frac / pow(30.0, frac_len);
-    if (exp_is_negative)
-        exp *= -1;
-    if (exp) {
-        val *= pow(10.0, exp);
+    if (!isnan(val)) {
+        val = 1.0 * num + temp_frac;
+        if (exp_is_negative)
+            exp *= -1;
+        if (exp) {
+            val *= pow(10.0, exp);
+        }
+        if (is_negative)
+            val *= -1;
     }
-    if (is_negative)
-        val *= -1;
-    
+
     if (!success) {
         retval = -1;
         if (error_cb) {
             char error_buf[1024];
-            snprintf(error_buf, sizeof(error_buf), "Read bytes: %ld Ending state: %d\n", (long)(p - (const unsigned char *)data), cs);
+            snprintf(error_buf, sizeof(error_buf), "Read bytes: %ld   String: %s  Ending state: %d\n", (long)(p - (const unsigned char *)data), data, cs);
             error_cb(error_buf, user_ctx);
         }
     }

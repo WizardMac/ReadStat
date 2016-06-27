@@ -52,6 +52,7 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_PARSE,
     READSTAT_ERROR_UNSUPPORTED_COMPRESSION,
     READSTAT_ERROR_UNSUPPORTED_CHARSET,
+    READSTAT_ERROR_COLUMN_COUNT_MISMATCH,
     READSTAT_ERROR_ROW_COUNT_MISMATCH,
     READSTAT_ERROR_ROW_WIDTH_MISMATCH,
     READSTAT_ERROR_BAD_FORMAT_STRING,
@@ -69,6 +70,7 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER,
     READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
     READSTAT_ERROR_NAME_IS_RESERVED_WORD,
+    READSTAT_ERROR_NAME_IS_TOO_LONG,
     READSTAT_ERROR_BAD_TIMESTAMP,
     READSTAT_ERROR_BAD_FREQUENCY_WEIGHT
 } readstat_error_t;
@@ -271,6 +273,7 @@ typedef readstat_error_t (*readstat_write_missing_callback)(void *row_data, cons
 typedef readstat_error_t (*readstat_write_tagged_callback)(void *row_data, const readstat_variable_t *variable, char tag);
 
 typedef readstat_error_t (*readstat_begin_data_callback)(void *writer);
+typedef readstat_error_t (*readstat_write_row_callback)(void *writer, void *row_data, size_t row_len);
 typedef readstat_error_t (*readstat_end_data_callback)(void *writer);
 
 typedef struct readstat_writer_callbacks_s {
@@ -285,6 +288,7 @@ typedef struct readstat_writer_callbacks_s {
     readstat_write_missing_callback write_missing_number;
     readstat_write_tagged_callback  write_missing_tagged;
     readstat_begin_data_callback    begin_data;
+    readstat_write_row_callback     write_row;
     readstat_end_data_callback      end_data;
 } readstat_writer_callbacks_t;
 
@@ -357,8 +361,9 @@ readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writ
         long file_format_version); // e.g. 104-118 for DTA
 
 // Call one of these at any time before the first invocation of readstat_begin_row
-readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count);
 readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *user_ctx, long row_count);
+readstat_error_t readstat_begin_writing_por(readstat_writer_t *writer, void *user_ctx, long row_count);
+readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count);
 
 // Start a row of data (that is, a case or observation)
 readstat_error_t readstat_begin_row(readstat_writer_t *writer);

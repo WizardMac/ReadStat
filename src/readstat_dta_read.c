@@ -439,11 +439,13 @@ static readstat_error_t dta_read_label_and_timestamp(dta_ctx_t *ctx) {
         if (!ctx->file_is_xmlish)
             timestamp_len--;
 
-        if ((retval = dta_parse_timestamp(timestamp_buffer, timestamp_len, &timestamp, ctx)) != READSTAT_OK) {
-            goto cleanup;
-        }
+        if (timestamp_buffer[0]) {
+            if ((retval = dta_parse_timestamp(timestamp_buffer, timestamp_len, &timestamp, ctx)) != READSTAT_OK) {
+                goto cleanup;
+            }
 
-        ctx->timestamp = mktime(&timestamp);
+            ctx->timestamp = mktime(&timestamp);
+        }
     }
 
     if ((retval = dta_read_tag(ctx, "</timestamp>")) != READSTAT_OK) {

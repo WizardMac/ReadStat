@@ -137,7 +137,12 @@ void push_error_if_codes_differ(rt_parse_ctx_t *ctx,
 
 static void print_value(readstat_value_t value) {
     if (value.type == READSTAT_TYPE_STRING) {
-        printf("%s", readstat_string_value(value));
+        const char *string = readstat_string_value(value);
+        if (string) {
+            printf("\"%s\" (length=%ld)", string, strlen(string));
+        } else {
+            printf("(null)");
+        }
     } else if (value.tag) {
         printf(".%c (tagged)", readstat_value_tag(value));
     } else if (value.type == READSTAT_TYPE_DOUBLE) {

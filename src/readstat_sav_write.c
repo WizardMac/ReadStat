@@ -13,9 +13,6 @@
 #include "readstat_spss_parse.h"
 #include "readstat_writer.h"
 
-#define READSTAT_PRODUCT_NAME       "ReadStat"
-#define READSTAT_PRODUCT_URL        "https://github.com/WizardMac/ReadStat"
-
 #define MAX_TEXT_SIZE               256
 #define MAX_LABEL_SIZE              256
 
@@ -47,35 +44,8 @@ static int32_t sav_encode_format(spss_format_t *spss_format) {
 
 static readstat_error_t sav_encode_variable_format(int32_t *out_code, 
         readstat_variable_t *r_variable) {
-    readstat_error_t retval = READSTAT_OK;
     spss_format_t spss_format;
-    memset(&spss_format, 0, sizeof(spss_format_t));
-
-    if (r_variable->type == READSTAT_TYPE_STRING) {
-        spss_format.type = SPSS_FORMAT_TYPE_A;
-        if (r_variable->user_width) {
-            spss_format.width = r_variable->user_width;
-        } else {
-            spss_format.width = r_variable->storage_width;
-        }
-    } else {
-        spss_format.type = SPSS_FORMAT_TYPE_F;
-        spss_format.width = 8;
-        if (r_variable->type == READSTAT_TYPE_DOUBLE ||
-                r_variable->type == READSTAT_TYPE_FLOAT) {
-            spss_format.decimal_places = 2;
-        }
-    }
-
-    if (r_variable->format[0]) {
-        const char *fmt = r_variable->format;
-        if (spss_parse_format(fmt, strlen(fmt), &spss_format) != READSTAT_OK) {
-            retval = READSTAT_ERROR_BAD_FORMAT_STRING;
-            goto cleanup;
-        }
-    } 
-
-cleanup:
+    readstat_error_t retval = spss_format_for_variable(r_variable, &spss_format);
     if (retval == READSTAT_OK && out_code)
         *out_code = sav_encode_format(&spss_format);
 
@@ -671,54 +641,36 @@ static readstat_error_t sav_emit_termination_record(readstat_writer_t *writer) {
 }
 
 static readstat_error_t sav_write_int8(void *row, const readstat_variable_t *var, int8_t value) {
-    if (var->type != READSTAT_TYPE_INT8) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     double dval = value;
     memcpy(row, &dval, sizeof(double));
     return READSTAT_OK;
 }
 
 static readstat_error_t sav_write_int16(void *row, const readstat_variable_t *var, int16_t value) {
-    if (var->type != READSTAT_TYPE_INT16) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     double dval = value;
     memcpy(row, &dval, sizeof(double));
     return READSTAT_OK;
 }
 
 static readstat_error_t sav_write_int32(void *row, const readstat_variable_t *var, int32_t value) {
-    if (var->type != READSTAT_TYPE_INT32) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     double dval = value;
     memcpy(row, &dval, sizeof(double));
     return READSTAT_OK;
 }
 
 static readstat_error_t sav_write_float(void *row, const readstat_variable_t *var, float value) {
-    if (var->type != READSTAT_TYPE_FLOAT) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     double dval = value;
     memcpy(row, &dval, sizeof(double));
     return READSTAT_OK;
 }
 
 static readstat_error_t sav_write_double(void *row, const readstat_variable_t *var, double value) {
-    if (var->type != READSTAT_TYPE_DOUBLE) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     double dval = value;
     memcpy(row, &dval, sizeof(double));
     return READSTAT_OK;
 }
 
 static readstat_error_t sav_write_string(void *row, const readstat_variable_t *var, const char *value) {
-    if (var->type != READSTAT_TYPE_STRING) {
-        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
-    }
     memset(row, ' ', var->storage_width);
     if (value != NULL && value[0] != '\0') {
         size_t value_len = strlen(value);

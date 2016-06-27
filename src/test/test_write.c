@@ -43,6 +43,8 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         error = readstat_begin_writing_dta(writer, buffer, file->rows);
     } else if (format == RT_FORMAT_SAV) {
         error = readstat_begin_writing_sav(writer, buffer, file->rows);
+    } else if (format == RT_FORMAT_POR) {
+        error = readstat_begin_writing_por(writer, buffer, file->rows);
     } else {
         error = READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
     }

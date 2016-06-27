@@ -1,18 +1,20 @@
 #include <stdlib.h>
+#include <iconv.h>
 
 #include "readstat.h"
 #include "readstat_spss.h"
 #include "CKHashTable.h"
+#include "readstat_convert.h"
 #include "readstat_por.h"
 
 uint16_t por_unicode_lookup[256] = {
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '1', '2', '3', '4', '5', 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, '0', '1', '2', '3', '4', '5', 
     '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 
     'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 
     'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
@@ -24,19 +26,20 @@ uint16_t por_unicode_lookup[256] = {
     ':', 0x00A6, '@', 0x2019, '=', '"', 0x2264, 0x25A1, 0x00B1, 0x25A0,
     0x00B0, 0x2020, '~', 0x2013, 0x2514, 0x250C, 0x2265, 0x2070, 0x2071, 0x00B2,
     0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079, 0x2518, 0x2510, 0x2260,
-    0x2014, 0x207D, 0x207E, 0x2E38, '{', '}', '\\', 0x00A2, 0x2022, '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
-    '0', '0', '0', '0', '0', '0' };
+    0x2014, 0x207D, 0x207E, 0x2E38, '{', '}', '\\', 0x00A2, 0x2022, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0 };
 
 por_ctx_t *por_ctx_init() {
     por_ctx_t *ctx = calloc(1, sizeof(por_ctx_t));
 
     ctx->space = ' ';
+    ctx->base30_precision = 20;
     ctx->var_dict = ck_hash_table_init(1024);
     return ctx;
 }
@@ -54,16 +57,20 @@ void por_ctx_free(por_ctx_t *ctx) {
     }
     if (ctx->var_dict)
         ck_hash_table_free(ctx->var_dict);
+    if (ctx->converter)
+        iconv_close(ctx->converter);
     free(ctx);
 }
 
-size_t por_utf8_encode(const unsigned char *input, size_t input_len, 
+ssize_t por_utf8_encode(const unsigned char *input, size_t input_len, 
         char *output, size_t output_len, uint16_t lookup[256]) {
     int offset = 0;
     int i;
     for (i=0; i<input_len; i++) {
         uint16_t codepoint = lookup[input[i]];
-        if (codepoint <= 0x7F) {
+        if (codepoint < 0x20) {
+            return -1;
+        } else if (codepoint <= 0x7F) {
             if (offset + 1 > output_len)
                 return offset;
             
@@ -87,3 +94,24 @@ size_t por_utf8_encode(const unsigned char *input, size_t input_len,
     return offset;
 }
 
+ssize_t por_utf8_decode(
+        const char *input, size_t input_len,
+        char *output, size_t output_len,
+        uint8_t *lookup, size_t lookup_len) {
+    int offset = 0;
+    wchar_t codepoint = 0;
+    while (1) {
+        int char_len = 0;
+        if (offset + 1> output_len)
+            return offset;
+
+        int conversions = sscanf(input, "%lc%n", &codepoint, &char_len);
+
+        if (conversions != 1 || codepoint >= lookup_len || lookup[codepoint] == 0) {
+            return -1;
+        }
+        output[offset++] = lookup[codepoint];
+        input += char_len;
+    }
+    return offset;
+}
