@@ -24,4 +24,6 @@ build_script:
 test_script:
   - set MSYSTEM=MINGW64
   - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && make check"
+
+on_finish:
   - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && cat ./test-suite.log"
