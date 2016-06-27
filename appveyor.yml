@@ -21,3 +21,4 @@ build_script:
   - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && ./configure"
   - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && make"
   - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && make check"
+  - C:\msys64\usr\bin\bash -l -c "cd `cygpath '%CD%'` && cat ./test-suite.log"
