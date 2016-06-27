@@ -812,7 +812,7 @@ rt_test_group_t _test_groups[] = {
 
             {
                 .label = "Extreme values",
-                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAV,
+                .test_formats = RT_FORMAT_ALL,
                 .write_error = READSTAT_OK,
                 .rows = 1,
                 .columns = {
@@ -868,9 +868,11 @@ rt_test_group_t _test_groups[] = {
 };
 
 static void dump_buffer(rt_buffer_t *buffer) {
+#if DEBUG
     int fd = open("/tmp/test_readstat.por", O_CREAT | O_WRONLY, 0644);
     write(fd, buffer->bytes, buffer->used);
     close(fd);
+#endif
 }
 
 int main(int argc, char *argv[]) {

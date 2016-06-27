@@ -90,9 +90,18 @@ static readstat_error_t por_write_tag(readstat_writer_t *writer, por_write_ctx_t
 
 static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, double value, long precision) {
     int offset = 0;
-    if (isnan(value) || isinf(value)) {
+    if (isnan(value)) {
         string[offset++] = '*';
         string[offset++] = '.';
+    } else if (isinf(value)) {
+        if (value < 0.0) {
+            string[offset++] = '-';
+        }
+        string[offset++] = '1';
+        string[offset++] = '+';
+        string[offset++] = 'T';
+        string[offset++] = 'T';
+        string[offset++] = '/';
     } else {
         long integers_printed = 0;
         double integer_part;
