@@ -392,7 +392,7 @@ static readstat_error_t dta_read_label_and_timestamp(dta_ctx_t *ctx) {
         label_len = ctx->data_label_len;
     }
 
-    if ((data_label_buffer = malloc(label_len)) == NULL) {
+    if ((data_label_buffer = malloc(label_len+1)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -403,7 +403,7 @@ static readstat_error_t dta_read_label_and_timestamp(dta_ctx_t *ctx) {
     }
 
     if (!ctx->file_is_xmlish) {
-        data_label_buffer[label_len-1] = '\0';
+        data_label_buffer[label_len] = '\0';
         label_len = strlen(data_label_buffer);
     }
 
