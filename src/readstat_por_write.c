@@ -105,12 +105,10 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
     } else {
         long integers_printed = 0;
         double integer_part;
-        double fraction = modf(value, &integer_part);
+        double fraction = modf(fabs(value), &integer_part);
         long integer = integer_part;
-        if (integer < 0 || fraction < 0) {
+        if (value < 0.0) {
             string[offset++] = '-';
-            integer = -integer;
-            fraction = -fraction;
         }
         if (integer == 0) {
             string[offset++] = '0';
