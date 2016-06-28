@@ -319,6 +319,8 @@ typedef struct readstat_writer_s {
     const readstat_variable_t  *fweight_variable;
 
     readstat_writer_callbacks_t callbacks;
+    readstat_error_handler      error_handler;
+
     void                       *module_ctx;
     void                       *user_ctx;
 
@@ -359,6 +361,10 @@ readstat_error_t readstat_writer_set_file_timestamp(readstat_writer_t *writer, t
 readstat_error_t readstat_writer_set_fweight_variable(readstat_writer_t *writer, const readstat_variable_t *variable);
 readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writer, 
         long file_format_version); // e.g. 104-118 for DTA
+
+// Optional error handler
+readstat_error_t readstat_writer_set_error_handler(readstat_writer_t *writer, 
+        readstat_error_handler error_handler);
 
 // Call one of these at any time before the first invocation of readstat_begin_row
 readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *user_ctx, long row_count);

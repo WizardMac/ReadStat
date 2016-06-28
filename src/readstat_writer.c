@@ -270,6 +270,12 @@ readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writ
     return READSTAT_OK;
 }
 
+readstat_error_t readstat_writer_set_error_handler(readstat_writer_t *writer, 
+        readstat_error_handler error_handler) {
+    writer->error_handler = error_handler;
+    return READSTAT_OK;
+}
+
 readstat_error_t readstat_begin_row(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
     if (!writer->initialized)

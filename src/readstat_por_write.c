@@ -66,11 +66,17 @@ static readstat_error_t por_write_bytes(readstat_writer_t *writer, const void *b
 
 static readstat_error_t por_write_string_n(readstat_writer_t *writer, por_write_ctx_t *ctx, 
         const char *string, size_t input_len) {
+    char error_buf[1024];
     readstat_error_t retval = READSTAT_OK;
     char *por_string = malloc(input_len);
     ssize_t output_len = por_utf8_decode(string, input_len, por_string, input_len,
             ctx->unicode2byte, ctx->unicode2byte_len);
     if (output_len == -1) {
+        if (writer->error_handler) {
+            snprintf(error_buf, sizeof(error_buf), "Error converting string (length=%ld): %*s\n", 
+                    input_len, (int)input_len, string);
+            writer->error_handler(error_buf, writer->user_ctx);
+        }
         retval = READSTAT_ERROR_CONVERT;
         goto cleanup;
     }
@@ -104,8 +110,9 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
         string[offset++] = '/';
     } else {
         long integers_printed = 0;
-        long integer = fabs(trunc(value));
-        double fraction = fabs(value) - integer;
+        double integer_part;
+        double fraction = modf(fabs(value), &integer_part);
+        long integer = integer_part;
         if (value < 0.0) {
             string[offset++] = '-';
         }
@@ -116,7 +123,9 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
             int end = offset;
             while (integer) {
                 long remainder = integer % 30;
-                if (remainder < 10) {
+                if (remainder < 0) {
+                    return -1;
+                } else if (remainder < 10) {
                     string[offset++] = '0' + remainder;
                 } else {
                     string[offset++] = 'A' + (remainder - 10);
@@ -139,10 +148,11 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
             string[offset++] = '.';
         }
         while (fraction && integers_printed < precision) {
-            fraction *= 30;
-            integer = trunc(fraction);
-            fraction -= integer;
-            if (integer < 10) {
+            fraction = modf(fraction * 30, &integer_part);
+            integer = integer_part;
+            if (integer < 0) {
+                return -1;
+            } else if (integer < 10) {
                 string[offset++] = '0' + integer;
             } else {
                 string[offset++] = 'A' + (integer - 10);
