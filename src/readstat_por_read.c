@@ -115,7 +115,7 @@ static readstat_error_t read_double_with_peek(por_ctx_t *ctx, double *out_double
     len = por_utf8_encode(buffer, i, utf8_buffer, sizeof(utf8_buffer), ctx->byte2unicode);
     if (len == -1) {
         if (ctx->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "Error converting double string (length=%d): %*s\n", 
+            snprintf(error_buf, sizeof(error_buf), "Error converting double string (length=%d): %*s", 
                     i, i, buffer);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
@@ -126,7 +126,7 @@ static readstat_error_t read_double_with_peek(por_ctx_t *ctx, double *out_double
     bytes_read = readstat_por_parse_double(utf8_buffer, len, &value, ctx->error_handler, ctx->user_ctx);
     if (bytes_read == -1) {
         if (ctx->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "Error parsing double string (length=%ld): %*s [%s]\n", 
+            snprintf(error_buf, sizeof(error_buf), "Error parsing double string (length=%ld): %*s [%s]", 
                     len, (int)len, utf8_buffer, buffer);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
@@ -201,7 +201,7 @@ static readstat_error_t maybe_read_string(por_ctx_t *ctx, char *data, size_t len
             data, len - 1, ctx->byte2unicode);
     if (bytes_encoded == -1) {
         if (ctx->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "Error converting string: %*s\n", 
+            snprintf(error_buf, sizeof(error_buf), "Error converting string: %*s", 
                     (int)string_length, ctx->string_buffer);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
@@ -497,7 +497,7 @@ static readstat_error_t read_por_file_data(por_ctx_t *ctx) {
                 rs_retval = maybe_read_string(ctx, input_string, sizeof(input_string), &finished);
                 if (rs_retval != READSTAT_OK) {
                     if (ctx->error_handler) {
-                        snprintf(error_buf, sizeof(error_buf), "Error in %s (row=%d)\n", 
+                        snprintf(error_buf, sizeof(error_buf), "Error in %s (row=%d)", 
                                 info->name, ctx->obs_count+1);
                         ctx->error_handler(error_buf, ctx->user_ctx);
                     }
@@ -517,7 +517,7 @@ static readstat_error_t read_por_file_data(por_ctx_t *ctx) {
                 rs_retval = maybe_read_double(ctx, &value.v.double_value, &finished);
                 if (rs_retval != READSTAT_OK) {
                     if (ctx->error_handler) {
-                        snprintf(error_buf, sizeof(error_buf), "Error in %s (row=%d)\n", 
+                        snprintf(error_buf, sizeof(error_buf), "Error in %s (row=%d)", 
                                 info->name, ctx->obs_count+1);
                         ctx->error_handler(error_buf, ctx->user_ctx);
                     }

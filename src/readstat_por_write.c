@@ -73,7 +73,7 @@ static readstat_error_t por_write_string_n(readstat_writer_t *writer, por_write_
             ctx->unicode2byte, ctx->unicode2byte_len);
     if (output_len == -1) {
         if (writer->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "Error converting string (length=%ld): %*s\n", 
+            snprintf(error_buf, sizeof(error_buf), "Error converting string (length=%ld): %*s", 
                     input_len, (int)input_len, string);
             writer->error_handler(error_buf, writer->user_ctx);
         }
@@ -166,10 +166,16 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
 }
 
 static readstat_error_t por_write_double(readstat_writer_t *writer, por_write_ctx_t *ctx, double value) {
+    char error_buf[1024];
     char string[256];
     ssize_t bytes_written = por_write_double_to_buffer(string, sizeof(string), value, POR_BASE30_PRECISION);
-    if (bytes_written == -1)
+    if (bytes_written == -1) {
+        if (writer->error_handler) {
+            snprintf(error_buf, sizeof(error_buf), "Unable to encode number: %lf", value);
+            writer->error_handler(error_buf, writer->user_ctx);
+        }
         return READSTAT_ERROR_WRITE;
+    }
 
     return por_write_string_n(writer, ctx, string, bytes_written);
 }
@@ -622,8 +628,9 @@ static size_t por_variable_width(readstat_type_t type, size_t user_width) {
 }
 
 static readstat_error_t por_write_double_value(void *row, const readstat_variable_t *var, double value) {
-    if (por_write_double_to_buffer(row, POR_BASE30_PRECISION + 4, value, POR_BASE30_PRECISION) == -1)
+    if (por_write_double_to_buffer(row, POR_BASE30_PRECISION + 4, value, POR_BASE30_PRECISION) == -1) {
         return READSTAT_ERROR_WRITE;
+    }
 
     return READSTAT_OK;
 }
@@ -667,8 +674,9 @@ static readstat_error_t por_write_string_value(void *row, const readstat_variabl
         len = storage_width;
     }
     ssize_t bytes_written = por_write_double_to_buffer(row, POR_BASE30_PRECISION + 4, len, POR_BASE30_PRECISION);
-    if (bytes_written == -1)
+    if (bytes_written == -1) {
         return READSTAT_ERROR_WRITE;
+    }
 
     strncpy(((char *)row) + bytes_written, string, len);
     return READSTAT_OK;
