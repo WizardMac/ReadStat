@@ -64,9 +64,9 @@ static readstat_error_t por_write_bytes(readstat_writer_t *writer, const void *b
     return retval;
 }
 
-static readstat_error_t por_write_string(readstat_writer_t *writer, por_write_ctx_t *ctx, const char *string) {
+static readstat_error_t por_write_string_n(readstat_writer_t *writer, por_write_ctx_t *ctx, 
+        const char *string, size_t input_len) {
     readstat_error_t retval = READSTAT_OK;
-    size_t input_len = strlen(string);
     char *por_string = malloc(input_len);
     ssize_t output_len = por_utf8_decode(string, input_len, por_string, input_len,
             ctx->unicode2byte, ctx->unicode2byte_len);
@@ -85,7 +85,7 @@ static readstat_error_t por_write_tag(readstat_writer_t *writer, por_write_ctx_t
     char string[2];
     string[0] = tag;
     string[1] = '\0';
-    return por_write_string(writer, ctx, string);
+    return por_write_string_n(writer, ctx, string, 1);
 }
 
 static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, double value, long precision) {
@@ -163,7 +163,7 @@ static readstat_error_t por_write_double(readstat_writer_t *writer, por_write_ct
     if (bytes_written == -1)
         return READSTAT_ERROR_WRITE;
 
-    return por_write_bytes(writer, string, bytes_written);
+    return por_write_string_n(writer, ctx, string, bytes_written);
 }
 
 static readstat_error_t por_write_string_field_n(readstat_writer_t *writer, por_write_ctx_t *ctx, 
@@ -172,7 +172,7 @@ static readstat_error_t por_write_string_field_n(readstat_writer_t *writer, por_
     if (error != READSTAT_OK)
         return error;
 
-    return por_write_string(writer, ctx, string);
+    return por_write_string_n(writer, ctx, string, len);
 }
 
 static readstat_error_t por_write_string_field(readstat_writer_t *writer, por_write_ctx_t *ctx, const char *string) {
@@ -229,7 +229,7 @@ static readstat_error_t por_emit_header(readstat_writer_t *writer, por_write_ctx
     if ((retval = por_write_bytes(writer, lookup, sizeof(lookup))) != READSTAT_OK)
         goto cleanup;
 
-    if ((retval = por_write_string(writer, ctx, "SPSSPORT")) != READSTAT_OK)
+    if ((retval = por_write_string_n(writer, ctx, "SPSSPORT", sizeof("SPSSPORT")-1)) != READSTAT_OK)
         goto cleanup;
 
 cleanup:
@@ -678,7 +678,7 @@ static readstat_error_t por_write_row(void *writer_ctx, void *row, size_t row_le
             output++;
         }
     }
-    return por_write_bytes(writer, row_chars, output);
+    return por_write_string_n(writer, writer->module_ctx, row_chars, output);
 }
 
 readstat_error_t readstat_begin_writing_por(readstat_writer_t *writer, void *user_ctx, long row_count) {
