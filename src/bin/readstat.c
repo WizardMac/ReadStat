@@ -32,7 +32,7 @@ typedef struct rs_ctx_s {
     long         var_count;
 } rs_ctx_t;
 
-int format(char *filename) {
+int format(const char *filename) {
     size_t len = strlen(filename);
     if (len < sizeof(".dta")-1)
         return RS_FORMAT_UNKNOWN;
@@ -58,11 +58,30 @@ int format(char *filename) {
     return RS_FORMAT_UNKNOWN;
 }
 
-int is_catalog(char *filename) {
+const char *format_name(int format) {
+    if (format == RS_FORMAT_DTA)
+        return "Stata binary file (DTA)";
+
+    if (format == RS_FORMAT_SAV)
+        return "SPSS binary file (SAV)";
+
+    if (format == RS_FORMAT_POR)
+        return "SPSS portable file (POR)";
+
+    if (format == RS_FORMAT_SAS_DATA)
+        return "SAS data file (SAS7BDAT)";
+
+    if (format == RS_FORMAT_SAS_CATALOG)
+        return "SAS catalog file (SAS7BCAT)";
+
+    return "Unknown";
+}
+
+int is_catalog(const char *filename) {
     return (format(filename) == RS_FORMAT_SAS_CATALOG);
 }
 
-int can_read(char *filename) {
+int can_read(const char *filename) {
     return (format(filename) != RS_FORMAT_UNKNOWN);
 }
 
@@ -150,20 +169,23 @@ readstat_error_t parse_file(readstat_parser_t *parser, const char *input_filenam
     return error;
 }
 
-void print_version() {
+static void print_version() {
     fprintf(stderr, "ReadStat version " RS_VERSION_STRING "\n");
 }
 
-void print_usage(const char *cmd) {
+static void print_usage(const char *cmd) {
     print_version();
 
-    fprintf(stderr, "\n  Standard usage:\n");
+    fprintf(stderr, "\n  View a file's metadata:\n");
+    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat)\n", cmd);
+
+    fprintf(stderr, "\n  Convert a file:\n");
     fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|por|sav|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif
             ")\n", cmd);
-    fprintf(stderr, "\n  Usage if your value labels are stored in a separate SAS catalog file:\n");
+    fprintf(stderr, "\n  Convert a file if your value labels are stored in a separate SAS catalog file:\n");
     fprintf(stderr, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|por|sav|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
@@ -171,59 +193,13 @@ void print_usage(const char *cmd) {
             ")\n\n", cmd);
 }
 
-int main(int argc, char** argv) {
-    struct timeval start_time, end_time;
+static int convert_file(const char *input_filename, const char *catalog_filename, const char *output_filename,
+        rs_module_t *modules, int modules_count) {
     readstat_error_t error = READSTAT_OK;
-    char *input_filename = NULL;
-    char *catalog_filename = NULL;
-    char *output_filename = NULL;
-    char *error_filename = NULL;
-
-    rs_module_t *modules = NULL;
-    long module_count = 2;
-    long module_index = 0;
-
-#if HAVE_XLSXWRITER
-    module_count++;
-#endif
-
-    modules = calloc(module_count, sizeof(rs_module_t));
-
-    modules[module_index++] = rs_mod_readstat;
-    modules[module_index++] = rs_mod_csv;
-
-#if HAVE_XLSXWRITER
-    modules[module_index++] = rs_mod_xlsx;
-#endif
-
-    if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
-        print_version();
-        return 0;
-    } else if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        print_usage(argv[0]);
-        return 0;
-    } if (argc == 3) {
-        if (!can_read(argv[1]) || !can_write(modules, module_count, argv[2])) {
-            print_usage(argv[0]);
-            return 1;
-        }
-        input_filename = argv[1];
-        output_filename = argv[2];
-    } else if (argc == 4) {
-        if (!can_read(argv[1]) || !is_catalog(argv[2]) || !can_write(modules, module_count, argv[3])) {
-            print_usage(argv[0]);
-            return 1;
-        }
-        input_filename = argv[1];
-        catalog_filename = argv[2];
-        output_filename = argv[3];
-    } else {
-        print_usage(argv[0]);
-        return 1;
-    }
-
+    const char *error_filename = NULL;
+    struct timeval start_time, end_time;
     int input_format = format(input_filename);
-    rs_module_t *module = rs_module_for_filename(modules, module_count, output_filename);
+    rs_module_t *module = rs_module_for_filename(modules, modules_count, output_filename);
 
     gettimeofday(&start_time, NULL);
 
@@ -292,3 +268,106 @@ cleanup:
 
     return 0;
 }
+
+static int dump_info(int obs_count, int var_count, void *ctx) {
+    printf("Columns: %d\n", var_count);
+    printf("Rows: %d\n", obs_count);
+    return 0;
+}
+
+static int dump_metadata(const char *file_label, time_t timestamp, long version, void *ctx) {
+    if (file_label && file_label[0]) {
+        printf("File label: %s\n", file_label);
+    }
+    if (timestamp) {
+        char buffer[128];
+        strftime(buffer, sizeof(buffer), "%d %b %Y %H:%M", localtime(&timestamp));
+        printf("Timestamp: %s\n", buffer);
+    }
+    return 0;
+}
+
+static int dump_file(const char *input_filename) {
+    int input_format = format(input_filename);
+    readstat_parser_t *parser = readstat_parser_init();
+    readstat_error_t error = READSTAT_OK;
+
+    printf("Format: %s\n", format_name(input_format));
+
+    readstat_set_error_handler(parser, &handle_error);
+    readstat_set_info_handler(parser, &dump_info);
+    readstat_set_metadata_handler(parser, &dump_metadata);
+    readstat_set_row_limit(parser, 1);
+
+    error = parse_file(parser, input_filename, input_format, NULL);
+
+    readstat_parser_free(parser);
+
+    if (error != READSTAT_OK) {
+        fprintf(stderr, "Error processing %s: %s\n", input_filename, readstat_error_message(error));
+        return 1;
+    }
+
+    return 0;
+}
+
+int main(int argc, char** argv) {
+    char *input_filename = NULL;
+    char *catalog_filename = NULL;
+    char *output_filename = NULL;
+
+    rs_module_t *modules = NULL;
+    long modules_count = 2;
+    long module_index = 0;
+
+#if HAVE_XLSXWRITER
+    modules_count++;
+#endif
+
+    modules = calloc(modules_count, sizeof(rs_module_t));
+
+    modules[module_index++] = rs_mod_readstat;
+    modules[module_index++] = rs_mod_csv;
+
+#if HAVE_XLSXWRITER
+    modules[module_index++] = rs_mod_xlsx;
+#endif
+
+    if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+        print_version();
+        return 0;
+    } else if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
+        print_usage(argv[0]);
+        return 0;
+    } else if (argc == 2) {
+        if (!can_read(argv[1])) {
+            print_usage(argv[0]);
+            return 1;
+        }
+        input_filename = argv[1];
+    } else if (argc == 3) {
+        if (!can_read(argv[1]) || !can_write(modules, modules_count, argv[2])) {
+            print_usage(argv[0]);
+            return 1;
+        }
+        input_filename = argv[1];
+        output_filename = argv[2];
+    } else if (argc == 4) {
+        if (!can_read(argv[1]) || !is_catalog(argv[2]) || !can_write(modules, modules_count, argv[3])) {
+            print_usage(argv[0]);
+            return 1;
+        }
+        input_filename = argv[1];
+        catalog_filename = argv[2];
+        output_filename = argv[3];
+    } else {
+        print_usage(argv[0]);
+        return 1;
+    }
+
+    if (output_filename)
+        return convert_file(input_filename, catalog_filename, output_filename, modules, modules_count);
+
+    return dump_file(input_filename);
+}
+
