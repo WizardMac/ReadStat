@@ -201,20 +201,17 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
-    if (strncmp(header_end.release, "9.0000M0", sizeof(header_end.release)) == 0) {
+    int major, minor, revision;
+    if (sscanf(header_end.release, "%1d.%4dM%1d", &major, &minor, &revision) == 3) {
+        hinfo->major_version = major;
+        hinfo->minor_version = minor;
+        hinfo->revision = revision;
+    }
+    if (major == 9 && minor == 0 && revision == 0) {
         /* A bit of a hack, but most SAS installations are running a minor update */
         hinfo->vendor = READSTAT_VENDOR_STAT_TRANSFER;
-        hinfo->major_version = 9;
-        hinfo->minor_version = 0;
-        hinfo->revision = 0;
     } else {
         hinfo->vendor = READSTAT_VENDOR_SAS;
-        int major, minor, revision;
-        if (sscanf(header_end.release, "%1d.%4dM%1d", &major, &minor, &revision) == 2) {
-            hinfo->major_version = major;
-            hinfo->minor_version = minor;
-            hinfo->revision = revision;
-        }
     }
     if (io->seek(hinfo->header_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
