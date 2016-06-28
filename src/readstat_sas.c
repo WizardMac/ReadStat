@@ -87,7 +87,7 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
     int retval = READSTAT_OK;
     char error_buf[1024];
     struct tm epoch_tm = { .tm_year = 60, .tm_mday = 1 };
-    time_t epoch = timegm(&epoch_tm);
+    time_t epoch = mktime(&epoch_tm);
 
     if (io->read(&header_start, sizeof(sas_header_start_t), io->io_ctx) < sizeof(sas_header_start_t)) {
         retval = READSTAT_ERROR_READ;
