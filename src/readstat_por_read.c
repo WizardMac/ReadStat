@@ -787,7 +787,9 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
-                retval = read_por_file_data(ctx);
+                if (ctx->value_handler) {
+                    retval = read_por_file_data(ctx);
+                }
                 goto cleanup;
             default:
                 retval = READSTAT_ERROR_PARSE;
