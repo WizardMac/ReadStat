@@ -402,6 +402,11 @@ static readstat_error_t dta_read_label_and_timestamp(dta_ctx_t *ctx) {
         goto cleanup;
     }
 
+    if (!ctx->file_is_xmlish) {
+        data_label_buffer[label_len-1] = '\0';
+        label_len = strlen(data_label_buffer);
+    }
+
     if ((ctx->data_label = malloc(4*label_len+1)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
