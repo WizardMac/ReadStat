@@ -104,9 +104,8 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
         string[offset++] = '/';
     } else {
         long integers_printed = 0;
-        double integer_part;
-        double fraction = modf(fabs(value), &integer_part);
-        long integer = integer_part;
+        long integer = fabs(trunc(value));
+        double fraction = fabs(value) - integer;
         if (value < 0.0) {
             string[offset++] = '-';
         }
@@ -140,8 +139,9 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
             string[offset++] = '.';
         }
         while (fraction && integers_printed < precision) {
-            fraction = modf(fraction * 30, &integer_part);
-            integer = integer_part;
+            fraction *= 30;
+            integer = trunc(fraction);
+            fraction -= integer;
             if (integer < 10) {
                 string[offset++] = '0' + integer;
             } else {
