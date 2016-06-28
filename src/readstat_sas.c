@@ -202,7 +202,7 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
         goto cleanup;
     }
     int major, minor, revision;
-    if (sscanf(header_end.release, "%1d.%4dM%1d", &major, &minor, &revision) == 3) {
+    if (sscanf(header_end.release, "%1d.%04dM%1d", &major, &minor, &revision) == 3) {
         hinfo->major_version = major;
         hinfo->minor_version = minor;
         hinfo->revision = revision;
