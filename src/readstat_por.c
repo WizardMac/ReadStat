@@ -102,16 +102,25 @@ ssize_t por_utf8_decode(
     wchar_t codepoint = 0;
     while (1) {
         int char_len = 0;
-        if (offset + 1> output_len)
+        if (offset + 1 > output_len)
             return offset;
 
-        int conversions = sscanf(input, "%lc%n", &codepoint, &char_len);
+        unsigned char val = *input;
 
-        if (conversions != 1 || codepoint >= lookup_len || lookup[codepoint] == 0) {
-            return -1;
+        if (val >= 0x20 && val < 0x7F) {
+            if (!lookup[val])
+                return -1;
+            output[offset++] = lookup[val];
+            input++;
+        } else {
+            int conversions = sscanf(input, "%lc%n", &codepoint, &char_len);
+
+            if (conversions == 0 || codepoint >= lookup_len || lookup[codepoint] == 0) {
+                return -1;
+            }
+            output[offset++] = lookup[codepoint];
+            input += char_len;
         }
-        output[offset++] = lookup[codepoint];
-        input += char_len;
     }
     return offset;
 }
