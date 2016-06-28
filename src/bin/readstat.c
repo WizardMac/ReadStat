@@ -285,6 +285,9 @@ static int dump_metadata(const char *file_label, time_t timestamp, long version,
         strftime(buffer, sizeof(buffer), "%d %b %Y %H:%M", localtime(&timestamp));
         printf("Timestamp: %s\n", buffer);
     }
+    if (version) {
+        printf("File format version: %ld\n", version);
+    }
     return 0;
 }
 
