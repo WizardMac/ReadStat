@@ -206,7 +206,10 @@ static por_write_ctx_t *por_write_ctx_init() {
 
     for (i=0; i<sizeof(por_unicode_lookup)/sizeof(por_unicode_lookup[0]); i++) {
         if (por_unicode_lookup[i]) {
-            ctx->unicode2byte[por_unicode_lookup[i]] = por_unicode_lookup[i];
+            ctx->unicode2byte[por_unicode_lookup[i]] = por_ascii_lookup[i];
+        }
+        if (por_ascii_lookup[i]) {
+            ctx->unicode2byte[por_ascii_lookup[i]] = por_ascii_lookup[i];
         }
     }
     return ctx;
@@ -236,8 +239,8 @@ static readstat_error_t por_emit_header(readstat_writer_t *writer, por_write_ctx
     int i;
     memset(lookup, '0', sizeof(lookup));
     for (i=0; i<sizeof(lookup); i++) {
-        if (por_unicode_lookup[i] >= 0x20 && por_unicode_lookup[i] < 0x7F) {
-            lookup[i] = por_unicode_lookup[i];
+        if (por_ascii_lookup[i]) {
+            lookup[i] = por_ascii_lookup[i];
         }
     }
     if ((retval = por_write_bytes(writer, lookup, sizeof(lookup))) != READSTAT_OK)

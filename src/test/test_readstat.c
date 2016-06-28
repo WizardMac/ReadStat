@@ -78,6 +78,55 @@ rt_test_group_t _test_groups[] = {
         },
     },
     {
+        .label = "ASCII tests",
+        .tests = {
+            {
+                .label = "Alphanumeric",
+                .test_formats = RT_FORMAT_ALL,
+                .rows = 3,
+                .columns = {
+                    { 
+                        .name = "VAR1",
+                        .label = "String variable",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "abcdefghijklmnopqrstuvwxyz" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "0123456789" } }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "Symbol characters",
+                .test_formats = RT_FORMAT_ALL,
+                .rows = 10,
+                .columns = {
+                    { 
+                        .name = "VAR1",
+                        .label = "String variable",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "!@#" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "$%^" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "&*()" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "`~" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "-=_+" } },
+
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "[]{}" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = ";:" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "'\"" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "<>,./?" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "\\|" } }
+                        }
+                    }
+                }
+            }
+        }
+    },
+            
+    {
         .label = "UTF-8 tests",
         .tests = {
             {
@@ -813,7 +862,6 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Extreme values",
                 .test_formats = RT_FORMAT_ALL,
-                .write_error = READSTAT_OK,
                 .rows = 1,
                 .columns = {
                     { 

@@ -693,8 +693,11 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
     int i;
 
     for (i=0; i<256; i++) {
-        if (por_unicode_lookup[i])
+        if (por_ascii_lookup[i]) {
+            ctx->byte2unicode[reverse_lookup[i]] = por_ascii_lookup[i];
+        } else if (por_unicode_lookup[i]) {
             ctx->byte2unicode[reverse_lookup[i]] = por_unicode_lookup[i];
+        }
     }
 
     ctx->byte2unicode[reverse_lookup[64]] = por_unicode_lookup[64];

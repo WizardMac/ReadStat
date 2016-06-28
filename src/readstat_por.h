@@ -1,4 +1,5 @@
 
+extern int8_t   por_ascii_lookup[256];
 extern uint16_t por_unicode_lookup[256];
 
 typedef struct por_ctx_s {
