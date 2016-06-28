@@ -15,10 +15,8 @@ typedef struct por_ctx_s {
 
     int            pos;
     readstat_io_t *io;
-    unsigned char  buf[128];
-    size_t         buf_used;
-    size_t         buf_pos;
     char           space;
+    long           num_spaces;
     time_t         timestamp;
     long           version;
     char           fweight_name[9];

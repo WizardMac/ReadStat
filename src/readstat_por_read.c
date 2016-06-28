@@ -25,7 +25,7 @@
 #define POR_LINE_LENGTH         80
 #define POR_LABEL_NAME_PREFIX   "labels"
 
-static int read_bytes(por_ctx_t *ctx, void *dst, size_t len);
+static ssize_t read_bytes(por_ctx_t *ctx, void *dst, size_t len);
 static readstat_error_t read_string(por_ctx_t *ctx, char *data, size_t len);
 
 static readstat_error_t por_update_progress(por_ctx_t *ctx) {
@@ -33,164 +33,90 @@ static readstat_error_t por_update_progress(por_ctx_t *ctx) {
     return io->update(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
 }
 
-static readstat_error_t skip_newline(readstat_io_t *io) {
-    char newline[1];
-    
-    if (io->read(newline, sizeof(newline), io->io_ctx) != sizeof(newline)) {
-        return READSTAT_ERROR_READ;
-    }
-    
-    if (newline[0] == '\r') {
-        if (io->read(newline, sizeof(newline), io->io_ctx) != sizeof(newline)) {
-            return READSTAT_ERROR_READ;
-        }
-    }
-    if (newline[0] != '\n') {
-        return READSTAT_ERROR_PARSE;
-    }
-    return READSTAT_OK;
-}
-
-static int read_bytes(por_ctx_t *ctx, void *dst, size_t len) {
-    int bytes_left = len;
-    int offset = 0;
-    char buf[POR_LINE_LENGTH+2];
-    int i;
+static ssize_t read_bytes(por_ctx_t *ctx, void *dst, size_t len) {
+    char *dst_pos = (char *)dst;
     readstat_io_t *io = ctx->io;
+    char byte;
 
-    while (bytes_left > POR_LINE_LENGTH - ctx->pos) {
-        int line_len = POR_LINE_LENGTH - ctx->pos;
-        int line_len_plus_2 = line_len + 2;
-        int crlf_len = 0;
-
-        ssize_t bytes_read = io->read(buf, line_len_plus_2, io->io_ctx);
-        
-        if (bytes_read == 0)
+    while (dst_pos < (char *)dst + len) {
+        if (ctx->num_spaces) {
+            *dst_pos++ = ctx->space;
+            ctx->num_spaces--;
+            continue;
+        }
+        ssize_t bytes_read = io->read(&byte, 1, io->io_ctx);
+        if (bytes_read == 0) {
             break;
-
-        if (bytes_read == -1 || bytes_read != line_len_plus_2) {
-            return -1;
         }
-        
-        for (i=0; i<line_len_plus_2-1; i++) {
-            if (buf[i] == '\n') {
-                crlf_len = 1;
-                break;
-            } else if (buf[i] == '\r' && buf[i+1] == '\n') {
-                crlf_len = 2;
-                break;
-            }
-        }
-        
-        if (crlf_len == 0)
-            return -1;
-
-        if (io->seek(i + crlf_len - line_len_plus_2, READSTAT_SEEK_CUR, io->io_ctx) == -1)
-            return -1;
-
-        for (; i<line_len; i++) {
-            buf[i] = ctx->space;
-        }
-
-        memcpy((char *)dst + offset, buf, line_len);
-        
-        ctx->pos = 0;
-        
-        offset += line_len;
-        bytes_left -= line_len;
-    }
-    if (bytes_left) {
-        ssize_t bytes_read = io->read(buf, bytes_left, io->io_ctx);
-        
         if (bytes_read == -1) {
             return -1;
         }
-        
-        for (i=0; i<bytes_read; i++) {
-            if (buf[i] == '\n' || (buf[i] == '\r' && buf[i+1] == '\n')) {
-                break;
-            }
-        }
-        if (i == bytes_read) {
-            ctx->pos += bytes_read;
-
-            if (ctx->pos == POR_LINE_LENGTH) {
-                if (skip_newline(ctx->io) != READSTAT_OK)
+        if (byte == '\r' || byte == '\n') {
+            if (byte == '\r') {
+                bytes_read = io->read(&byte, 1, io->io_ctx);
+                if (bytes_read == 0 || bytes_read == -1 || byte != '\n')
                     return -1;
-                ctx->pos = 0;
             }
-        } else {
-            if (io->seek(i - bytes_read, READSTAT_SEEK_CUR, io->io_ctx) == -1)
-                return -1;
-
-            for (; i<bytes_read; i++) {
-                buf[i] = ctx->space;
-            }
-
-            if (skip_newline(ctx->io) != READSTAT_OK)
-                return -1;
-
+            ctx->num_spaces = POR_LINE_LENGTH - ctx->pos;
             ctx->pos = 0;
+            continue;
+        } else if (ctx->pos == POR_LINE_LENGTH) {
+            return -1;
         }
-        memcpy((char *)dst + offset, buf, bytes_read);
-        
-        offset += bytes_read;
+        *dst_pos++ = byte;
+        ctx->pos++;
     }
     
-    return offset;
+    return (int)(dst_pos - (char *)dst);
 }
 
 static uint16_t read_tag(por_ctx_t *ctx) {
     unsigned char tag;
-    if (ctx->buf_used - ctx->buf_pos > 0) {
-        return ctx->byte2unicode[ctx->buf[ctx->buf_pos++]];
-    }
     if (read_bytes(ctx, &tag, 1) != 1) {
         return -1;
     }
     return ctx->byte2unicode[tag];
 }
 
-static readstat_error_t prepare_buffer_for_double(por_ctx_t *ctx) {
-    size_t bytes_read = 0;
-    if (ctx->buf_used == 0) {
-        bytes_read = read_bytes(ctx, ctx->buf, sizeof(ctx->buf));
-        if (bytes_read == -1) {
-            return READSTAT_ERROR_READ;
-        }
-        ctx->buf_used = bytes_read;
-        ctx->buf_pos = 0;
-    }
-    if (ctx->buf_used - ctx->buf_pos < ctx->base30_precision + 10) {
-        memmove(ctx->buf, &ctx->buf[ctx->buf_pos], ctx->buf_used - ctx->buf_pos);
-        ctx->buf_used -= ctx->buf_pos;
-        ctx->buf_pos = 0;
-        bytes_read = read_bytes(ctx, &ctx->buf[ctx->buf_used], sizeof(ctx->buf)-ctx->buf_used);
-        if (bytes_read == -1) {
-            return READSTAT_ERROR_READ;
-        }
-        ctx->buf_used += bytes_read;
-    }
-    return READSTAT_OK;
-}
-
-static readstat_error_t read_double(por_ctx_t *ctx, double *out_double) {
+static readstat_error_t read_double_with_peek(por_ctx_t *ctx, double *out_double, 
+        unsigned char peek) {
     readstat_error_t retval = READSTAT_OK;
     double value = NAN;
+    unsigned char buffer[100];
     char utf8_buffer[300];
     char error_buf[1024];
     ssize_t len = 0;
     ssize_t bytes_read = 0;
 
-    if ((retval = prepare_buffer_for_double(ctx)) != READSTAT_OK)
-        goto cleanup;
-    
-    len = por_utf8_encode(ctx->buf + ctx->buf_pos, ctx->buf_used - ctx->buf_pos, 
-            utf8_buffer, sizeof(utf8_buffer), ctx->byte2unicode);
+    buffer[0] = peek;
+
+    bytes_read = read_bytes(ctx, &buffer[1], 1);
+    if (bytes_read != 1)
+        return READSTAT_ERROR_PARSE;
+
+    if (ctx->byte2unicode[buffer[0]] == '*' && 
+            ctx->byte2unicode[buffer[1]] == '.') {
+        if (out_double)
+            *out_double = NAN;
+        return READSTAT_OK;
+    }
+    int i=2;
+    while (i<sizeof(buffer) && ctx->byte2unicode[buffer[i-1]] != '/') {
+        bytes_read = read_bytes(ctx, &buffer[i], 1);
+        if (bytes_read != 1)
+            return READSTAT_ERROR_PARSE;
+        i++;
+    }
+
+    if (i == sizeof(buffer)) {
+        return READSTAT_ERROR_PARSE;
+    }
+
+    len = por_utf8_encode(buffer, i, utf8_buffer, sizeof(utf8_buffer), ctx->byte2unicode);
     if (len == -1) {
         if (ctx->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "Error converting double string (length=%ld): %*s\n", 
-                    ctx->buf_used - ctx->buf_pos, (int)(ctx->buf_used - ctx->buf_pos), ctx->buf + ctx->buf_pos);
+            snprintf(error_buf, sizeof(error_buf), "Error converting double string (length=%d): %*s\n", 
+                    i, i, buffer);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_CONVERT;
@@ -201,14 +127,12 @@ static readstat_error_t read_double(por_ctx_t *ctx, double *out_double) {
     if (bytes_read == -1) {
         if (ctx->error_handler) {
             snprintf(error_buf, sizeof(error_buf), "Error parsing double string (length=%ld): %*s [%s]\n", 
-                    len, (int)len, utf8_buffer, ctx->buf + ctx->buf_pos);
+                    len, (int)len, utf8_buffer, buffer);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
-    
-    ctx->buf_pos += bytes_read;
     
 cleanup:
     if (out_double)
@@ -217,12 +141,21 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t maybe_read_double(por_ctx_t *ctx, double *out_double, int *out_finished) {
-    readstat_error_t retval = READSTAT_OK;
-    if ((retval = prepare_buffer_for_double(ctx)) != READSTAT_OK)
-        return retval;
+static readstat_error_t read_double(por_ctx_t *ctx, double *out_double) {
+    unsigned char peek;
+    size_t bytes_read = read_bytes(ctx, &peek, 1);
+    if (bytes_read != 1)
+        return READSTAT_ERROR_PARSE;
+    return read_double_with_peek(ctx, out_double, peek);
+}
 
-    if (ctx->byte2unicode[ctx->buf[ctx->buf_pos]] == 'Z') {
+static readstat_error_t maybe_read_double(por_ctx_t *ctx, double *out_double, int *out_finished) {
+    unsigned char peek;
+    size_t bytes_read = read_bytes(ctx, &peek, 1);
+    if (bytes_read != 1)
+        return READSTAT_ERROR_PARSE;
+
+    if (ctx->byte2unicode[peek] == 'Z') {
         if (out_double)
             *out_double = NAN;
         if (out_finished)
@@ -233,7 +166,7 @@ static readstat_error_t maybe_read_double(por_ctx_t *ctx, double *out_double, in
     if (out_finished)
         *out_finished = 0;
 
-    return read_double(ctx, out_double);
+    return read_double_with_peek(ctx, out_double, peek);
 }
 
 static readstat_error_t maybe_read_string(por_ctx_t *ctx, char *data, size_t len, int *out_finished) {
@@ -260,42 +193,23 @@ static readstat_error_t maybe_read_string(por_ctx_t *ctx, char *data, size_t len
         ctx->string_buffer = realloc(ctx->string_buffer, ctx->string_buffer_len);
     }
     
-    int bytes_cached = 0, bytes_copied = 0;
-    if (ctx->buf_used - ctx->buf_pos > 0) {
-        bytes_cached = ctx->buf_used - ctx->buf_pos;
-        if (bytes_cached <= string_length) {
-            memcpy(data, &ctx->buf[ctx->buf_pos], bytes_cached);
-            ctx->buf_pos = 0;
-            ctx->buf_used = 0;
-            bytes_copied = bytes_cached;
-        } else {
-            memcpy(data, &ctx->buf[ctx->buf_pos], string_length);
-            ctx->buf_pos += string_length;
-            bytes_copied = string_length;
+    if (read_bytes(ctx, ctx->string_buffer, string_length) == -1) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+    size_t bytes_encoded = por_utf8_encode(ctx->string_buffer, string_length, 
+            data, len - 1, ctx->byte2unicode);
+    if (bytes_encoded == -1) {
+        if (ctx->error_handler) {
+            snprintf(error_buf, sizeof(error_buf), "Error converting string: %*s\n", 
+                    (int)string_length, ctx->string_buffer);
+            ctx->error_handler(error_buf, ctx->user_ctx);
         }
+        retval = READSTAT_ERROR_CONVERT;
+        goto cleanup;
     }
     
-    size_t bytes_encoded = 0;
-    
-    if (string_length > bytes_copied) {
-        if (read_bytes(ctx, ctx->string_buffer, string_length - bytes_copied) == -1) {
-            retval = READSTAT_ERROR_READ;
-            goto cleanup;
-        }
-        bytes_encoded = por_utf8_encode(ctx->string_buffer, string_length - bytes_copied, 
-                data + bytes_copied, len - bytes_copied - 1, ctx->byte2unicode);
-        if (bytes_encoded == -1) {
-            if (ctx->error_handler) {
-                snprintf(error_buf, sizeof(error_buf), "Error converting string: %*s\n", 
-                        (int)(string_length - bytes_copied), ctx->string_buffer);
-                ctx->error_handler(error_buf, ctx->user_ctx);
-            }
-            retval = READSTAT_ERROR_CONVERT;
-            goto cleanup;
-        }
-    }
-    
-    data[bytes_copied + bytes_encoded] = '\0';
+    data[bytes_encoded] = '\0';
     if (out_finished)
         *out_finished = 0;
 
