@@ -72,6 +72,7 @@ typedef struct col_info_s {
 
 typedef struct sas_ctx_s {
     readstat_info_handler       info_handler;
+    readstat_metadata_handler   metadata_handler;
     readstat_variable_handler   variable_handler;
     readstat_value_handler      value_handler;
     readstat_error_handler      error_handler;
@@ -114,6 +115,10 @@ typedef struct sas_ctx_s {
     const char    *input_encoding;
     const char    *output_encoding;
     iconv_t        converter;
+
+    time_t         timestamp;
+    int            version;
+    char           file_label[4*64+1];
 } sas_ctx_t;
 
 static void sas_ctx_free(sas_ctx_t *ctx) {
@@ -591,6 +596,12 @@ static readstat_error_t submit_columns(sas_ctx_t *ctx) {
             goto cleanup;
         }
     }
+    if (ctx->metadata_handler) {
+        if (ctx->metadata_handler(ctx->file_label, ctx->timestamp, ctx->version, ctx->user_ctx)) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+    }
     if (ctx->variable_handler) {
         int i;
         for (i=0; i<ctx->column_count; i++) {
@@ -987,6 +998,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     sas_header_info_t  *hinfo = calloc(1, sizeof(sas_header_info_t));
 
     ctx->info_handler = parser->info_handler;
+    ctx->metadata_handler = parser->metadata_handler;
     ctx->variable_handler = parser->variable_handler;
     ctx->value_handler = parser->value_handler;
     ctx->error_handler = parser->error_handler;
@@ -1031,6 +1043,8 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->header_size = hinfo->header_size;
     ctx->page_count = hinfo->page_count;
     ctx->page_size = hinfo->page_size;
+    ctx->timestamp = hinfo->modification_time;
+    ctx->version = 10000 * hinfo->major_version + hinfo->minor_version;
     if (ctx->input_encoding == NULL) {
         ctx->input_encoding = hinfo->encoding;
     }
@@ -1042,6 +1056,11 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
             goto cleanup;
         }
         ctx->converter = converter;
+    }
+
+    if ((retval = readstat_convert(ctx->file_label, sizeof(ctx->file_label),
+                hinfo->file_label, sizeof(hinfo->file_label), ctx->converter)) != READSTAT_OK) {
+        goto cleanup;
     }
 
     if ((retval = parse_meta_pages_pass1(ctx, &last_examined_page_pass1)) != READSTAT_OK) {

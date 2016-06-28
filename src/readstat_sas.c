@@ -4,7 +4,9 @@
 #include <errno.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include <inttypes.h>
+
 #include "readstat_sas.h"
 #include "readstat_iconv.h"
 #include "readstat_convert.h"
@@ -84,6 +86,9 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
     sas_header_end_t    header_end;
     int retval = READSTAT_OK;
     char error_buf[1024];
+    struct tm epoch_tm = { .tm_year = 60, .tm_mday = 1 };
+    time_t epoch = timegm(&epoch_tm);
+
     if (io->read(&header_start, sizeof(sas_header_start_t), io->io_ctx) < sizeof(sas_header_start_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
@@ -125,12 +130,26 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
         retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
         goto cleanup;
     }
-    if (io->seek(196 + hinfo->pad1, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+    memcpy(hinfo->file_label, header_start.file_label, sizeof(header_start.file_label));
+    if (io->seek(hinfo->pad1, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
-        if (error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "ReadStat: Failed to seek to position %d\n", 196 + hinfo->pad1);
-            error_handler(error_buf, user_ctx);
-        }
+        goto cleanup;
+    }
+
+    double creation_time, modification_time;
+    if (io->read(&creation_time, sizeof(double), io->io_ctx) < sizeof(double)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+    if (io->read(&modification_time, sizeof(double), io->io_ctx) < sizeof(double)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+    hinfo->creation_time = bswap ? byteswap_double(creation_time) + epoch : creation_time + epoch;
+    hinfo->modification_time = bswap ? byteswap_double(creation_time) + epoch : creation_time + epoch;
+
+    if (io->seek(16, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+        retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
 
@@ -185,8 +204,17 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
     if (strncmp(header_end.release, "9.0000M0", sizeof(header_end.release)) == 0) {
         /* A bit of a hack, but most SAS installations are running a minor update */
         hinfo->vendor = READSTAT_VENDOR_STAT_TRANSFER;
+        hinfo->major_version = 9;
+        hinfo->minor_version = 0;
+        hinfo->revision = 0;
     } else {
         hinfo->vendor = READSTAT_VENDOR_SAS;
+        int major, minor, revision;
+        if (sscanf(header_end.release, "%1d.%4dM%1d", &major, &minor, &revision) == 2) {
+            hinfo->major_version = major;
+            hinfo->minor_version = minor;
+            hinfo->revision = revision;
+        }
     }
     if (io->seek(hinfo->header_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;

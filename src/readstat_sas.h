@@ -16,8 +16,9 @@ typedef struct sas_header_start_s {
     unsigned char mystery4[30];
     unsigned char encoding;
     unsigned char mystery5[13];
-    char          type[8];
-    char          dataset[64];
+    char          file_type[8];
+    char          file_label[64];
+    char          file_info[8];
 } sas_header_start_t;
 
 typedef struct sas_header_end_s {
@@ -35,10 +36,16 @@ typedef struct sas_header_info_s {
     int      little_endian;
     int      u64;
     int      vendor;
+    int      major_version;
+    int      minor_version;
+    int      revision;
     int      pad1;
     int64_t  page_size;
     int64_t  page_count;
     int64_t  header_size;
+    time_t   creation_time;
+    time_t   modification_time;
+    char     file_label[64];
     char    *encoding;
 } sas_header_info_t;
 
