@@ -297,7 +297,6 @@ static int dump_file(const char *input_filename) {
     readstat_set_error_handler(parser, &handle_error);
     readstat_set_info_handler(parser, &dump_info);
     readstat_set_metadata_handler(parser, &dump_metadata);
-    readstat_set_row_limit(parser, 1);
 
     error = parse_file(parser, input_filename, input_format, NULL);
 
