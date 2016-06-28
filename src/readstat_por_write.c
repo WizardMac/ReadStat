@@ -112,7 +112,7 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
         long integers_printed = 0;
         double integer_part;
         double fraction = modf(fabs(value), &integer_part);
-        long integer = integer_part;
+        int64_t integer = integer_part;
         if (value < 0.0) {
             string[offset++] = '-';
         }
@@ -122,7 +122,7 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
             int start = offset;
             int end = offset;
             while (integer) {
-                long remainder = integer % 30;
+                int64_t remainder = integer % 30;
                 if (remainder < 0) {
                     return -1;
                 } else if (remainder < 10) {
