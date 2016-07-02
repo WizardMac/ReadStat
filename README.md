@@ -13,8 +13,8 @@ stats packages. Supported formats include:
 * Stata: DTA
 * SPSS: POR and SAV
 
-There is also write support for the DTA and SAV formats. At the moment, the
-ReadStat command-line tool works only with the non-R formats.
+There is also write support for the DTA, POR, and SAV formats. At the moment,
+the ReadStat command-line tool works only with the non-R formats.
 
 Installation
 ==
@@ -48,7 +48,7 @@ Standard usage:
 Where:
 
 * `<input file>` ends with `.dta`, `.por`, `.sav`, or `.sas7bdat`, and
-* `<output file>` ends with `.dta`, `.sav`, or `.csv`
+* `<output file>` ends with `.dta`, `.por`, `.sav`, or `.csv`
 
 If [libxlsxwriter](http://libxlsxwriter.github.io) is found at compile-time, an
 XLSX file (ending in `.xlsx`) can be written instead.
@@ -65,7 +65,7 @@ Where:
 
 * `<input file>` ends with `.sas7bdat`
 * `<catalog file>` ends with `.sas7bcat`
-* `<output file>` ends with `.dta`, `.sav`, or `.csv`
+* `<output file>` ends with `.dta`, `.por`, `.sav`, or `.csv`
 
 If the file conversion succeeds, ReadStat will report the number of rows and
 variables converted, e.g.
