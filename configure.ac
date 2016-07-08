@@ -10,7 +10,7 @@ AC_CANONICAL_HOST
 AS_CASE([$host],
 	[*darwin*], [EXTRA_LIBS="-liconv" EXTRA_LDFLAGS=""],
 	[*linux*], [EXTRA_LIBS="-lm" EXTRA_LDFLAGS=""],
-	[*mingw*|*cygwin*], [EXTRA_LIBS="-liconv -lm" EXTRA_LDFLAGS="-no-undefined"],
+	[*mingw*|*cygwin*], [EXTRA_LIBS="-liconv -lm" EXTRA_LDFLAGS="-no-undefined -avoid-version"],
 	[EXTRA_LIBS="" EXTRA_LDFLAGS=""]
 )
 AC_SUBST([EXTRA_LIBS])
