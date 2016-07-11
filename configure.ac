@@ -6,11 +6,13 @@ LT_INIT([disable-static])
 
 AC_PROG_CC
 
+AC_ARG_ENABLE([static-iconv], AS_HELP_STRING([--enable-static-iconv], [Link iconv statically]), [static_iconv=yes], [static_iconv=no])
+
 AC_CANONICAL_HOST
 AS_CASE([$host],
 	[*darwin*], [EXTRA_LIBS="-liconv" EXTRA_LDFLAGS=""],
 	[*linux*], [EXTRA_LIBS="-lm" EXTRA_LDFLAGS=""],
-	[*mingw*|*cygwin*], [EXTRA_LIBS="-liconv -lm" EXTRA_LDFLAGS="-no-undefined -avoid-version"],
+	[*mingw*|*cygwin*], [AS_IF([test "x$static_iconv" = "xyes"], [EXTRA_LIBS="-lm" EXTRA_LDFLAGS="-Wl,-Bstatic,-liconv -no-undefined"], [EXTRA_LIBS="-liconv -lm" EXTRA_LDFLAGS="-no-undefined"])],
 	[EXTRA_LIBS="" EXTRA_LDFLAGS=""]
 )
 AC_SUBST([EXTRA_LIBS])
