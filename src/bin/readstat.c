@@ -11,11 +11,11 @@
 #include "modules/mod_readstat.h"
 #include "modules/mod_csv.h"
 
+#include "config.h"
+
 #if HAVE_XLSXWRITER
 #include "modules/mod_xlsx.h"
 #endif
-
-#define RS_VERSION_STRING  "1.0-prerelease"
 
 #define RS_FORMAT_UNKNOWN       0x00
 #define RS_FORMAT_DTA           0x01
@@ -171,7 +171,7 @@ readstat_error_t parse_file(readstat_parser_t *parser, const char *input_filenam
 }
 
 static void print_version() {
-    fprintf(stderr, "ReadStat version " RS_VERSION_STRING "\n");
+    fprintf(stderr, PACKAGE_NAME " version " PACKAGE_VERSION "\n");
 }
 
 static void print_usage(const char *cmd) {

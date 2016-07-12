@@ -1,4 +1,6 @@
-AC_INIT([readstat], [0.1.1])
+AC_INIT([ReadStat], [0.1.1], [emmiller@gmail.com], [ReadStat], [https://github.com/WizardMac/ReadStat])
+AC_CONFIG_HEADER([config.h])
+
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
 
