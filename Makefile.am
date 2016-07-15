@@ -41,6 +41,37 @@ libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@
 
 include_HEADERS = src/readstat.h
 
+noinst_HEADERS = \
+       src/CKHashTable.h \
+       src/readstat_bits.h \
+       src/readstat_convert.h \
+       src/readstat_dta.h \
+       src/readstat_dta_parse_timestamp.h \
+       src/readstat_iconv.h \
+       src/readstat_io_unistd.h \
+       src/readstat_por.h \
+       src/readstat_por_parse.h \
+       src/readstat_rdata.h \
+       src/readstat_sas.h \
+       src/readstat_sav.h \
+       src/readstat_sav_parse.h \
+       src/readstat_sav_parse_timestamp.h \
+       src/readstat_spss.h \
+       src/readstat_spss_parse.h \
+       src/readstat_writer.h \
+       src/bin/module.h \
+       src/bin/module_util.h \
+       src/bin/modules/mod_csv.h \
+       src/bin/modules/mod_readstat.h \
+       src/bin/modules/mod_xlsx.h \
+       src/test/test_buffer.h \
+       src/test/test_dta.h \
+       src/test/test_error.h \
+       src/test/test_read.h \
+       src/test/test_readstat.h \
+       src/test/test_types.h \
+       src/test/test_write.h
+
 bin_PROGRAMS = \
    readstat
 

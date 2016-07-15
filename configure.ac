@@ -1,4 +1,4 @@
-AC_INIT([readstat], [20160511])
+AC_INIT([readstat], [0.1.1])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
 
