@@ -36,7 +36,17 @@ if HAVE_RAGEL
 endif
 
 libreadstat_la_CFLAGS = -Wall
-libreadstat_la_LIBADD = -llzma -lz @EXTRA_LIBS@
+
+libreadstat_la_LIBADD = -llzma -lz
+
+if HAVE_ICONV
+libreadstat_la_LIBADD += -liconv
+endif
+
+if HAVE_MATH
+libreadstat_la_LIBADD += -lm
+endif
+
 libreadstat_la_LDFLAGS = -version-info 0:0:0 @EXTRA_LDFLAGS@
 
 include_HEADERS = src/readstat.h
