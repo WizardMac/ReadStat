@@ -49,10 +49,63 @@ typedef struct sas_header_info_s {
     char    *encoding;
 } sas_header_info_t;
 
+
 enum {
     READSTAT_VENDOR_STAT_TRANSFER,
     READSTAT_VENDOR_SAS
 };
+
+typedef struct sas_text_ref_s {
+    uint16_t    index;
+    uint16_t    offset;
+    uint16_t    length;
+} sas_text_ref_t;
+
+#define SAS_ENDIAN_BIG       0x00
+#define SAS_ENDIAN_LITTLE    0x01
+
+#define SAS_FILE_FORMAT_UNIX    '1'
+#define SAS_FILE_FORMAT_WINDOWS '2'
+
+#define SAS_ALIGNMENT_OFFSET_0  0x22
+#define SAS_ALIGNMENT_OFFSET_4  0x33
+
+#define SAS_COLUMN_TYPE_NUM  0x01
+#define SAS_COLUMN_TYPE_CHR  0x02
+
+#define SAS_SUBHEADER_SIGNATURE_ROW_SIZE       0xF7F7F7F7
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE    0xF6F6F6F6
+#define SAS_SUBHEADER_SIGNATURE_COUNTS         0xFFFFFC00
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT  0xFFFFFBFE
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_UNKNOWN 0xFFFFFFFA
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_ATTRS   0xFFFFFFFC
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT    0xFFFFFFFD
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_LIST    0xFFFFFFFE
+#define SAS_SUBHEADER_SIGNATURE_COLUMN_NAME    0xFFFFFFFF
+
+#define SAS_PAGE_TYPE_META   0x0000
+#define SAS_PAGE_TYPE_DATA   0x0100
+#define SAS_PAGE_TYPE_MIX    0x0200
+#define SAS_PAGE_TYPE_AMD    0x0400
+#define SAS_PAGE_TYPE_MASK   0x0F00
+
+#define SAS_PAGE_TYPE_META2  0x4000
+#define SAS_PAGE_TYPE_COMP   0x9000
+
+static unsigned char sas7bdat_magic_number[32] = {
+    0x00, 0x00, 0x00, 0x00,   0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00,   0xc2, 0xea, 0x81, 0x60,
+    0xb3, 0x14, 0x11, 0xcf,   0xbd, 0x92, 0x08, 0x00,
+    0x09, 0xc7, 0x31, 0x8c,   0x18, 0x1f, 0x10, 0x11
+};
+
+static unsigned char sas7bcat_magic_number[32] = {
+    0x00, 0x00, 0x00, 0x00,   0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00,   0xc2, 0xea, 0x81, 0x63,
+    0xb3, 0x14, 0x11, 0xcf,   0xbd, 0x92, 0x08, 0x00,
+    0x09, 0xc7, 0x31, 0x8c,   0x18, 0x1f, 0x10, 0x11
+};
+
 
 uint64_t sas_read8(const char *data, int bswap);
 uint32_t sas_read4(const char *data, int bswap);

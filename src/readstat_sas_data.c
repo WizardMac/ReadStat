@@ -11,18 +11,6 @@
 
 #define ERROR_BUF_SIZE 1024
 
-#define SAS_PAGE_TYPE_META   0x0000
-#define SAS_PAGE_TYPE_DATA   0x0100
-#define SAS_PAGE_TYPE_MIX    0x0200
-#define SAS_PAGE_TYPE_AMD    0x0400
-#define SAS_PAGE_TYPE_MASK   0x0F00
-
-#define SAS_PAGE_TYPE_META2  0x4000
-#define SAS_PAGE_TYPE_COMP   0x9000
-
-#define SAS_COLUMN_TYPE_NUM  0x01
-#define SAS_COLUMN_TYPE_CHR  0x02
-
 #define SAS_COMPRESSION_NONE   0x00
 #define SAS_COMPRESSION_TRUNC  0x01
 #define SAS_COMPRESSION_ROW    0x04
@@ -43,26 +31,10 @@
 #define SAS_RLE_COMMAND_INSERT_BLANK2  14
 #define SAS_RLE_COMMAND_INSERT_ZERO2   15
 
-#define SAS_SUBHEADER_SIGNATURE_ROW_SIZE       0xF7F7F7F7
-#define SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE    0xF6F6F6F6
-#define SAS_SUBHEADER_SIGNATURE_COUNTS         0xFFFFFC00
-#define SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT  0xFFFFFBFE
-#define SAS_SUBHEADER_SIGNATURE_COLUMN_UNKNOWN 0xFFFFFFFA
-#define SAS_SUBHEADER_SIGNATURE_COLUMN_ATTRS   0xFFFFFFFC
-#define SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT    0xFFFFFFFD
-#define SAS_SUBHEADER_SIGNATURE_COLUMN_LIST    0xFFFFFFFE
-#define SAS_SUBHEADER_SIGNATURE_COLUMN_NAME    0xFFFFFFFF
-
-typedef struct text_ref_s {
-    int    index;
-    int    offset;
-    int    length;
-} text_ref_t;
-
 typedef struct col_info_s {
-    text_ref_t  name_ref;
-    text_ref_t  format_ref;
-    text_ref_t  label_ref;
+    sas_text_ref_t  name_ref;
+    sas_text_ref_t  format_ref;
+    sas_text_ref_t  label_ref;
 
     int    index;
     int    offset;
@@ -219,8 +191,8 @@ static readstat_error_t sas_parse_row_size_subheader(const char *subheader, size
     return retval;
 }
 
-static text_ref_t sas_parse_text_ref(const char *data, sas_ctx_t *ctx) {
-    text_ref_t  ref;
+static sas_text_ref_t sas_parse_text_ref(const char *data, sas_ctx_t *ctx) {
+    sas_text_ref_t  ref;
 
     ref.index = sas_read2(&data[0], ctx->bswap);
     ref.offset = sas_read2(&data[2], ctx->bswap);
@@ -229,7 +201,7 @@ static text_ref_t sas_parse_text_ref(const char *data, sas_ctx_t *ctx) {
     return ref;
 }
 
-static readstat_error_t copy_text_ref(char *out_buffer, size_t out_buffer_len, text_ref_t text_ref, sas_ctx_t *ctx) {
+static readstat_error_t copy_text_ref(char *out_buffer, size_t out_buffer_len, sas_text_ref_t text_ref, sas_ctx_t *ctx) {
     if (text_ref.index < 0 || text_ref.index >= ctx->text_blob_count)
         return READSTAT_ERROR_PARSE;
     

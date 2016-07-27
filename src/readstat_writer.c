@@ -106,6 +106,15 @@ readstat_error_t readstat_write_string(readstat_writer_t *writer, const char *by
     return readstat_write_bytes(writer, bytes, strlen(bytes));
 }
 
+readstat_error_t readstat_write_zeros(readstat_writer_t *writer, size_t len) {
+    if (len == 0)
+        return READSTAT_OK;
+
+    char zeros[len];
+    memset(zeros, 0, len);
+    return readstat_write_bytes(writer, zeros, len);
+}
+
 readstat_label_set_t *readstat_add_label_set(readstat_writer_t *writer, readstat_type_t type, const char *name) {
     if (writer->label_sets_count == writer->label_sets_capacity) {
         writer->label_sets_capacity *= 2;

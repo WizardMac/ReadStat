@@ -369,6 +369,7 @@ readstat_error_t readstat_writer_set_error_handler(readstat_writer_t *writer,
 // Call one of these at any time before the first invocation of readstat_begin_row
 readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *user_ctx, long row_count);
 readstat_error_t readstat_begin_writing_por(readstat_writer_t *writer, void *user_ctx, long row_count);
+readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void *user_ctx, long row_count);
 readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count);
 
 // Start a row of data (that is, a case or observation)

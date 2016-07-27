@@ -19,6 +19,7 @@ libreadstat_la_SOURCES = \
 	src/readstat_sas.c \
 	src/readstat_sas_catalog.c \
 	src/readstat_sas_data.c \
+	src/readstat_sas_write.c \
 	src/readstat_sav.c \
 	src/readstat_sav_parse.c \
 	src/readstat_sav_parse_timestamp.c \
