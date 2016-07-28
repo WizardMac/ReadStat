@@ -14,6 +14,8 @@
 #define COLUMN_TEXT_SIZE_32BIT  (PAGE_SIZE - SAS_PAGE_HEADER_SIZE_32BIT - SAS_SUBHEADER_POINTER_SIZE_32BIT)
 #define COLUMN_TEXT_SIZE_64BIT  (PAGE_SIZE - SAS_PAGE_HEADER_SIZE_64BIT - SAS_SUBHEADER_POINTER_SIZE_64BIT)
 
+#define SAS_DEFAULT_FILE_VERSION  90101
+
 typedef struct sas_subheader_s {
     uint32_t    signature;
     char       *data;
@@ -668,6 +670,9 @@ cleanup:
 readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void *user_ctx, long row_count) {
     writer->row_count = row_count;
     writer->user_ctx = user_ctx;
+
+    if (writer->version == 0)
+        writer->version = SAS_DEFAULT_FILE_VERSION;
 
     writer->callbacks.write_int8 = &sas_write_int8;
     writer->callbacks.write_int16 = &sas_write_int16;
