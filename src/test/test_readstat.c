@@ -18,6 +18,8 @@
 
 #define MAX_TESTS_PER_GROUP 20
 
+#define RT_FORMAT_TEST_TIMESTAMPS  (RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS | RT_FORMAT_SAS7BDAT)
+
 typedef struct rt_test_group_s {
     char             label[80];
     rt_test_file_t   tests[MAX_TESTS_PER_GROUP];
@@ -131,7 +133,7 @@ rt_test_group_t _test_groups[] = {
         .tests = {
             {
                 .label = "UTF-8 value",
-                .test_formats = RT_FORMAT_DTA_118 | RT_FORMAT_SAV,
+                .test_formats = RT_FORMAT_DTA_118 | RT_FORMAT_SAV | RT_FORMAT_SAS7BDAT,
                 .rows = 1,
                 .columns = {
                     {
@@ -156,7 +158,7 @@ rt_test_group_t _test_groups[] = {
             },
             {
                 .label = "UTF-8 column label",
-                .test_formats = RT_FORMAT_DTA_118 | RT_FORMAT_SAV,
+                .test_formats = RT_FORMAT_DTA_118 | RT_FORMAT_SAV | RT_FORMAT_SAS7BDAT,
                 .rows = 0,
                 .columns = {
                     {
@@ -290,9 +292,9 @@ rt_test_group_t _test_groups[] = {
             },
 
             {
-                .label = "DTA out-of-range tagged missing values",
+                .label = "Out-of-range tagged missing values",
                 .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
-                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER | RT_FORMAT_SAS7BDAT,
                 .rows = 1,
                 .columns = {
                     {
@@ -306,8 +308,8 @@ rt_test_group_t _test_groups[] = {
             },
 
             {
-                .label = "DTA in-range tagged missing doubles",
-                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
+                .label = "In-range tagged missing doubles",
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER | RT_FORMAT_SAS7BDAT,
                 .rows = 6,
                 .columns = {
                     {
@@ -633,84 +635,84 @@ rt_test_group_t _test_groups[] = {
         .tests = {
             {
                 .label = "January 1, 1970",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */70, .tm_mon = 0, .tm_mday = 1, .tm_hour = 0, .tm_min = 0 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "February 16, 1988",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */88, .tm_mon = 1, .tm_mday = 16, .tm_hour = 9, .tm_min = 30 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "March 14, 1990",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */90, .tm_mon = 2, .tm_mday = 14, .tm_hour = 15, .tm_min = 15 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "April 15, 1995",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */95, .tm_mon = 3, .tm_mday = 15, .tm_hour = 12, .tm_min = 0 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "May 1, 1995",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */95, .tm_mon = 4, .tm_mday = 1, .tm_hour = 0, .tm_min = 0 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "June 6, 1994",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */94, .tm_mon = 5, .tm_mday = 6, .tm_hour = 5, .tm_min = 30 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "July 4, 1976",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */76, .tm_mon = 6, .tm_mday = 4, .tm_hour = 10, .tm_min = 30 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "August 2, 1984",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */84, .tm_mon = 7, .tm_mday = 2, .tm_hour = 3, .tm_min = 4 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "September 20, 1999",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */99, .tm_mon = 8, .tm_mday = 20, .tm_hour = 3, .tm_min = 4 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "October 31, 1992",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */92, .tm_mon = 9, .tm_mday = 31, .tm_hour = 23, .tm_min = 59 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "November 3, 1986",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */86, .tm_mon = 10, .tm_mday = 3, .tm_hour = 16, .tm_min = 30 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
             {
                 .label = "December 25, 2020",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
+                .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
                 .timestamp = { .tm_year = /* 19 */120, .tm_mon = 11, .tm_mday = 25, .tm_hour = 6, .tm_min = 0 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             }
