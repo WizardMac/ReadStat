@@ -68,6 +68,8 @@ typedef struct sas_ctx_s {
     int64_t        header_size;
     int64_t        page_count;
     int64_t        page_size;
+    int64_t        page_header_size;
+    int64_t        subheader_pointer_size;
 
     int            text_blob_count;
     size_t        *text_blob_lengths;
@@ -618,34 +620,28 @@ static int sas_signature_is_recognized(uint32_t signature) {
 static readstat_error_t sas_parse_page_pass1(const char *page, size_t page_size, sas_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
 
-    off_t off = 0;
-    if (ctx->u64)
-        off = 16;
-
-    uint16_t subheader_count = sas_read2(&page[off+20], ctx->bswap);
+    uint16_t subheader_count = sas_read2(&page[ctx->page_header_size-4], ctx->bswap);
 
     int i;
-    const char *shp = &page[off+24];
+    const char *shp = &page[ctx->page_header_size];
     for (i=0; i<subheader_count; i++) {
         uint64_t offset = 0, len = 0;
         uint32_t signature = 0;
         unsigned char compression = 0;
-        int lshp = 0;
+        int lshp = ctx->subheader_pointer_size;
         if (ctx->u64) {
             offset = sas_read8(&shp[0], ctx->bswap);
             len = sas_read8(&shp[8], ctx->bswap);
             compression = shp[16];
-            lshp = 24;
         } else {
             offset = sas_read4(&shp[0], ctx->bswap);
             len = sas_read4(&shp[4], ctx->bswap);
             compression = shp[8];
-            lshp = 12;
         }
 
         if (len > 0 && compression != SAS_COMPRESSION_TRUNC) {
             if (offset > page_size || offset + len > page_size ||
-                    offset < off+24+subheader_count*lshp) {
+                    offset < ctx->page_header_size+subheader_count*lshp) {
                 retval = READSTAT_ERROR_PARSE;
                 goto cleanup;
             }
@@ -680,45 +676,39 @@ static readstat_error_t sas_parse_page_pass2(const char *page, size_t page_size,
 
     readstat_error_t retval = READSTAT_OK;
 
-    off_t off = 0;
-    if (ctx->u64)
-        off = 16;
-
-    page_type = sas_read2(&page[off+16], ctx->bswap);
+    page_type = sas_read2(&page[ctx->page_header_size-8], ctx->bswap);
 
     const char *data = NULL;
 
     if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA) {
-        ctx->page_row_count = sas_read2(&page[off+18], ctx->bswap);
-        data = &page[off+24];
+        ctx->page_row_count = sas_read2(&page[ctx->page_header_size-6], ctx->bswap);
+        data = &page[ctx->page_header_size];
     } else if (!(page_type & SAS_PAGE_TYPE_COMP)) {
-        uint16_t subheader_count = sas_read2(&page[off+20], ctx->bswap);
+        uint16_t subheader_count = sas_read2(&page[ctx->page_header_size-4], ctx->bswap);
 
         int i;
-        const char *shp = &page[off+24];
+        const char *shp = &page[ctx->page_header_size];
         for (i=0; i<subheader_count; i++) {
             uint64_t offset = 0, len = 0;
             uint32_t signature = 0;
             unsigned char compression = 0;
             unsigned char is_compressed_data = 0;
-            int lshp = 0;
+            int lshp = ctx->subheader_pointer_size;
             if (ctx->u64) {
                 offset = sas_read8(&shp[0], ctx->bswap);
                 len = sas_read8(&shp[8], ctx->bswap);
                 compression = shp[16];
                 is_compressed_data = shp[17];
-                lshp = 24;
             } else {
                 offset = sas_read4(&shp[0], ctx->bswap);
                 len = sas_read4(&shp[4], ctx->bswap);
                 compression = shp[8];
                 is_compressed_data = shp[9];
-                lshp = 12;
             }
 
             if (len > 0 && compression != SAS_COMPRESSION_TRUNC) {
                 if (offset > page_size || offset + len > page_size ||
-                        offset < off+24+subheader_count*lshp) {
+                        offset < ctx->page_header_size+subheader_count*lshp) {
                     retval = READSTAT_ERROR_PARSE;
                     goto cleanup;
                 }
@@ -1015,6 +1005,8 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->header_size = hinfo->header_size;
     ctx->page_count = hinfo->page_count;
     ctx->page_size = hinfo->page_size;
+    ctx->page_header_size = hinfo->page_header_size;
+    ctx->subheader_pointer_size = hinfo->subheader_pointer_size;
     ctx->timestamp = hinfo->modification_time;
     ctx->version = 10000 * hinfo->major_version + hinfo->minor_version;
     if (ctx->input_encoding == NULL) {

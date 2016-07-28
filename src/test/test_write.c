@@ -6,6 +6,7 @@
 #include "test_buffer.h"
 #include "test_readstat.h"
 #include "test_dta.h"
+#include "test_sas.h"
 
 static void handle_error(const char *error_message, void *ctx) {
     printf("%s\n", error_message);
@@ -46,6 +47,14 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         }
         readstat_writer_set_file_format_version(writer, version);
         error = readstat_begin_writing_dta(writer, buffer, file->rows);
+    } else if ((format & RT_FORMAT_SAS7BDAT)) {
+        long version = sas_file_format_version(format);
+        if (version == -1) {
+            error = READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
+            goto cleanup;
+        }
+        readstat_writer_set_file_format_version(writer, version);
+        error = readstat_begin_writing_sas7bdat(writer, buffer, file->rows);
     } else if (format == RT_FORMAT_SAV) {
         error = readstat_begin_writing_sav(writer, buffer, file->rows);
     } else if (format == RT_FORMAT_POR) {

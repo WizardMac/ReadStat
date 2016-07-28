@@ -21,6 +21,7 @@ typedef struct mod_readstat_ctx_s {
     int is_sav:1;
     int is_dta:1;
     int is_por:1;
+    int is_sas7bdat:1;
 } mod_readstat_ctx_t;
 
 static ssize_t write_data(const void *bytes, size_t len, void *ctx);
@@ -54,7 +55,10 @@ static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
 }
 
 static int accept_file(const char *filename) {
-    return rs_ends_with(filename, ".dta") || rs_ends_with(filename, ".sav") || rs_ends_with(filename, ".por");
+    return (rs_ends_with(filename, ".dta") ||
+            rs_ends_with(filename, ".sav") ||
+            rs_ends_with(filename, ".por") ||
+            rs_ends_with(filename, ".sas7bdat"));
 }
 
 static void *ctx_init(const char *filename) {
@@ -64,6 +68,7 @@ static void *ctx_init(const char *filename) {
     mod_ctx->is_sav = rs_ends_with(filename, ".sav");
     mod_ctx->is_dta = rs_ends_with(filename, ".dta");
     mod_ctx->is_por = rs_ends_with(filename, ".por");
+    mod_ctx->is_sas7bdat = rs_ends_with(filename, ".sas7bdat");
     mod_ctx->out_fd = open(filename, O_CREAT | O_WRONLY | O_EXCL, 0644);
     if (mod_ctx->out_fd == -1) {
         fprintf(stderr, "Error opening %s for writing: %s\n", filename, strerror(errno));
@@ -188,6 +193,8 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
                 error = readstat_begin_writing_dta(writer, mod_ctx, mod_ctx->row_count);
             } else if (mod_ctx->is_por) {
                 error = readstat_begin_writing_por(writer, mod_ctx, mod_ctx->row_count);
+            } else if (mod_ctx->is_sas7bdat) {
+                error = readstat_begin_writing_sas7bdat(writer, mod_ctx, mod_ctx->row_count);
             }
             if (error != READSTAT_OK)
                 goto cleanup;

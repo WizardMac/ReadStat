@@ -917,7 +917,7 @@ rt_test_group_t _test_groups[] = {
 
 static void dump_buffer(rt_buffer_t *buffer) {
 #if DEBUG
-    int fd = open("/tmp/test_readstat.por", O_CREAT | O_WRONLY, 0644);
+    int fd = open("/tmp/test_readstat.sas7bdat", O_CREAT | O_WRONLY, 0644);
     write(fd, buffer->bytes, buffer->used);
     close(fd);
 #endif
@@ -940,7 +940,7 @@ int main(int argc, char *argv[]) {
             }
             rt_parse_ctx_t *parse_ctx = parse_ctx_init(buffer, file);
 
-            for (f=RT_FORMAT_DTA_104; f<=RT_FORMAT_POR; f*=2) {
+            for (f=RT_FORMAT_DTA_104; (f&RT_FORMAT_ALL); f*=2) {
                 if (!(file->test_formats & f))
                     continue;
 

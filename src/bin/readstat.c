@@ -181,7 +181,7 @@ static void print_usage(const char *cmd) {
     fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat)\n", cmd);
 
     fprintf(stderr, "\n  Convert a file:\n");
-    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|por|sav|csv"
+    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|por|sav|sas7bdat|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif

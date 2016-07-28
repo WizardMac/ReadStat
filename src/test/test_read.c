@@ -8,6 +8,7 @@
 #include "test_readstat.h"
 #include "test_read.h"
 #include "test_dta.h"
+#include "test_sas.h"
 
 static rt_buffer_ctx_t *buffer_ctx_init(rt_buffer_t *buffer) {
     rt_buffer_ctx_t *buffer_ctx = calloc(1, sizeof(rt_buffer_ctx_t));
@@ -36,6 +37,8 @@ void parse_ctx_reset(rt_parse_ctx_t *parse_ctx, long file_format) {
     } else if ((file_format & RT_FORMAT_DTA)) {
         parse_ctx->max_file_label_len = 81;
     } else if (file_format == RT_FORMAT_SAV) {
+        parse_ctx->max_file_label_len = 64;
+    } else if ((file_format & RT_FORMAT_SAS7BDAT)) {
         parse_ctx->max_file_label_len = 64;
     } else {
         parse_ctx->max_file_label_len = 20;
@@ -222,6 +225,9 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     } else if (format == RT_FORMAT_POR) {
         parse_ctx->file_format_version = 0;
         error = readstat_parse_por(parser, NULL, parse_ctx);
+    } else if ((format & RT_FORMAT_SAS7BDAT)) {
+        parse_ctx->file_format_version = sas_file_format_version(format);
+        error = readstat_parse_sas7bdat(parser, NULL, parse_ctx);
     }
     if (error != READSTAT_OK)
         goto cleanup;

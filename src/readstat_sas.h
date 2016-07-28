@@ -41,6 +41,8 @@ typedef struct sas_header_info_s {
     int      revision;
     int      pad1;
     int64_t  page_size;
+    int64_t  page_header_size;
+    int64_t  subheader_pointer_size;
     int64_t  page_count;
     int64_t  header_size;
     time_t   creation_time;
@@ -91,6 +93,12 @@ typedef struct sas_text_ref_s {
 
 #define SAS_PAGE_TYPE_META2  0x4000
 #define SAS_PAGE_TYPE_COMP   0x9000
+
+#define SAS_SUBHEADER_POINTER_SIZE_32BIT    12
+#define SAS_SUBHEADER_POINTER_SIZE_64BIT    24
+
+#define SAS_PAGE_HEADER_SIZE_32BIT  24
+#define SAS_PAGE_HEADER_SIZE_64BIT  40
 
 static unsigned char sas7bdat_magic_number[32] = {
     0x00, 0x00, 0x00, 0x00,   0x00, 0x00, 0x00, 0x00,

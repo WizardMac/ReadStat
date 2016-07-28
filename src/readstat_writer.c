@@ -368,8 +368,9 @@ readstat_error_t readstat_insert_missing_value(readstat_writer_t *writer, const 
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
 
-    if (variable->type == READSTAT_TYPE_STRING || variable->type == READSTAT_TYPE_LONG_STRING)
+    if (variable->type == READSTAT_TYPE_STRING || variable->type == READSTAT_TYPE_LONG_STRING) {
         return writer->callbacks.write_missing_string(&writer->row[variable->offset], variable);
+    }
 
     return writer->callbacks.write_missing_number(&writer->row[variable->offset], variable);
 }
