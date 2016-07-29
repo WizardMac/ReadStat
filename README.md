@@ -13,7 +13,7 @@ stats packages. Supported formats include:
 * Stata: DTA
 * SPSS: POR and SAV
 
-There is also write support for the SAS7BDAT, DTA, POR, SAV formats. At the
+There is also write support for the SAS7BDAT, DTA, POR, and SAV formats. At the
 moment, the ReadStat command-line tool works only with the non-R formats.
 
 Installation
@@ -76,7 +76,7 @@ variables converted, e.g.
 At the moment value labels are supported, but the finer nuances of converting
 format strings (e.g. `%8.2g`) are not.
 
-Library Usage
+Library Usage: Reading Files
 ==
 
 The ReadStat API is callback-based. It uses very little memory, and is suitable
@@ -203,6 +203,64 @@ int main(int argc, char *argv[]) {
         printf("Error processing %s: %d\n", argv[1], error);
         return 1;
     }
+    return 0;
+}
+```
+
+Library Usage: Writing Files
+==
+
+ReadStat can write data sets to a number of file formats, and uses largely the
+same API for each of them. Files are written incrementally, with the header
+written first, followed by individual rows of data, and ending with some kind
+of trailer. (So the full data file never resides in memory.) Unlike like the
+callback-based API for reading files, the writer API consists of function that
+the developer must call in a particular order. The complete API can be found in
+src/readstat.h.
+
+Basic usage:
+
+```c
+#include "readstat.h"
+
+/* A callback for writing bytes to your file descriptor of choice */
+/* The ctx argument comes from the readstat_begin_writing_xxx function */
+static ssize_t write_bytes(const void *data, size_t len, void *ctx) {
+    int fd = *(int *)ctx;
+    return write(fd, data, len);
+}
+
+int main(int argc, char *argv[]) {
+    readstat_writer_t *writer = readstat_writer_init();
+    readstat_set_data_writer(writer, &write_bytes);
+    readstat_writer_set_file_label(writer, "My data set");
+
+    int row_count = 1;
+
+    readstat_variable_t *variable = readstat_add_variable(writer, "Var1", READSTAT_TYPE_DOUBLE, 0);
+    readstat_variable_set_label(variable, "First variable");
+
+    /* Call one of:
+     *   readstat_begin_writing_dta
+     *   readstat_begin_writing_por
+     *   readstat_begin_writing_sas7bdat
+     *   readstat_begin_writing_sav
+     */
+
+    int fd = open("something.dta", O_CREAT | O_WRONLY);
+    readstat_begin_writing_dta(writer, &fd, row_count);
+
+    int i;
+    for (i=0; i<row_count; i++) {
+        readstat_begin_row(writer);
+        readstat_insert_double_value(writer, variable, 1.0 * i);
+        readstat_end_row(writer);
+    }
+
+    readstat_end_writing(writer);
+    readstat_writer_free(writer);
+    close(fd);
+
     return 0;
 }
 ```
