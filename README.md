@@ -13,8 +13,8 @@ stats packages. Supported formats include:
 * Stata: DTA
 * SPSS: POR and SAV
 
-There is also write support for the DTA, POR, and SAV formats. At the moment,
-the ReadStat command-line tool works only with the non-R formats.
+There is also write support for the SAS7BDAT, DTA, POR, SAV formats. At the
+moment, the ReadStat command-line tool works only with the non-R formats.
 
 Installation
 ==
@@ -30,7 +30,8 @@ Windows specific notes
 
 You need to install and configure an msys2 environment to compile ReadStat.
 
-First, download and install msys2 from [here](https://msys2.github.io/). Make sure you update your initial msys2 installation as described on that page.
+First, download and install msys2 from [here](https://msys2.github.io/). Make
+sure you update your initial msys2 installation as described on that page.
 
 Second, install a number of additional packages at the msys2 command line:
 
@@ -48,7 +49,7 @@ Standard usage:
 Where:
 
 * `<input file>` ends with `.dta`, `.por`, `.sav`, or `.sas7bdat`, and
-* `<output file>` ends with `.dta`, `.por`, `.sav`, or `.csv`
+* `<output file>` ends with `.dta`, `.por`, `.sav`, `.sas7bdat`, or `.csv`
 
 If [libxlsxwriter](http://libxlsxwriter.github.io) is found at compile-time, an
 XLSX file (ending in `.xlsx`) can be written instead.
