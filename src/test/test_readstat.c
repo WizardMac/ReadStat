@@ -174,9 +174,9 @@ rt_test_group_t _test_groups[] = {
         .label = "Illegal column names",
         .tests = {
             {
-                .label = "DTA column name begins with number",
+                .label = "Column name begins with number",
                 .write_error = READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER,
-                .test_formats = RT_FORMAT_DTA,
+                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAS7BDAT,
                 .rows = 0,
                 .columns = {
                     {
@@ -186,9 +186,9 @@ rt_test_group_t _test_groups[] = {
                 }
             },
             {
-                .label = "DTA column name contains dollar sign",
+                .label = "Column name contains dollar sign",
                 .write_error = READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
-                .test_formats = RT_FORMAT_DTA,
+                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAS7BDAT,
                 .rows = 0,
                 .columns = {
                     {
@@ -217,6 +217,51 @@ rt_test_group_t _test_groups[] = {
                 .columns = {
                     {
                         .name = "str123",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
+                .label = "DTA 13-byte column name is too long",
+                .write_error = READSTAT_ERROR_NAME_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_DTA_108_AND_OLDER,
+                .columns = {
+                    {
+                        .name = "VAR1234567890",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
+                .label = "DTA 34-byte column name is too long",
+                .write_error = READSTAT_ERROR_NAME_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_DTA_117_AND_OLDER,
+                .columns = {
+                    {
+                        .name = "VAR1234567890123456789012345678901",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
+                .label = "SAS column name is a reserved word",
+                .write_error = READSTAT_ERROR_NAME_IS_RESERVED_WORD,
+                .test_formats = RT_FORMAT_SAS7BDAT,
+                .rows = 0,
+                .columns = {
+                    {
+                        .name = "_NUMERIC_",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
+                .label = "SAS column name is too long",
+                .write_error = READSTAT_ERROR_NAME_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_SAS7BDAT,
+                .columns = {
+                    {
+                        .name = "VAR123456789012345678901234567890",
                         .type = READSTAT_TYPE_DOUBLE
                     }
                 }

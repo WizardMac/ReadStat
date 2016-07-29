@@ -292,6 +292,34 @@ static sas_subheader_t *sas_col_size_subheader_init(readstat_writer_t *writer,
     return subheader;
 }
 
+static readstat_error_t sas_validate_name(const char *name) {
+    int j;
+    for (j=0; name[j]; j++) {
+        if (name[j] != '_' &&
+                !(name[j] >= 'a' && name[j] <= 'z') &&
+                !(name[j] >= 'A' && name[j] <= 'Z') &&
+                !(name[j] >= '0' && name[j] <= '9')) {
+            return READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER;
+        }
+    }
+    char first_char = name[0];
+    if (first_char != '_' &&
+            !(first_char >= 'a' && first_char <= 'z') &&
+            !(first_char >= 'A' && first_char <= 'Z')) {
+        return READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER;
+    }
+    if (strcmp(name, "_N_") == 0 || strcmp(name, "_ERROR_") == 0 ||
+            strcmp(name, "_NUMERIC_") == 0 || strcmp(name, "_CHARACTER_") == 0 ||
+            strcmp(name, "_ALL_") == 0) {
+        return READSTAT_ERROR_NAME_IS_RESERVED_WORD;
+    }
+
+    if (strlen(name) > 32)
+        return READSTAT_ERROR_NAME_IS_TOO_LONG;
+
+    return READSTAT_OK;
+}
+
 static sas_subheader_t *sas_col_name_subheader_init(readstat_writer_t *writer,
         sas_header_info_t *hinfo, sas_column_text_array_t *column_text_array) {
     size_t len = (hinfo->u64 ? 28+8*writer->variables_count :
@@ -538,11 +566,26 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t sas_validate_column_names(readstat_writer_t *writer) {
+    int i;
+    for (i=0; i<writer->variables_count; i++) {
+        readstat_variable_t *variable = readstat_get_variable(writer, i);
+        readstat_error_t error = sas_validate_name(readstat_variable_get_name(variable));
+        if (error != READSTAT_OK)
+            return error;
+    }
+    return READSTAT_OK;
+}
+
 static readstat_error_t sas_begin_data(void *writer_ctx) {
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     readstat_error_t retval = READSTAT_OK;
     sas_header_info_t *hinfo = sas_header_info_init(writer);
     sas_subheader_array_t *sarray = sas_subheader_array_init(writer, hinfo);
+
+    retval = sas_validate_column_names(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
 
     hinfo->page_count = sas_count_meta_pages(hinfo, sarray) + sas_count_data_pages(writer, hinfo);
 

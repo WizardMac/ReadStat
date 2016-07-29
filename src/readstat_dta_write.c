@@ -240,7 +240,7 @@ cleanup:
     return error;
 }
 
-static readstat_error_t dta_validate_name(const char *name) {
+static readstat_error_t dta_validate_name(const char *name, dta_ctx_t *ctx) {
     int j;
     for (j=0; name[j]; j++) {
         if (name[j] != '_' &&
@@ -272,6 +272,9 @@ static readstat_error_t dta_validate_name(const char *name) {
     if (sscanf(name, "str%d", &len) == 1)
         return READSTAT_ERROR_NAME_IS_RESERVED_WORD;
 
+    if (strlen(name) > ctx->variable_name_len)
+        return READSTAT_ERROR_NAME_IS_TOO_LONG;
+
     return READSTAT_OK;
 }
 
@@ -285,7 +288,7 @@ static readstat_error_t dta_emit_varlist(readstat_writer_t *writer, dta_ctx_t *c
     for (i=0; i<ctx->nvar; i++) {
         readstat_variable_t *r_variable = readstat_get_variable(writer, i);
 
-        error = dta_validate_name(r_variable->name);
+        error = dta_validate_name(r_variable->name, ctx);
         if (error != READSTAT_OK)
             goto cleanup;
 
