@@ -300,6 +300,7 @@ typedef struct readstat_writer_s {
     readstat_data_writer        data_writer;
     size_t                      bytes_written;
     long                        version;
+    int                         is_64bit; // SAS only
     time_t                      timestamp;
 
     readstat_variable_t       **variables;
@@ -361,6 +362,8 @@ readstat_error_t readstat_writer_set_file_timestamp(readstat_writer_t *writer, t
 readstat_error_t readstat_writer_set_fweight_variable(readstat_writer_t *writer, const readstat_variable_t *variable);
 readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writer, 
         long file_format_version); // e.g. 104-118 for DTA
+readstat_error_t readstat_writer_set_file_format_is_64bit(readstat_writer_t *writer,
+        int is_64bit); // applies only to SAS files; defaults to 1=true
 
 // Optional error handler
 readstat_error_t readstat_writer_set_error_handler(readstat_writer_t *writer, 

@@ -23,6 +23,7 @@ readstat_writer_t *readstat_writer_init() {
     writer->label_sets_capacity = LABEL_SETS_INITIAL_CAPACITY;
 
     writer->timestamp = time(NULL);
+    writer->is_64bit = 1;
     writer->callbacks.write_row = &readstat_write_row_default_callback;
 
     return writer;
@@ -276,6 +277,11 @@ readstat_error_t readstat_writer_set_fweight_variable(readstat_writer_t *writer,
 
 readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writer, long version) {
     writer->version = version;
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_writer_set_file_format_is_64bit(readstat_writer_t *writer, int is_64bit) {
+    writer->is_64bit = is_64bit;
     return READSTAT_OK;
 }
 

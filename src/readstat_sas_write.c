@@ -140,7 +140,8 @@ static sas_header_info_t *sas_header_info_init(readstat_writer_t *writer) {
     hinfo->modification_time = writer->timestamp;
     hinfo->header_size = HEADER_SIZE;
     hinfo->page_size = PAGE_SIZE;
-    hinfo->u64 = (writer->version >= 90000);
+    hinfo->u64 = !!writer->is_64bit;
+
     if (hinfo->u64) {
         hinfo->page_header_size = SAS_PAGE_HEADER_SIZE_64BIT;
         hinfo->subheader_pointer_size = SAS_SUBHEADER_POINTER_SIZE_64BIT;
