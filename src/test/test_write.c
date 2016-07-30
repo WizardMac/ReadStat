@@ -86,6 +86,11 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_variable_set_measure(variable, column->measure);
         readstat_variable_set_label(variable, column->label);
 
+        for (i=0; i<column->missing_values_count; i++) {
+            readstat_variable_add_missing_double_value(variable,
+                    readstat_double_value(column->missing_values[i]));
+        }
+
         if (strcmp(column->name, file->fweight) == 0) {
             error = readstat_writer_set_fweight_variable(writer, variable);
             if (error != READSTAT_OK)

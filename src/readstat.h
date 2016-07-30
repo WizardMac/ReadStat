@@ -72,7 +72,8 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_NAME_IS_RESERVED_WORD,
     READSTAT_ERROR_NAME_IS_TOO_LONG,
     READSTAT_ERROR_BAD_TIMESTAMP,
-    READSTAT_ERROR_BAD_FREQUENCY_WEIGHT
+    READSTAT_ERROR_BAD_FREQUENCY_WEIGHT,
+    READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);

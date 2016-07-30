@@ -130,7 +130,7 @@ cleanup:
     return retval;
 }
 
-static int sav_n_missing_values(readstat_variable_t *r_variable) {
+static readstat_error_t sav_n_missing_values(int *out_n_missing_values, readstat_variable_t *r_variable) {
     int n_missing_ranges = readstat_variable_get_missing_ranges_count(r_variable);
     int n_missing_values = n_missing_ranges;
     int has_missing_range = 0;
@@ -143,10 +143,14 @@ static int sav_n_missing_values(readstat_variable_t *r_variable) {
             has_missing_range = 1;
         }
     }
-    if (n_missing_values > 3)
-        n_missing_values = 3;
+    if (n_missing_values > 3) {
+        return READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS;
+    }
 
-    return has_missing_range ? -n_missing_values : n_missing_values;
+    if (out_n_missing_values)
+        *out_n_missing_values = has_missing_range ? -n_missing_values : n_missing_values;
+
+    return READSTAT_OK;
 }
 
 static readstat_error_t sav_emit_variable_missing_values(readstat_writer_t *writer, readstat_variable_t *r_variable) {
@@ -214,7 +218,10 @@ static readstat_error_t sav_emit_variable_records(readstat_writer_t *writer) {
 
         variable.type = (r_variable->type == READSTAT_TYPE_STRING) ? r_variable->storage_width : 0;
         variable.has_var_label = (r_variable->label[0] != '\0');
-        variable.n_missing_values = sav_n_missing_values(r_variable); 
+
+        retval = sav_n_missing_values(&variable.n_missing_values, r_variable); 
+        if (retval != READSTAT_OK)
+            goto cleanup;
 
         retval = sav_encode_variable_format(&variable.print, r_variable);
         if (retval != READSTAT_OK)

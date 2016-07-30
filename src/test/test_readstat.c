@@ -302,6 +302,58 @@ rt_test_group_t _test_groups[] = {
         }
     },
     {
+        .label = "Missing value definitions",
+        .tests = {
+            {
+                .label = "SPSS one missing value",
+                .test_formats = RT_FORMAT_SPSS,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .missing_values_count = 1,
+                        .missing_values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } } 
+                        }
+                    }
+                }
+            },
+            {
+                .label = "SPSS two missing values",
+                .test_formats = RT_FORMAT_SPSS,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .missing_values_count = 2,
+                        .missing_values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "SPSS too many missing values",
+                .write_error = READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS,
+                .test_formats = RT_FORMAT_SPSS,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .missing_values_count = 4,
+                        .missing_values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 200.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 300.0 } }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    {
         .label = "Tagged missing values",
         .tests = {
             {

@@ -89,5 +89,8 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_BAD_FREQUENCY_WEIGHT)
         return "The provided variable can't be used as a frequency weight";
 
+    if (error_code == READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS)
+        return "The number of defined missing values exceeds the format limit";
+
     return "Unknown error";
 }

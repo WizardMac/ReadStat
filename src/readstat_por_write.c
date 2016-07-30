@@ -422,7 +422,6 @@ static readstat_error_t por_emit_missing_values_records(readstat_writer_t *write
                 goto cleanup;
 
             n_missing_values += 2;
-            break;
         } else if (isinf(hi)) {
             if ((retval = por_write_tag(writer, ctx, 'A')) != READSTAT_OK)
                 goto cleanup;
@@ -431,7 +430,6 @@ static readstat_error_t por_emit_missing_values_records(readstat_writer_t *write
                 goto cleanup;
 
             n_missing_values += 2;
-            break;
         } else if (lo != hi) {
             if ((retval = por_write_tag(writer, ctx, 'B')) != READSTAT_OK)
                 goto cleanup;
@@ -443,7 +441,6 @@ static readstat_error_t por_emit_missing_values_records(readstat_writer_t *write
                 goto cleanup;
 
             n_missing_values += 2;
-            break;
         }
     }
     /* values */
@@ -453,16 +450,18 @@ static readstat_error_t por_emit_missing_values_records(readstat_writer_t *write
         double lo = readstat_double_value(lo_value);
         double hi = readstat_double_value(hi_value);
         if (lo == hi && !isinf(lo) && !isinf(hi)) {
-            if ((retval = por_write_tag(writer, ctx, 'A')) != READSTAT_OK)
+            if ((retval = por_write_tag(writer, ctx, '8')) != READSTAT_OK)
                 goto cleanup;
 
             if ((retval = por_write_double(writer, ctx, lo)) != READSTAT_OK)
                 goto cleanup;
 
-            if (++n_missing_values == 3)
-                break;
+            n_missing_values++;
         }
     }
+    if (n_missing_values > 3)
+        retval = READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS;
+
 cleanup:
     return retval;
 }
