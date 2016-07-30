@@ -55,9 +55,6 @@ test_script:
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && make check"
       }
 
-after_test:
-  - bash <(curl -s https://codecov.io/bash)
-
 on_finish:
   - ps: |
       if ($env:TOOLCHAIN -eq "msys2")
