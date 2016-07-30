@@ -7,7 +7,7 @@ script:
   - ./configure --enable-code-coverage && make && make check
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  - cd src/.libs && bash <(curl -s https://codecov.io/bash)
 
 addons:
   apt:
