@@ -269,5 +269,5 @@ int main(int argc, char *argv[]) {
 Language Bindings
 ==
 
-* Julia: [DataRead.jl](https://github.com/WizardMac/DataRead.jl)
+* Julia: [ReadStat.jl](https://github.com/WizardMac/ReadStat.jl)
 * R: [haven](https://github.com/hadley/haven)
