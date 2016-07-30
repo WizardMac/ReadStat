@@ -7,6 +7,7 @@ LT_INIT([disable-static])
 AC_PROG_CC
 
 AC_ARG_ENABLE([static-iconv], AS_HELP_STRING([--enable-static-iconv], [Link iconv statically]), [static_iconv=yes], [static_iconv=no])
+AC_ARG_ENABLE([code-coverage], AS_HELP_STRING([--enable-code-coverage], [Enable code coverage profiling]), [code_coverage=yes], [code_coverage=no])
 
 AC_CANONICAL_HOST
 AS_CASE([$host],
@@ -24,6 +25,7 @@ AC_PATH_PROG([RAGEL], [ragel], [true])
 AM_CONDITIONAL([HAVE_RAGEL], test "$RAGEL" != "true")
 AC_CHECK_LIB([xlsxwriter], [workbook_new], [true], [false])
 AM_CONDITIONAL([HAVE_XLSXWRITER], test "$ac_cv_lib_xlsxwriter_workbook_new" = yes)
+AM_CONDITIONAL([CODE_COVERAGE_ENABLED], test "x$code_coverage" = "xyes")
 
 AC_OUTPUT([Makefile])
 

@@ -33,13 +33,13 @@ build_script:
       {
         $env:MSYSTEM="MINGW64"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && ./autogen.sh"
-        C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && ./configure"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && ./configure --enable-code-coverage"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && make"
       }
       else
       {
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && ./autogen.sh"
-        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && ./configure"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && ./configure --enable-code-coverage"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && make"
       }
 
@@ -54,6 +54,9 @@ test_script:
       {
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && make check"
       }
+
+after_test:
+  - bash <(curl -s https://codecov.io/bash)
 
 on_finish:
   - ps: |

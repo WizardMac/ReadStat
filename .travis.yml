@@ -4,7 +4,10 @@ before_script:
   - ./autogen.sh
 
 script:
-  - ./configure && make && make check
+  - ./configure --enable-code-coverage && make && make check
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 
 addons:
   apt:

@@ -40,6 +40,10 @@ libreadstat_la_CFLAGS = -Wall
 libreadstat_la_LIBADD = -llzma -lz @EXTRA_LIBS@
 libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@
 
+if CODE_COVERAGE_ENABLED
+libreadstat_la_CFLAGS += -O0 -fprofile-arcs -ftest-coverage
+endif
+
 include_HEADERS = src/readstat.h
 
 noinst_HEADERS = \
