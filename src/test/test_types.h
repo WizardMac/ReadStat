@@ -11,8 +11,11 @@ typedef struct rt_column_s {
     readstat_measure_t      measure;
     readstat_type_t         type;
     readstat_value_t        values[RT_MAX_ROWS];
-    readstat_value_t        missing_values[5];
-    long                    missing_values_count;
+    struct {
+        readstat_value_t    lo;
+        readstat_value_t    hi;
+    } missing_ranges[3];
+    long                    missing_ranges_count;
 } rt_column_t;
 
 typedef struct rt_test_file_s {

@@ -305,48 +305,71 @@ rt_test_group_t _test_groups[] = {
         .label = "Missing value definitions",
         .tests = {
             {
-                .label = "SPSS one missing value",
+                .label = "SPSS missing values",
                 .test_formats = RT_FORMAT_SPSS,
                 .columns = {
                     {
                         .name = "VAR1",
                         .type = READSTAT_TYPE_DOUBLE,
-                        .missing_values_count = 1,
-                        .missing_values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } } 
+                        .missing_ranges_count = 1,
+                        .missing_ranges= { 
+                            { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                              .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } } }
+                        }
+                    },
+                    {
+                        .name = "VAR2",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .missing_ranges_count = 3,
+                        .missing_ranges= { 
+                            { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                              .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } } },
+                            { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
+                              .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } } },
+                            { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2.5 } },
+                              .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2.5 } } }
                         }
                     }
                 }
             },
             {
-                .label = "SPSS two missing values",
+                .label = "SPSS open-ended ranges",
                 .test_formats = RT_FORMAT_SPSS,
                 .columns = {
                     {
                         .name = "VAR1",
                         .type = READSTAT_TYPE_DOUBLE,
-                        .missing_values_count = 2,
-                        .missing_values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } }
+                        .missing_ranges_count = 1,
+                        .missing_ranges = { 
+                            { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -HUGE_VAL } },
+                              .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } } }
+                        }
+                    },
+                    {
+                        .name = "VAR2",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .missing_ranges_count = 1,
+                        .missing_ranges = { 
+                            { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                              .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = HUGE_VAL } } }
                         }
                     }
                 }
             },
             {
-                .label = "SPSS too many missing values",
+                .label = "SPSS too many missing ranges",
                 .write_error = READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS,
                 .test_formats = RT_FORMAT_SPSS,
                 .columns = {
                     {
                         .name = "VAR1",
                         .type = READSTAT_TYPE_DOUBLE,
-                        .missing_values_count = 4,
-                        .missing_values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 200.0 } },
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 300.0 } }
+                        .missing_ranges_count = 2,
+                        .missing_ranges = { 
+                            { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1.0 } },
+                              .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } } },
+                            { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
+                              .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -1.0 } } },
                         }
                     }
                 }
@@ -1016,7 +1039,7 @@ rt_test_group_t _test_groups[] = {
 
 static void dump_buffer(rt_buffer_t *buffer) {
 #if DEBUG
-    int fd = open("/tmp/test_readstat.sas7bdat", O_CREAT | O_WRONLY, 0644);
+    int fd = open("/tmp/test_readstat.sas7bdat", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     write(fd, buffer->bytes, buffer->used);
     close(fd);
 #endif

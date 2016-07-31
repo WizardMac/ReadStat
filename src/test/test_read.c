@@ -176,20 +176,18 @@ static int handle_variable(int index, readstat_variable_t *variable,
             readstat_variable_get_label(variable),
             "Column labels");
 
-    push_error_if_doubles_differ(rt_ctx, column->missing_values_count,
+    push_error_if_doubles_differ(rt_ctx, column->missing_ranges_count,
             readstat_variable_get_missing_ranges_count(variable),
             "Missing values count");
 
     long i;
-    for (i=0; i<column->missing_values_count; i++) {
-        push_error_if_values_differ(rt_ctx,
+    for (i=0; i<column->missing_ranges_count; i++) {
+        push_error_if_values_differ(rt_ctx, column->missing_ranges[i].lo,
                 readstat_variable_get_missing_range_lo(variable, i),
+                "Missing range definition (lo value)");
+        push_error_if_values_differ(rt_ctx, column->missing_ranges[i].hi,
                 readstat_variable_get_missing_range_hi(variable, i),
-                "Missing value should not be a range");
-
-        push_error_if_values_differ(rt_ctx, column->missing_values[i],
-                readstat_variable_get_missing_range_lo(variable, i),
-                "Missing value definition");
+                "Missing range definition (hi value)");
     }
 
     return 0;

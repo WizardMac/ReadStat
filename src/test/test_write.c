@@ -86,9 +86,10 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_variable_set_measure(variable, column->measure);
         readstat_variable_set_label(variable, column->label);
 
-        for (i=0; i<column->missing_values_count; i++) {
-            readstat_variable_add_missing_double_value(variable,
-                    readstat_double_value(column->missing_values[i]));
+        for (i=0; i<column->missing_ranges_count; i++) {
+            readstat_variable_add_missing_double_range(variable,
+                    readstat_double_value(column->missing_ranges[i].lo),
+                    readstat_double_value(column->missing_ranges[i].hi));
         }
 
         if (strcmp(column->name, file->fweight) == 0) {
