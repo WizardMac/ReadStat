@@ -712,8 +712,6 @@ cleanup:
 }
 
 readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void *user_ctx, long row_count) {
-    writer->row_count = row_count;
-    writer->user_ctx = user_ctx;
 
     if (writer->version == 0)
         writer->version = SAS_DEFAULT_FILE_VERSION;
@@ -736,7 +734,5 @@ readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void
 
     writer->callbacks.write_row = &sas_write_row;
 
-    writer->initialized = 1;
-
-    return READSTAT_OK;
+    return readstat_begin_writing_file(writer, user_ctx, row_count);
 }

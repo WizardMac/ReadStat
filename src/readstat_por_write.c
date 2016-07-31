@@ -483,7 +483,7 @@ static readstat_error_t por_emit_variable_records(readstat_writer_t *writer,
 
         retval = por_write_double(writer, ctx, 
                 (r_variable->type == READSTAT_TYPE_STRING) ?
-                r_variable->storage_width : 0);
+                r_variable->user_width : 0);
         if (retval != READSTAT_OK)
             break;
 
@@ -700,8 +700,6 @@ static readstat_error_t por_write_row(void *writer_ctx, void *row, size_t row_le
 }
 
 readstat_error_t readstat_begin_writing_por(readstat_writer_t *writer, void *user_ctx, long row_count) {
-    writer->row_count = row_count;
-    writer->user_ctx = user_ctx;
 
     writer->callbacks.variable_width = &por_variable_width;
     writer->callbacks.write_int8 = &por_write_int8_value;
@@ -717,7 +715,6 @@ readstat_error_t readstat_begin_writing_por(readstat_writer_t *writer, void *use
     writer->callbacks.write_row = &por_write_row;
     writer->callbacks.end_data = &por_end_data;
 
-    writer->initialized = 1;
+    return readstat_begin_writing_file(writer, user_ctx, row_count);
 
-    return READSTAT_OK;
 }

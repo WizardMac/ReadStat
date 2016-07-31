@@ -45,6 +45,8 @@ void parse_ctx_reset(rt_parse_ctx_t *parse_ctx, long file_format) {
     }
     parse_ctx->var_index = -1;
     parse_ctx->obs_index = -1;
+    parse_ctx->variables_count = 0;
+    parse_ctx->value_labels_count = 0;
     buffer_ctx_reset(parse_ctx->buffer_ctx);
 }
 
@@ -168,6 +170,10 @@ static int handle_variable(int index, readstat_variable_t *variable,
 
     rt_ctx->var_index = index;
 
+    push_error_if_strings_differ(rt_ctx, column->label_set, 
+            val_labels,
+            "Column label sets");
+
     push_error_if_strings_differ(rt_ctx, column->name, 
             readstat_variable_get_name(variable),
             "Column names");
@@ -190,6 +196,37 @@ static int handle_variable(int index, readstat_variable_t *variable,
                 "Missing range definition (hi value)");
     }
 
+    rt_ctx->variables_count++;
+
+    return 0;
+}
+
+static int handle_value_label(const char *val_labels, readstat_value_t value, const char *label, void *ctx) {
+    rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
+    long i, j;
+    for (i=0; i<rt_ctx->file->label_sets_count; i++) {
+        rt_label_set_t *label_set = &rt_ctx->file->label_sets[i];
+        if (strcmp(val_labels, label_set->name) == 0) {
+            for (j=0; j<label_set->value_labels_count; j++) {
+                if (values_equal(value, label_set->value_labels[j].value)) {
+                    push_error_if_strings_differ(rt_ctx, label_set->value_labels[j].label,
+                            label, "Value label");
+                    break;
+                }
+            }
+            if (j == label_set->value_labels_count) {
+                printf("Set: %s  Type: %d  Value: %lf  Label: %s\n", val_labels, value.type, value.v.double_value, label);
+                push_error_if_strings_differ(rt_ctx, NULL,
+                        label, "Value label (no match)");
+            }
+            break;
+        }
+    }
+    if (i == rt_ctx->file->label_sets_count) {
+        push_error_if_strings_differ(rt_ctx, NULL,
+                val_labels, "Label set");
+    }
+    rt_ctx->value_labels_count++;
     return 0;
 }
 
@@ -228,6 +265,7 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     readstat_set_variable_handler(parser, &handle_variable);
     readstat_set_fweight_handler(parser, &handle_fweight);
     readstat_set_value_handler(parser, &handle_value);
+    readstat_set_value_label_handler(parser, &handle_value_label);
     readstat_set_error_handler(parser, &handle_error);
 
     if ((format & RT_FORMAT_DTA)) {
@@ -245,6 +283,21 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     }
     if (error != READSTAT_OK)
         goto cleanup;
+
+    push_error_if_doubles_differ(parse_ctx, parse_ctx->file->columns_count,
+            parse_ctx->variables_count, "Column count");
+
+    push_error_if_doubles_differ(parse_ctx, parse_ctx->file->rows,
+            parse_ctx->obs_index + 1, "Row count");
+
+    long value_labels_count = 0;
+    long i;
+    for (i=0; i<parse_ctx->file->label_sets_count; i++) {
+        value_labels_count += parse_ctx->file->label_sets[i].value_labels_count;
+    }
+
+    push_error_if_doubles_differ(parse_ctx, value_labels_count,
+            parse_ctx->value_labels_count, "Value labels count");
 
 cleanup:
     readstat_parser_free(parser);

@@ -67,6 +67,26 @@ static readstat_value_label_t *readstat_add_value_label(readstat_label_set_t *la
     return new_value_label;
 }
 
+static readstat_error_t readstat_begin_writing_data(readstat_writer_t *writer) {
+    readstat_error_t retval = READSTAT_OK;
+
+    size_t row_len = 0;
+    int i;
+    for (i=0; i<writer->variables_count; i++) {
+        readstat_variable_t *variable = readstat_get_variable(writer, i);
+        variable->storage_width = writer->callbacks.variable_width(variable->type, variable->user_width);
+        variable->offset = row_len;
+        row_len += variable->storage_width;
+    }
+    if (writer->callbacks.begin_data) {
+        retval = writer->callbacks.begin_data(writer);
+    }
+    writer->row_len = row_len;
+    writer->row = malloc(writer->row_len);
+
+    return retval;
+}
+
 void readstat_writer_free(readstat_writer_t *writer) {
     int i;
     if (writer) {
@@ -291,26 +311,23 @@ readstat_error_t readstat_writer_set_error_handler(readstat_writer_t *writer,
     return READSTAT_OK;
 }
 
+readstat_error_t readstat_begin_writing_file(readstat_writer_t *writer, void *user_ctx, long row_count) {
+    writer->row_count = row_count;
+    writer->user_ctx = user_ctx;
+
+    writer->initialized = 1;
+
+    return READSTAT_OK;
+}
+
 readstat_error_t readstat_begin_row(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
 
-    if (writer->current_row == 0) {
-        size_t row_len = 0;
-        int i;
-        for (i=0; i<writer->variables_count; i++) {
-            readstat_variable_t *variable = readstat_get_variable(writer, i);
-            variable->storage_width = writer->callbacks.variable_width(variable->type, variable->user_width);
-            variable->offset = row_len;
-            row_len += variable->storage_width;
-        }
-        if (writer->callbacks.begin_data) {
-            retval = writer->callbacks.begin_data(writer);
-        }
-        writer->row = malloc(row_len);
-        writer->row_len = row_len;
-    }
+    if (writer->current_row == 0)
+        retval = readstat_begin_writing_data(writer);
+
     memset(writer->row, '\0', writer->row_len);
     return retval;
 }
@@ -402,20 +419,17 @@ readstat_error_t readstat_end_writing(readstat_writer_t *writer) {
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
 
-    if (writer->current_row != writer->row_count) {
+    if (writer->current_row != writer->row_count)
         return READSTAT_ERROR_ROW_COUNT_MISMATCH;
+
+    if (writer->row_count == 0) {
+        readstat_error_t retval = readstat_begin_writing_data(writer);
+        if (retval != READSTAT_OK)
+            return retval;
     }
 
-    readstat_error_t retval = READSTAT_OK;
+    if (!writer->callbacks.end_data)
+        return READSTAT_OK;
 
-    if (writer->row_count == 0 && writer->callbacks.begin_data) {
-        retval = writer->callbacks.begin_data(writer);
-    }
-    if (retval != READSTAT_OK)
-        return retval;
-
-    if (writer->callbacks.end_data) {
-        retval = writer->callbacks.end_data(writer);
-    }
-    return retval;
+    return writer->callbacks.end_data(writer);
 }

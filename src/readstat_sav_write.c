@@ -759,8 +759,6 @@ cleanup:
 }
 
 readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count) {
-    writer->row_count = row_count;
-    writer->user_ctx = user_ctx;
 
     writer->callbacks.variable_width = &sav_variable_width;
     writer->callbacks.write_int8 = &sav_write_int8;
@@ -773,7 +771,6 @@ readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *use
     writer->callbacks.write_missing_number = &sav_write_missing_number;
     writer->callbacks.write_missing_tagged = &sav_write_missing_tagged;
     writer->callbacks.begin_data = &sav_begin_data;
-    writer->initialized = 1;
 
-    return READSTAT_OK;
+    return readstat_begin_writing_file(writer, user_ctx, row_count);
 }

@@ -1,8 +1,21 @@
 #include <time.h>
 
-#define RT_MAX_ROWS     10
-#define RT_MAX_COLS     10
-#define RT_MAX_STRING   64
+#define RT_MAX_ROWS         10
+#define RT_MAX_COLS         10
+#define RT_MAX_LABEL_SETS    2
+#define RT_MAX_VALUE_LABELS  2
+#define RT_MAX_STRING       64
+
+typedef struct rt_label_set_s {
+    char                    name[RT_MAX_STRING];
+    readstat_type_t         type;
+
+    struct {
+        readstat_value_t    value;
+        char                label[RT_MAX_STRING];
+    } value_labels[RT_MAX_VALUE_LABELS];
+    long                    value_labels_count;
+} rt_label_set_t;
 
 typedef struct rt_column_s {
     char                    name[RT_MAX_STRING];
@@ -11,11 +24,14 @@ typedef struct rt_column_s {
     readstat_measure_t      measure;
     readstat_type_t         type;
     readstat_value_t        values[RT_MAX_ROWS];
+
     struct {
         readstat_value_t    lo;
         readstat_value_t    hi;
     } missing_ranges[3];
     long                    missing_ranges_count;
+
+    char                    label_set[RT_MAX_STRING];
 } rt_column_t;
 
 typedef struct rt_test_file_s {
@@ -28,6 +44,9 @@ typedef struct rt_test_file_s {
 
     rt_column_t         columns[RT_MAX_COLS];
     long                columns_count;
+
+    rt_label_set_t      label_sets[RT_MAX_LABEL_SETS];
+    long                label_sets_count;
 
     char                fweight[RT_MAX_STRING];
 } rt_test_file_t;
@@ -60,8 +79,14 @@ typedef struct rt_parse_ctx_s {
     rt_error_t      *errors;
     long             errors_count;
 
+    char            *strings;
+    size_t           strings_len;
+
     long             var_index;
     long             obs_index;
+
+    long             variables_count;
+    long             value_labels_count;
 
     rt_test_file_t  *file;
     long             file_format;

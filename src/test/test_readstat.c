@@ -530,6 +530,96 @@ rt_test_group_t _test_groups[] = {
     },
 
     {
+        .label = "Value labels",
+        .tests = {
+            {
+                .label = "DTA value labels",
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "somelbl",
+                        .type = READSTAT_TYPE_INT32,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 1 } },
+                                .label = "One"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 2 } },
+                                .label = "Two"
+                            },
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .label_set = "somelbl"
+                    },
+                    {
+                        .name = "var2",
+                        .type = READSTAT_TYPE_INT32,
+                        .label_set = "somelbl"
+                    },
+                }
+            },
+
+            {
+                .label = "SPSS value labels",
+                .test_formats = RT_FORMAT_SPSS,
+                .label_sets_count = 2,
+                .label_sets = {
+                    {
+                        .name = "labels0",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1 } },
+                                .label = "One"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2 } },
+                                .label = "Two"
+                            }
+                        }
+                    },
+                    {
+                        .name = "labels1",
+                        .type = READSTAT_TYPE_STRING,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "1" } },
+                                .label = "One"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "2" } },
+                                .label = "Two"
+                            }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .label_set = "labels0"
+                    },
+                    {
+                        .name = "VAR2",
+                        .type = READSTAT_TYPE_STRING,
+                        .label_set = "labels1"
+                    }
+                }
+            }
+        }
+    },
+
+    {
         .label = "Out-of-range floating-point values",
         .tests = {
             {
@@ -1037,9 +1127,40 @@ rt_test_group_t _test_groups[] = {
     }
 };
 
-static void dump_buffer(rt_buffer_t *buffer) {
+static char *file_extension(long format) {
+    if (format == RT_FORMAT_DTA_104)
+        return "dta104";
+    if (format == RT_FORMAT_DTA_105)
+        return "dta105";
+    if (format == RT_FORMAT_DTA_108)
+        return "dta108";
+    if (format == RT_FORMAT_DTA_110)
+        return "dta110";
+    if (format == RT_FORMAT_DTA_111)
+        return "dta111";
+    if (format == RT_FORMAT_DTA_114)
+        return "dta114";
+    if (format == RT_FORMAT_DTA_117)
+        return "dta117";
+    if (format == RT_FORMAT_DTA_118)
+        return "dta118";
+    if (format == RT_FORMAT_SAV)
+        return "sav";
+    if (format == RT_FORMAT_POR)
+        return "por";
+    if (format == RT_FORMAT_SAS7BDAT_32BIT)
+        return "sas7bdat32";
+    if (format == RT_FORMAT_SAS7BDAT_64BIT)
+        return "sas7bdat64";
+    return "data";
+}
+
+static void dump_buffer(rt_buffer_t *buffer, long format) {
+    char filename[128];
+    snprintf(filename, sizeof(filename), "/tmp/test_readstat.%s", 
+            file_extension(format));
 #if DEBUG
-    int fd = open("/tmp/test_readstat.sas7bdat", O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     write(fd, buffer->bytes, buffer->used);
     close(fd);
 #endif
@@ -1066,6 +1187,7 @@ int main(int argc, char *argv[]) {
                 if (!(file->test_formats & f))
                     continue;
 
+                int old_errors_count = parse_ctx->errors_count;
                 parse_ctx_reset(parse_ctx, f);
 
                 error = write_file_to_buffer(file, buffer, f);
@@ -1082,10 +1204,12 @@ int main(int argc, char *argv[]) {
                 error = read_file(parse_ctx, f);
                 if (error != READSTAT_OK)
                     goto cleanup;
+
+                if (old_errors_count != parse_ctx->errors_count)
+                    dump_buffer(buffer, f);
             }
 
             if (parse_ctx->errors_count) {
-                dump_buffer(buffer);
                 int i;
                 for (i=0; i<parse_ctx->errors_count; i++) {
                     print_error(&parse_ctx->errors[i]);
@@ -1099,7 +1223,7 @@ int main(int argc, char *argv[]) {
 
 cleanup:
     if (error != READSTAT_OK) {
-        dump_buffer(buffer);
+        dump_buffer(buffer, f);
         printf("Error running test \"%s\" (format=0x%04x): %s\n", 
                 _test_groups[g].tests[t].label,
                 f, readstat_error_message(error));

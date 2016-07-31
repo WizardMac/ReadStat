@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include "../readstat.h"
+#include "../CKHashTable.h"
 
 #include "test_types.h"
 #include "test_buffer.h"
@@ -28,6 +29,8 @@ static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
 
 readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer, long format) {
     readstat_error_t error = READSTAT_OK;
+
+    ck_hash_table_t *label_sets = ck_hash_table_init(100);
 
     readstat_writer_t *writer = readstat_writer_init();
     readstat_set_data_writer(writer, &write_data);
@@ -64,11 +67,33 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
 
     int i, j;
     int did_set_fweight = 0;
+    for (j=0; j<file->label_sets_count; j++) {
+        rt_label_set_t *label_set = &file->label_sets[j];
+        readstat_label_set_t *r_label_set = readstat_add_label_set(writer,
+                label_set->type, label_set->name);
+        for (i=0; i<label_set->value_labels_count; i++) {
+            if (label_set->type == READSTAT_TYPE_DOUBLE) {
+                readstat_label_double_value(r_label_set, 
+                        readstat_double_value(label_set->value_labels[i].value),
+                        label_set->value_labels[i].label);
+            } else if (label_set->type == READSTAT_TYPE_INT32) {
+                readstat_label_int32_value(r_label_set, 
+                        readstat_int32_value(label_set->value_labels[i].value),
+                        label_set->value_labels[i].label);
+            } else if (label_set->type == READSTAT_TYPE_STRING) {
+                readstat_label_string_value(r_label_set, 
+                        readstat_string_value(label_set->value_labels[i].value),
+                        label_set->value_labels[i].label);
+            }
+        }
+        ck_str_hash_insert(label_set->name, r_label_set, label_sets);
+    }
     for (j=0; j<file->columns_count; j++) {
         rt_column_t *column = &file->columns[j];
 
         size_t max_len = 0;
         if (column->type == READSTAT_TYPE_STRING) {
+            max_len = 8;
             for (i=0; i<file->rows; i++) {
                 const char *value = readstat_string_value(column->values[i]);
                 if (value) {
@@ -85,6 +110,7 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_variable_set_alignment(variable, column->alignment);
         readstat_variable_set_measure(variable, column->measure);
         readstat_variable_set_label(variable, column->label);
+        readstat_variable_set_label_set(variable, (readstat_label_set_t *)ck_str_hash_lookup(column->label_set, label_sets));
 
         for (i=0; i<column->missing_ranges_count; i++) {
             readstat_variable_add_missing_double_range(variable,
@@ -154,6 +180,7 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         goto cleanup;
 
 cleanup:
+    ck_hash_table_free(label_sets);
     readstat_writer_free(writer);
 
     return error;

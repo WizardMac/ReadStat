@@ -1,4 +1,6 @@
 
+int values_equal(readstat_value_t expected, readstat_value_t received);
+
 void push_error_if_values_differ(rt_parse_ctx_t *ctx, 
         readstat_value_t expected,
         readstat_value_t received,

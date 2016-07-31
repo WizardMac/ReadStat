@@ -1133,8 +1133,6 @@ cleanup:
 }
 
 readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *user_ctx, long row_count) {
-    writer->row_count = row_count;
-    writer->user_ctx = user_ctx;
 
     if (writer->version == 0)
         writer->version = DTA_DEFAULT_FILE_VERSION;
@@ -1174,7 +1172,6 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
 
     writer->callbacks.begin_data = &dta_begin_data;
     writer->callbacks.end_data = &dta_end_data;
-    writer->initialized = 1;
 
-    return READSTAT_OK;
+    return readstat_begin_writing_file(writer, user_ctx, row_count);
 }
