@@ -333,7 +333,7 @@ rt_test_group_t _test_groups[] = {
                 }
             },
             {
-                .label = "SPSS open-ended ranges",
+                .label = "SPSS missing ranges",
                 .test_formats = RT_FORMAT_SPSS,
                 .columns = {
                     {
@@ -352,6 +352,15 @@ rt_test_group_t _test_groups[] = {
                         .missing_ranges = { 
                             { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
                               .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = HUGE_VAL } } }
+                        }
+                    },
+                    {
+                        .name = "VAR3",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .missing_ranges_count = 1,
+                        .missing_ranges = { 
+                            { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
+                              .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } } }
                         }
                     }
                 }
