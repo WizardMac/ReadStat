@@ -377,6 +377,7 @@ static readstat_error_t read_missing_value_hi_range_record(por_ctx_t *ctx) {
     double value;
     char string[256];
     if (ctx->varinfo[ctx->var_offset].type == READSTAT_TYPE_DOUBLE) {
+        ctx->varinfo[ctx->var_offset].missing_range = 1;
         if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
             goto cleanup;
         }
