@@ -577,7 +577,7 @@ rt_test_group_t _test_groups[] = {
             },
 
             {
-                .label = "SPSS value labels",
+                .label = "SPSS numeric value labels",
                 .test_formats = RT_FORMAT_SPSS,
                 .label_sets_count = 2,
                 .label_sets = {
@@ -598,6 +598,41 @@ rt_test_group_t _test_groups[] = {
                     },
                     {
                         .name = "labels1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 3 } },
+                                .label = "Three"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4 } },
+                                .label = "Four"
+                            }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .label_set = "labels0"
+                    },
+                    {
+                        .name = "VAR2",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .label_set = "labels1"
+                    }
+                }
+            },
+
+            {
+                .label = "SPSS string value labels",
+                .test_formats = RT_FORMAT_SPSS,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "labels0",
                         .type = READSTAT_TYPE_STRING,
                         .value_labels_count = 2,
                         .value_labels = {
@@ -614,14 +649,39 @@ rt_test_group_t _test_groups[] = {
                 },
                 .columns = {
                     {
-                        .name = "VAR1",
-                        .type = READSTAT_TYPE_DOUBLE,
+                        .name = "VAR2",
+                        .type = READSTAT_TYPE_STRING,
                         .label_set = "labels0"
-                    },
+                    }
+                }
+            },
+
+            {
+                .label = "SPSS long value labels",
+                .test_formats = RT_FORMAT_SPSS,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "labels0",
+                        .type = READSTAT_TYPE_STRING,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "1,000,000" } },
+                                .label = "One million"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "2,000,000" } },
+                                .label = "Two million"
+                            }
+                        }
+                    }
+                },
+                .columns = {
                     {
                         .name = "VAR2",
                         .type = READSTAT_TYPE_STRING,
-                        .label_set = "labels1"
+                        .label_set = "labels0"
                     }
                 }
             }

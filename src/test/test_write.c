@@ -90,6 +90,7 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
     }
     for (j=0; j<file->columns_count; j++) {
         rt_column_t *column = &file->columns[j];
+        readstat_label_set_t *label_set = (readstat_label_set_t *)ck_str_hash_lookup(column->label_set, label_sets);
 
         size_t max_len = 0;
         if (column->type == READSTAT_TYPE_STRING) {
@@ -102,6 +103,12 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
                         max_len = len;
                 }
             }
+            if (label_set) {
+                for (i=0; i<label_set->value_labels_count; i++) {
+                    if (label_set->value_labels[i].string_key_len > max_len)
+                        max_len = label_set->value_labels[i].string_key_len;
+                }
+            }
         }
 
         readstat_variable_t *variable = readstat_add_variable(writer, 
@@ -110,7 +117,7 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_variable_set_alignment(variable, column->alignment);
         readstat_variable_set_measure(variable, column->measure);
         readstat_variable_set_label(variable, column->label);
-        readstat_variable_set_label_set(variable, (readstat_label_set_t *)ck_str_hash_lookup(column->label_set, label_sets));
+        readstat_variable_set_label_set(variable, label_set);
 
         for (i=0; i<column->missing_ranges_count; i++) {
             readstat_variable_add_missing_double_range(variable,

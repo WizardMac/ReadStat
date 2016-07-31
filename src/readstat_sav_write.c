@@ -290,8 +290,11 @@ static readstat_error_t sav_emit_value_label_records(readstat_writer_t *writer) 
                 readstat_value_label_t *r_value_label = readstat_get_value_label(r_label_set, j);
                 char value[8];
                 if (user_type == READSTAT_TYPE_STRING) {
+                    size_t key_len = r_value_label->string_key_len;
+                    if (key_len > sizeof(value))
+                        key_len = sizeof(value);
                     memset(value, ' ', sizeof(value));
-                    memcpy(value, r_value_label->string_key, r_value_label->string_key_len);
+                    memcpy(value, r_value_label->string_key, key_len);
                 } else if (user_type == READSTAT_TYPE_DOUBLE) {
                     double num_val = r_value_label->double_key;
                     memcpy(value, &num_val, sizeof(double));
@@ -575,7 +578,7 @@ static readstat_error_t sav_emit_long_value_labels_records(readstat_writer_t *wr
             for (j=0; j<label_count; j++) {
                 readstat_value_label_t *r_value_label = readstat_get_value_label(r_label_set, j);
                 info_header.count += sizeof(int32_t); // value length
-                info_header.count += r_value_label->string_key_len;
+                info_header.count += storage_width;
                 info_header.count += sizeof(int32_t); // label length
                 info_header.count += r_value_label->label_len;
             }
