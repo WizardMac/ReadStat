@@ -633,6 +633,7 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
     unsigned char chunk[8];
     int i;
     double fp_value;
+    uint64_t missing_value = SAV_MISSING_DOUBLE;
     off_t data_offset = 0;
     unsigned char buffer[DATA_BUFFER_SIZE];
     int buffer_used = 0;
@@ -680,8 +681,7 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
                     uncompressed_offset += 8;
                     break;
                 case 255:
-                    fp_value = NAN;
-                    memcpy(&uncompressed_row[uncompressed_offset], &fp_value, sizeof(double));
+                    memcpy(&uncompressed_row[uncompressed_offset], &missing_value, sizeof(uint64_t));
                     uncompressed_offset += 8;
                     break;
                 default:
