@@ -642,6 +642,9 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
     off_t uncompressed_offset = 0;
     unsigned char *uncompressed_row = malloc(uncompressed_row_len);
 
+    int machine_needs_byte_swap = ctx->machine_needs_byte_swap;
+    ctx->machine_needs_byte_swap = 0;
+
     while (1) {
         if (data_offset >= buffer_used) {
             retval = sav_update_progress(ctx);
@@ -704,6 +707,8 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
 done:
     if (uncompressed_row)
         free(uncompressed_row);
+
+    ctx->machine_needs_byte_swap = machine_needs_byte_swap;
 
     return retval;
 }
