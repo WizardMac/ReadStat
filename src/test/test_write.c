@@ -72,7 +72,11 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_label_set_t *r_label_set = readstat_add_label_set(writer,
                 label_set->type, label_set->name);
         for (i=0; i<label_set->value_labels_count; i++) {
-            if (label_set->type == READSTAT_TYPE_DOUBLE) {
+            if (readstat_value_tag(label_set->value_labels[i].value)) {
+                readstat_label_tagged_value(r_label_set,
+                        readstat_value_tag(label_set->value_labels[i].value),
+                        label_set->value_labels[i].label);
+            } else if (label_set->type == READSTAT_TYPE_DOUBLE) {
                 readstat_label_double_value(r_label_set, 
                         readstat_double_value(label_set->value_labels[i].value),
                         label_set->value_labels[i].label);

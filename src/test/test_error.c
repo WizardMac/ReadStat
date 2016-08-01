@@ -99,19 +99,13 @@ int values_equal(readstat_value_t expected, readstat_value_t received) {
         }
     } else if (received_type != READSTAT_TYPE_STRING && received_type != READSTAT_TYPE_LONG_STRING) {
         if (readstat_value_tag(expected) || readstat_value_tag(received)) {
-            if (readstat_value_tag(expected) != readstat_value_tag(received)) {
-                return 0;
-            }
+            return readstat_value_tag(expected) == readstat_value_tag(received);
         } else if (readstat_value_is_system_missing(expected) || readstat_value_is_system_missing(received)) {
-            if (readstat_value_is_system_missing(expected) != readstat_value_is_system_missing(received)) {
-                return 0;
-            }
+            return readstat_value_is_system_missing(expected) == readstat_value_is_system_missing(received);
         } else if (received_type == READSTAT_TYPE_DOUBLE || received_type == READSTAT_TYPE_FLOAT) {
             return doubles_equal(readstat_double_value(expected), readstat_double_value(received));
         } else {
-            if (readstat_int32_value(expected) != readstat_int32_value(received)) {
-                return 0;
-            }
+            return readstat_int32_value(expected) == readstat_int32_value(received);
         }
     } else {
         return 0;

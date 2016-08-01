@@ -110,6 +110,7 @@ const char *readstat_string_value(readstat_value_t value);
 typedef struct readstat_value_label_s {
     double      double_key;
     int32_t     int32_key;
+    char        tag;
 
     char       *string_key;
     size_t      string_key_len;
@@ -343,6 +344,7 @@ readstat_label_set_t *readstat_add_label_set(readstat_writer_t *writer, readstat
 void readstat_label_double_value(readstat_label_set_t *label_set, double value, const char *label);
 void readstat_label_int32_value(readstat_label_set_t *label_set, int32_t value, const char *label);
 void readstat_label_string_value(readstat_label_set_t *label_set, const char *value, const char *label);
+void readstat_label_tagged_value(readstat_label_set_t *label_set, char tag, const char *label);
 
 // Now define your variables. Note that `storage_width' is only used for READSTAT_TYPE_STRING variables.
 readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, const char *name, readstat_type_t type, 

@@ -200,6 +200,11 @@ void readstat_label_string_value(readstat_label_set_t *label_set, const char *va
     }
 }
 
+void readstat_label_tagged_value(readstat_label_set_t *label_set, char tag, const char *label) {
+    readstat_value_label_t *new_value_label = readstat_add_value_label(label_set, label);
+    new_value_label->tag = tag;
+}
+
 readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, const char *name, readstat_type_t type, size_t width) {
     if (writer->variables_count == writer->variables_capacity) {
         writer->variables_capacity *= 2;

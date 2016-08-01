@@ -567,7 +567,15 @@ static readstat_error_t dta_emit_value_labels(readstat_writer_t *writer, dta_ctx
             const char *label = value_label->label;
             size_t label_data_len = value_label->label_len;
             off[j] = offset;
-            val[j] = value_label->int32_key;
+            if (value_label->tag) {
+                if (writer->version < 113) {
+                    retval = READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED;
+                    goto cleanup;
+                }
+                val[j] = DTA_113_MISSING_INT32_A + (value_label->tag - 'a');
+            } else {
+                val[j] = value_label->int32_key;
+            }
             memcpy(txt + offset, label, label_data_len);
             offset += label_data_len;
 
