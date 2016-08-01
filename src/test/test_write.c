@@ -55,8 +55,8 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_writer_set_file_format_is_64bit(writer, format == RT_FORMAT_SAS7BDAT_64BIT);
         error = readstat_begin_writing_sas7bdat(writer, buffer, file->rows);
     } else if ((format & RT_FORMAT_SAV)) {
-        if (format == RT_FORMAT_SAV_ROW_COMP) {
-            readstat_writer_set_compression(writer, READSTAT_COMPRESSION_ROW);
+        if (format == RT_FORMAT_SAV_COMP_ROWS) {
+            readstat_writer_set_compression(writer, READSTAT_COMPRESS_ROWS);
         }
         error = readstat_begin_writing_sav(writer, buffer, file->rows);
     } else if (format == RT_FORMAT_POR) {

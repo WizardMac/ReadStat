@@ -31,7 +31,7 @@ rt_test_group_t _test_groups[] = {
         .tests = {
             {
                 .label = "SAV row compression",
-                .test_formats = RT_FORMAT_SAV_ROW_COMP,
+                .test_formats = RT_FORMAT_SAV_COMP_ROWS,
                 .rows = 3,
                 .columns = {
                     {
@@ -1402,9 +1402,9 @@ static char *file_extension(long format) {
         return "dta117";
     if (format == RT_FORMAT_DTA_118)
         return "dta118";
-    if (format == RT_FORMAT_SAV_NO_COMP)
+    if (format == RT_FORMAT_SAV_COMP_NONE)
         return "sav";
-    if (format == RT_FORMAT_SAV_ROW_COMP)
+    if (format == RT_FORMAT_SAV_COMP_ROWS)
         return "savrow";
     if (format == RT_FORMAT_POR)
         return "por";

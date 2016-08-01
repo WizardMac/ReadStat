@@ -67,7 +67,7 @@ static readstat_error_t sav_emit_header(readstat_writer_t *writer) {
            sizeof("@(#) SPSS DATA FILE - " READSTAT_PRODUCT_URL)-1);
     header.layout_code = 2;
     header.nominal_case_size = writer->row_len / 8;
-    header.compressed = (writer->compression == READSTAT_COMPRESSION_ROW);
+    header.compressed = (writer->compression == READSTAT_COMPRESS_ROWS);
     if (writer->fweight_variable) {
         int32_t dictionary_index = 1 + writer->fweight_variable->offset / 8;
         header.weight_index = dictionary_index;
@@ -867,9 +867,9 @@ readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *use
     writer->callbacks.write_missing_tagged = &sav_write_missing_tagged;
     writer->callbacks.begin_data = &sav_begin_data;
 
-    if (writer->compression == READSTAT_COMPRESSION_ROW) {
+    if (writer->compression == READSTAT_COMPRESS_ROWS) {
         writer->callbacks.write_row = &sav_write_compressed_row;
-    } else if (writer->compression == READSTAT_COMPRESSION_NONE) {
+    } else if (writer->compression == READSTAT_COMPRESS_NONE) {
         /* void */
     } else {
         return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;

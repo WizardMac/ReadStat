@@ -311,7 +311,7 @@ readstat_error_t readstat_writer_set_file_format_is_64bit(readstat_writer_t *wri
 }
 
 readstat_error_t readstat_writer_set_compression(readstat_writer_t *writer, 
-        readstat_compression_t compression) {
+        readstat_compress_t compression) {
     writer->compression = compression;
     return READSTAT_OK;
 }
