@@ -645,8 +645,34 @@ rt_test_group_t _test_groups[] = {
         .label = "Value labels",
         .tests = {
             {
+                .label = "DTA ancient value labels",
+                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .test_formats = RT_FORMAT_DTA_104,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "somelbl",
+                        .type = READSTAT_TYPE_INT32,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = -1 } },
+                                .label = "One"
+                            }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .label_set = "somelbl"
+                    }
+                }
+            },
+            {
                 .label = "DTA integer value labels",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER,
+                .test_formats = RT_FORMAT_DTA,
                 .label_sets_count = 1,
                 .label_sets = {
                     {
@@ -689,14 +715,33 @@ rt_test_group_t _test_groups[] = {
                         .type = READSTAT_TYPE_INT32,
                         .value_labels_count = 2,
                         .value_labels = {
-                            {
-                                .value = { .type = READSTAT_TYPE_INT32, .tag = 'a' },
-                                .label = "One"
-                            },
-                            {
-                                .value = { .type = READSTAT_TYPE_INT32, .tag = 'b' },
-                                .label = "Two"
-                            },
+                            { .value = { .type = READSTAT_TYPE_INT32, .tag = 'a' }, .label = "One" },
+                            { .value = { .type = READSTAT_TYPE_INT32, .tag = 'b' }, .label = "Two" },
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .label_set = "somelbl"
+                    }
+                }
+            },
+
+            {
+                .label = "DTA unsupported tagged value labels",
+                .write_error = READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED,
+                .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "somelbl",
+                        .type = READSTAT_TYPE_INT32,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            { .value = { .type = READSTAT_TYPE_INT32, .tag = 'a' }, .label = "One" },
+                            { .value = { .type = READSTAT_TYPE_INT32, .tag = 'b' }, .label = "Two" },
                         }
                     }
                 },

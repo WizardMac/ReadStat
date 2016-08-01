@@ -688,12 +688,12 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
             if (io->read(&table_header_len, sizeof(int16_t), io->io_ctx) < sizeof(int16_t))
                 break;
 
-            n = table_header_len;
+            len = table_header_len;
 
             if (ctx->machine_needs_byte_swap)
-                n = byteswap2(table_header_len);
+                len = byteswap2(table_header_len);
 
-            len = 8 * n;
+            n = len / 8;
         } else {
             if (dta_read_tag(ctx, "<lbl>") != READSTAT_OK) {
                 break;
@@ -727,7 +727,12 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
         if (ctx->value_label_table_len_len == 2) {
             for (i=0; i<n; i++) {
                 readstat_value_t value = { .v = { .i32_value = i }, .type = READSTAT_TYPE_INT32 };
-                if (ctx->value_label_handler(labname, value, table_buffer + 8 * i, ctx->user_ctx)) {
+
+                char label_buf[9];
+                memcpy(label_buf, &table_buffer[8*i], 8);
+                label_buf[8] = '\0';
+
+                if (label_buf[0] && ctx->value_label_handler(labname, value, label_buf, ctx->user_ctx)) {
                     retval = READSTAT_ERROR_USER_ABORT;
                     goto cleanup;
                 }

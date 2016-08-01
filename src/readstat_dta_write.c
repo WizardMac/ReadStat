@@ -471,10 +471,25 @@ static readstat_error_t dta_old_emit_value_labels(readstat_writer_t *writer, dta
     readstat_error_t retval = READSTAT_OK;
     int i, j;
     char labname[12+2];
+    char *label_buffer = NULL;
     for (i=0; i<writer->label_sets_count; i++) {
         readstat_label_set_t *r_label_set = readstat_get_label_set(writer, i);
-        int32_t n = r_label_set->value_labels_count;
-        int16_t table_len = 8*n;
+        int32_t max_value = 0;
+        for (j=0; j<r_label_set->value_labels_count; j++) {
+            readstat_value_label_t *value_label = readstat_get_value_label(r_label_set, j);
+            if (value_label->tag) {
+                retval = READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED;
+                goto cleanup;
+            }
+            if (value_label->int32_key < 0 || value_label->int32_key > 1024) {
+                retval = READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+                goto cleanup;
+            }
+            if (value_label->int32_key > max_value) {
+                max_value = value_label->int32_key;
+            }
+        }
+        int16_t table_len = 8*(max_value + 1);
         retval = readstat_write_bytes(writer, &table_len, sizeof(int16_t));
         if (retval != READSTAT_OK)
             goto cleanup;
@@ -487,16 +502,22 @@ static readstat_error_t dta_old_emit_value_labels(readstat_writer_t *writer, dta
         if (retval != READSTAT_OK)
             goto cleanup;
 
-        for (j=0; j<n; j++) {
+        label_buffer = realloc(label_buffer, table_len);
+        memset(label_buffer, 0, table_len);
+
+        for (j=0; j<r_label_set->value_labels_count; j++) {
             readstat_value_label_t *value_label = readstat_get_value_label(r_label_set, j);
-            char label_buf[8];
-            strncpy(label_buf, value_label->label, sizeof(label_buf));
-            retval = readstat_write_bytes(writer, label_buf, sizeof(label_buf));
-            if (retval != READSTAT_OK)
-                goto cleanup;
+            strncpy(&label_buffer[8*value_label->int32_key], value_label->label, 8);
         }
+
+        retval = readstat_write_bytes(writer, label_buffer, table_len);
+        if (retval != READSTAT_OK)
+            goto cleanup;
     }
 cleanup:
+    if (label_buffer)
+        free(label_buffer);
+
     return retval;
 }
 
