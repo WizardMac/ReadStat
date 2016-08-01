@@ -89,8 +89,16 @@ typedef struct sav_ctx_s {
     int            var_count;
     int            record_count;
     int            row_limit;
+    int            current_row;
     int            value_labels_count;
     int            fweight_index;
+
+    char          *raw_string;
+    size_t         raw_string_len;
+
+    char          *utf8_string;
+    size_t         utf8_string_len;
+
     unsigned int   data_is_compressed:1;
     unsigned int   machine_needs_byte_swap:1;
 } sav_ctx_t;
@@ -124,4 +132,3 @@ typedef struct sav_ctx_s {
 
 sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header, readstat_io_t *io);
 void sav_ctx_free(sav_ctx_t *ctx);
-

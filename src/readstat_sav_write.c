@@ -67,7 +67,7 @@ static readstat_error_t sav_emit_header(readstat_writer_t *writer) {
            sizeof("@(#) SPSS DATA FILE - " READSTAT_PRODUCT_URL)-1);
     header.layout_code = 2;
     header.nominal_case_size = writer->row_len / 8;
-    header.compressed = 0; /* TODO */
+    header.compressed = (writer->compression == READSTAT_COMPRESSION_ROW);
     if (writer->fweight_variable) {
         int32_t dictionary_index = 1 + writer->fweight_variable->offset / 8;
         header.weight_index = dictionary_index;
@@ -782,6 +782,72 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t sav_write_compressed_row(void *writer_ctx, void *input, size_t len) {
+    readstat_error_t retval = READSTAT_OK;
+    readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
+    int i;
+    size_t output_len = len + (len/8 + 7)/8*8;
+    char *output = malloc(output_len);
+
+    off_t input_offset = 0;
+
+    off_t output_offset = 8;
+    off_t control_offset = 0;
+
+    memset(&output[control_offset], 0, 8);
+
+    for (i=0; i<writer->variables_count; i++) {
+        readstat_variable_t *variable = readstat_get_variable(writer, i);
+        if (variable->type == READSTAT_TYPE_STRING ||
+                variable->type == READSTAT_TYPE_LONG_STRING) {
+            size_t width = variable->storage_width;
+            while (width > 0) {
+                if (memcmp(&input[input_offset], "        ", 8) == 0) {
+                    output[control_offset++] = 254;
+                } else {
+                    output[control_offset++] = 253;
+                    memcpy(&output[output_offset], &input[input_offset], 8);
+                    output_offset += 8;
+                }
+                if (control_offset % 8 == 0) {
+                    control_offset = output_offset;
+                    memset(&output[control_offset], 0, 8);
+                    output_offset += 8;
+                }
+                input_offset += 8;
+                width -= 8;
+            }
+        } else {
+            double fp_value;
+            memcpy(&fp_value, &input[input_offset], 8);
+            if (isnan(fp_value)) {
+                output[control_offset++] = 255;
+            } else if ((int)fp_value == fp_value && (int)fp_value > -100 && (int)fp_value < 152) {
+                output[control_offset++] = (int)fp_value + 100;
+            } else {
+                output[control_offset++] = 253;
+                memcpy(&output[output_offset], &input[input_offset], 8);
+                output_offset += 8;
+            }
+            if (control_offset % 8 == 0) {
+                control_offset = output_offset;
+                memset(&output[control_offset], 0, 8);
+                output_offset += 8;
+            }
+            input_offset += 8;
+        }
+    }
+
+    if (writer->current_row + 1 == writer->row_count)
+        output[control_offset] = 252;
+
+    retval = readstat_write_bytes(writer, output, output_offset);
+
+    free(output);
+
+    return retval;
+}
+
 readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count) {
 
     writer->callbacks.variable_width = &sav_variable_width;
@@ -795,6 +861,14 @@ readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *use
     writer->callbacks.write_missing_number = &sav_write_missing_number;
     writer->callbacks.write_missing_tagged = &sav_write_missing_tagged;
     writer->callbacks.begin_data = &sav_begin_data;
+
+    if (writer->compression == READSTAT_COMPRESSION_ROW) {
+        writer->callbacks.write_row = &sav_write_compressed_row;
+    } else if (writer->compression == READSTAT_COMPRESSION_NONE) {
+        /* void */
+    } else {
+        return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
+    }
 
     return readstat_begin_writing_file(writer, user_ctx, row_count);
 }

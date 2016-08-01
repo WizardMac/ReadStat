@@ -60,6 +60,10 @@ void sav_ctx_free(sav_ctx_t *ctx) {
         }
         free(ctx->varinfo);
     }
+    if (ctx->raw_string)
+        free(ctx->raw_string);
+    if (ctx->utf8_string)
+        free(ctx->utf8_string);
     if (ctx->converter) {
         iconv_close(ctx->converter);
     }

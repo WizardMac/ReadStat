@@ -1166,6 +1166,9 @@ cleanup:
 
 readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *user_ctx, long row_count) {
 
+    if (writer->compression != READSTAT_COMPRESSION_NONE)
+        return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
+
     if (writer->version == 0)
         writer->version = DTA_DEFAULT_FILE_VERSION;
 

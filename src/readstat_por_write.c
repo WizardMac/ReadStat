@@ -717,6 +717,9 @@ static readstat_error_t por_write_row(void *writer_ctx, void *row, size_t row_le
 
 readstat_error_t readstat_begin_writing_por(readstat_writer_t *writer, void *user_ctx, long row_count) {
 
+    if (writer->compression != READSTAT_COMPRESSION_NONE)
+        return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
+
     writer->callbacks.variable_width = &por_variable_width;
     writer->callbacks.write_int8 = &por_write_int8_value;
     writer->callbacks.write_int16 = &por_write_int16_value;

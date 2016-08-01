@@ -310,6 +310,12 @@ readstat_error_t readstat_writer_set_file_format_is_64bit(readstat_writer_t *wri
     return READSTAT_OK;
 }
 
+readstat_error_t readstat_writer_set_compression(readstat_writer_t *writer, 
+        readstat_compression_t compression) {
+    writer->compression = compression;
+    return READSTAT_OK;
+}
+
 readstat_error_t readstat_writer_set_error_handler(readstat_writer_t *writer, 
         readstat_error_handler error_handler) {
     writer->error_handler = error_handler;

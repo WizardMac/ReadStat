@@ -27,22 +27,33 @@ typedef struct rt_test_group_s {
 
 rt_test_group_t _test_groups[] = {
     {
-        .label = "Simple POR tests",
+        .label = "SAV compression tests",
         .tests = {
             {
-                .label = "POR test",
-                .test_formats = RT_FORMAT_POR,
+                .label = "SAV row compression",
+                .test_formats = RT_FORMAT_SAV_ROW_COMP,
+                .rows = 3,
                 .columns = {
                     {
                         .name = "VAR1",
                         .type = READSTAT_TYPE_DOUBLE,
-                        .label = "Double-precision variable"
+                        .label = "Double-precision variable",
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_system_missing = 1 }
+                        }
                     },
 
                     {
                         .name = "VAR2",
                         .type = READSTAT_TYPE_STRING,
-                        .label = "String variables"
+                        .label = "String variable",
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "spaces->        <-- here" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blah" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblah" } }
+                        }
                     }
                 }
             }
@@ -1391,8 +1402,10 @@ static char *file_extension(long format) {
         return "dta117";
     if (format == RT_FORMAT_DTA_118)
         return "dta118";
-    if (format == RT_FORMAT_SAV)
+    if (format == RT_FORMAT_SAV_NO_COMP)
         return "sav";
+    if (format == RT_FORMAT_SAV_ROW_COMP)
+        return "savrow";
     if (format == RT_FORMAT_POR)
         return "por";
     if (format == RT_FORMAT_SAS7BDAT_32BIT)
@@ -1430,7 +1443,7 @@ int main(int argc, char *argv[]) {
             }
             rt_parse_ctx_t *parse_ctx = parse_ctx_init(buffer, file);
 
-            for (f=RT_FORMAT_DTA_104; (f&RT_FORMAT_ALL); f*=2) {
+            for (f=RT_FORMAT_DTA_104; f<RT_FORMAT_ALL; f*=2) {
                 if (!(file->test_formats & f))
                     continue;
 
