@@ -1,9 +1,5 @@
 //
 //  readstat_por.c
-//  Wizard
-//
-//  Created by Evan Miller on 4/17/12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
 //
 
 #include <stdio.h>

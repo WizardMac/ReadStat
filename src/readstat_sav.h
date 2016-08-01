@@ -1,9 +1,5 @@
 //
-//  Header.h
-//  Wizard
-//
-//  Created by Evan Miller on 3/31/12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  readstat_sav.h
 //
 
 #include "readstat.h"

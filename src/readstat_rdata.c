@@ -1,9 +1,5 @@
  //
 //  readstat_rdata.c
-//  Wizard
-//
-//  Created by Evan Miller on 3/31/12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
 //
 
 #include <stdlib.h>

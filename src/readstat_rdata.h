@@ -1,13 +1,6 @@
 //
 //  readstat_rdata.h
-//  Wizard
 //
-//  Created by Evan Miller on 3/31/12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
-//
-
-#ifndef Wizard_readstat_rdata_h
-#define Wizard_readstat_rdata_h
 
 #include "readstat.h"
 #include "readstat_bits.h"
@@ -82,5 +75,3 @@ typedef struct rdata_sexptype_info_s {
 #define RDATA_PSEUDO_SXP_BYTE_CODE_REP_REF     243
 #define RDATA_PSEUDO_SXP_EMPTY_ENVIRONMENT     242
 #define RDATA_PSEUDO_SXP_BASE_ENVIRONMENT      241
-
-#endif

@@ -1,9 +1,7 @@
 //
-//  stat.h
-//  Wizard
+//  readstat.h - API and internal data structures for ReadStat
 //
-//  Created by Evan Miller on 3/31/12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright Evan Miller and ReadStat authors (see LICENSE)
 //
 
 #ifndef INCLUDE_READSTAT_H
