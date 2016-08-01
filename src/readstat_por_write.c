@@ -561,6 +561,19 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t por_emit_document_record(readstat_writer_t *writer, por_write_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
+
+    if ((retval = por_write_tag(writer, ctx, 'E')) != READSTAT_OK)
+        goto cleanup;
+
+    if ((retval = por_write_double(writer, ctx, 0)) != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    return retval;
+}
+
 static readstat_error_t por_emit_data_tag(readstat_writer_t *writer, por_write_ctx_t *ctx) {
     return por_write_tag(writer, ctx, 'F');
 }
@@ -592,6 +605,9 @@ static readstat_error_t por_begin_data(void *writer_ctx) {
         goto cleanup;
 
     if ((retval = por_emit_value_label_records(writer, ctx)) != READSTAT_OK)
+        goto cleanup;
+
+    if ((retval = por_emit_document_record(writer, ctx)) != READSTAT_OK)
         goto cleanup;
 
     if ((retval = por_emit_data_tag(writer, ctx)) != READSTAT_OK)

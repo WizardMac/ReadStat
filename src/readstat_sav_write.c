@@ -348,6 +348,23 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t sav_emit_document_record(readstat_writer_t *writer) {
+    readstat_error_t retval = READSTAT_OK;
+    int32_t rec_type = SAV_RECORD_TYPE_DOCUMENT;
+    int32_t n_lines = 0;
+
+    retval = readstat_write_bytes(writer, &rec_type, sizeof(rec_type));
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = readstat_write_bytes(writer, &n_lines, sizeof(n_lines));
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    return retval;
+}
+
 static readstat_error_t sav_emit_integer_info_record(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
 
@@ -730,6 +747,10 @@ static readstat_error_t sav_begin_data(void *writer_ctx) {
         goto cleanup;
 
     retval = sav_emit_value_label_records(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = sav_emit_document_record(writer);
     if (retval != READSTAT_OK)
         goto cleanup;
 
