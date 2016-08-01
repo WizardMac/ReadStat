@@ -258,6 +258,7 @@ readstat_error_t spss_format_for_variable(readstat_variable_t *r_variable,
     }
 
     if (r_variable->format[0]) {
+        spss_format->decimal_places = 0;
         const char *fmt = r_variable->format;
         if (spss_parse_format(fmt, strlen(fmt), spss_format) != READSTAT_OK) {
             retval = READSTAT_ERROR_BAD_FORMAT_STRING;

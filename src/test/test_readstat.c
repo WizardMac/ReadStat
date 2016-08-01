@@ -301,6 +301,109 @@ rt_test_group_t _test_groups[] = {
             }
         }
     },
+
+    {
+        .label = "Formats",
+        .tests = {
+            {
+                .label = "SPSS basic formats",
+                .test_formats = RT_FORMAT_SPSS,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "F6.4" },
+                    { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .format = "F8.2" },
+                    { .name = "VAR3", .type = READSTAT_TYPE_STRING, .format = "A12" }
+                }
+            },
+            {
+                .label = "SPSS bad format",
+                .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
+                .test_formats = RT_FORMAT_SPSS,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "BARF6.4" }
+                }
+            },
+            {
+                .label = "SPSS date formats",
+                .test_formats = RT_FORMAT_SPSS,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "DATE11" },
+                    { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .format = "TIME10" },
+                    { .name = "VAR3", .type = READSTAT_TYPE_DOUBLE, .format = "DATETIME15" },
+                    { .name = "VAR4", .type = READSTAT_TYPE_DOUBLE, .format = "ADATE10" },
+                    { .name = "VAR5", .type = READSTAT_TYPE_DOUBLE, .format = "JDATE10" },
+                    { .name = "VAR6", .type = READSTAT_TYPE_DOUBLE, .format = "DTIME10" },
+                    { .name = "VAR7", .type = READSTAT_TYPE_DOUBLE, .format = "EDATE10" },
+                    { .name = "VAR8", .type = READSTAT_TYPE_DOUBLE, .format = "SDATE10" }
+                }
+            },
+            {
+                .label = "SPSS calendar formats",
+                .test_formats = RT_FORMAT_SPSS,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "WKDAY11" },
+                    { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .format = "MONTH11" },
+                    { .name = "VAR3", .type = READSTAT_TYPE_DOUBLE, .format = "MOYR11" },
+                    { .name = "VAR4", .type = READSTAT_TYPE_DOUBLE, .format = "QYR11" },
+                    { .name = "VAR5", .type = READSTAT_TYPE_DOUBLE, .format = "WKYR11" }
+                }
+            },
+            {
+                .label = "SPSS extended formats",
+                .test_formats = RT_FORMAT_SPSS,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "AHEX6.4" },
+                    { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .format = "COMMA6.4" },
+                    { .name = "VAR3", .type = READSTAT_TYPE_DOUBLE, .format = "Z10" },
+                    { .name = "VAR4", .type = READSTAT_TYPE_DOUBLE, .format = "N10" },
+                    { .name = "VAR5", .type = READSTAT_TYPE_DOUBLE, .format = "E10" },
+                    { .name = "VAR6", .type = READSTAT_TYPE_DOUBLE, .format = "PCT10" },
+                    { .name = "VAR7", .type = READSTAT_TYPE_DOUBLE, .format = "DOT10" }
+                }
+            },
+            {
+                .label = "SPSS CC formats",
+                .test_formats = RT_FORMAT_SPSS,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "CCA10" },
+                    { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .format = "CCB10" },
+                    { .name = "VAR3", .type = READSTAT_TYPE_DOUBLE, .format = "CCC10" },
+                    { .name = "VAR4", .type = READSTAT_TYPE_DOUBLE, .format = "CCD10" },
+                    { .name = "VAR5", .type = READSTAT_TYPE_DOUBLE, .format = "CCE10" }
+                }
+            },
+            {
+                .label = "SPSS currency formats",
+                .test_formats = RT_FORMAT_SPSS,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "DOLLAR6.2" },
+                    { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .format = "IB6.2" },
+                    { .name = "VAR3", .type = READSTAT_TYPE_DOUBLE, .format = "PIBHEX9" },
+                    { .name = "VAR4", .type = READSTAT_TYPE_DOUBLE, .format = "P9" },
+                    { .name = "VAR5", .type = READSTAT_TYPE_DOUBLE, .format = "PIB9" },
+                    { .name = "VAR6", .type = READSTAT_TYPE_DOUBLE, .format = "PK9" },
+                    { .name = "VAR7", .type = READSTAT_TYPE_DOUBLE, .format = "RB9" },
+                    { .name = "VAR8", .type = READSTAT_TYPE_DOUBLE, .format = "RBHEX9" }
+                }
+            },
+            {
+                .label = "DTA formats",
+                .test_formats = RT_FORMAT_DTA,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "%6.4g" },
+                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .format = "%20s" }
+                }
+            },
+            {
+                .label = "SAS formats",
+                .test_formats = RT_FORMAT_SAS7BDAT,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "10.3", .label_set = "10.3" },
+                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .format = "$CHAR3.", .label_set = "$CHAR3." }
+                }
+            }
+        }
+    },
+
     {
         .label = "Missing value definitions",
         .tests = {

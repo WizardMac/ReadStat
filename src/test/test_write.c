@@ -118,6 +118,8 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_variable_set_measure(variable, column->measure);
         readstat_variable_set_label(variable, column->label);
         readstat_variable_set_label_set(variable, label_set);
+        if (column->format[0])
+            readstat_variable_set_format(variable, column->format);
 
         for (i=0; i<column->missing_ranges_count; i++) {
             readstat_variable_add_missing_double_range(variable,

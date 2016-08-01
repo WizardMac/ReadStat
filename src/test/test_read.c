@@ -182,6 +182,11 @@ static int handle_variable(int index, readstat_variable_t *variable,
             readstat_variable_get_label(variable),
             "Column labels");
 
+    if (column->format[0])
+        push_error_if_strings_differ(rt_ctx, column->format,
+                readstat_variable_get_format(variable),
+                "Column formats");
+
     push_error_if_doubles_differ(rt_ctx, column->missing_ranges_count,
             readstat_variable_get_missing_ranges_count(variable),
             "Missing values count");
@@ -215,7 +220,6 @@ static int handle_value_label(const char *val_labels, readstat_value_t value, co
                 }
             }
             if (j == label_set->value_labels_count) {
-                printf("Set: %s  Type: %d  Value: %lf  Label: %s\n", val_labels, value.type, value.v.double_value, label);
                 push_error_if_strings_differ(rt_ctx, NULL,
                         label, "Value label (no match)");
             }
