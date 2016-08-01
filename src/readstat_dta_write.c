@@ -507,7 +507,10 @@ static readstat_error_t dta_old_emit_value_labels(readstat_writer_t *writer, dta
 
         for (j=0; j<r_label_set->value_labels_count; j++) {
             readstat_value_label_t *value_label = readstat_get_value_label(r_label_set, j);
-            strncpy(&label_buffer[8*value_label->int32_key], value_label->label, 8);
+            size_t len = value_label->label_len;
+            if (len > 8)
+                len = 8;
+            memcpy(&label_buffer[8*value_label->int32_key], value_label->label, len);
         }
 
         retval = readstat_write_bytes(writer, label_buffer, table_len);
