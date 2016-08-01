@@ -782,12 +782,13 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t sav_write_compressed_row(void *writer_ctx, void *input, size_t len) {
+static readstat_error_t sav_write_compressed_row(void *writer_ctx, void *row, size_t len) {
     readstat_error_t retval = READSTAT_OK;
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     int i;
     size_t output_len = len + (len/8 + 7)/8*8;
     char *output = malloc(output_len);
+    char *input = (char *)row;
 
     off_t input_offset = 0;
 
@@ -818,16 +819,20 @@ static readstat_error_t sav_write_compressed_row(void *writer_ctx, void *input, 
                 width -= 8;
             }
         } else {
-            double fp_value;
-            memcpy(&fp_value, &input[input_offset], 8);
-            if (isnan(fp_value)) {
+            uint64_t int_value;
+            memcpy(&int_value, &input[input_offset], 8);
+            if (int_value == SAV_MISSING_DOUBLE) {
                 output[control_offset++] = 255;
-            } else if ((int)fp_value == fp_value && (int)fp_value > -100 && (int)fp_value < 152) {
-                output[control_offset++] = (int)fp_value + 100;
             } else {
-                output[control_offset++] = 253;
-                memcpy(&output[output_offset], &input[input_offset], 8);
-                output_offset += 8;
+                double fp_value;
+                memcpy(&fp_value, &input[input_offset], 8);
+                if ((int)fp_value == fp_value && (int)fp_value > -100 && (int)fp_value < 152) {
+                    output[control_offset++] = (int)fp_value + 100;
+                } else {
+                    output[control_offset++] = 253;
+                    memcpy(&output[output_offset], &input[input_offset], 8);
+                    output_offset += 8;
+                }
             }
             if (control_offset % 8 == 0) {
                 control_offset = output_offset;
