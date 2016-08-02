@@ -131,6 +131,21 @@ static readstat_error_t sav_parse_variable_display_parameter_record(sav_ctx_t *c
 static readstat_error_t sav_parse_machine_integer_info_record(const void *data, size_t data_len, sav_ctx_t *ctx);
 static readstat_error_t sav_parse_long_value_labels_record(const void *data, size_t data_len, sav_ctx_t *ctx);
 
+static void sav_tag_missing_double(readstat_value_t *value, readstat_missingness_t *missingness,
+        sav_ctx_t *ctx) {
+    spss_tag_missing_double(value, missingness);
+
+    double fp_value = value->v.double_value;
+    uint64_t long_value = 0;
+    memcpy(&long_value, &fp_value, 8);
+    if (long_value == ctx->missing_double)
+        value->is_system_missing = 1;
+    if (long_value == ctx->lowest_double)
+        value->is_system_missing = 1;
+    if (long_value == ctx->highest_double)
+        value->is_system_missing = 1;
+}
+
 static readstat_error_t sav_update_progress(sav_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
     return io->update(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
@@ -273,10 +288,20 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
-        if (ctx->machine_needs_byte_swap) {
-            for (i=0; i<info->n_missing_values; i++) {
+        for (i=0; i<info->n_missing_values; i++) {
+            if (ctx->machine_needs_byte_swap) {
                 info->missing_values[i] = byteswap_double(info->missing_values[i]);
             }
+
+            uint64_t long_value = 0;
+            memcpy(&long_value, &info->missing_values[i], 8);
+
+            if (long_value == ctx->missing_double)
+                info->missing_values[i] = NAN;
+            if (long_value == ctx->lowest_double)
+                info->missing_values[i] = -HUGE_VAL;
+            if (long_value == ctx->highest_double)
+                info->missing_values[i] = HUGE_VAL;
         }
         info->missingness = spss_missingness_for_info(info);
     }
@@ -360,7 +385,7 @@ static readstat_error_t sav_submit_value_labels(value_label_t *value_labels, int
                 val_d = byteswap_double(val_d);
 
             value.v.double_value = val_d;
-            spss_tag_missing_double(&value, missingness);
+            sav_tag_missing_double(&value, missingness, ctx);
         } else {
             char unpadded_val[8*4+1];
             retval = readstat_convert(unpadded_val, sizeof(unpadded_val), vlabel->value, 8, ctx->converter);
@@ -584,7 +609,7 @@ static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len
                 fp_value = byteswap_double(fp_value);
             }
             value.v.double_value = fp_value;
-            spss_tag_missing_double(&value, &var_info->missingness);
+            sav_tag_missing_double(&value, &var_info->missingness, ctx);
             if (ctx->value_handler(ctx->current_row, var_info->index, value, ctx->user_ctx)) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto done;
@@ -633,7 +658,7 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
     unsigned char chunk[8];
     int i;
     double fp_value;
-    uint64_t missing_value = SAV_MISSING_DOUBLE;
+    uint64_t missing_value = ctx->missing_double;
     off_t data_offset = 0;
     unsigned char buffer[DATA_BUFFER_SIZE];
     int buffer_used = 0;
@@ -756,6 +781,13 @@ static readstat_error_t sav_parse_machine_integer_info_record(const void *data, 
 }
 
 static readstat_error_t sav_parse_machine_floating_point_record(const void *data, sav_ctx_t *ctx) {
+    sav_machine_floating_point_info_record_t fp_info;
+    memcpy(&fp_info, data, sizeof(sav_machine_floating_point_info_record_t));
+
+    ctx->missing_double = ctx->machine_needs_byte_swap ? byteswap8(fp_info.sysmis) : fp_info.sysmis;
+    ctx->highest_double = ctx->machine_needs_byte_swap ? byteswap8(fp_info.highest) : fp_info.highest;
+    ctx->lowest_double = ctx->machine_needs_byte_swap ? byteswap8(fp_info.lowest) : fp_info.lowest;
+
     return READSTAT_OK;
 }
 

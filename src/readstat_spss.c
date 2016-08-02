@@ -80,14 +80,6 @@ void spss_tag_missing_double(readstat_value_t *value, readstat_missingness_t *mi
             }
         }
     }
-    uint64_t long_value = 0;
-    memcpy(&long_value, &fp_value, 8);
-    if (long_value == SAV_MISSING_DOUBLE)
-        value->is_system_missing = 1;
-    if (long_value == SAV_LOWEST_DOUBLE)
-        value->is_system_missing = 1;
-    if (long_value == SAV_HIGHEST_DOUBLE)
-        value->is_system_missing = 1;
 }
 
 int spss_varinfo_compare(const void *elem1, const void *elem2) {
@@ -98,23 +90,12 @@ int spss_varinfo_compare(const void *elem1, const void *elem2) {
     return (offset > v->offset);
 }
 
-readstat_value_t spss_boxed_value(double fp_value) {
-    readstat_value_t value;
-    memset(&value, 0, sizeof(readstat_value_t));
-
-    value.v.double_value = fp_value;
-    value.type = READSTAT_TYPE_DOUBLE;
-
-    uint64_t long_value = 0;
-    memcpy(&long_value, &fp_value, 8);
-
-    if (long_value == SAV_MISSING_DOUBLE)
-        value.is_system_missing = 1;
-    if (long_value == SAV_LOWEST_DOUBLE)
-        value.v.double_value = -HUGE_VAL;
-    if (long_value == SAV_HIGHEST_DOUBLE)
-        value.v.double_value = HUGE_VAL;
-
+static readstat_value_t spss_boxed_value(double fp_value) {
+    readstat_value_t value = {
+        .type = READSTAT_TYPE_DOUBLE,
+        .v = { .double_value = fp_value },
+        .is_system_missing = isnan(fp_value)
+    };
     return value;
 }
 

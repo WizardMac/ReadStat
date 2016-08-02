@@ -416,9 +416,9 @@ static readstat_error_t sav_emit_floating_point_info_record(readstat_writer_t *w
     sav_machine_floating_point_info_record_t fp_info;
     memset(&fp_info, 0, sizeof(sav_machine_floating_point_info_record_t));
 
-    fp_info.sysmis = NAN;
-    fp_info.lowest = DBL_MAX;
-    fp_info.highest = -DBL_MAX;
+    fp_info.sysmis = SAV_MISSING_DOUBLE;
+    fp_info.highest = SAV_HIGHEST_DOUBLE;
+    fp_info.lowest = SAV_LOWEST_DOUBLE;
 
     retval = readstat_write_bytes(writer, &fp_info, sizeof(fp_info));
     if (retval != READSTAT_OK)

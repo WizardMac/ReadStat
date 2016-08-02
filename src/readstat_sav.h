@@ -54,9 +54,9 @@ typedef struct sav_machine_integer_info_record_s {
 } sav_machine_integer_info_record_t;
 
 typedef struct sav_machine_floating_point_info_record_s {
-    double   sysmis;
-    double   highest;
-    double   lowest;
+    uint64_t sysmis;
+    uint64_t highest;
+    uint64_t lowest;
 } sav_machine_floating_point_info_record_t;
 
 typedef struct sav_dictionary_termination_record_s {
@@ -98,6 +98,10 @@ typedef struct sav_ctx_s {
 
     char          *utf8_string;
     size_t         utf8_string_len;
+
+    uint64_t       missing_double;
+    uint64_t       lowest_double;
+    uint64_t       highest_double;
 
     unsigned int   data_is_compressed:1;
     unsigned int   machine_needs_byte_swap:1;
