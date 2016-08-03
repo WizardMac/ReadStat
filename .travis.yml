@@ -7,8 +7,8 @@ script:
   - ./configure --enable-code-coverage && make && make check
 
 after_success:
-  - mv src/sas/.libs/*.gcno .
-  - mv src/spss/.libs/*.gcno .
-  - mv src/stata/.libs/*.gcno .
-  - mv src/.libs/*.gcno .
+  - mv src/sas/.libs/*.gc* .
+  - mv src/spss/.libs/*.gc* .
+  - mv src/stata/.libs/*.gc* .
+  - mv src/.libs/*.gc* .
   - bash <(curl -s https://codecov.io/bash)
