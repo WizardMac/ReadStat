@@ -7,4 +7,4 @@ script:
   - ./configure --enable-code-coverage && make && make check
 
 after_success:
-  - cd src/.libs && bash <(curl -s https://codecov.io/bash)
+  - bash <(curl -s https://codecov.io/bash)
