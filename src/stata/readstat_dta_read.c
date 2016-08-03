@@ -5,9 +5,14 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
+
+#include "../readstat.h"
+#include "../readstat_bits.h"
+#include "../readstat_iconv.h"
+#include "../readstat_convert.h"
+
 #include "readstat_dta.h"
 #include "readstat_dta_parse_timestamp.h"
-#include "readstat_convert.h"
 
 static readstat_error_t dta_update_progress(dta_ctx_t *ctx);
 static readstat_error_t dta_read_descriptors(dta_ctx_t *ctx);

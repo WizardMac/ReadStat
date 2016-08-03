@@ -8,10 +8,14 @@
 #include <float.h>
 #include <time.h>
 
+#include "../readstat.h"
+#include "../readstat_bits.h"
+#include "../readstat_iconv.h"
+#include "../readstat_convert.h"
+
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
 #include "readstat_sav_parse_timestamp.h"
-#include "readstat_convert.h"
 
 #define DATA_BUFFER_SIZE            65536
 

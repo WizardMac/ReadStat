@@ -4,8 +4,8 @@
 #include <string.h>
 #include <math.h>
 #include "readstat_sas.h"
-#include "readstat_iconv.h"
-#include "readstat_convert.h"
+#include "../readstat_iconv.h"
+#include "../readstat_convert.h"
 
 #define SAS_CATALOG_FIRST_INDEX_PAGE 1
 #define SAS_CATALOG_USELESS_PAGES    3

@@ -4,8 +4,8 @@
 #include <time.h>
 #include <iconv.h>
 
-#include "readstat.h"
-#include "readstat_writer.h"
+#include "../readstat.h"
+#include "../readstat_writer.h"
 #include "readstat_sas.h"
 
 #define HEADER_SIZE 1024

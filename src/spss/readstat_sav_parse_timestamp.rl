@@ -1,6 +1,8 @@
 
 #include <time.h>
-#include "readstat.h"
+#include "../readstat.h"
+#include "../readstat_iconv.h"
+
 #include "readstat_sav.h"
 #include "readstat_sav_parse_timestamp.h"
 

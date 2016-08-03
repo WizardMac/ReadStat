@@ -2,3 +2,8 @@
 .Rhistory
 .RData
 *.Rproj
+**/.deps
+**/.libs
+**/.dirstamp
+**/*.lo
+**/*.o

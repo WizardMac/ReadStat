@@ -2,10 +2,7 @@
 //  readstat_sav.h
 //
 
-#include "readstat.h"
 #include "readstat_spss.h"
-#include "readstat_iconv.h"
-#include "readstat_bits.h"
 
 #pragma pack(push, 1)
 

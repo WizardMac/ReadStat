@@ -4,31 +4,31 @@ libreadstat_la_SOURCES = \
 	src/CKHashTable.c \
 	src/readstat_bits.c \
 	src/readstat_convert.c \
-	src/readstat_dta.c \
-	src/readstat_dta_parse_timestamp.c \
-	src/readstat_dta_read.c \
-	src/readstat_dta_write.c \
 	src/readstat_error.c \
 	src/readstat_io_unistd.c \
 	src/readstat_parser.c \
-	src/readstat_por.c \
-	src/readstat_por_parse.c \
-	src/readstat_por_read.c \
-	src/readstat_por_write.c \
-	src/readstat_sas.c \
-	src/readstat_sas_catalog.c \
-	src/readstat_sas_data.c \
-	src/readstat_sas_write.c \
-	src/readstat_sav.c \
-	src/readstat_sav_parse.c \
-	src/readstat_sav_parse_timestamp.c \
-	src/readstat_sav_read.c \
-	src/readstat_sav_write.c \
-	src/readstat_spss.c \
-	src/readstat_spss_parse.c \
 	src/readstat_value.c \
 	src/readstat_variable.c \
-	src/readstat_writer.c
+	src/readstat_writer.c \
+	src/sas/readstat_sas.c \
+	src/sas/readstat_sas_catalog.c \
+	src/sas/readstat_sas_data.c \
+	src/sas/readstat_sas_write.c \
+	src/spss/readstat_por.c \
+	src/spss/readstat_por_parse.c \
+	src/spss/readstat_por_read.c \
+	src/spss/readstat_por_write.c \
+	src/spss/readstat_sav.c \
+	src/spss/readstat_sav_parse.c \
+	src/spss/readstat_sav_parse_timestamp.c \
+	src/spss/readstat_sav_read.c \
+	src/spss/readstat_sav_write.c \
+	src/spss/readstat_spss.c \
+	src/spss/readstat_spss_parse.c \
+	src/stata/readstat_dta.c \
+	src/stata/readstat_dta_parse_timestamp.c \
+	src/stata/readstat_dta_read.c \
+	src/stata/readstat_dta_write.c
 
 if HAVE_RAGEL
 .rl.c:
@@ -49,19 +49,19 @@ noinst_HEADERS = \
        src/CKHashTable.h \
        src/readstat_bits.h \
        src/readstat_convert.h \
-       src/readstat_dta.h \
-       src/readstat_dta_parse_timestamp.h \
        src/readstat_iconv.h \
        src/readstat_io_unistd.h \
-       src/readstat_por.h \
-       src/readstat_por_parse.h \
-       src/readstat_sas.h \
-       src/readstat_sav.h \
-       src/readstat_sav_parse.h \
-       src/readstat_sav_parse_timestamp.h \
-       src/readstat_spss.h \
-       src/readstat_spss_parse.h \
        src/readstat_writer.h \
+       src/sas/readstat_sas.h \
+       src/spss/readstat_por.h \
+       src/spss/readstat_por_parse.h \
+       src/spss/readstat_sav.h \
+       src/spss/readstat_sav_parse.h \
+       src/spss/readstat_sav_parse_timestamp.h \
+       src/spss/readstat_spss.h \
+       src/spss/readstat_spss_parse.h \
+       src/stata/readstat_dta.h \
+       src/stata/readstat_dta_parse_timestamp.h \
        src/bin/module.h \
        src/bin/module_util.h \
        src/bin/modules/mod_csv.h \

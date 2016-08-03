@@ -7,7 +7,9 @@
 #include <sys/time.h>
 
 #include "../readstat.h"
-#include "../readstat_dta.h"
+#include "../readstat_iconv.h"
+
+#include "../stata/readstat_dta.h"
 
 #include "test_types.h"
 #include "test_error.h"

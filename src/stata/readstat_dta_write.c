@@ -7,9 +7,12 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "readstat.h"
+#include "../readstat.h"
+#include "../readstat_bits.h"
+#include "../readstat_iconv.h"
+#include "../readstat_writer.h"
+
 #include "readstat_dta.h"
-#include "readstat_writer.h"
 
 #define DTA_DEFAULT_FORMAT_BYTE    "8.0g"
 #define DTA_DEFAULT_FORMAT_INT16   "8.0g"

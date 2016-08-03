@@ -6,8 +6,8 @@
 #include <math.h>
 #include <inttypes.h>
 #include "readstat_sas.h"
-#include "readstat_iconv.h"
-#include "readstat_convert.h"
+#include "../readstat_iconv.h"
+#include "../readstat_convert.h"
 
 #define ERROR_BUF_SIZE 1024
 

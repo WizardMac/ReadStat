@@ -11,6 +11,10 @@
 #include <float.h>
 #include <time.h>
 
+#include "../readstat.h"
+#include "../readstat_bits.h"
+#include "../readstat_iconv.h"
+
 #include "readstat_sav.h"
 
 #define SAV_VARINFO_INITIAL_CAPACITY  512

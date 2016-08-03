@@ -4,6 +4,10 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "../readstat.h"
+#include "../readstat_iconv.h"
+#include "../readstat_bits.h"
+
 #include "readstat_dta.h"
 
 #define DTA_MIN_VERSION 104

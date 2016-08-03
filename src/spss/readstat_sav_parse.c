@@ -1,7 +1,10 @@
 
-#line 1 "src/readstat_sav_parse.rl"
+#line 1 "src/spss/readstat_sav_parse.rl"
 
 #include <stdlib.h>
+#include "../readstat.h"
+#include "../readstat_iconv.h"
+
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
 
@@ -38,7 +41,7 @@ static void build_lookup_table(varlookup_t *table, int var_count, sav_ctx_t *ctx
 }
 
 
-#line 42 "src/readstat_sav_parse.c"
+#line 45 "src/spss/readstat_sav_parse.c"
 static const char _sav_long_variable_parse_actions[] = {
 	0, 1, 3, 1, 5, 2, 4, 1, 
 	3, 6, 2, 0
@@ -592,7 +595,7 @@ static const int sav_long_variable_parse_start = 1;
 static const int sav_long_variable_parse_en_main = 1;
 
 
-#line 42 "src/readstat_sav_parse.rl"
+#line 45 "src/spss/readstat_sav_parse.rl"
 
 
 readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) {
@@ -633,12 +636,12 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
     int cs;
 
     
-#line 637 "src/readstat_sav_parse.c"
+#line 640 "src/spss/readstat_sav_parse.c"
 	{
 	cs = sav_long_variable_parse_start;
 	}
 
-#line 642 "src/readstat_sav_parse.c"
+#line 645 "src/spss/readstat_sav_parse.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -713,7 +716,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 82 "src/readstat_sav_parse.rl"
+#line 85 "src/spss/readstat_sav_parse.rl"
 	{
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
@@ -726,36 +729,36 @@ _match:
         }
 	break;
 	case 1:
-#line 93 "src/readstat_sav_parse.rl"
+#line 96 "src/spss/readstat_sav_parse.rl"
 	{
             memcpy(temp_key, str_start, str_len);
             temp_key[str_len] = '\0';
         }
 	break;
 	case 2:
-#line 98 "src/readstat_sav_parse.rl"
+#line 101 "src/spss/readstat_sav_parse.rl"
 	{
             memcpy(temp_val, str_start, str_len);
             temp_val[str_len] = '\0';
         }
 	break;
 	case 3:
-#line 109 "src/readstat_sav_parse.rl"
+#line 112 "src/spss/readstat_sav_parse.rl"
 	{ str_start = p; }
 	break;
 	case 4:
-#line 109 "src/readstat_sav_parse.rl"
+#line 112 "src/spss/readstat_sav_parse.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 5:
-#line 111 "src/readstat_sav_parse.rl"
+#line 114 "src/spss/readstat_sav_parse.rl"
 	{ str_start = p; }
 	break;
 	case 6:
-#line 111 "src/readstat_sav_parse.rl"
+#line 114 "src/spss/readstat_sav_parse.rl"
 	{ str_len = p - str_start; }
 	break;
-#line 759 "src/readstat_sav_parse.c"
+#line 762 "src/spss/readstat_sav_parse.c"
 		}
 	}
 
@@ -772,7 +775,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 0:
-#line 82 "src/readstat_sav_parse.rl"
+#line 85 "src/spss/readstat_sav_parse.rl"
 	{
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
@@ -785,17 +788,17 @@ _again:
         }
 	break;
 	case 2:
-#line 98 "src/readstat_sav_parse.rl"
+#line 101 "src/spss/readstat_sav_parse.rl"
 	{
             memcpy(temp_val, str_start, str_len);
             temp_val[str_len] = '\0';
         }
 	break;
 	case 6:
-#line 111 "src/readstat_sav_parse.rl"
+#line 114 "src/spss/readstat_sav_parse.rl"
 	{ str_len = p - str_start; }
 	break;
-#line 799 "src/readstat_sav_parse.c"
+#line 802 "src/spss/readstat_sav_parse.c"
 		}
 	}
 	}
@@ -803,7 +806,7 @@ _again:
 	_out: {}
 	}
 
-#line 119 "src/readstat_sav_parse.rl"
+#line 122 "src/spss/readstat_sav_parse.rl"
 
 
     if (cs < 227|| p != pe) {
@@ -827,7 +830,7 @@ _again:
 }
 
 
-#line 831 "src/readstat_sav_parse.c"
+#line 834 "src/spss/readstat_sav_parse.c"
 static const char _sav_very_long_string_parse_actions[] = {
 	0, 1, 0, 1, 2, 1, 3, 2, 
 	4, 1, 2, 5, 2
@@ -935,7 +938,7 @@ static const int sav_very_long_string_parse_start = 1;
 static const int sav_very_long_string_parse_en_main = 1;
 
 
-#line 145 "src/readstat_sav_parse.rl"
+#line 148 "src/spss/readstat_sav_parse.rl"
 
 
 readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
@@ -979,12 +982,12 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     int cs;
     
     
-#line 983 "src/readstat_sav_parse.c"
+#line 986 "src/spss/readstat_sav_parse.c"
 	{
 	cs = sav_very_long_string_parse_start;
 	}
 
-#line 988 "src/readstat_sav_parse.c"
+#line 991 "src/spss/readstat_sav_parse.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -1059,7 +1062,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 188 "src/readstat_sav_parse.rl"
+#line 191 "src/spss/readstat_sav_parse.rl"
 	{
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
@@ -1068,14 +1071,14 @@ _match:
         }
 	break;
 	case 1:
-#line 195 "src/readstat_sav_parse.rl"
+#line 198 "src/spss/readstat_sav_parse.rl"
 	{
             memcpy(temp_key, str_start, str_len);
             temp_key[str_len] = '\0';
         }
 	break;
 	case 2:
-#line 200 "src/readstat_sav_parse.rl"
+#line 203 "src/spss/readstat_sav_parse.rl"
 	{
             if ((*p) != '\0') { 
                 temp_val = 10 * temp_val + ((*p) - '0'); 
@@ -1083,18 +1086,18 @@ _match:
         }
 	break;
 	case 3:
-#line 212 "src/readstat_sav_parse.rl"
+#line 215 "src/spss/readstat_sav_parse.rl"
 	{ str_start = p; }
 	break;
 	case 4:
-#line 212 "src/readstat_sav_parse.rl"
+#line 215 "src/spss/readstat_sav_parse.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 5:
-#line 214 "src/readstat_sav_parse.rl"
+#line 217 "src/spss/readstat_sav_parse.rl"
 	{ temp_val = 0; }
 	break;
-#line 1098 "src/readstat_sav_parse.c"
+#line 1101 "src/spss/readstat_sav_parse.c"
 		}
 	}
 
@@ -1107,7 +1110,7 @@ _again:
 	_out: {}
 	}
 
-#line 222 "src/readstat_sav_parse.rl"
+#line 225 "src/spss/readstat_sav_parse.rl"
 
     
     if (cs < 36 || p != pe) {

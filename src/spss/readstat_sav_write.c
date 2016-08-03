@@ -9,9 +9,13 @@
 #include <float.h>
 #include <time.h>
 
+#include "../readstat.h"
+#include "../readstat_iconv.h"
+#include "../readstat_bits.h"
+#include "../readstat_writer.h"
+
 #include "readstat_sav.h"
 #include "readstat_spss_parse.h"
-#include "readstat_writer.h"
 
 #define MAX_TEXT_SIZE               256
 #define MAX_LABEL_SIZE              256

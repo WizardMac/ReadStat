@@ -1,6 +1,6 @@
 
-#include "readstat.h"
-#include "readstat_bits.h"
+#include "../readstat.h"
+#include "../readstat_bits.h"
 
 #pragma pack(push, 1)
 
@@ -50,7 +50,6 @@ typedef struct sas_header_info_s {
     char     file_label[64];
     char    *encoding;
 } sas_header_info_t;
-
 
 enum {
     READSTAT_VENDOR_STAT_TRANSFER,

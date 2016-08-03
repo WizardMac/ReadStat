@@ -1,6 +1,6 @@
 #include <sys/types.h>
 
-#include "readstat.h"
+#include "../readstat.h"
 #include "readstat_por_parse.h"
 
 %%{

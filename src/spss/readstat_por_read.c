@@ -10,12 +10,13 @@
 #include <math.h>
 #include <time.h>
 
-#include "readstat.h"
+#include "../readstat.h"
+#include "../readstat_iconv.h"
+#include "../readstat_convert.h"
+#include "../CKHashTable.h"
+
 #include "readstat_por_parse.h"
 #include "readstat_spss.h"
-#include "readstat_iconv.h"
-#include "readstat_convert.h"
-#include "CKHashTable.h"
 #include "readstat_por.h"
 
 #define POR_LINE_LENGTH         80
