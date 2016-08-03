@@ -20,12 +20,11 @@ install:
       if ($env:TOOLCHAIN -eq "msys2")
       {
         C:\msys64\usr\bin\bash --login -c "pacman -S --noconfirm mingw-w64-x86_64-cmake"
-        C:\msys64\usr\bin\bash --login -c "pacman -S --noconfirm mingw-w64-x86_64-zlib"
         C:\msys64\usr\bin\bash --login -c "pacman -S --noconfirm mingw-w64-x86_64-ragel"
       }
       else
       {
-        c:\cygwin64\setup-x86_64.exe -qnNdO -s http://cygwin.mirror.constant.com -l C:/cygwin64/var/cache/setup -P libiconv-devel -P zlib-devel -P liblzma-devel -P xz -P ragel
+        c:\cygwin64\setup-x86_64.exe -qnNdO -s http://cygwin.mirror.constant.com -l C:/cygwin64/var/cache/setup -P libiconv-devel -P ragel
       }
 build_script:
   - ps: |

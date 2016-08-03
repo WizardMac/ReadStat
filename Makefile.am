@@ -15,7 +15,6 @@ libreadstat_la_SOURCES = \
 	src/readstat_por_parse.c \
 	src/readstat_por_read.c \
 	src/readstat_por_write.c \
-	src/readstat_rdata.c \
 	src/readstat_sas.c \
 	src/readstat_sas_catalog.c \
 	src/readstat_sas_data.c \
@@ -37,7 +36,7 @@ if HAVE_RAGEL
 endif
 
 libreadstat_la_CFLAGS = -Wall
-libreadstat_la_LIBADD = -llzma -lz @EXTRA_LIBS@
+libreadstat_la_LIBADD = @EXTRA_LIBS@
 libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@
 
 if CODE_COVERAGE_ENABLED
@@ -56,7 +55,6 @@ noinst_HEADERS = \
        src/readstat_io_unistd.h \
        src/readstat_por.h \
        src/readstat_por_parse.h \
-       src/readstat_rdata.h \
        src/readstat_sas.h \
        src/readstat_sav.h \
        src/readstat_sav_parse.h \

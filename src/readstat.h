@@ -404,41 +404,6 @@ readstat_error_t readstat_end_row(readstat_writer_t *writer);
 readstat_error_t readstat_end_writing(readstat_writer_t *writer);
 void readstat_writer_free(readstat_writer_t *writer);
 
-typedef int (*rdata_column_handler)(const char *name, readstat_type_t type, char *format, 
-        void *data, long count, void *ctx);
-typedef int (*rdata_table_handler)(const char *name, void *ctx);
-typedef int (*rdata_text_value_handler)(const char *value, int index, void *ctx);
-typedef int (*rdata_column_name_handler)(const char *value, int index, void *ctx);
-
-typedef struct rdata_parser_s {
-    rdata_table_handler         table_handler;
-    rdata_column_handler        column_handler;
-    rdata_column_name_handler   column_name_handler;
-    rdata_text_value_handler    text_value_handler;
-    rdata_text_value_handler    value_label_handler;
-    readstat_error_handler      error_handler;
-    readstat_io_t              *io;
-} rdata_parser_t;
-
-rdata_parser_t *rdata_parser_init();
-void rdata_parser_free(rdata_parser_t *parser);
-
-readstat_error_t rdata_set_table_handler(rdata_parser_t *parser, rdata_table_handler table_handler);
-readstat_error_t rdata_set_column_handler(rdata_parser_t *parser, rdata_column_handler column_handler);
-readstat_error_t rdata_set_column_name_handler(rdata_parser_t *parser, rdata_column_name_handler column_name_handler);
-readstat_error_t rdata_set_text_value_handler(rdata_parser_t *parser, rdata_text_value_handler text_value_handler);
-readstat_error_t rdata_set_value_label_handler(rdata_parser_t *parser, rdata_text_value_handler value_label_handler);
-readstat_error_t rdata_set_error_handler(rdata_parser_t *parser, readstat_error_handler error_handler);
-readstat_error_t rdata_set_open_handler(rdata_parser_t *parser, readstat_open_handler open_handler);
-readstat_error_t rdata_set_close_handler(rdata_parser_t *parser, readstat_close_handler close_handler);
-readstat_error_t rdata_set_seek_handler(rdata_parser_t *parser, readstat_seek_handler seek_handler);
-readstat_error_t rdata_set_read_handler(rdata_parser_t *parser, readstat_read_handler read_handler);
-readstat_error_t rdata_set_update_handler(rdata_parser_t *parser, readstat_update_handler update_handler);
-readstat_error_t rdata_set_io_ctx(rdata_parser_t *parser, void *io_ctx);
-/* rdata_parse works on RData and RDS. The table handler will be called once
- * per data frame in RData files, and zero times on RDS files. */
-readstat_error_t rdata_parse(rdata_parser_t *parser, const char *filename, void *user_ctx);
-
 #ifdef __cplusplus
 }
 #endif

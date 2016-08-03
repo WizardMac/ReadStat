@@ -8,8 +8,3 @@ script:
 
 after_success:
   - cd src/.libs && bash <(curl -s https://codecov.io/bash)
-
-addons:
-  apt:
-    packages:
-    - liblzma-dev

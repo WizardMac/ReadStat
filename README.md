@@ -2,20 +2,20 @@
 [![Appveyor build status](https://ci.appveyor.com/api/projects/status/76ctatpy3grlrd9x/branch/master?svg=true)](https://ci.appveyor.com/project/evanmiller/readstat/branch/master)
 [![codecov](https://codecov.io/gh/WizardMac/ReadStat/branch/master/graph/badge.svg)](https://codecov.io/gh/WizardMac/ReadStat)
 
-ReadStat: Read (and write) data sets from R, SAS, Stata, and SPSS
+ReadStat: Read (and write) data sets from SAS, Stata, and SPSS
 --
 
 Originally developed for [Wizard](http://www.wizardmac.com/), ReadStat is a
 command-line tool and MIT-licensed C library for reading files from popular
 stats packages. Supported formats include:
 
-* R: RData and RDS
 * SAS: SAS7BDAT and SAS7BCAT
 * Stata: DTA
 * SPSS: POR and SAV
 
-There is also write support for the SAS7BDAT, DTA, POR, and SAV formats. At the
-moment, the ReadStat command-line tool works only with the non-R formats.
+There is also write support for all formats except SAS7BCAT. For reading in R
+data files, please see the related
+[librdata](https://github.com/evanmiller/librdata) project.
 
 Installation
 ==
