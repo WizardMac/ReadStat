@@ -867,15 +867,17 @@ static readstat_error_t sav_write_string(void *row, const readstat_variable_t *v
         size_t value_len = strlen(value);
         off_t row_offset = 0;
         off_t val_offset = 0;
+        unsigned char *row_bytes = (unsigned char *)row;
+
         if (value_len > var->storage_width)
             return READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
 
         while (value_len - val_offset > 255) {
-            memcpy(&row[row_offset], &value[val_offset], 255);
+            memcpy(&row_bytes[row_offset], &value[val_offset], 255);
             row_offset += 256;
             val_offset += 255;
         }
-        memcpy(&row[row_offset], &value[val_offset], value_len - val_offset);
+        memcpy(&row_bytes[row_offset], &value[val_offset], value_len - val_offset);
     }
     return READSTAT_OK;
 }
