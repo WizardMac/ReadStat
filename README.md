@@ -15,7 +15,7 @@ stats packages. Supported formats include:
 
 There is also write support for all formats except SAS7BCAT. For reading in R
 data files, please see the related
-[librdata](https://github.com/evanmiller/librdata) project.
+[librdata](https://github.com/WizardMac/librdata) project.
 
 Installation
 ==
