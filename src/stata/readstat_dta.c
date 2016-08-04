@@ -82,12 +82,15 @@ readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
     if (ds_format < 110) {
         ctx->lbllist_entry_len = 9;
         ctx->variable_name_len = 9;
+        ctx->ch_metadata_len = 9;
     } else if (ds_format < 118) {
         ctx->lbllist_entry_len = 33;
         ctx->variable_name_len = 33;
+        ctx->ch_metadata_len = 33;
     } else {
         ctx->lbllist_entry_len = 129;
         ctx->variable_name_len = 129;
+        ctx->ch_metadata_len = 129;
     }
 
     if (ds_format < 108) {

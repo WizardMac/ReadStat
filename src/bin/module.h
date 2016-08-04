@@ -7,6 +7,8 @@ typedef struct rs_module_s {
     rs_mod_ctx_init             init;
     rs_mod_finish_file          finish;
     readstat_info_handler       handle_info;
+    readstat_metadata_handler   handle_metadata;
+    readstat_note_handler       handle_note;
     readstat_variable_handler   handle_variable;
     readstat_fweight_handler    handle_fweight;
     readstat_value_handler      handle_value;

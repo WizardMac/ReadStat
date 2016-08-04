@@ -120,6 +120,22 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
     return 0;
 }
 
+static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx) {
+    rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
+    if (rs_ctx->module->handle_note) {
+        return rs_ctx->module->handle_metadata(file_label, timestamp, format_version, rs_ctx->module_ctx);
+    }
+    return 0;
+}
+
+static int handle_note(int note_index, const char *note, void *ctx) {
+    rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
+    if (rs_ctx->module->handle_note) {
+        return rs_ctx->module->handle_note(note_index, note, rs_ctx->module_ctx);
+    }
+    return 0;
+}
+
 static int handle_value_label(const char *val_labels, readstat_value_t value,
                               const char *label, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
@@ -236,6 +252,8 @@ static int convert_file(const char *input_filename, const char *catalog_filename
     // Pass 2 - Parse full file
     readstat_set_error_handler(pass2_parser, &handle_error);
     readstat_set_info_handler(pass2_parser, &handle_info);
+    readstat_set_metadata_handler(pass2_parser, &handle_metadata);
+    readstat_set_note_handler(pass2_parser, &handle_note);
     readstat_set_variable_handler(pass2_parser, &handle_variable);
     readstat_set_value_handler(pass2_parser, &handle_value);
 

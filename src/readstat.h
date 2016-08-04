@@ -173,6 +173,7 @@ readstat_value_t readstat_variable_get_missing_range_hi(const readstat_variable_
 /* Callbacks should return 0 on success and non-zero to abort */
 typedef int (*readstat_info_handler)(int obs_count, int var_count, void *ctx);
 typedef int (*readstat_metadata_handler)(const char *file_label, time_t timestamp, long format_version, void *ctx);
+typedef int (*readstat_note_handler)(int note_index, const char *note, void *ctx);
 typedef int (*readstat_variable_handler)(int index, readstat_variable_t *variable, 
         const char *val_labels, void *ctx);
 typedef int (*readstat_fweight_handler)(int var_index, void *ctx);
@@ -216,6 +217,7 @@ typedef struct readstat_io_s {
 typedef struct readstat_parser_s {
     readstat_info_handler          info_handler;
     readstat_metadata_handler      metadata_handler;
+    readstat_note_handler          note_handler;
     readstat_variable_handler      variable_handler;
     readstat_fweight_handler       fweight_handler;
     readstat_value_handler         value_handler;
@@ -234,6 +236,7 @@ void readstat_io_free(readstat_io_t *io);
 
 readstat_error_t readstat_set_info_handler(readstat_parser_t *parser, readstat_info_handler info_handler);
 readstat_error_t readstat_set_metadata_handler(readstat_parser_t *parser, readstat_metadata_handler metadata_handler);
+readstat_error_t readstat_set_note_handler(readstat_parser_t *parser, readstat_note_handler note_handler);
 readstat_error_t readstat_set_variable_handler(readstat_parser_t *parser, readstat_variable_handler variable_handler);
 readstat_error_t readstat_set_fweight_handler(readstat_parser_t *parser, readstat_fweight_handler fweight_handler);
 readstat_error_t readstat_set_value_handler(readstat_parser_t *parser, readstat_value_handler value_handler);
@@ -317,6 +320,10 @@ typedef struct readstat_writer_s {
     long                        label_sets_count;
     long                        label_sets_capacity;
 
+    char                      **notes;
+    long                        notes_count;
+    long                        notes_capacity;
+
     unsigned char              *row;
     size_t                      row_len;
 
@@ -362,6 +369,15 @@ void readstat_variable_set_display_width(readstat_variable_t *variable, int disp
 void readstat_variable_add_missing_double_value(readstat_variable_t *variable, double value);
 void readstat_variable_add_missing_double_range(readstat_variable_t *variable, double lo, double hi);
 readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index);
+
+// "Notes" appear in the file metadata. In SPSS these are stored as
+// lines in the Document Record; in Stata these are stored using
+// the "notes" feature.
+// 
+// Note that the line length in SPSS is 80 characters; ReadStat will
+// split longer notes onto separate lines, but is not particularly
+// intelligent about inserting line breaks.
+void readstat_add_note(readstat_writer_t *writer, const char *note);
 
 // Optional metadata
 readstat_error_t readstat_writer_set_file_label(readstat_writer_t *writer, const char *file_label);

@@ -6,6 +6,7 @@
 
 #define VARIABLES_INITIAL_CAPACITY    50
 #define LABEL_SETS_INITIAL_CAPACITY   50
+#define NOTES_INITIAL_CAPACITY        50
 #define VALUE_LABELS_INITIAL_CAPACITY 10
 #define LABEL_SET_VARIABLES_INITIAL_CAPACITY 2
 
@@ -21,6 +22,9 @@ readstat_writer_t *readstat_writer_init() {
 
     writer->label_sets = calloc(LABEL_SETS_INITIAL_CAPACITY, sizeof(readstat_label_set_t *));
     writer->label_sets_capacity = LABEL_SETS_INITIAL_CAPACITY;
+
+    writer->notes = calloc(NOTES_INITIAL_CAPACITY, sizeof(readstat_label_set_t *));
+    writer->notes_capacity = NOTES_INITIAL_CAPACITY;
 
     writer->timestamp = time(NULL);
     writer->is_64bit = 1;
@@ -101,6 +105,12 @@ void readstat_writer_free(readstat_writer_t *writer) {
                 readstat_label_set_free(writer->label_sets[i]);
             }
             free(writer->label_sets);
+        }
+        if (writer->notes) {
+            for (i=0; i<writer->notes_count; i++) {
+                free(writer->notes[i]);
+            }
+            free(writer->notes);
         }
         if (writer->row) {
             free(writer->row);
@@ -232,6 +242,15 @@ readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, const char
     }
 
     return new_variable;
+}
+
+void readstat_add_note(readstat_writer_t *writer, const char *note) {
+    if (writer->notes_count == writer->notes_capacity) {
+        writer->notes_capacity *= 2;
+        writer->notes = realloc(writer->notes,
+                writer->notes_capacity * sizeof(const char *));
+    }
+    writer->notes[writer->notes_count++] = strdup(note);
 }
 
 void readstat_variable_set_label(readstat_variable_t *variable, const char *label) {

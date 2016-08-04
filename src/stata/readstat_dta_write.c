@@ -450,17 +450,67 @@ cleanup:
 }
 
 static readstat_error_t dta_emit_characteristics(readstat_writer_t *writer, dta_ctx_t *ctx) {
+    readstat_error_t error = READSTAT_OK;
+    int i;
+    char buffer[ctx->ch_metadata_len];
+
+    if (ctx->expansion_len_len == 0)
+        return READSTAT_OK;
+
+    if ((error = dta_write_tag(writer, ctx, "<characteristics>")) != READSTAT_OK)
+        goto cleanup;
+
+    for (i=0; i<writer->notes_count; i++) {
+        if (ctx->file_is_xmlish) {
+            error = dta_write_tag(writer, ctx, "<ch>");
+        } else {
+            char data_type = 1;
+            error = readstat_write_bytes(writer, &data_type, 1);
+        }
+        if (error != READSTAT_OK)
+            goto cleanup;
+
+        size_t len = strlen(writer->notes[i]);
+        if (ctx->expansion_len_len == 2) {
+            int16_t len16 = 2*ctx->ch_metadata_len + len + 1;
+            error = readstat_write_bytes(writer, &len16, sizeof(len16));
+        } else if (ctx->expansion_len_len == 4) {
+            int32_t len32 = 2*ctx->ch_metadata_len + len + 1;
+            error = readstat_write_bytes(writer, &len32, sizeof(len32));
+        }
+        if (error != READSTAT_OK)
+            goto cleanup;
+
+        strncpy(buffer, "_dta", ctx->ch_metadata_len);
+
+        error = readstat_write_bytes(writer, buffer, ctx->ch_metadata_len);
+        if (error != READSTAT_OK)
+            goto cleanup;
+
+        snprintf(buffer, ctx->ch_metadata_len, "note%d", i+1);
+
+        error = readstat_write_bytes(writer, buffer, ctx->ch_metadata_len);
+        if (error != READSTAT_OK)
+            goto cleanup;
+
+        error = readstat_write_bytes(writer, writer->notes[i], len + 1);
+        if (error != READSTAT_OK)
+            goto cleanup;
+
+        if ((error = dta_write_tag(writer, ctx, "</ch>")) != READSTAT_OK)
+            goto cleanup;
+    }
+
     if (ctx->file_is_xmlish) {
-        return readstat_write_string(writer, "<characteristics></characteristics>");
+        error = dta_write_tag(writer, ctx, "</characteristics>");
+    } else {
+        error = readstat_write_zeros(writer, 1 + ctx->expansion_len_len);
     }
-    if (ctx->expansion_len_len == 2) {
-        dta_short_expansion_field_t expansion_field = { .data_type = 0, .len = 0 };
-        return readstat_write_bytes(writer, &expansion_field, sizeof(dta_short_expansion_field_t));
-    } else if (ctx->expansion_len_len == 4) {
-        dta_expansion_field_t expansion_field = { .data_type = 0, .len = 0 };
-        return readstat_write_bytes(writer, &expansion_field, sizeof(dta_expansion_field_t));
-    }
-    return READSTAT_OK;
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    return error;
 }
 
 static readstat_error_t dta_emit_strls(readstat_writer_t *writer, dta_ctx_t *ctx) {
@@ -810,8 +860,18 @@ static size_t dta_measure_variable_labels(dta_ctx_t *ctx) {
             + dta_measure_tag(ctx, "</variable_labels>"));
 }
 
-static size_t dta_measure_characteristics(dta_ctx_t *ctx) {
+static size_t dta_measure_characteristics(readstat_writer_t *writer, dta_ctx_t *ctx) {
+    size_t characteristics_len = 0;
+    int i;
+    for (i=0; i<writer->notes_count; i++) {
+        size_t ch_len = dta_measure_tag(ctx, "<ch>")
+            + ctx->expansion_len_len
+            + 2 * ctx->ch_metadata_len + strlen(writer->notes[i]) + 1
+            + dta_measure_tag(ctx, "</ch>");
+        characteristics_len += ch_len;
+    }
     return (dta_measure_tag(ctx, "<characteristics>")
+            + characteristics_len
             + dta_measure_tag(ctx, "</characteristics>"));
 }
 
@@ -872,7 +932,7 @@ static readstat_error_t dta_emit_map(readstat_writer_t *writer, dta_ctx_t *ctx) 
     map[6] = map[5] + dta_measure_fmtlist(ctx);         /* <value_label_names> */
     map[7] = map[6] + dta_measure_lbllist(ctx);         /* <variable_labels> */
     map[8] = map[7] + dta_measure_variable_labels(ctx); /* <characteristics> */
-    map[9] = map[8] + dta_measure_characteristics(ctx); /* <data> */
+    map[9] = map[8] + dta_measure_characteristics(writer, ctx); /* <data> */
     map[10]= map[9] + dta_measure_data(writer, ctx);    /* <strls> */
     map[11]= map[10]+ dta_measure_strls(ctx);           /* <value_labels> */
     map[12]= map[11]+ dta_measure_value_labels(writer, ctx);    /* </stata_dta> */

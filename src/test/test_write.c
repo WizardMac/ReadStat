@@ -70,6 +70,9 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
 
     int i, j;
     int did_set_fweight = 0;
+    for (j=0; j<file->notes_count; j++) {
+        readstat_add_note(writer, file->notes[j]);
+    }
     for (j=0; j<file->label_sets_count; j++) {
         rt_label_set_t *label_set = &file->label_sets[j];
         readstat_label_set_t *r_label_set = readstat_add_label_set(writer,

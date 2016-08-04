@@ -29,6 +29,22 @@ typedef struct rt_test_group_s {
 
 rt_test_group_t _test_groups[] = {
     {
+        .label = "Notes",
+        .tests = {
+            {
+                .label = "DTA notes",
+                .test_formats = RT_FORMAT_DTA_105_AND_NEWER,
+
+                .notes_count = 2,
+                .notes = {
+                    "This is a note",
+                    "This is another note"
+                }
+            }
+        }
+    },
+
+    {
         .label = "SAV compression tests",
         .tests = {
             {

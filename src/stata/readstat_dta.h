@@ -11,16 +11,6 @@ typedef struct dta_header_s {
     int32_t          nobs;
 } dta_header_t;
 
-typedef struct dta_expansion_field_s {
-    unsigned char    data_type;
-    int32_t          len;
-} dta_expansion_field_t;
-
-typedef struct dta_short_expansion_field_s {
-    unsigned char    data_type;
-    int16_t          len;
-} dta_short_expansion_field_t;
-
 typedef struct dta_gso_header_s {
     char             gso[3];
     uint32_t         v;
@@ -57,6 +47,7 @@ typedef struct dta_ctx_s {
     size_t         lbllist_entry_len;
     size_t         variable_labels_entry_len;
     size_t         expansion_len_len;
+    size_t         ch_metadata_len;
     size_t         value_label_table_len_len;
     size_t         value_label_table_labname_len;
     size_t         value_label_table_padding_len;
@@ -84,6 +75,7 @@ typedef struct dta_ctx_s {
     iconv_t        converter;
     readstat_error_handler error_handler;
     readstat_progress_handler progress_handler;
+    readstat_note_handler note_handler;
     readstat_variable_handler variable_handler;
     readstat_value_handler value_handler;
     readstat_value_label_handler value_label_handler;

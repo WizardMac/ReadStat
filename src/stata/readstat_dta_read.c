@@ -18,7 +18,7 @@ static readstat_error_t dta_update_progress(dta_ctx_t *ctx);
 static readstat_error_t dta_read_descriptors(dta_ctx_t *ctx);
 static readstat_error_t dta_read_tag(dta_ctx_t *ctx, const char *tag);
 static readstat_error_t dta_read_long_string(dta_ctx_t *ctx, int v, int o, char **long_string_out);
-static readstat_error_t dta_skip_expansion_fields(dta_ctx_t *ctx);
+static readstat_error_t dta_read_expansion_fields(dta_ctx_t *ctx);
 
 
 static readstat_error_t dta_update_progress(dta_ctx_t *ctx) {
@@ -163,57 +163,110 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t dta_skip_expansion_fields(dta_ctx_t *ctx) {
+static readstat_error_t dta_read_expansion_fields(dta_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
-    if (ctx->file_is_xmlish) {
-        if (io->seek(ctx->data_offset, READSTAT_SEEK_SET, io->io_ctx) == -1)
-            return READSTAT_ERROR_SEEK;
+    char *buffer = NULL;
 
-        return READSTAT_OK;
-    }
     if (ctx->expansion_len_len == 0)
         return READSTAT_OK;
-    
+
+    if (ctx->file_is_xmlish && !ctx->note_handler) {
+        if (io->seek(ctx->data_offset, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+            return READSTAT_ERROR_SEEK;
+        }
+        return READSTAT_OK;
+    }
+
+    retval = dta_read_tag(ctx, "<characteristics>");
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
     while (1) {
         size_t len;
         char data_type;
-        if (ctx->expansion_len_len == 2) {
-            dta_short_expansion_field_t  expansion_field;
-            if (io->read(&expansion_field, sizeof(expansion_field), io->io_ctx) != sizeof(expansion_field))
-                return READSTAT_ERROR_READ;
 
-            if (ctx->machine_needs_byte_swap) {
-                len = byteswap2(expansion_field.len);
-            } else {
-                len = expansion_field.len;
+        if (ctx->file_is_xmlish) {
+            char start[4];
+            if (io->read(start, sizeof(start), io->io_ctx) != sizeof(start)) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
             }
-            
-            data_type = expansion_field.data_type;
+            if (memcmp(start, "</ch", sizeof(start)) == 0) {
+                retval = dta_read_tag(ctx, "aracteristics>");
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
+                break;
+            } else if (memcmp(start, "<ch>", sizeof(start)) != 0) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
+            data_type = 1;
         } else {
-            dta_expansion_field_t  expansion_field;
-            if (io->read(&expansion_field, sizeof(expansion_field), io->io_ctx) != sizeof(expansion_field))
-                return READSTAT_ERROR_READ;
-            
-            if (ctx->machine_needs_byte_swap) {
-                len = byteswap4(expansion_field.len);
-            } else {
-                len = expansion_field.len;
+            if (io->read(&data_type, 1, io->io_ctx) != 1) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
             }
-            
-            data_type = expansion_field.data_type;
+        }
+
+        if (ctx->expansion_len_len == 2) {
+            int16_t len16;
+            if (io->read(&len16, sizeof(int16_t), io->io_ctx) != sizeof(int16_t)) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
+            }
+            len = ctx->machine_needs_byte_swap ? byteswap2(len16) : len16;
+        } else {
+            int32_t len32;
+            if (io->read(&len32, sizeof(int32_t), io->io_ctx) != sizeof(int32_t)) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
+            }
+            len = ctx->machine_needs_byte_swap ? byteswap2(len32) : len32;
         }
 
         if (data_type == 0 && len == 0)
-            return READSTAT_OK;
+            break;
         
-        if (data_type != 1)
-            return READSTAT_ERROR_PARSE;
+        if (data_type != 1 || len > (1<<20)) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
 
-        if (io->seek(len, READSTAT_SEEK_CUR, io->io_ctx) == -1)
-            return READSTAT_ERROR_SEEK;
+        if (ctx->note_handler && len >= 2 * ctx->ch_metadata_len) {
+            buffer = realloc(buffer, len + 1);
+            buffer[len] = '\0';
+
+            if (io->read(buffer, len, io->io_ctx) != len) {
+                retval = READSTAT_ERROR_READ;
+                goto cleanup;
+            }
+            int index = 0;
+            if (strncmp(&buffer[0], "_dta", 4) == 0 &&
+                    sscanf(&buffer[ctx->ch_metadata_len], "note%d", &index) == 1) {
+                if (ctx->note_handler(index, &buffer[2*ctx->ch_metadata_len], ctx->user_ctx)) {
+                    retval = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
+                }
+            }
+        } else {
+            if (io->seek(len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+                retval = READSTAT_ERROR_SEEK;
+                goto cleanup;
+            }
+        }
+
+        retval = dta_read_tag(ctx, "</ch>");
+        if (retval != READSTAT_OK)
+            goto cleanup;
     }
 
-    return READSTAT_ERROR_PARSE;
+cleanup:
+    if (buffer)
+        free(buffer);
+
+    return retval;
 }
 
 static readstat_error_t dta_read_tag(dta_ctx_t *ctx, const char *tag) {
@@ -852,6 +905,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     ctx->file_size = file_size;
     ctx->error_handler = parser->error_handler;
     ctx->progress_handler = parser->progress_handler;
+    ctx->note_handler = parser->note_handler;
     ctx->variable_handler = parser->variable_handler;
     ctx->value_handler = parser->value_handler;
     ctx->value_label_handler = parser->value_label_handler;
@@ -900,7 +954,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
         ctx->record_len += max_len;
     }
 
-    if (ctx->record_len == 0) {
+    if (ctx->nvar > 0 && ctx->record_len == 0) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -908,7 +962,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     if ((retval = dta_handle_variables(ctx)) != READSTAT_OK)
         goto cleanup;
 
-    if ((retval = dta_skip_expansion_fields(ctx)) != READSTAT_OK)
+    if ((retval = dta_read_expansion_fields(ctx)) != READSTAT_OK)
         goto cleanup;
     
     if ((retval = dta_read_tag(ctx, "<data>")) != READSTAT_OK)

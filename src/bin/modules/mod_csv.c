@@ -26,6 +26,8 @@ rs_module_t rs_mod_csv = {
     ctx_init, /* init */
     finish_file, /* finish */
     handle_info, /* info */
+    NULL, /* metadata */
+    NULL, /* note */
     handle_variable,
     NULL, /* fweight */
     handle_value,
