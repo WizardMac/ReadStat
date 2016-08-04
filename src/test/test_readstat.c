@@ -32,8 +32,8 @@ rt_test_group_t _test_groups[] = {
         .label = "Notes",
         .tests = {
             {
-                .label = "DTA notes",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER,
+                .label = "DTA/SAV notes",
+                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SAV,
 
                 .notes_count = 2,
                 .notes = {

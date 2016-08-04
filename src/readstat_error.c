@@ -92,5 +92,8 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS)
         return "The number of defined missing values exceeds the format limit";
 
+    if (error_code == READSTAT_ERROR_NOTE_IS_TOO_LONG)
+        return "The provided note is too long for the file format";
+
     return "Unknown error";
 }

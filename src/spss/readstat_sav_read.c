@@ -17,7 +17,7 @@
 #include "readstat_sav_parse.h"
 #include "readstat_sav_parse_timestamp.h"
 
-#define DATA_BUFFER_SIZE            65536
+#define DATA_BUFFER_SIZE    65536
 
 /* Others defined in table below */
 
@@ -508,7 +508,7 @@ static readstat_error_t sav_skip_document_record(sav_ctx_t *ctx) {
     }
     if (ctx->machine_needs_byte_swap)
         n_lines = byteswap4(n_lines);
-    if (io->seek(n_lines * 80, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+    if (io->seek(n_lines * SPSS_DOC_LINE_SIZE, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
     }
@@ -518,7 +518,41 @@ cleanup:
 }
 
 static readstat_error_t sav_read_document_record(sav_ctx_t *ctx) {
-    return sav_skip_document_record(ctx);
+    if (!ctx->note_handler)
+        return sav_skip_document_record(ctx);
+
+    int32_t n_lines;
+    readstat_error_t retval = READSTAT_OK;
+    readstat_io_t *io = ctx->io;
+    if (io->read(&n_lines, sizeof(int32_t), io->io_ctx) < sizeof(int32_t)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+    if (ctx->machine_needs_byte_swap)
+        n_lines = byteswap4(n_lines);
+
+    char raw_buffer[SPSS_DOC_LINE_SIZE];
+    char utf8_buffer[4*SPSS_DOC_LINE_SIZE+1];
+    int i;
+    for (i=0; i<n_lines; i++) {
+        if (io->read(raw_buffer, SPSS_DOC_LINE_SIZE, io->io_ctx) < SPSS_DOC_LINE_SIZE) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        retval = readstat_convert(utf8_buffer, sizeof(utf8_buffer),
+                raw_buffer, sizeof(raw_buffer), ctx->converter);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+
+        if (ctx->note_handler(i, utf8_buffer, ctx->user_ctx)) {
+            retval = READSTAT_ERROR_USER_ABORT;
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    return retval;
 }
 
 static readstat_error_t sav_read_dictionary_termination_record(sav_ctx_t *ctx) {
@@ -821,7 +855,7 @@ static readstat_error_t sav_parse_variable_display_parameter_record(sav_ctx_t *c
     if (count != 2 * ctx->var_count && count != 3 * ctx->var_count) {
         return READSTAT_ERROR_PARSE;
     }
-    int has_display_width = (count / ctx->var_count == 3);
+    int has_display_width = ctx->var_count > 0 && (count / ctx->var_count == 3);
     int offset = 0;
     for (i=0; i<ctx->var_index;) {
         spss_varinfo_t *info = &ctx->varinfo[i];
@@ -1296,6 +1330,7 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
 
     ctx->progress_handler = parser->progress_handler;
     ctx->error_handler = parser->error_handler;
+    ctx->note_handler = parser->note_handler;
     ctx->value_handler = parser->value_handler;
     ctx->value_label_handler = parser->value_label_handler;
     ctx->input_encoding = parser->input_encoding;

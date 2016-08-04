@@ -137,13 +137,21 @@ readstat_error_t readstat_write_string(readstat_writer_t *writer, const char *by
     return readstat_write_bytes(writer, bytes, strlen(bytes));
 }
 
-readstat_error_t readstat_write_zeros(readstat_writer_t *writer, size_t len) {
+static readstat_error_t readstat_write_repeated_byte(readstat_writer_t *writer, char byte, size_t len) {
     if (len == 0)
         return READSTAT_OK;
 
     char zeros[len];
-    memset(zeros, 0, len);
+    memset(zeros, byte, len);
     return readstat_write_bytes(writer, zeros, len);
+}
+
+readstat_error_t readstat_write_zeros(readstat_writer_t *writer, size_t len) {
+    return readstat_write_repeated_byte(writer, '\0', len);
+}
+
+readstat_error_t readstat_write_spaces(readstat_writer_t *writer, size_t len) {
+    return readstat_write_repeated_byte(writer, ' ', len);
 }
 
 readstat_label_set_t *readstat_add_label_set(readstat_writer_t *writer, readstat_type_t type, const char *name) {

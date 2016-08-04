@@ -355,7 +355,7 @@ cleanup:
 static readstat_error_t sav_emit_document_record(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
     int32_t rec_type = SAV_RECORD_TYPE_DOCUMENT;
-    int32_t n_lines = 0;
+    int32_t n_lines = writer->notes_count;
 
     retval = readstat_write_bytes(writer, &rec_type, sizeof(rec_type));
     if (retval != READSTAT_OK)
@@ -364,6 +364,22 @@ static readstat_error_t sav_emit_document_record(readstat_writer_t *writer) {
     retval = readstat_write_bytes(writer, &n_lines, sizeof(n_lines));
     if (retval != READSTAT_OK)
         goto cleanup;
+
+    int i;
+    for (i=0; i<writer->notes_count; i++) {
+        size_t len = strlen(writer->notes[i]);
+        if (len > SPSS_DOC_LINE_SIZE) {
+            retval = READSTAT_ERROR_NOTE_IS_TOO_LONG;
+            goto cleanup;
+        }
+        retval = readstat_write_bytes(writer, writer->notes[i], len);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+
+        retval = readstat_write_spaces(writer, SPSS_DOC_LINE_SIZE - len);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+    }
 
 cleanup:
     return retval;

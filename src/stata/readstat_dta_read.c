@@ -230,7 +230,7 @@ static readstat_error_t dta_read_expansion_fields(dta_ctx_t *ctx) {
             break;
         
         if (data_type != 1 || len > (1<<20)) {
-            retval = READSTAT_ERROR_PARSE;
+            retval = READSTAT_ERROR_NOTE_IS_TOO_LONG;
             goto cleanup;
         }
 
