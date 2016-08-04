@@ -62,8 +62,14 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_CONVERT_LONG_STRING)
         return "Unable to convert string to the requested encoding (output buffer too small)";
 
-    if (error_code == READSTAT_ERROR_VALUE_OUT_OF_RANGE)
-        return "A provided value was outside the range of representable values in the specified file format";
+    if (error_code == READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE)
+        return "A provided numeric value was outside the range of representable values in the specified file format";
+
+    if (error_code == READSTAT_ERROR_TAGGED_VALUE_IS_OUT_OF_RANGE)
+        return "A provided tag value was outside the range of allowed values in the specified file format";
+
+    if (error_code == READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG)
+        return "A provided string value was longer than the available storage size of the specified column";
 
     if (error_code == READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED)
         return "The file format does not supported character tags for missing values";

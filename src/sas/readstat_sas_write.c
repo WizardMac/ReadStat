@@ -651,7 +651,7 @@ static readstat_error_t sas_write_missing_tagged_raw(void *row, const readstat_v
 
 static readstat_error_t sas_write_missing_tagged(void *row, const readstat_variable_t *var, char tag) {
     if (tag < 'a' || tag > 'z')
-        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+        return READSTAT_ERROR_TAGGED_VALUE_IS_OUT_OF_RANGE;
 
     return sas_write_missing_tagged_raw(row, var, tag);
 }
@@ -665,6 +665,10 @@ static readstat_error_t sas_write_string(void *row, const readstat_variable_t *v
     if (value == NULL || value[0] == '\0') {
         memset(row, '\0', max_len);
     } else {
+        size_t value_len = strlen(value);
+        if (value_len > max_len)
+            return READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
+
         strncpy((char *)row, value, max_len);
     }
     return READSTAT_OK;

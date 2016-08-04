@@ -63,6 +63,7 @@ typedef struct rt_error_s {
 
     rt_test_file_t     *file;
     long                file_format;
+    const char         *file_extension;
 
     readstat_off_t      pos;
     long                var_index;
@@ -98,6 +99,8 @@ typedef struct rt_parse_ctx_s {
     rt_test_file_t  *file;
     long             file_format;
     long             file_format_version;
+    const char      *file_extension;
+
     size_t           max_file_label_len;
 
     rt_buffer_ctx_t *buffer_ctx;

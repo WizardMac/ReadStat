@@ -10,6 +10,36 @@
 #include "test_dta.h"
 #include "test_sas.h"
 
+char *file_extension(long format) {
+    if (format == RT_FORMAT_DTA_104)
+        return "dta104";
+    if (format == RT_FORMAT_DTA_105)
+        return "dta105";
+    if (format == RT_FORMAT_DTA_108)
+        return "dta108";
+    if (format == RT_FORMAT_DTA_110)
+        return "dta110";
+    if (format == RT_FORMAT_DTA_111)
+        return "dta111";
+    if (format == RT_FORMAT_DTA_114)
+        return "dta114";
+    if (format == RT_FORMAT_DTA_117)
+        return "dta117";
+    if (format == RT_FORMAT_DTA_118)
+        return "dta118";
+    if (format == RT_FORMAT_SAV_COMP_NONE)
+        return "sav";
+    if (format == RT_FORMAT_SAV_COMP_ROWS)
+        return "savrow";
+    if (format == RT_FORMAT_POR)
+        return "por";
+    if (format == RT_FORMAT_SAS7BDAT_32BIT)
+        return "sas7bdat32";
+    if (format == RT_FORMAT_SAS7BDAT_64BIT)
+        return "sas7bdat64";
+    return "data";
+}
+
 static rt_buffer_ctx_t *buffer_ctx_init(rt_buffer_t *buffer) {
     rt_buffer_ctx_t *buffer_ctx = calloc(1, sizeof(rt_buffer_ctx_t));
     buffer_ctx->buffer = buffer;
@@ -30,6 +60,7 @@ rt_parse_ctx_t *parse_ctx_init(rt_buffer_t *buffer, rt_test_file_t *file) {
 
 void parse_ctx_reset(rt_parse_ctx_t *parse_ctx, long file_format) {
     parse_ctx->file_format = file_format;
+    parse_ctx->file_extension = file_extension(file_format);
     if ((file_format & RT_FORMAT_DTA_118)) {
         parse_ctx->max_file_label_len = 321;
     } else if ((file_format & RT_FORMAT_DTA_105_AND_OLDER)) {
@@ -57,6 +88,8 @@ void parse_ctx_free(rt_parse_ctx_t *parse_ctx) {
     }
     free(parse_ctx);
 }
+
+
 
 static int rt_open_handler(const char *path, void *io_ctx) {
     return 0;

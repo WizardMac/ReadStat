@@ -23,19 +23,38 @@ static int compare_varlookups(const void *elem1, const void *elem2) {
     return strcmp(v1->name, v2->name);
 }
 
-static void build_lookup_table(varlookup_t *table, int var_count, sav_ctx_t *ctx) {
+static int count_vars(sav_ctx_t *ctx) {
+    int i;
+    spss_varinfo_t *last_info = NULL;
+    int var_count = 0;
+    for (i=0; i<ctx->var_index; i++) {
+        spss_varinfo_t *info = &ctx->varinfo[i];
+        if (last_info == NULL || strcmp(info->name, last_info->name) != 0) {
+            var_count++;
+        }
+        last_info = info;
+    }
+    return var_count;
+}
+
+static varlookup_t *build_lookup_table(int var_count, sav_ctx_t *ctx) {
+    varlookup_t *table = malloc(var_count * sizeof(varlookup_t));
     int offset = 0;
     int i;
-    for (i=0; i<ctx->var_index;) {
+    spss_varinfo_t *last_info = NULL;
+    for (i=0; i<ctx->var_index; i++) {
         spss_varinfo_t *info = &ctx->varinfo[i];
-        varlookup_t *entry = &table[offset++];
 
-        memcpy(entry->name, info->name, sizeof(info->name));
-        entry->index = info->index;
+        if (last_info == NULL || strcmp(info->name, last_info->name) != 0) {
+            varlookup_t *entry = &table[offset++];
 
-        i += info->n_segments;
+            memcpy(entry->name, info->name, sizeof(info->name));
+            entry->index = info->index;
+        }
+        last_info = info;
     }
     qsort(table, var_count, sizeof(varlookup_t), &compare_varlookups);
+    return table;
 }
 
 %%{
@@ -46,8 +65,7 @@ static void build_lookup_table(varlookup_t *table, int var_count, sav_ctx_t *ctx
 
 readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav_ctx_t *ctx) {
     unsigned char *c_data = (unsigned char *)data;
-    int var_count = ctx->var_index;
-    varlookup_t *table = malloc(var_count * sizeof(varlookup_t));
+    int var_count = count_vars(ctx);
     readstat_error_t retval = READSTAT_OK;
 
     char temp_key[4*8+1];
@@ -60,7 +78,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
     unsigned char *pe = NULL;
     unsigned char *output_buffer = NULL;
 
-    build_lookup_table(table, var_count, ctx);
+    varlookup_t *table = build_lookup_table(var_count, ctx);
 
     if (ctx->converter) {
         size_t input_len = count;
@@ -149,8 +167,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
 
 readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ctx_t *ctx) {
     unsigned char *c_data = (unsigned char *)data;
-    int var_count = ctx->var_index;
-    varlookup_t *table = malloc(var_count * sizeof(varlookup_t));
+    int var_count = count_vars(ctx);
     readstat_error_t retval = READSTAT_OK;
 
     char temp_key[8*4+1];
@@ -165,7 +182,7 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
 
     unsigned char *output_buffer = NULL;
 
-    build_lookup_table(table, var_count, ctx);
+    varlookup_t *table = build_lookup_table(var_count, ctx);
 
     if (ctx->converter) {
         size_t input_len = count;

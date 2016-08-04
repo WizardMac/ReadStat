@@ -45,6 +45,7 @@ void push_error(rt_parse_ctx_t *ctx,
     error->received = copy_value(ctx, received);
     error->file = ctx->file;
     error->file_format = ctx->file_format;
+    error->file_extension = ctx->file_extension;
     error->pos = ctx->buffer_ctx->pos;
     error->var_index = ctx->var_index;
     error->obs_index = ctx->obs_index;
@@ -183,7 +184,7 @@ void print_error(rt_error_t *error) {
         printf("Test failed: %s\n", error->msg);
     }
 
-    printf(" * Format: 0x%04lx\n", error->file_format);
+    printf(" * Format: %s (0x%04lx)\n", error->file_extension, error->file_format);
 
     printf(" * Expected: ");
     print_value(error->expected);

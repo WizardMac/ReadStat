@@ -621,25 +621,26 @@ static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len
                 memcpy(ctx->raw_string + raw_str_used, &buffer[data_offset], 8);
                 raw_str_used += 8;
             }
-            offset++;
-            if (offset == col_info->width) {
-                segment_offset++;
-                if (segment_offset == var_info->n_segments) {
-                    retval = readstat_convert(ctx->utf8_string, ctx->utf8_string_len, 
-                            ctx->raw_string, raw_str_used, ctx->converter);
-                    if (retval != READSTAT_OK)
-                        goto done;
-                    value.v.string_value = ctx->utf8_string;
-                    if (ctx->value_handler(ctx->current_row, var_info->index, value, ctx->user_ctx)) {
-                        retval = READSTAT_ERROR_USER_ABORT;
-                        goto done;
-                    }
-                    raw_str_used = 0;
-                    segment_offset = 0;
-                    var_index += var_info->n_segments;
+            if (++offset == col_info->width) {
+                if (++segment_offset < var_info->n_segments) {
+                    raw_str_used--;
                 }
                 offset = 0;
                 col++;
+            }
+            if (segment_offset == var_info->n_segments) {
+                retval = readstat_convert(ctx->utf8_string, ctx->utf8_string_len, 
+                        ctx->raw_string, raw_str_used, ctx->converter);
+                if (retval != READSTAT_OK)
+                    goto done;
+                value.v.string_value = ctx->utf8_string;
+                if (ctx->value_handler(ctx->current_row, var_info->index, value, ctx->user_ctx)) {
+                    retval = READSTAT_ERROR_USER_ABORT;
+                    goto done;
+                }
+                raw_str_used = 0;
+                segment_offset = 0;
+                var_index += var_info->n_segments;
             }
         } else if (var_info->type == READSTAT_TYPE_DOUBLE) {
             memcpy(&fp_value, &buffer[data_offset], 8);

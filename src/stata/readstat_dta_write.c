@@ -535,7 +535,7 @@ static readstat_error_t dta_old_emit_value_labels(readstat_writer_t *writer, dta
                 goto cleanup;
             }
             if (value_label->int32_key < 0 || value_label->int32_key > 1024) {
-                retval = READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+                retval = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE;
                 goto cleanup;
             }
             if (value_label->int32_key > max_value) {
@@ -1028,42 +1028,42 @@ static readstat_error_t dta_write_raw_double(void *row, double value) {
 
 static readstat_error_t dta_113_write_int8(void *row, const readstat_variable_t *var, int8_t value) {
     if (value > DTA_113_MAX_INT8) {
-        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+        return READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE;
     }
     return dta_write_raw_int8(row, value);
 }
 
 static readstat_error_t dta_old_write_int8(void *row, const readstat_variable_t *var, int8_t value) {
     if (value > DTA_OLD_MAX_INT8) {
-        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+        return READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE;
     }
     return dta_write_raw_int8(row, value);
 }
 
 static readstat_error_t dta_113_write_int16(void *row, const readstat_variable_t *var, int16_t value) {
     if (value > DTA_113_MAX_INT16) {
-        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+        return READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE;
     }
     return dta_write_raw_int16(row, value);
 }
 
 static readstat_error_t dta_old_write_int16(void *row, const readstat_variable_t *var, int16_t value) {
     if (value > DTA_OLD_MAX_INT16) {
-        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+        return READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE;
     }
     return dta_write_raw_int16(row, value);
 }
 
 static readstat_error_t dta_113_write_int32(void *row, const readstat_variable_t *var, int32_t value) {
     if (value > DTA_113_MAX_INT32) {
-        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+        return READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE;
     }
     return dta_write_raw_int32(row, value);
 }
 
 static readstat_error_t dta_old_write_int32(void *row, const readstat_variable_t *var, int32_t value) {
     if (value > DTA_OLD_MAX_INT32) {
-        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+        return READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE;
     }
     return dta_write_raw_int32(row, value);
 }
@@ -1073,7 +1073,7 @@ static readstat_error_t dta_write_float(void *row, const readstat_variable_t *va
     float max_flt;
     memcpy(&max_flt, &max_flt_i32, sizeof(float));
     if (value > max_flt) {
-        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+        return READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE;
     } else if (isnan(value)) {
         return dta_113_write_missing_numeric(row, var);
     }
@@ -1085,7 +1085,7 @@ static readstat_error_t dta_write_double(void *row, const readstat_variable_t *v
     double max_dbl;
     memcpy(&max_dbl, &max_dbl_i64, sizeof(double));
     if (value > max_dbl) {
-        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+        return READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE;
     } else if (isnan(value)) {
         return dta_113_write_missing_numeric(row, var);
     }
@@ -1096,6 +1096,10 @@ static readstat_error_t dta_write_string(void *row, const char *value, size_t ma
     if (value == NULL || value[0] == '\0') {
         memset(row, '\0', max_len);
     } else {
+        size_t value_len = strlen(value);
+        if (value_len > max_len)
+            return READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
+
         strncpy((char *)row, value, max_len);
     }
     return READSTAT_OK;
@@ -1103,26 +1107,29 @@ static readstat_error_t dta_write_string(void *row, const char *value, size_t ma
 
 static readstat_error_t dta_111_write_string(void *row, const readstat_variable_t *var, 
         const char *value) {
-    size_t value_len = var->storage_width;
-    if (value_len > DTA_111_MAX_WIDTH)
-        value_len = DTA_111_MAX_WIDTH;
-    return dta_write_string(row, value, value_len);
+    size_t max_len = var->storage_width;
+    if (max_len > DTA_111_MAX_WIDTH)
+        max_len = DTA_111_MAX_WIDTH;
+
+    return dta_write_string(row, value, max_len);
 }
 
 static readstat_error_t dta_117_write_string(void *row, const readstat_variable_t *var, 
         const char *value) {
-    size_t value_len = var->storage_width;
-    if (value_len > DTA_117_MAX_WIDTH)
-        value_len = DTA_117_MAX_WIDTH;
-    return dta_write_string(row, value, value_len);
+    size_t max_len = var->storage_width;
+    if (max_len > DTA_117_MAX_WIDTH)
+        max_len = DTA_117_MAX_WIDTH;
+
+    return dta_write_string(row, value, max_len);
 }
 
 static readstat_error_t dta_old_write_string(void *row, const readstat_variable_t *var, 
         const char *value) {
-    size_t value_len = var->storage_width;
-    if (value_len > DTA_OLD_MAX_WIDTH)
-        value_len = DTA_OLD_MAX_WIDTH;
-    return dta_write_string(row, value, value_len);
+    size_t max_len = var->storage_width;
+    if (max_len > DTA_OLD_MAX_WIDTH)
+        max_len = DTA_OLD_MAX_WIDTH;
+
+    return dta_write_string(row, value, max_len);
 }
 
 static readstat_error_t dta_113_write_missing_numeric(void *row, const readstat_variable_t *var) {
@@ -1172,7 +1179,7 @@ static readstat_error_t dta_old_write_missing_string(void *row, const readstat_v
 static readstat_error_t dta_113_write_missing_tagged(void *row, const readstat_variable_t *var, char tag) {
     readstat_error_t retval = READSTAT_OK;
     if (tag < 'a' || tag > 'z')
-        return READSTAT_ERROR_VALUE_OUT_OF_RANGE;
+        return READSTAT_ERROR_TAGGED_VALUE_IS_OUT_OF_RANGE;
 
     if (var->type == READSTAT_TYPE_INT8) {
         retval = dta_write_raw_int8(row, DTA_113_MISSING_INT8_A + (tag - 'a'));

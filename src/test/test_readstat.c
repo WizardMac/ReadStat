@@ -91,15 +91,15 @@ rt_test_group_t _test_groups[] = {
     },
 
     {
-        .label = "Long strings in DTA 117/118",
+        .label = "Long strings (>255 bytes)",
         .tests = {
             {
-                .label = "300-byte string in newer DTA file",
-                .test_formats = RT_FORMAT_DTA_117_AND_NEWER,
+                .label = "300-byte string in SAV and new DTA",
+                .test_formats = RT_FORMAT_DTA_117_AND_NEWER | RT_FORMAT_SAV,
                 .rows = 1,
                 .columns = {
                     {
-                        .name = "var1",
+                        .name = "VAR1",
                         .type = READSTAT_TYPE_STRING,
                         .values = { 
                             { .type = READSTAT_TYPE_STRING, .v = 
@@ -566,7 +566,7 @@ rt_test_group_t _test_groups[] = {
 
             {
                 .label = "Out-of-range tagged missing values",
-                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .write_error = READSTAT_ERROR_TAGGED_VALUE_IS_OUT_OF_RANGE,
                 .test_formats = RT_FORMAT_DTA_114_AND_NEWER | RT_FORMAT_SAS7BDAT,
                 .rows = 1,
                 .columns = {
@@ -687,7 +687,7 @@ rt_test_group_t _test_groups[] = {
         .tests = {
             {
                 .label = "DTA ancient value labels",
-                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .test_formats = RT_FORMAT_DTA_104,
                 .label_sets_count = 1,
                 .label_sets = {
@@ -913,7 +913,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "DTA out-of-range double value",
                 .test_formats = RT_FORMAT_DTA,
-                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .rows = 1,
                 .columns = {
                     {
@@ -929,7 +929,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "DTA out-of-range float value",
                 .test_formats = RT_FORMAT_DTA,
-                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .rows = 1,
                 .columns = {
                     {
@@ -950,7 +950,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Pre-113 DTA out-of-range int32 value",
                 .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
-                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .rows = 1,
 
                 .columns = {
@@ -983,7 +983,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Pre-113 DTA out-of-range int16 value",
                 .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
-                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .rows = 1,
                 .columns = {
                     {
@@ -1010,7 +1010,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Pre-113 DTA out-of-range int8 value",
                 .test_formats = RT_FORMAT_DTA_111_AND_OLDER,
-                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .rows = 1,
                 .columns = {
                     {
@@ -1042,7 +1042,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Post-113 DTA out-of-range int32 value",
                 .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
-                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .rows = 1,
 
                 .columns = {
@@ -1075,7 +1075,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Post-113 DTA out-of-range int16 value",
                 .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
-                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .rows = 1,
                 .columns = {
                     {
@@ -1102,7 +1102,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Post-113 DTA out-of-range int8 value",
                 .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
-                .write_error = READSTAT_ERROR_VALUE_OUT_OF_RANGE,
+                .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .rows = 1,
                 .columns = {
                     {
@@ -1415,36 +1415,6 @@ rt_test_group_t _test_groups[] = {
     }
 };
 
-static char *file_extension(long format) {
-    if (format == RT_FORMAT_DTA_104)
-        return "dta104";
-    if (format == RT_FORMAT_DTA_105)
-        return "dta105";
-    if (format == RT_FORMAT_DTA_108)
-        return "dta108";
-    if (format == RT_FORMAT_DTA_110)
-        return "dta110";
-    if (format == RT_FORMAT_DTA_111)
-        return "dta111";
-    if (format == RT_FORMAT_DTA_114)
-        return "dta114";
-    if (format == RT_FORMAT_DTA_117)
-        return "dta117";
-    if (format == RT_FORMAT_DTA_118)
-        return "dta118";
-    if (format == RT_FORMAT_SAV_COMP_NONE)
-        return "sav";
-    if (format == RT_FORMAT_SAV_COMP_ROWS)
-        return "savrow";
-    if (format == RT_FORMAT_POR)
-        return "por";
-    if (format == RT_FORMAT_SAS7BDAT_32BIT)
-        return "sas7bdat32";
-    if (format == RT_FORMAT_SAS7BDAT_64BIT)
-        return "sas7bdat64";
-    return "data";
-}
-
 static void dump_buffer(rt_buffer_t *buffer, long format) {
     char filename[128];
     snprintf(filename, sizeof(filename), "/tmp/test_readstat.%s", 
@@ -1514,9 +1484,9 @@ int main(int argc, char *argv[]) {
 cleanup:
     if (error != READSTAT_OK) {
         dump_buffer(buffer, f);
-        printf("Error running test \"%s\" (format=0x%04x): %s\n", 
+        printf("Error running test \"%s\" (format=%s): %s\n", 
                 _test_groups[g].tests[t].label,
-                f, readstat_error_message(error));
+                file_extension(f), readstat_error_message(error));
         return 1;
     }
 
