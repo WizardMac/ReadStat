@@ -32,13 +32,25 @@ rt_test_group_t _test_groups[] = {
         .label = "Notes",
         .tests = {
             {
-                .label = "DTA/SAV notes",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SAV,
+                .label = "Short notes",
+                .test_formats = RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS,
 
                 .notes_count = 2,
                 .notes = {
                     "This is a note",
                     "This is another note"
+                }
+            },
+
+            {
+                .label = "Long notes",
+                .write_error = READSTAT_ERROR_NOTE_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_SPSS,
+
+                .notes_count = 1,
+                .notes = {
+                    "This is a note that is longer than the 80-byte line length of "
+                    "the SPSS document record, and will produce an error."
                 }
             }
         }

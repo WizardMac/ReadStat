@@ -4,6 +4,7 @@
 #define RT_MAX_COLS         10
 #define RT_MAX_LABEL_SETS    2
 #define RT_MAX_NOTES         2
+#define RT_MAX_NOTE_SIZE   120
 #define RT_MAX_VALUE_LABELS  2
 #define RT_MAX_STRING       64
 
@@ -50,7 +51,7 @@ typedef struct rt_test_file_s {
     rt_label_set_t      label_sets[RT_MAX_LABEL_SETS];
     long                label_sets_count;
 
-    char                notes[RT_MAX_NOTES][80];
+    char                notes[RT_MAX_NOTES][RT_MAX_NOTE_SIZE];
     long                notes_count;
 
     char                fweight[RT_MAX_STRING];

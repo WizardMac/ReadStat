@@ -568,8 +568,20 @@ static readstat_error_t por_emit_document_record(readstat_writer_t *writer, por_
     if ((retval = por_write_tag(writer, ctx, 'E')) != READSTAT_OK)
         goto cleanup;
 
-    if ((retval = por_write_double(writer, ctx, 0)) != READSTAT_OK)
+    if ((retval = por_write_double(writer, ctx, writer->notes_count)) != READSTAT_OK)
         goto cleanup;
+
+    int i;
+    for (i=0; i<writer->notes_count; i++) {
+        size_t len = strlen(writer->notes[i]);
+        if (len > SPSS_DOC_LINE_SIZE) {
+            retval = READSTAT_ERROR_NOTE_IS_TOO_LONG;
+            goto cleanup;
+        }
+
+        if ((retval = por_write_string_field_n(writer, ctx, writer->notes[i], len)) != READSTAT_OK)
+            goto cleanup;
+    }
 
 cleanup:
     return retval;

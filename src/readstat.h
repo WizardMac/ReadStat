@@ -376,8 +376,7 @@ readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index)
 // the "notes" feature.
 // 
 // Note that the line length in SPSS is 80 characters; ReadStat will
-// split longer notes onto separate lines, but is not particularly
-// intelligent about inserting line breaks.
+// produce a write error if a note is longer than this limit.
 void readstat_add_note(readstat_writer_t *writer, const char *note);
 
 // Optional metadata

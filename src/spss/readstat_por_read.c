@@ -404,6 +404,12 @@ static readstat_error_t read_document_record(por_ctx_t *ctx) {
         if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
             goto cleanup;
         }
+        if (ctx->note_handler) {
+            if (ctx->note_handler(i, string, ctx->user_ctx)) {
+                retval = READSTAT_ERROR_USER_ABORT;
+                goto cleanup;
+            }
+        }
     }
 cleanup:
     return retval;
@@ -484,6 +490,9 @@ static readstat_error_t read_por_file_data(por_ctx_t *ctx) {
     char output_string[4*256+1];
     char error_buf[1024];
     readstat_error_t rs_retval = READSTAT_OK;
+
+    if (ctx->var_count == 0)
+        return READSTAT_OK;
 
     while (1) {
         int finished = 0;
@@ -637,9 +646,10 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
     por_ctx_t *ctx = por_ctx_init();
     
     ctx->info_handler = parser->info_handler;
-    ctx->variable_handler = parser->variable_handler;
     ctx->metadata_handler = parser->metadata_handler;
+    ctx->note_handler = parser->note_handler;
     ctx->fweight_handler = parser->fweight_handler;
+    ctx->variable_handler = parser->variable_handler;
     ctx->value_handler = parser->value_handler;
     ctx->value_label_handler = parser->value_label_handler;
     ctx->error_handler = parser->error_handler;
