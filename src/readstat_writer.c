@@ -536,8 +536,15 @@ readstat_error_t readstat_end_writing(readstat_writer_t *writer) {
             return retval;
     }
 
-    mergesort(writer->string_refs, writer->string_refs_count, 
-            sizeof(readstat_string_ref_t *), &readstat_compare_string_refs);
+    /* Sort if out of order */
+    int i;
+    for (i=1; i<writer->string_refs_count; i++) {
+        if (readstat_compare_string_refs(&writer->string_refs[i-1], &writer->string_refs[i]) > 0) {
+            qsort(writer->string_refs, writer->string_refs_count, 
+                    sizeof(readstat_string_ref_t *), &readstat_compare_string_refs);
+            break;
+        }
+    }
 
     if (!writer->callbacks.end_data)
         return READSTAT_OK;
