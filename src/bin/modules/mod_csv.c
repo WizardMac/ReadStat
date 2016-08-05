@@ -85,7 +85,7 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
     }
     if (readstat_value_is_system_missing(value)) {
         /* void */
-    } else if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING) {
+    } else if (type == READSTAT_TYPE_STRING) {
         /* TODO escape */
         fprintf(mod_ctx->out_file, "\"%s\"", readstat_string_value(value));
     } else if (type == READSTAT_TYPE_INT8) {

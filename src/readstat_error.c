@@ -101,5 +101,11 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_NOTE_IS_TOO_LONG)
         return "The provided note is too long for the file format";
 
+    if (error_code == READSTAT_ERROR_STRING_REFS_NOT_SUPPORTED)
+        return "This version of the file format does not support string references";
+
+    if (error_code == READSTAT_ERROR_STRING_REF_IS_REQUIRED)
+        return "The provided value was not a valid string reference";
+
     return "Unknown error";
 }

@@ -91,7 +91,7 @@ rt_test_group_t _test_groups[] = {
     },
 
     {
-        .label = "Long strings (>255 bytes)",
+        .label = "Long strings and string refs",
         .tests = {
             {
                 .label = "300-byte string in SAV and new DTA",
@@ -118,7 +118,38 @@ rt_test_group_t _test_groups[] = {
                     }
                 }
             },
-        },
+
+            {
+                .label = "String refs in new DTA",
+                .test_formats = RT_FORMAT_DTA_117_AND_NEWER,
+                .string_refs_count = 3,
+                .string_refs = {
+                    "Hello",
+                    "Goodbye",
+                    "Hello again"
+                },
+                .rows = 2,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_STRING_REF,
+                        .values = {
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 0 } },
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 1 } }
+                        }
+                    },
+
+                    {
+                        .name = "var2",
+                        .type = READSTAT_TYPE_STRING_REF,
+                        .values = {
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 2 } },
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 0 } }
+                        }
+                    }
+                }
+            }
+        }
     },
     {
         .label = "ASCII tests",

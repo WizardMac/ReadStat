@@ -127,7 +127,9 @@ cleanup:
     return error;
 }
 
-static uint16_t dta_111_typecode_for_variable(readstat_variable_t *r_variable) {
+static readstat_error_t dta_111_typecode_for_variable(readstat_variable_t *r_variable,
+        uint16_t *out_typecode) {
+    readstat_error_t retval = READSTAT_OK;
     size_t max_len = r_variable->storage_width;
     uint16_t typecode = 0;
     switch (r_variable->type) {
@@ -142,17 +144,18 @@ static uint16_t dta_111_typecode_for_variable(readstat_variable_t *r_variable) {
         case READSTAT_TYPE_DOUBLE:
             typecode = DTA_111_TYPE_CODE_DOUBLE; break;
         case READSTAT_TYPE_STRING:
-        case READSTAT_TYPE_LONG_STRING:
-            if (max_len > DTA_111_MAX_WIDTH)
-                max_len = DTA_111_MAX_WIDTH;
-
-            typecode = max_len;
-            break;
+            typecode = max_len; break;
+        case READSTAT_TYPE_STRING_REF:
+            retval = READSTAT_ERROR_STRING_REFS_NOT_SUPPORTED; break;
     }
-    return typecode;
+    if (out_typecode && retval == READSTAT_OK)
+        *out_typecode = typecode;
+
+    return retval;
 }
 
-static uint16_t dta_117_typecode_for_variable(readstat_variable_t *r_variable) {
+static readstat_error_t dta_117_typecode_for_variable(readstat_variable_t *r_variable, uint16_t *out_typecode) {
+    readstat_error_t retval = READSTAT_OK;
     size_t max_len = r_variable->storage_width;
     uint16_t typecode = 0;
     switch (r_variable->type) {
@@ -167,17 +170,18 @@ static uint16_t dta_117_typecode_for_variable(readstat_variable_t *r_variable) {
         case READSTAT_TYPE_DOUBLE:
             typecode = DTA_117_TYPE_CODE_DOUBLE; break;
         case READSTAT_TYPE_STRING:
-        case READSTAT_TYPE_LONG_STRING:
-            if (max_len > DTA_117_MAX_WIDTH)
-                max_len = DTA_117_MAX_WIDTH;
-
-            typecode = max_len;
-            break;
+            typecode = max_len; break;
+        case READSTAT_TYPE_STRING_REF:
+            typecode = DTA_117_TYPE_CODE_STRL; break;
     }
-    return typecode;
+    if (out_typecode)
+        *out_typecode = typecode;
+
+    return retval;
 }
 
-static uint16_t dta_old_typecode_for_variable(readstat_variable_t *r_variable) {
+static readstat_error_t dta_old_typecode_for_variable(readstat_variable_t *r_variable, uint16_t *out_typecode) {
+    readstat_error_t retval = READSTAT_OK;
     size_t max_len = r_variable->storage_width;
     uint16_t typecode = 0;
     switch (r_variable->type) {
@@ -192,24 +196,25 @@ static uint16_t dta_old_typecode_for_variable(readstat_variable_t *r_variable) {
         case READSTAT_TYPE_DOUBLE:
             typecode = DTA_OLD_TYPE_CODE_DOUBLE; break;
         case READSTAT_TYPE_STRING:
-        case READSTAT_TYPE_LONG_STRING:
-            if (max_len > DTA_OLD_MAX_WIDTH)
-                max_len = DTA_OLD_MAX_WIDTH;
-
-            typecode = max_len + 0x7F;
-            break;
+            typecode = max_len + 0x7F; break;
+        case READSTAT_TYPE_STRING_REF:
+            retval = READSTAT_ERROR_STRING_REFS_NOT_SUPPORTED; break;
     }
-    return typecode;
+    if (out_typecode && retval == READSTAT_OK)
+        *out_typecode = typecode;
+
+    return retval;
 }
 
-static uint16_t dta_typecode_for_variable(readstat_variable_t *r_variable, int typlist_version) {
+static readstat_error_t dta_typecode_for_variable(readstat_variable_t *r_variable, 
+        int typlist_version, uint16_t *typecode) {
     if (typlist_version == 111) {
-        return dta_111_typecode_for_variable(r_variable);
+        return dta_111_typecode_for_variable(r_variable, typecode);
     }
     if (typlist_version == 117) {
-        return dta_117_typecode_for_variable(r_variable);
+        return dta_117_typecode_for_variable(r_variable, typecode);
     } 
-    return dta_old_typecode_for_variable(r_variable);
+    return dta_old_typecode_for_variable(r_variable, typecode);
 }
 
 static readstat_error_t dta_emit_typlist(readstat_writer_t *writer, dta_ctx_t *ctx) {
@@ -221,7 +226,12 @@ static readstat_error_t dta_emit_typlist(readstat_writer_t *writer, dta_ctx_t *c
 
     for (i=0; i<ctx->nvar; i++) {
         readstat_variable_t *r_variable = readstat_get_variable(writer, i);
-        ctx->typlist[i] = dta_typecode_for_variable(r_variable, ctx->typlist_version);
+        uint16_t typecode = 0;
+        error = dta_typecode_for_variable(r_variable, ctx->typlist_version, &typecode);
+        if (error != READSTAT_OK)
+            goto cleanup;
+
+        ctx->typlist[i] = typecode;
     }
 
     for (i=0; i<ctx->nvar; i++) {
@@ -517,7 +527,53 @@ static readstat_error_t dta_emit_strls(readstat_writer_t *writer, dta_ctx_t *ctx
     if (!ctx->file_is_xmlish)
         return READSTAT_OK;
 
-    return readstat_write_string(writer, "<strls></strls>");
+    readstat_error_t retval = READSTAT_OK;
+
+    retval = readstat_write_string(writer, "<strls>");
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    int i;
+    for (i=0; i<writer->string_refs_count; i++) {
+        readstat_string_ref_t *ref = writer->string_refs[i];
+
+        retval = readstat_write_string(writer, "GSO");
+        if (retval != READSTAT_OK)
+            goto cleanup;
+
+        dta_strl_header_t header;
+        if (ctx->strl_v_len == 2) {
+            int16_t v = ref->first_v;
+            int64_t o = ref->first_o;
+            memcpy(&header.vo_bytes[0], &v, sizeof(int16_t));
+            if (!machine_is_little_endian()) {
+                o <<= 16;
+            }
+            memcpy(&header.vo_bytes[2], &o, 6);
+        } else {
+            int32_t v = ref->first_v;
+            int32_t o = ref->first_o;
+            memcpy(&header.vo_bytes[0], &v, sizeof(int32_t));
+            memcpy(&header.vo_bytes[4], &o, sizeof(int32_t));
+        }
+        header.type = DTA_GSO_TYPE_ASCII;
+        header.len = ref->len;
+
+        retval = readstat_write_bytes(writer, &header, sizeof(dta_strl_header_t));
+        if (retval != READSTAT_OK)
+            goto cleanup;
+
+        retval = readstat_write_bytes(writer, &ref->data[0], ref->len);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+    }
+
+    retval = readstat_write_string(writer, "</strls>");
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    return retval;
 }
 
 static readstat_error_t dta_old_emit_value_labels(readstat_writer_t *writer, dta_ctx_t *ctx) {
@@ -732,6 +788,10 @@ static size_t dta_117_variable_width(readstat_type_t type, size_t user_width) {
             user_width = DTA_117_MAX_WIDTH;
         return user_width;
     }
+
+    if (type == READSTAT_TYPE_STRING_REF)
+        return 8;
+
     return dta_numeric_variable_width(type, user_width);
 }
 
@@ -880,7 +940,8 @@ static size_t dta_measure_data(readstat_writer_t *writer, dta_ctx_t *ctx) {
     for (i=0; i<ctx->nvar; i++) {
         size_t      max_len;
         readstat_variable_t *r_variable = readstat_get_variable(writer, i);
-        uint16_t typecode = dta_typecode_for_variable(r_variable, ctx->typlist_version);
+        uint16_t typecode = 0;
+        dta_typecode_for_variable(r_variable, ctx->typlist_version, &typecode);
         dta_type_info(typecode, &max_len, ctx);
         ctx->record_len += max_len;
     }
@@ -889,8 +950,17 @@ static size_t dta_measure_data(readstat_writer_t *writer, dta_ctx_t *ctx) {
             + dta_measure_tag(ctx, "</data>"));
 }
 
-static size_t dta_measure_strls(dta_ctx_t *ctx) {
+static size_t dta_measure_strls(readstat_writer_t *writer, dta_ctx_t *ctx) {
+    int i;
+    size_t strls_len = 0;
+
+    for (i=0; i<writer->string_refs_count; i++) {
+        readstat_string_ref_t *ref = writer->string_refs[i];
+        strls_len += 16 + ref->len;
+    }
+
     return (dta_measure_tag(ctx, "<strls>")
+            + strls_len
             + dta_measure_tag(ctx, "</strls>"));
 }
 
@@ -934,7 +1004,7 @@ static readstat_error_t dta_emit_map(readstat_writer_t *writer, dta_ctx_t *ctx) 
     map[8] = map[7] + dta_measure_variable_labels(ctx); /* <characteristics> */
     map[9] = map[8] + dta_measure_characteristics(writer, ctx); /* <data> */
     map[10]= map[9] + dta_measure_data(writer, ctx);    /* <strls> */
-    map[11]= map[10]+ dta_measure_strls(ctx);           /* <value_labels> */
+    map[11]= map[10]+ dta_measure_strls(writer, ctx);   /* <value_labels> */
     map[12]= map[11]+ dta_measure_value_labels(writer, ctx);    /* </stata_dta> */
     map[13]= map[12]+ dta_measure_tag(ctx, "</stata_dta>");
 
@@ -1092,7 +1162,8 @@ static readstat_error_t dta_write_double(void *row, const readstat_variable_t *v
     return dta_write_raw_double(row, value);
 }
 
-static readstat_error_t dta_write_string(void *row, const char *value, size_t max_len) {
+static readstat_error_t dta_write_string(void *row, const readstat_variable_t *var, const char *value) {
+    size_t max_len = var->storage_width;
     if (value == NULL || value[0] == '\0') {
         memset(row, '\0', max_len);
     } else {
@@ -1105,31 +1176,31 @@ static readstat_error_t dta_write_string(void *row, const char *value, size_t ma
     return READSTAT_OK;
 }
 
-static readstat_error_t dta_111_write_string(void *row, const readstat_variable_t *var, 
-        const char *value) {
-    size_t max_len = var->storage_width;
-    if (max_len > DTA_111_MAX_WIDTH)
-        max_len = DTA_111_MAX_WIDTH;
+static readstat_error_t dta_118_write_string_ref(void *row, const readstat_variable_t *var, readstat_string_ref_t *ref) {
+    if (ref == NULL)
+        return READSTAT_ERROR_STRING_REF_IS_REQUIRED;
 
-    return dta_write_string(row, value, max_len);
+    int16_t v = ref->first_v;
+    int64_t o = ref->first_o;
+    char *row_bytes = (char *)row;
+    memcpy(&row_bytes[0], &v, sizeof(int16_t));
+    if (!machine_is_little_endian()) {
+        o <<= 16;
+    }
+    memcpy(&row_bytes[2], &o, 6);
+    return READSTAT_OK;
 }
 
-static readstat_error_t dta_117_write_string(void *row, const readstat_variable_t *var, 
-        const char *value) {
-    size_t max_len = var->storage_width;
-    if (max_len > DTA_117_MAX_WIDTH)
-        max_len = DTA_117_MAX_WIDTH;
+static readstat_error_t dta_117_write_string_ref(void *row, const readstat_variable_t *var, readstat_string_ref_t *ref) {
+    if (ref == NULL)
+        return READSTAT_ERROR_STRING_REF_IS_REQUIRED;
 
-    return dta_write_string(row, value, max_len);
-}
-
-static readstat_error_t dta_old_write_string(void *row, const readstat_variable_t *var, 
-        const char *value) {
-    size_t max_len = var->storage_width;
-    if (max_len > DTA_OLD_MAX_WIDTH)
-        max_len = DTA_OLD_MAX_WIDTH;
-
-    return dta_write_string(row, value, max_len);
+    int32_t v = ref->first_v;
+    int32_t o = ref->first_o;
+    char *row_bytes = (char *)row;
+    memcpy(&row_bytes[0], &v, sizeof(int32_t));
+    memcpy(&row_bytes[4], &o, sizeof(int32_t));
+    return READSTAT_OK;
 }
 
 static readstat_error_t dta_113_write_missing_numeric(void *row, const readstat_variable_t *var) {
@@ -1164,16 +1235,8 @@ static readstat_error_t dta_old_write_missing_numeric(void *row, const readstat_
     return retval;
 }
 
-static readstat_error_t dta_111_write_missing_string(void *row, const readstat_variable_t *var) {
-    return dta_111_write_string(row, var, NULL);
-}
-
-static readstat_error_t dta_117_write_missing_string(void *row, const readstat_variable_t *var) {
-    return dta_117_write_string(row, var, NULL);
-}
-
-static readstat_error_t dta_old_write_missing_string(void *row, const readstat_variable_t *var) {
-    return dta_old_write_string(row, var, NULL);
+static readstat_error_t dta_write_missing_string(void *row, const readstat_variable_t *var) {
+    return dta_write_string(row, var, NULL);
 }
 
 static readstat_error_t dta_113_write_missing_tagged(void *row, const readstat_variable_t *var, char tag) {
@@ -1246,16 +1309,16 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
         return READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
     } else if (writer->version >= 117) {
         writer->callbacks.variable_width = &dta_117_variable_width;
-        writer->callbacks.write_string = &dta_117_write_string;
-        writer->callbacks.write_missing_string = &dta_117_write_missing_string;
     } else if (writer->version >= 111) {
         writer->callbacks.variable_width = &dta_111_variable_width;
-        writer->callbacks.write_string = &dta_111_write_string;
-        writer->callbacks.write_missing_string = &dta_111_write_missing_string;
     } else {
         writer->callbacks.variable_width = &dta_old_variable_width;
-        writer->callbacks.write_string = &dta_old_write_string;
-        writer->callbacks.write_missing_string = &dta_old_write_missing_string;
+    }
+
+    if (writer->version == 118) {
+        writer->callbacks.write_string_ref = &dta_118_write_string_ref;
+    } else if (writer->version == 117) {
+        writer->callbacks.write_string_ref = &dta_117_write_string_ref;
     }
 
     if (writer->version >= 113) {
@@ -1274,6 +1337,8 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
 
     writer->callbacks.write_float = &dta_write_float;
     writer->callbacks.write_double = &dta_write_double;
+    writer->callbacks.write_string = &dta_write_string;
+    writer->callbacks.write_missing_string = &dta_write_missing_string;
 
     writer->callbacks.begin_data = &dta_begin_data;
     writer->callbacks.end_data = &dta_end_data;

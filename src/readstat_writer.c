@@ -8,10 +8,31 @@
 #define LABEL_SETS_INITIAL_CAPACITY   50
 #define NOTES_INITIAL_CAPACITY        50
 #define VALUE_LABELS_INITIAL_CAPACITY 10
+#define STRING_REFS_INITIAL_CAPACITY 100
 #define LABEL_SET_VARIABLES_INITIAL_CAPACITY 2
 
 static readstat_error_t readstat_write_row_default_callback(void *writer_ctx, void *bytes, size_t len) {
     return readstat_write_bytes((readstat_writer_t *)writer_ctx, bytes, len);
+}
+
+static int readstat_compare_string_refs(const void *elem1, const void *elem2) {
+    readstat_string_ref_t *ref1 = *(readstat_string_ref_t **)elem1;
+    readstat_string_ref_t *ref2 = *(readstat_string_ref_t **)elem2;
+
+    if (ref1->first_v == ref2->first_v)
+        return ref1->first_o - ref2->first_o;
+
+    return ref1->first_v - ref2->first_v;
+}
+
+readstat_string_ref_t *readstat_string_ref_init(const char *string) {
+    size_t len = strlen(string) + 1;
+    readstat_string_ref_t *ref = calloc(1, sizeof(readstat_string_ref_t) + len);
+    ref->first_o = -1;
+    ref->first_v = -1;
+    ref->len = len;
+    memcpy(&ref->data[0], string, len);
+    return ref;
 }
 
 readstat_writer_t *readstat_writer_init() {
@@ -23,8 +44,11 @@ readstat_writer_t *readstat_writer_init() {
     writer->label_sets = calloc(LABEL_SETS_INITIAL_CAPACITY, sizeof(readstat_label_set_t *));
     writer->label_sets_capacity = LABEL_SETS_INITIAL_CAPACITY;
 
-    writer->notes = calloc(NOTES_INITIAL_CAPACITY, sizeof(readstat_label_set_t *));
+    writer->notes = calloc(NOTES_INITIAL_CAPACITY, sizeof(char *));
     writer->notes_capacity = NOTES_INITIAL_CAPACITY;
+
+    writer->string_refs = calloc(STRING_REFS_INITIAL_CAPACITY, sizeof(readstat_string_ref_t *));
+    writer->string_refs_capacity = STRING_REFS_INITIAL_CAPACITY;
 
     writer->timestamp = time(NULL);
     writer->is_64bit = 1;
@@ -111,6 +135,12 @@ void readstat_writer_free(readstat_writer_t *writer) {
                 free(writer->notes[i]);
             }
             free(writer->notes);
+        }
+        if (writer->string_refs) {
+            for (i=0; i<writer->string_refs_count; i++) {
+                free(writer->string_refs[i]);
+            }
+            free(writer->string_refs);
         }
         if (writer->row) {
             free(writer->row);
@@ -238,7 +268,7 @@ readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, const char
     new_variable->user_width = width;
     new_variable->type = type;
 
-    if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING) {
+    if (readstat_variable_get_type_class(new_variable) == READSTAT_TYPE_CLASS_STRING) {
         new_variable->alignment = READSTAT_ALIGNMENT_LEFT;
     } else {
         new_variable->alignment = READSTAT_ALIGNMENT_RIGHT;
@@ -250,6 +280,21 @@ readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, const char
     }
 
     return new_variable;
+}
+
+static void readstat_append_string_ref(readstat_writer_t *writer, readstat_string_ref_t *ref) {
+    if (writer->string_refs_count == writer->string_refs_capacity) {
+        writer->string_refs_capacity *= 2;
+        writer->string_refs = realloc(writer->string_refs,
+                writer->string_refs_capacity * sizeof(readstat_string_ref_t *));
+    }
+    writer->string_refs[writer->string_refs_count++] = ref;
+}
+
+readstat_string_ref_t *readstat_add_string_ref(readstat_writer_t *writer, const char *string) {
+    readstat_string_ref_t *ref = readstat_string_ref_init(string);
+    readstat_append_string_ref(writer, ref);
+    return ref;
 }
 
 void readstat_add_note(readstat_writer_t *writer, const char *note) {
@@ -308,6 +353,13 @@ readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index)
     return NULL;
 }
 
+readstat_string_ref_t *readstat_get_string_ref(readstat_writer_t *writer, int index) {
+    if (index < writer->string_refs_count) {
+        return writer->string_refs[index];
+    }
+    return NULL;
+}
+
 readstat_error_t readstat_writer_set_file_label(readstat_writer_t *writer, const char *file_label) {
     snprintf(writer->file_label, sizeof(writer->file_label), "%s", file_label);
     return READSTAT_OK;
@@ -319,8 +371,7 @@ readstat_error_t readstat_writer_set_file_timestamp(readstat_writer_t *writer, t
 }
 
 readstat_error_t readstat_writer_set_fweight_variable(readstat_writer_t *writer, const readstat_variable_t *variable) {
-    readstat_type_t type = readstat_variable_get_type(variable);
-    if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING)
+    if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_STRING)
         return READSTAT_ERROR_BAD_FREQUENCY_WEIGHT;
 
     writer->fweight_variable = variable;
@@ -425,12 +476,31 @@ readstat_error_t readstat_insert_string_value(readstat_writer_t *writer, const r
     return writer->callbacks.write_string(&writer->row[variable->offset], variable, value);
 }
 
+readstat_error_t readstat_insert_string_ref(readstat_writer_t *writer, const readstat_variable_t *variable, readstat_string_ref_t *ref) {
+    if (!writer->initialized)
+        return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
+    if (variable->type != READSTAT_TYPE_STRING_REF)
+        return READSTAT_ERROR_VALUE_TYPE_MISMATCH;
+    if (!writer->callbacks.write_string_ref)
+        return READSTAT_ERROR_STRING_REFS_NOT_SUPPORTED;
+
+    if (ref && ref->first_o == -1 && ref->first_v == -1) {
+        ref->first_o = writer->current_row;
+        ref->first_v = variable->index;
+    }
+
+    return writer->callbacks.write_string_ref(&writer->row[variable->offset], variable, ref);
+}
+
 readstat_error_t readstat_insert_missing_value(readstat_writer_t *writer, const readstat_variable_t *variable) {
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
 
-    if (variable->type == READSTAT_TYPE_STRING || variable->type == READSTAT_TYPE_LONG_STRING) {
+    if (variable->type == READSTAT_TYPE_STRING) {
         return writer->callbacks.write_missing_string(&writer->row[variable->offset], variable);
+    }
+    if (variable->type == READSTAT_TYPE_STRING_REF) {
+        return readstat_insert_string_ref(writer, variable, NULL);
     }
 
     return writer->callbacks.write_missing_number(&writer->row[variable->offset], variable);
@@ -465,6 +535,9 @@ readstat_error_t readstat_end_writing(readstat_writer_t *writer) {
         if (retval != READSTAT_OK)
             return retval;
     }
+
+    mergesort(writer->string_refs, writer->string_refs_count, 
+            sizeof(readstat_string_ref_t *), &readstat_compare_string_refs);
 
     if (!writer->callbacks.end_data)
         return READSTAT_OK;

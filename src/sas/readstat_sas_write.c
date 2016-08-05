@@ -373,8 +373,7 @@ static sas_subheader_t *sas_col_attrs_subheader_init(readstat_writer_t *writer,
             memcpy(&ptrs[0], &offset32, sizeof(uint32_t));
             ptrs += sizeof(uint32_t);
         }
-        if (type == READSTAT_TYPE_STRING ||
-                type == READSTAT_TYPE_LONG_STRING) {
+        if (type == READSTAT_TYPE_STRING) {
             ptrs[6] = SAS_COLUMN_TYPE_CHR;
             width = readstat_variable_get_storage_width(variable);
         } else {

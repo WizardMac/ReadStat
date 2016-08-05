@@ -11,15 +11,21 @@ typedef struct dta_header_s {
     int32_t          nobs;
 } dta_header_t;
 
-typedef struct dta_gso_header_s {
-    char             gso[3];
-    uint32_t         v;
-    uint32_t         o;
-    unsigned char    t;
-    int32_t          len;
-} dta_gso_header_t;
+typedef struct dta_strl_header_s {
+    unsigned char   vo_bytes[8];
+    unsigned char   type;
+    int32_t         len;
+} dta_strl_header_t;
 
 #pragma pack(pop)
+
+typedef struct dta_strl_s {
+    uint16_t        v;
+    uint64_t        o;
+    unsigned char   type;
+    size_t          len;
+    char            data[0];
+} dta_strl_t;
 
 typedef struct dta_ctx_s {
     char          *data_label;
@@ -52,6 +58,9 @@ typedef struct dta_ctx_s {
     size_t         value_label_table_labname_len;
     size_t         value_label_table_padding_len;
 
+    size_t         strl_v_len;
+    size_t         strl_o_len;
+
     off_t          data_offset;
     off_t          strls_offset;
     off_t          value_labels_offset;
@@ -60,6 +69,7 @@ typedef struct dta_ctx_s {
     int            nobs;
     size_t         record_len;
     int            row_limit;
+    int            current_row;
 
     int            machine_needs_byte_swap;
     int            machine_is_twos_complement;
@@ -71,6 +81,10 @@ typedef struct dta_ctx_s {
     int32_t        max_int32;
     int32_t        max_float;
     int64_t        max_double;
+
+    dta_strl_t   **strls;
+    size_t         strls_count;
+    size_t         strls_capacity;
 
     iconv_t        converter;
     readstat_error_handler error_handler;

@@ -226,7 +226,7 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
 
     if (readstat_value_is_system_missing(value)) {
         error = readstat_insert_missing_value(writer, variable);
-    } else if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_LONG_STRING) {
+    } else if (type == READSTAT_TYPE_STRING) {
         error = readstat_insert_string_value(writer, variable, readstat_string_value(value));
     } else if (type == READSTAT_TYPE_INT8) {
         error = readstat_insert_int8_value(writer, variable, readstat_int8_value(value));

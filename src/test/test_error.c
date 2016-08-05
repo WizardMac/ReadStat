@@ -92,13 +92,13 @@ void push_error_if_strings_differ_n(rt_parse_ctx_t *ctx,
 int values_equal(readstat_value_t expected, readstat_value_t received) {
     readstat_type_t expected_type = readstat_value_type(expected);
     readstat_type_t received_type = readstat_value_type(received);
-    if (expected_type == READSTAT_TYPE_STRING || expected_type == READSTAT_TYPE_LONG_STRING) {
-        if (received_type == READSTAT_TYPE_STRING || received_type == READSTAT_TYPE_LONG_STRING) {
+    if (expected_type == READSTAT_TYPE_STRING) {
+        if (received_type == READSTAT_TYPE_STRING) {
             return strings_equal(readstat_string_value(expected), readstat_string_value(received));
         } else {
             return 0;
         }
-    } else if (received_type != READSTAT_TYPE_STRING && received_type != READSTAT_TYPE_LONG_STRING) {
+    } else if (received_type != READSTAT_TYPE_STRING) {
         if (readstat_value_tag(expected) || readstat_value_tag(received)) {
             return readstat_value_tag(expected) == readstat_value_tag(received);
         } else if (readstat_value_is_system_missing(expected) || readstat_value_is_system_missing(received)) {

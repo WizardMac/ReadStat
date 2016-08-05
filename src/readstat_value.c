@@ -1,8 +1,19 @@
 
 #include "readstat.h"
 
+readstat_type_class_t readstat_type_class(readstat_type_t type) {
+    if (type == READSTAT_TYPE_STRING || type == READSTAT_TYPE_STRING_REF)
+        return READSTAT_TYPE_CLASS_STRING;
+
+    return READSTAT_TYPE_CLASS_NUMERIC;
+}
+
 readstat_type_t readstat_value_type(readstat_value_t value) {
     return value.type;
+}
+
+readstat_type_class_t readstat_value_type_class(readstat_value_t value) {
+    return readstat_type_class(value.type);
 }
 
 char readstat_value_tag(readstat_value_t value) {
@@ -112,7 +123,7 @@ double readstat_double_value(readstat_value_t value) {
 }
 
 const char *readstat_string_value(readstat_value_t value) {
-    if (value.type == READSTAT_TYPE_STRING || value.type == READSTAT_TYPE_LONG_STRING)
+    if (readstat_value_type(value) == READSTAT_TYPE_STRING)
         return value.v.string_value;
 
     return NULL;

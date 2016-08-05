@@ -89,8 +89,6 @@ void parse_ctx_free(rt_parse_ctx_t *parse_ctx) {
     free(parse_ctx);
 }
 
-
-
 static int rt_open_handler(const char *path, void *io_ctx) {
     return 0;
 }
@@ -283,9 +281,15 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
     rt_ctx->obs_index = obs_index;
     rt_ctx->var_index = var_index;
 
-    push_error_if_values_differ(rt_ctx, 
-            column->values[obs_index],
-            value, "Data values");
+    if (column->type == READSTAT_TYPE_STRING_REF) {
+        push_error_if_strings_differ(rt_ctx,
+                rt_ctx->file->string_refs[readstat_int32_value(column->values[obs_index])],
+                readstat_string_value(value), "String ref values");
+    } else {
+        push_error_if_values_differ(rt_ctx, 
+                column->values[obs_index],
+                value, "Data values");
+    }
 
     return 0;
 }

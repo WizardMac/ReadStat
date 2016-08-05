@@ -24,8 +24,13 @@ typedef enum readstat_type_e {
     READSTAT_TYPE_INT32,
     READSTAT_TYPE_FLOAT,
     READSTAT_TYPE_DOUBLE,
-    READSTAT_TYPE_LONG_STRING
+    READSTAT_TYPE_STRING_REF
 } readstat_type_t;
+
+typedef enum readstat_type_class_e {
+    READSTAT_TYPE_CLASS_STRING,
+    READSTAT_TYPE_CLASS_NUMERIC
+} readstat_type_class_t;
 
 typedef enum readstat_measure_e {
     READSTAT_MEASURE_UNKNOWN,
@@ -79,7 +84,9 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_BAD_TIMESTAMP,
     READSTAT_ERROR_BAD_FREQUENCY_WEIGHT,
     READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS,
-    READSTAT_ERROR_NOTE_IS_TOO_LONG
+    READSTAT_ERROR_NOTE_IS_TOO_LONG,
+    READSTAT_ERROR_STRING_REFS_NOT_SUPPORTED,
+    READSTAT_ERROR_STRING_REF_IS_REQUIRED
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);
@@ -100,6 +107,7 @@ typedef struct readstat_value_s {
 } readstat_value_t;
 
 readstat_type_t readstat_value_type(readstat_value_t value);
+readstat_type_class_t readstat_value_type_class(readstat_value_t value);
 int readstat_value_is_missing(readstat_value_t value);
 int readstat_value_is_system_missing(readstat_value_t value);
 int readstat_value_is_considered_missing(readstat_value_t value);
@@ -111,6 +119,8 @@ int32_t readstat_int32_value(readstat_value_t value);
 float readstat_float_value(readstat_value_t value);
 double readstat_double_value(readstat_value_t value);
 const char *readstat_string_value(readstat_value_t value);
+
+readstat_type_class_t readstat_type_class(readstat_type_t type);
 
 /* Internal data structures */
 typedef struct readstat_value_label_s {
@@ -164,6 +174,7 @@ const char *readstat_variable_get_name(const readstat_variable_t *variable);
 const char *readstat_variable_get_label(const readstat_variable_t *variable);
 const char *readstat_variable_get_format(const readstat_variable_t *variable);
 readstat_type_t readstat_variable_get_type(const readstat_variable_t *variable);
+readstat_type_class_t readstat_variable_get_type_class(const readstat_variable_t *variable);
 size_t readstat_variable_get_storage_width(const readstat_variable_t *variable);
 int readstat_variable_get_display_width(const readstat_variable_t *variable);
 readstat_measure_t readstat_variable_get_measure(const readstat_variable_t *variable);
@@ -272,6 +283,13 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
 
 
 /* Internal module callbacks */
+typedef struct readstat_string_ref_s {
+    int64_t     first_v;
+    int64_t     first_o;
+    size_t      len;
+    char        data[0];
+} readstat_string_ref_t;
+
 typedef size_t (*readstat_variable_width_callback)(readstat_type_t type, size_t user_width);
 
 typedef readstat_error_t (*readstat_write_int8_callback)(void *row_data, const readstat_variable_t *variable, int8_t value);
@@ -280,6 +298,7 @@ typedef readstat_error_t (*readstat_write_int32_callback)(void *row_data, const 
 typedef readstat_error_t (*readstat_write_float_callback)(void *row_data, const readstat_variable_t *variable, float value);
 typedef readstat_error_t (*readstat_write_double_callback)(void *row_data, const readstat_variable_t *variable, double value);
 typedef readstat_error_t (*readstat_write_string_callback)(void *row_data, const readstat_variable_t *variable, const char *value);
+typedef readstat_error_t (*readstat_write_string_ref_callback)(void *row_data, const readstat_variable_t *variable, readstat_string_ref_t *ref);
 typedef readstat_error_t (*readstat_write_missing_callback)(void *row_data, const readstat_variable_t *variable);
 typedef readstat_error_t (*readstat_write_tagged_callback)(void *row_data, const readstat_variable_t *variable, char tag);
 
@@ -288,19 +307,20 @@ typedef readstat_error_t (*readstat_write_row_callback)(void *writer, void *row_
 typedef readstat_error_t (*readstat_end_data_callback)(void *writer);
 
 typedef struct readstat_writer_callbacks_s {
-    readstat_variable_width_callback   variable_width;
-    readstat_write_int8_callback    write_int8;
-    readstat_write_int16_callback   write_int16;
-    readstat_write_int32_callback   write_int32;
-    readstat_write_float_callback   write_float;
-    readstat_write_double_callback  write_double;
-    readstat_write_string_callback  write_string;
-    readstat_write_missing_callback write_missing_string;
-    readstat_write_missing_callback write_missing_number;
-    readstat_write_tagged_callback  write_missing_tagged;
-    readstat_begin_data_callback    begin_data;
-    readstat_write_row_callback     write_row;
-    readstat_end_data_callback      end_data;
+    readstat_variable_width_callback    variable_width;
+    readstat_write_int8_callback        write_int8;
+    readstat_write_int16_callback       write_int16;
+    readstat_write_int32_callback       write_int32;
+    readstat_write_float_callback       write_float;
+    readstat_write_double_callback      write_double;
+    readstat_write_string_callback      write_string;
+    readstat_write_string_ref_callback  write_string_ref;
+    readstat_write_missing_callback     write_missing_string;
+    readstat_write_missing_callback     write_missing_number;
+    readstat_write_tagged_callback      write_missing_tagged;
+    readstat_begin_data_callback        begin_data;
+    readstat_write_row_callback         write_row;
+    readstat_end_data_callback          end_data;
 } readstat_writer_callbacks_t;
 
 /* You'll need to define one of these to get going. Should return # bytes written,
@@ -326,6 +346,10 @@ typedef struct readstat_writer_s {
     char                      **notes;
     long                        notes_count;
     long                        notes_capacity;
+
+    readstat_string_ref_t    **string_refs;
+    long                       string_refs_count;
+    long                       string_refs_capacity;
 
     unsigned char              *row;
     size_t                      row_len;
@@ -381,6 +405,12 @@ readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index)
 // produce a write error if a note is longer than this limit.
 void readstat_add_note(readstat_writer_t *writer, const char *note);
 
+// String refs are used for creating a READSTAT_TYPE_STRING_REF column,
+// which is only supported in Stata. String references can be shared
+// across columns, and inserted with readstat_insert_string_ref().
+readstat_string_ref_t *readstat_add_string_ref(readstat_writer_t *writer, const char *string);
+readstat_string_ref_t *readstat_get_string_ref(readstat_writer_t *writer, int index);
+
 // Optional metadata
 readstat_error_t readstat_writer_set_file_label(readstat_writer_t *writer, const char *file_label);
 readstat_error_t readstat_writer_set_file_timestamp(readstat_writer_t *writer, time_t timestamp);
@@ -412,6 +442,7 @@ readstat_error_t readstat_insert_int32_value(readstat_writer_t *writer, const re
 readstat_error_t readstat_insert_float_value(readstat_writer_t *writer, const readstat_variable_t *variable, float value);
 readstat_error_t readstat_insert_double_value(readstat_writer_t *writer, const readstat_variable_t *variable, double value);
 readstat_error_t readstat_insert_string_value(readstat_writer_t *writer, const readstat_variable_t *variable, const char *value);
+readstat_error_t readstat_insert_string_ref(readstat_writer_t *writer, const readstat_variable_t *variable, readstat_string_ref_t *ref);
 readstat_error_t readstat_insert_missing_value(readstat_writer_t *writer, const readstat_variable_t *variable);
 readstat_error_t readstat_insert_tagged_missing_value(readstat_writer_t *writer, const readstat_variable_t *variable, char tag);
 

@@ -98,6 +98,9 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         }
         ck_str_hash_insert(label_set->name, r_label_set, label_sets);
     }
+    for (j=0; j<file->string_refs_count; j++) {
+        readstat_add_string_ref(writer, file->string_refs[j]);
+    }
     for (j=0; j<file->columns_count; j++) {
         rt_column_t *column = &file->columns[j];
         readstat_label_set_t *label_set = (readstat_label_set_t *)ck_str_hash_lookup(column->label_set, label_sets);
@@ -165,10 +168,13 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
                         readstat_value_tag(column->values[i]));
             } else if (readstat_value_is_system_missing(column->values[i])) {
                 error = readstat_insert_missing_value(writer, variable);
-            } else if (column->type == READSTAT_TYPE_STRING ||
-                    column->type == READSTAT_TYPE_LONG_STRING) {
+            } else if (column->type == READSTAT_TYPE_STRING) {
                 error = readstat_insert_string_value(writer, variable, 
                         readstat_string_value(column->values[i]));
+            } else if (column->type == READSTAT_TYPE_STRING_REF) {
+                error = readstat_insert_string_ref(writer, variable, 
+                        readstat_get_string_ref(writer,
+                            readstat_int32_value(column->values[i])));
             } else if (column->type == READSTAT_TYPE_DOUBLE) {
                 error = readstat_insert_double_value(writer, variable, 
                         readstat_double_value(column->values[i]));
