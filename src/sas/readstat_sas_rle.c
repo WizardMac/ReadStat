@@ -227,7 +227,7 @@ size_t sas_rle_compress(void *output_buf, size_t output_len,
 
     size_t insert_run = 0;
     size_t copy_run = 0;
-    unsigned char last_byte;
+    unsigned char last_byte = 0;
 
     while (p < pe) {
         unsigned char c = *p;
