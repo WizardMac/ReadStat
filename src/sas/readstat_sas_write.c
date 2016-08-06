@@ -810,8 +810,6 @@ static readstat_error_t sas_write_row_compressed(readstat_writer_t *writer, sas_
         subheader->is_row_data_compressed = 1;
         size_t actual_len = sas_rle_compress(subheader->data, subheader->len, bytes, len);
         if (actual_len != compressed_len) {
-            printf("Expected len: %ld  Received: %ld  Row: %d\n",
-                    compressed_len, actual_len, writer->current_row);
             retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
             goto cleanup;
         }

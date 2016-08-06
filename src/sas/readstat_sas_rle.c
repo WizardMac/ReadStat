@@ -158,7 +158,6 @@ size_t sas_rle_compressed_len(const void *bytes, size_t len) {
 }
 
 size_t sas_rle_copy_run(unsigned char *output_buf, const unsigned char *copy, size_t copy_run) {
-    printf("Copy %ld bytes\n", copy_run);
     unsigned char *out = output_buf;
     if (copy_run > 64) {
         int length = (copy_run - 64) / 256;
@@ -180,7 +179,6 @@ size_t sas_rle_copy_run(unsigned char *output_buf, const unsigned char *copy, si
 }
 
 size_t sas_rle_insert_run(unsigned char *output_buf, unsigned char last_byte, size_t insert_run) {
-    printf("Insert (0x%hhx) x %ld\n", last_byte, insert_run);
     unsigned char *out = output_buf;
     if (last_byte == '@' || last_byte == ' ' || last_byte == '\0') {
         if (insert_run > 17) {
