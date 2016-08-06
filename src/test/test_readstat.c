@@ -57,7 +57,7 @@ rt_test_group_t _test_groups[] = {
     },
 
     {
-        .label = "SAV compression tests",
+        .label = "Compression tests",
         .tests = {
             {
                 .label = "SAV row compression",
@@ -83,6 +83,47 @@ rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "spaces->        <-- here" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blah" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblah" } }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "SAS7BDAT RLE compression",
+                .test_formats = RT_FORMAT_SAS7BDAT_COMP_ROWS,
+                .rows = 8,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .label = "Double-precision variable",
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_system_missing = 1 },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
+
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                        }
+                    },
+
+                    {
+                        .name = "VAR2",
+                        .type = READSTAT_TYPE_STRING,
+                        .label = "String variable",
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "spaces->        <-- here" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "spaces->                             <-- here" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blah" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblahblahblah" } },
+
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblahblahblahblahblahblahbba" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblahsafhuweyeoyraewayfeawopyfhewuhafeywfdhsfdsaf" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "spaces->@@@@@@@@<-- here" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "spaces->@@@@@@@@@@@@@@@@@@@@@@@@@@@@@<-- here" } }
                         }
                     }
                 }

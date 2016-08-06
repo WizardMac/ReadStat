@@ -332,7 +332,7 @@ typedef struct readstat_writer_s {
     size_t                      bytes_written;
     long                        version;
     int                         is_64bit; // SAS only
-    readstat_compress_t         compression; // SAV only
+    readstat_compress_t         compression;
     time_t                      timestamp;
 
     readstat_variable_t       **variables;
@@ -420,7 +420,7 @@ readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writ
 readstat_error_t readstat_writer_set_file_format_is_64bit(readstat_writer_t *writer,
         int is_64bit); // applies only to SAS files; defaults to 1=true
 readstat_error_t readstat_writer_set_compression(readstat_writer_t *writer,
-        readstat_compress_t compression); // applies only to SAV files
+        readstat_compress_t compression); // applies only to SAS and SAV files
 
 // Optional error handler
 readstat_error_t readstat_writer_set_error_handler(readstat_writer_t *writer, 

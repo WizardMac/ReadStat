@@ -13,6 +13,7 @@ libreadstat_la_SOURCES = \
 	src/sas/readstat_sas.c \
 	src/sas/readstat_sas_catalog.c \
 	src/sas/readstat_sas_data.c \
+	src/sas/readstat_sas_rle.c \
 	src/sas/readstat_sas_write.c \
 	src/spss/readstat_por.c \
 	src/spss/readstat_por_parse.c \
@@ -53,6 +54,7 @@ noinst_HEADERS = \
        src/readstat_io_unistd.h \
        src/readstat_writer.h \
        src/sas/readstat_sas.h \
+       src/sas/readstat_sas_rle.h \
        src/spss/readstat_por.h \
        src/spss/readstat_por_parse.h \
        src/spss/readstat_sav.h \

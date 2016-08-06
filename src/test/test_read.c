@@ -33,10 +33,15 @@ char *file_extension(long format) {
         return "savrow";
     if (format == RT_FORMAT_POR)
         return "por";
-    if (format == RT_FORMAT_SAS7BDAT_32BIT)
+    if (format == RT_FORMAT_SAS7BDAT_32BIT_COMP_NONE)
         return "sas7bdat32";
-    if (format == RT_FORMAT_SAS7BDAT_64BIT)
+    if (format == RT_FORMAT_SAS7BDAT_32BIT_COMP_ROWS)
+        return "sas7bdat32row";
+    if (format == RT_FORMAT_SAS7BDAT_64BIT_COMP_NONE)
         return "sas7bdat64";
+    if (format == RT_FORMAT_SAS7BDAT_64BIT_COMP_ROWS)
+        return "sas7bdat64row";
+
     return "data";
 }
 

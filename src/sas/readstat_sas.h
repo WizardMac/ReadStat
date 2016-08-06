@@ -99,6 +99,10 @@ typedef struct sas_text_ref_s {
 #define SAS_PAGE_HEADER_SIZE_32BIT  24
 #define SAS_PAGE_HEADER_SIZE_64BIT  40
 
+#define SAS_COMPRESSION_NONE   0x00
+#define SAS_COMPRESSION_TRUNC  0x01
+#define SAS_COMPRESSION_ROW    0x04
+
 extern unsigned char sas7bdat_magic_number[32];
 extern unsigned char sas7bcat_magic_number[32];
 
