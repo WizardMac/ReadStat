@@ -91,7 +91,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "SAS7BDAT RLE compression",
                 .test_formats = RT_FORMAT_SAS7BDAT_COMP_ROWS,
-                .rows = 8,
+                .rows = 10,
                 .columns = {
                     {
                         .name = "VAR1",
@@ -102,11 +102,13 @@ rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_DOUBLE, .is_system_missing = 1 },
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
-                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0 } }
                         }
                     },
 
@@ -119,11 +121,13 @@ rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "spaces->                             <-- here" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blah" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblahblahblah" } },
-
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblahblahblahblahblahblahbba" } },
+
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblahsafhuweyeoyraewayfeawopyfhewuhafeywfdhsfdsaf" } },
-                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "spaces->@@@@@@@@<-- here" } },
-                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "spaces->@@@@@@@@@@@@@@@@@@@@@@@@@@@@@<-- here" } }
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "atsyms->@@@@@@@@<-- here" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "atsyms->@@@@@@@@@@@@@@@@@@@@@@@@@@@@@<-- here" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Fchars->FFFFFFFF<-- here" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Fchars->FFFFFFFFFFFFFFFFFFFFFFFFFFFFF<-- here" } }
                         }
                     }
                 }

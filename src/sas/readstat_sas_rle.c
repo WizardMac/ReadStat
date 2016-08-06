@@ -208,8 +208,8 @@ size_t sas_rle_insert_run(unsigned char *output_buf, unsigned char last_byte, si
             *out++ = (SAS_RLE_COMMAND_INSERT_BYTE18 << 4) + (length & 0x0F);
             *out++ = rem;
             *out++ = last_byte;
-        } else if (insert_run >= 2) {
-            *out++ = (SAS_RLE_COMMAND_INSERT_BYTE3 << 4) + (insert_run - 2);
+        } else if (insert_run >= 3) {
+            *out++ = (SAS_RLE_COMMAND_INSERT_BYTE3 << 4) + (insert_run - 3);
             *out++ = last_byte;
         }
     }
