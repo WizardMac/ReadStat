@@ -124,10 +124,10 @@ rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblahblahblahblahblahblahbba" } },
 
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblahsafhuweyeoyraewayfeawopyfhewuhafeywfdhsfdsaf" } },
-                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "atsyms->@@@@@@@@<-- here" } },
-                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "atsyms->@@@@@@@@@@@@@@@@@@@@@@@@@@@@@<-- here" } },
-                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Fchars->FFFFFFFF<-- here" } },
-                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Fchars->FFFFFFFFFFFFFFFFFFFFFFFFFFFFF<-- here" } }
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "atsyms->@@@@@@@@<--FFFFFFFFFFFFFFFFFFFFFFFFFF" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "atsyms->@@@@@@@@@@@@@@@@@@@@@@@@@@@@@<--FFFFF" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "jiafojdsaufwejfiewnfiabfiuaewbfiuwhfeiuwfuienawuifnwauiefnhfuiwheufhwfuiewfjwuifewuif" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Fchars->GGGGGGGGGGGGGGGGGGGGGGGGGGGGG<-- here" } }
                         }
                     }
                 }
