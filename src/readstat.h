@@ -103,14 +103,16 @@ typedef struct readstat_value_s {
     readstat_type_t         type;
     char                    tag;
     unsigned int            is_system_missing:1;
-    unsigned int            is_considered_missing:1;
+    unsigned int            is_tagged_missing:1;
+    unsigned int            is_defined_missing:1;
 } readstat_value_t;
 
 readstat_type_t readstat_value_type(readstat_value_t value);
 readstat_type_class_t readstat_value_type_class(readstat_value_t value);
 int readstat_value_is_missing(readstat_value_t value);
 int readstat_value_is_system_missing(readstat_value_t value);
-int readstat_value_is_considered_missing(readstat_value_t value);
+int readstat_value_is_tagged_missing(readstat_value_t value);
+int readstat_value_is_defined_missing(readstat_value_t value);
 char readstat_value_tag(readstat_value_t value);
 
 char readstat_int8_value(readstat_value_t value);

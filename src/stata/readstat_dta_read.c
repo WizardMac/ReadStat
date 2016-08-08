@@ -457,9 +457,11 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
                     byte = ones_to_twos_complement1(byte);
                 }
                 if (byte > ctx->max_int8) {
-                    value.is_system_missing = 1;
                     if (ctx->supports_tagged_missing && byte > DTA_113_MISSING_INT8) {
                         value.tag = 'a' + (byte - DTA_113_MISSING_INT8_A);
+                        value.is_tagged_missing = 1;
+                    } else {
+                        value.is_system_missing = 1;
                     }
                 }
                 value.v.i8_value = byte;
@@ -472,9 +474,11 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
                     num = ones_to_twos_complement2(num);
                 }
                 if (num > ctx->max_int16) {
-                    value.is_system_missing = 1;
                     if (ctx->supports_tagged_missing && num > DTA_113_MISSING_INT16) {
                         value.tag = 'a' + (num - DTA_113_MISSING_INT16_A);
+                        value.is_tagged_missing = 1;
+                    } else {
+                        value.is_system_missing = 1;
                     }
                 }
                 value.v.i16_value = num;
@@ -487,9 +491,11 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
                     num = ones_to_twos_complement4(num);
                 }
                 if (num > ctx->max_int32) {
-                    value.is_system_missing = 1;
                     if (ctx->supports_tagged_missing && num > DTA_113_MISSING_INT32) {
                         value.tag = 'a' + (num - DTA_113_MISSING_INT32_A);
+                        value.is_tagged_missing = 1;
+                    } else {
+                        value.is_system_missing = 1;
                     }
                 }
                 value.v.i32_value = num;
@@ -500,9 +506,11 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
                     num = byteswap4(num);
                 }
                 if (num > ctx->max_float) {
-                    value.is_system_missing = 1;
                     if (ctx->supports_tagged_missing && num > DTA_113_MISSING_FLOAT) {
                         value.tag = 'a' + ((num - DTA_113_MISSING_FLOAT_A) >> 11);
+                        value.is_tagged_missing = 1;
+                    } else {
+                        value.is_system_missing = 1;
                     }
                 } else {
                     memcpy(&f_num, &num, sizeof(int32_t));
@@ -515,9 +523,11 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
                     num = byteswap8(num);
                 }
                 if (num > ctx->max_double) {
-                    value.is_system_missing = 1;
                     if (ctx->supports_tagged_missing && num > DTA_113_MISSING_DOUBLE) {
                         value.tag = 'a' + ((num - DTA_113_MISSING_DOUBLE_A) >> 40);
+                        value.is_tagged_missing = 1;
+                    } else {
+                        value.is_system_missing = 1;
                     }
                 } else {
                     memcpy(&d_num, &num, sizeof(int64_t));
@@ -903,9 +913,11 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
                 if (off[i] < txtlen) {
                     readstat_value_t value = { .v = { .i32_value = val[i] }, .type = READSTAT_TYPE_INT32 };
                     if (val[i] > ctx->max_int32) {
-                        value.is_system_missing = 1;
                         if (ctx->supports_tagged_missing && val[i] > DTA_113_MISSING_INT32) {
                             value.tag = 'a' + (val[i] - DTA_113_MISSING_INT32_A);
+                            value.is_tagged_missing = 1;
+                        } else{
+                            value.is_system_missing = 1;
                         }
                     }
                     if (ctx->value_label_handler(labname, value, &txt[off[i]], ctx->user_ctx)) {

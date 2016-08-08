@@ -99,7 +99,7 @@ int values_equal(readstat_value_t expected, readstat_value_t received) {
             return 0;
         }
     } else if (received_type != READSTAT_TYPE_STRING) {
-        if (readstat_value_tag(expected) || readstat_value_tag(received)) {
+        if (readstat_value_is_tagged_missing(expected) || readstat_value_is_tagged_missing(received)) {
             return readstat_value_tag(expected) == readstat_value_tag(received);
         } else if (readstat_value_is_system_missing(expected) || readstat_value_is_system_missing(received)) {
             return readstat_value_is_system_missing(expected) == readstat_value_is_system_missing(received);

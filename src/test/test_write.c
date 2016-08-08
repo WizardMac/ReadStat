@@ -81,7 +81,7 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_label_set_t *r_label_set = readstat_add_label_set(writer,
                 label_set->type, label_set->name);
         for (i=0; i<label_set->value_labels_count; i++) {
-            if (readstat_value_tag(label_set->value_labels[i].value)) {
+            if (readstat_value_is_tagged_missing(label_set->value_labels[i].value)) {
                 readstat_label_tagged_value(r_label_set,
                         readstat_value_tag(label_set->value_labels[i].value),
                         label_set->value_labels[i].label);
@@ -166,7 +166,7 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
             rt_column_t *column = &file->columns[j];
             readstat_variable_t *variable = readstat_get_variable(writer, j);
 
-            if (readstat_value_tag(column->values[i])) {
+            if (readstat_value_is_tagged_missing(column->values[i])) {
                 error = readstat_insert_tagged_missing_value(writer, variable, 
                         readstat_value_tag(column->values[i]));
             } else if (readstat_value_is_system_missing(column->values[i])) {

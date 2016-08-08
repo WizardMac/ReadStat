@@ -21,15 +21,19 @@ char readstat_value_tag(readstat_value_t value) {
 }
 
 int readstat_value_is_missing(readstat_value_t value) {
-    return (value.is_system_missing || value.is_considered_missing);
+    return (value.is_system_missing || value.is_tagged_missing || value.is_defined_missing);
 }
 
 int readstat_value_is_system_missing(readstat_value_t value) {
     return (value.is_system_missing);
 }
 
-int readstat_value_is_considered_missing(readstat_value_t value) {
-    return (value.is_considered_missing);
+int readstat_value_is_tagged_missing(readstat_value_t value) {
+    return (value.is_tagged_missing);
+}
+
+int readstat_value_is_defined_missing(readstat_value_t value) {
+    return (value.is_defined_missing);
 }
 
 char readstat_int8_value(readstat_value_t value) {

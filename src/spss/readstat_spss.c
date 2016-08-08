@@ -75,7 +75,7 @@ void spss_tag_missing_double(readstat_value_t *value, readstat_missingness_t *mi
             double lo = readstat_double_value(missingness->missing_ranges[2*i]);
             double hi = readstat_double_value(missingness->missing_ranges[2*i+1]);
             if (fp_value >= lo && fp_value <= hi) {
-                value->is_considered_missing = 1;
+                value->is_defined_missing = 1;
                 break;
             }
         }

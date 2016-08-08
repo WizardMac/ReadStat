@@ -81,7 +81,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
 
 static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
     mod_xlsx_ctx_t *mod_ctx = (mod_xlsx_ctx_t *)ctx;
-    lxw_format *value_fmt = readstat_value_is_considered_missing(value) ? mod_ctx->missing_fmt : NULL;
+    lxw_format *value_fmt = readstat_value_is_defined_missing(value) ? mod_ctx->missing_fmt : NULL;
 
     if (var_index == 0) {
         mod_ctx->row_count++;

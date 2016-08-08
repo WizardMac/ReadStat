@@ -92,7 +92,11 @@ static readstat_error_t sas_parse_value_labels(const char *value_start, size_t v
             double dval = NAN;
             if ((val | 0xFF0000000000) == 0xFFFFFFFFFFFF) {
                 value.tag = (val >> 40);
-                value.is_system_missing = 1;
+                if (value.tag) {
+                    value.is_tagged_missing = 1;
+                } else {
+                    value.is_system_missing = 1;
+                }
             } else {
                 memcpy(&dval, &val, 8);
                 dval *= -1.0;

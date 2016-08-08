@@ -618,7 +618,7 @@ rt_test_group_t _test_groups[] = {
                         .name = "var1",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .tag = 'a' } 
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'a' } 
                         }
                     }
                 }
@@ -634,7 +634,7 @@ rt_test_group_t _test_groups[] = {
                         .name = "var1",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .tag = 'a' } 
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'a' } 
                         }
                     }
                 }
@@ -650,7 +650,7 @@ rt_test_group_t _test_groups[] = {
                         .name = "var1",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .tag = '$' } 
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = '$' } 
                         }
                     }
                 }
@@ -665,12 +665,12 @@ rt_test_group_t _test_groups[] = {
                         .name = "var1",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
-                            { .type = READSTAT_TYPE_DOUBLE, .tag = 'a' },
-                            { .type = READSTAT_TYPE_DOUBLE, .tag = 'b' },
-                            { .type = READSTAT_TYPE_DOUBLE, .tag = 'c' },
-                            { .type = READSTAT_TYPE_DOUBLE, .tag = 'x' },
-                            { .type = READSTAT_TYPE_DOUBLE, .tag = 'y' },
-                            { .type = READSTAT_TYPE_DOUBLE, .tag = 'z' }
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'a' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'b' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'c' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'x' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'y' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'z' }
                         }
                     }
                 }
@@ -685,12 +685,12 @@ rt_test_group_t _test_groups[] = {
                         .name = "var2",
                         .type = READSTAT_TYPE_FLOAT,
                         .values = { 
-                            { .type = READSTAT_TYPE_FLOAT, .tag = 'a' },
-                            { .type = READSTAT_TYPE_FLOAT, .tag = 'b' },
-                            { .type = READSTAT_TYPE_FLOAT, .tag = 'c' },
-                            { .type = READSTAT_TYPE_FLOAT, .tag = 'x' },
-                            { .type = READSTAT_TYPE_FLOAT, .tag = 'y' },
-                            { .type = READSTAT_TYPE_FLOAT, .tag = 'z' }
+                            { .type = READSTAT_TYPE_FLOAT, .is_tagged_missing = 1, .tag = 'a' },
+                            { .type = READSTAT_TYPE_FLOAT, .is_tagged_missing = 1, .tag = 'b' },
+                            { .type = READSTAT_TYPE_FLOAT, .is_tagged_missing = 1, .tag = 'c' },
+                            { .type = READSTAT_TYPE_FLOAT, .is_tagged_missing = 1, .tag = 'x' },
+                            { .type = READSTAT_TYPE_FLOAT, .is_tagged_missing = 1, .tag = 'y' },
+                            { .type = READSTAT_TYPE_FLOAT, .is_tagged_missing = 1, .tag = 'z' }
                         }
                     }
                 }
@@ -705,12 +705,12 @@ rt_test_group_t _test_groups[] = {
                         .name = "var3",
                         .type = READSTAT_TYPE_INT32,
                         .values = { 
-                            { .type = READSTAT_TYPE_INT32, .tag = 'a' },
-                            { .type = READSTAT_TYPE_INT32, .tag = 'b' },
-                            { .type = READSTAT_TYPE_INT32, .tag = 'c' },
-                            { .type = READSTAT_TYPE_INT32, .tag = 'x' },
-                            { .type = READSTAT_TYPE_INT32, .tag = 'y' },
-                            { .type = READSTAT_TYPE_INT32, .tag = 'z' }
+                            { .type = READSTAT_TYPE_INT32, .is_tagged_missing = 1, .tag = 'a' },
+                            { .type = READSTAT_TYPE_INT32, .is_tagged_missing = 1, .tag = 'b' },
+                            { .type = READSTAT_TYPE_INT32, .is_tagged_missing = 1, .tag = 'c' },
+                            { .type = READSTAT_TYPE_INT32, .is_tagged_missing = 1, .tag = 'x' },
+                            { .type = READSTAT_TYPE_INT32, .is_tagged_missing = 1, .tag = 'y' },
+                            { .type = READSTAT_TYPE_INT32, .is_tagged_missing = 1, .tag = 'z' }
                         }
                     }
                 }
@@ -725,12 +725,12 @@ rt_test_group_t _test_groups[] = {
                         .name = "var4",
                         .type = READSTAT_TYPE_INT16,
                         .values = { 
-                            { .type = READSTAT_TYPE_INT16, .tag = 'a' },
-                            { .type = READSTAT_TYPE_INT16, .tag = 'b' },
-                            { .type = READSTAT_TYPE_INT16, .tag = 'c' },
-                            { .type = READSTAT_TYPE_INT16, .tag = 'x' },
-                            { .type = READSTAT_TYPE_INT16, .tag = 'y' },
-                            { .type = READSTAT_TYPE_INT16, .tag = 'z' }
+                            { .type = READSTAT_TYPE_INT16, .is_tagged_missing = 1, .tag = 'a' },
+                            { .type = READSTAT_TYPE_INT16, .is_tagged_missing = 1, .tag = 'b' },
+                            { .type = READSTAT_TYPE_INT16, .is_tagged_missing = 1, .tag = 'c' },
+                            { .type = READSTAT_TYPE_INT16, .is_tagged_missing = 1, .tag = 'x' },
+                            { .type = READSTAT_TYPE_INT16, .is_tagged_missing = 1, .tag = 'y' },
+                            { .type = READSTAT_TYPE_INT16, .is_tagged_missing = 1, .tag = 'z' }
                         }
                     }
                 }
@@ -745,12 +745,12 @@ rt_test_group_t _test_groups[] = {
                         .name = "var5",
                         .type = READSTAT_TYPE_INT8,
                         .values = { 
-                            { .type = READSTAT_TYPE_INT8, .tag = 'a' },
-                            { .type = READSTAT_TYPE_INT8, .tag = 'b' },
-                            { .type = READSTAT_TYPE_INT8, .tag = 'c' },
-                            { .type = READSTAT_TYPE_INT8, .tag = 'x' },
-                            { .type = READSTAT_TYPE_INT8, .tag = 'y' },
-                            { .type = READSTAT_TYPE_INT8, .tag = 'z' }
+                            { .type = READSTAT_TYPE_INT8, .is_tagged_missing = 1, .tag = 'a' },
+                            { .type = READSTAT_TYPE_INT8, .is_tagged_missing = 1, .tag = 'b' },
+                            { .type = READSTAT_TYPE_INT8, .is_tagged_missing = 1, .tag = 'c' },
+                            { .type = READSTAT_TYPE_INT8, .is_tagged_missing = 1, .tag = 'x' },
+                            { .type = READSTAT_TYPE_INT8, .is_tagged_missing = 1, .tag = 'y' },
+                            { .type = READSTAT_TYPE_INT8, .is_tagged_missing = 1, .tag = 'z' }
                         }
                     }
                 }
@@ -832,8 +832,8 @@ rt_test_group_t _test_groups[] = {
                         .type = READSTAT_TYPE_INT32,
                         .value_labels_count = 2,
                         .value_labels = {
-                            { .value = { .type = READSTAT_TYPE_INT32, .tag = 'a' }, .label = "One" },
-                            { .value = { .type = READSTAT_TYPE_INT32, .tag = 'b' }, .label = "Two" },
+                            { .value = { .type = READSTAT_TYPE_INT32, .is_tagged_missing = 1, .tag = 'a' }, .label = "One" },
+                            { .value = { .type = READSTAT_TYPE_INT32, .is_tagged_missing = 1, .tag = 'b' }, .label = "Two" },
                         }
                     }
                 },
@@ -857,8 +857,8 @@ rt_test_group_t _test_groups[] = {
                         .type = READSTAT_TYPE_INT32,
                         .value_labels_count = 2,
                         .value_labels = {
-                            { .value = { .type = READSTAT_TYPE_INT32, .tag = 'a' }, .label = "One" },
-                            { .value = { .type = READSTAT_TYPE_INT32, .tag = 'b' }, .label = "Two" },
+                            { .value = { .type = READSTAT_TYPE_INT32, .is_tagged_missing = 1, .tag = 'a' }, .label = "One" },
+                            { .value = { .type = READSTAT_TYPE_INT32, .is_tagged_missing = 1, .tag = 'b' }, .label = "Two" },
                         }
                     }
                 },
