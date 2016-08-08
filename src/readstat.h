@@ -109,6 +109,30 @@ typedef struct readstat_value_s {
 
 readstat_type_t readstat_value_type(readstat_value_t value);
 readstat_type_class_t readstat_value_type_class(readstat_value_t value);
+
+/* Values can be missing in one of three ways:
+ * 1. "System missing", delivered to value handlers as NaN. Occurs in all file
+ *    types. The most common kind of missing value.
+ * 2. Tagged missing, also delivered as NaN, but with a single character tag
+ *    accessible via readstat_value_tag(). The tag might be 'a', 'b', etc,
+ *    corresponding to Stata's .a, .b, values etc. Occurs only in Stata and
+ *    SAS files.
+ * 3. Defined missing. The value is a real number but is to be treated as
+ *    missing according to the variable's missingness rules (such as "value < 0 ||
+ *    value == 999"). Occurs only in spss files. access the rules via:
+ *
+ *       readstat_variable_get_missing_ranges_count()
+ *       readstat_variable_get_missing_range_lo()
+ *       readstat_variable_get_missing_range_hi()
+ *
+ * Note that "ranges" include individual values where lo == hi.
+ *
+ * readstat_value_is_missing() is equivalent to:
+ *
+ *    (readstat_value_is_system_missing() 
+ *     || readstat_value_is_tagged_missing()
+ *     || readstat_value_is_defined_missing())
+ */
 int readstat_value_is_missing(readstat_value_t value);
 int readstat_value_is_system_missing(readstat_value_t value);
 int readstat_value_is_tagged_missing(readstat_value_t value);
