@@ -336,8 +336,12 @@ static readstat_error_t handle_data_value(const char *col_data, col_info_t *col_
 
         if (isnan(dval)) {
             value.v.double_value = NAN;
-            value.is_system_missing = 1;
             value.tag = ~((val >> 40) & 0xFF);
+            if (value.tag) {
+                value.is_tagged_missing = 1;
+            } else {
+                value.is_system_missing = 1;
+            }
         } else {
             value.v.double_value = dval;
         }
