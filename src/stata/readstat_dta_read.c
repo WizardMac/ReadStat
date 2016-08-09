@@ -1066,9 +1066,6 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     if ((retval = dta_handle_value_labels(ctx)) != READSTAT_OK)
         goto cleanup;
 
-    if (io->seek(0, READSTAT_SEEK_END, io->io_ctx) == -1)
-        return READSTAT_ERROR_SEEK;
-    
 cleanup:
     io->close(io->io_ctx);
     if (ctx)
