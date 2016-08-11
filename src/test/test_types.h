@@ -1,13 +1,14 @@
 #include <time.h>
 
-#define RT_MAX_ROWS         10
-#define RT_MAX_COLS         10
-#define RT_MAX_LABEL_SETS    2
-#define RT_MAX_NOTES         2
-#define RT_MAX_STRING_REFS   3
-#define RT_MAX_NOTE_SIZE   120
-#define RT_MAX_VALUE_LABELS  2
-#define RT_MAX_STRING       64
+#define RT_MAX_ROWS                 10
+#define RT_MAX_COLS                 10
+#define RT_MAX_LABEL_SETS            2
+#define RT_MAX_NOTES                 2
+#define RT_MAX_STRING_REFS           3
+#define RT_MAX_NOTE_SIZE           120
+#define RT_MAX_VALUE_LABELS          2
+#define RT_MAX_STRING               64
+#define RT_MAX_VALUE_LABEL_STRING  121
 
 typedef struct rt_label_set_s {
     char                    name[RT_MAX_STRING];
@@ -15,7 +16,7 @@ typedef struct rt_label_set_s {
 
     struct {
         readstat_value_t    value;
-        char                label[RT_MAX_STRING];
+        char                label[RT_MAX_VALUE_LABEL_STRING];
     } value_labels[RT_MAX_VALUE_LABELS];
     long                    value_labels_count;
 } rt_label_set_t;

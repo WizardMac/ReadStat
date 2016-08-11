@@ -952,7 +952,7 @@ rt_test_group_t _test_groups[] = {
             },
 
             {
-                .label = "SPSS long value labels",
+                .label = "SPSS short labels for long values",
                 .test_formats = RT_FORMAT_SPSS,
                 .label_sets_count = 1,
                 .label_sets = {
@@ -968,6 +968,39 @@ rt_test_group_t _test_groups[] = {
                             {
                                 .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "2,000,000" } },
                                 .label = "Two million"
+                            }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "VAR2",
+                        .type = READSTAT_TYPE_STRING,
+                        .label_set = "labels0"
+                    }
+                }
+            },
+
+            {
+                .label = "SPSS long labels for short values",
+                .test_formats = RT_FORMAT_SPSS,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "labels0",
+                        .type = READSTAT_TYPE_STRING,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "One" } },
+                                .label = "One"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Two" } },
+                                .label =
+                                    "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789"
                             }
                         }
                     }

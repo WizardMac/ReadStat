@@ -410,7 +410,7 @@ static readstat_error_t sav_emit_value_label_records(readstat_writer_t *writer) 
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
-                char label[MAX_VALUE_LABEL_SIZE];
+                char label[MAX_VALUE_LABEL_SIZE+8];
                 memset(label, ' ', sizeof(label));
                 memcpy(label, label_data, label_len);
                 retval = readstat_write_bytes(writer, label,
