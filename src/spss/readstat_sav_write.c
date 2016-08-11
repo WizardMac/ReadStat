@@ -897,10 +897,6 @@ static readstat_error_t sav_write_missing_number(void *row, const readstat_varia
     return READSTAT_OK;
 }
 
-static readstat_error_t sav_write_missing_tagged(void *row, const readstat_variable_t *var, char tag) {
-    return READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED;
-}
-
 static size_t sav_variable_width(readstat_type_t type, size_t user_width) {
     if (type == READSTAT_TYPE_STRING) {
         if (user_width > 255) {
@@ -1049,7 +1045,6 @@ readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *use
     writer->callbacks.write_string = &sav_write_string;
     writer->callbacks.write_missing_string = &sav_write_missing_string;
     writer->callbacks.write_missing_number = &sav_write_missing_number;
-    writer->callbacks.write_missing_tagged = &sav_write_missing_tagged;
     writer->callbacks.begin_data = &sav_begin_data;
 
     if (writer->compression == READSTAT_COMPRESS_ROWS) {
