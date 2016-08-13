@@ -145,7 +145,7 @@ readstat_variable_t *spss_init_variable_for_info(spss_varinfo_t *info) {
 
     spss_format(variable->format, sizeof(variable->format), &info->print_format);
 
-    variable->missingness = info->missingness;
+    variable->missingness = spss_missingness_for_info(info);
     variable->measure = info->measure;
     variable->display_width = info->display_width;
 

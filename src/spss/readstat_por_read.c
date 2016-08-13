@@ -599,7 +599,6 @@ readstat_error_t handle_variables(por_ctx_t *ctx) {
     for (i=0; i<ctx->var_count; i++) {
         char label_name_buf[256];
         spss_varinfo_t *info = &ctx->varinfo[i];
-        info->missingness = spss_missingness_for_info(info);
         info->index = i;
 
         ctx->variables[i] = spss_init_variable_for_info(info);

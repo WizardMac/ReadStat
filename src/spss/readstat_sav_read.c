@@ -306,7 +306,6 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
             if (long_value == ctx->highest_double)
                 info->missing_values[i] = HUGE_VAL;
         }
-        info->missingness = spss_missingness_for_info(info);
     }
     
     ctx->var_index++;
@@ -371,7 +370,7 @@ cleanup:
 }
 
 static readstat_error_t sav_submit_value_labels(value_label_t *value_labels, int32_t label_count, 
-        readstat_type_t value_type, readstat_missingness_t *missingness, sav_ctx_t *ctx) {
+        readstat_type_t value_type, sav_ctx_t *ctx) {
     char label_name_buf[256];
     readstat_error_t retval = READSTAT_OK;
     int32_t i;
@@ -412,7 +411,6 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
     readstat_type_t value_type = READSTAT_TYPE_STRING;
     char label_buf[256];
     value_label_t *value_labels = NULL;
-    readstat_missingness_t *missingness = NULL;
 
     if (io->read(&label_count, sizeof(int32_t), io->io_ctx) < sizeof(int32_t)) {
         retval = READSTAT_ERROR_READ;
@@ -481,11 +479,10 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
             var->labels_index = ctx->value_labels_count;
 
             value_type = var->type;
-            missingness = &var->missingness;
         }
     }
     if (ctx->value_label_handler) {
-        sav_submit_value_labels(value_labels, label_count, value_type, missingness, ctx);
+        sav_submit_value_labels(value_labels, label_count, value_type, ctx);
     }
     ctx->value_labels_count++;
 cleanup:

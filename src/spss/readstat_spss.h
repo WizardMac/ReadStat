@@ -83,7 +83,6 @@ typedef struct spss_varinfo_s {
     char             name[8*4+1];
     char             longname[64*4+1];
     char            *label;
-    readstat_missingness_t  missingness;
     readstat_measure_t      measure;
     readstat_alignment_t    alignment;
     int                     display_width;
