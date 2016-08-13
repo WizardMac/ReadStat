@@ -70,6 +70,8 @@ typedef struct sas_ctx_s {
     int            col_info_count;
     col_info_t    *col_info;
 
+    readstat_variable_t **variables;
+
     const char    *input_encoding;
     const char    *output_encoding;
     iconv_t        converter;
@@ -87,6 +89,13 @@ static void sas_ctx_free(sas_ctx_t *ctx) {
         }
         free(ctx->text_blobs);
         free(ctx->text_blob_lengths);
+    }
+    if (ctx->variables) {
+        for (i=0; i<ctx->column_count; i++) {
+            if (ctx->variables[i])
+                free(ctx->variables[i]);
+        }
+        free(ctx->variables);
     }
     if (ctx->col_info)
         free(ctx->col_info);
@@ -346,7 +355,7 @@ static readstat_error_t handle_data_value(const char *col_data, col_info_t *col_
             value.v.double_value = dval;
         }
     }
-    cb_retval = ctx->value_handler(ctx->parsed_row_count, col_info->index, 
+    cb_retval = ctx->value_handler(ctx->parsed_row_count, ctx->variables[col_info->index], 
             value, ctx->user_ctx);
 
     if (cb_retval)
@@ -507,16 +516,15 @@ static readstat_error_t submit_columns(sas_ctx_t *ctx) {
             goto cleanup;
         }
     }
-    if (ctx->variable_handler) {
-        int i;
-        for (i=0; i<ctx->column_count; i++) {
-            readstat_variable_t *variable = sas_init_variable(ctx, i, &retval);
-            if (variable == NULL)
-                break;
+    ctx->variables = calloc(ctx->column_count, sizeof(readstat_variable_t *));
+    int i;
+    for (i=0; i<ctx->column_count; i++) {
+        ctx->variables[i] = sas_init_variable(ctx, i, &retval);
+        if (ctx->variables[i] == NULL)
+            break;
 
-            int cb_retval = ctx->variable_handler(i, variable, variable->format, ctx->user_ctx);
-            free(variable);
-            if (cb_retval) {
+        if (ctx->variable_handler) {
+            if (ctx->variable_handler(i, ctx->variables[i], ctx->variables[i]->format, ctx->user_ctx)) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
             }

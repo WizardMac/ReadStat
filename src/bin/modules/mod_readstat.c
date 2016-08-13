@@ -38,7 +38,7 @@ static int handle_value_label(const char *val_labels, readstat_value_t value,
                               const char *label, void *ctx);
 static int handle_variable(int index, readstat_variable_t *variable,
                            const char *val_labels, void *ctx);
-static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx);
+static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx);
 
 rs_module_t rs_mod_readstat = {
     accept_file, /* accept */
@@ -195,10 +195,11 @@ static int handle_variable(int index, readstat_variable_t *variable,
     return 0;
 }
 
-static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
+static int handle_value(int obs_index, readstat_variable_t *old_variable, readstat_value_t value, void *ctx) {
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
     readstat_writer_t *writer = mod_ctx->writer;
 
+    int var_index = readstat_variable_get_index(old_variable);
     readstat_variable_t *variable = readstat_get_variable(writer, var_index);
     readstat_type_t type = readstat_value_type(value);
     readstat_error_t error = READSTAT_OK;

@@ -19,7 +19,7 @@ static void finish_file(void *ctx);
 static int handle_info(int obs_count, int var_count, void *ctx);
 static int handle_variable(int index, readstat_variable_t *variable,
                            const char *val_labels, void *ctx);
-static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx);
+static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx);
 
 rs_module_t rs_mod_csv = {
     accept_file, /* accept */
@@ -77,9 +77,10 @@ static int handle_variable(int index, readstat_variable_t *variable,
     return 0;
 }
 
-static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
+static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx) {
     mod_csv_ctx_t *mod_ctx = (mod_csv_ctx_t *)ctx;
     readstat_type_t type = readstat_value_type(value);
+    int var_index = readstat_variable_get_index(variable);
     if (var_index > 0) {
         fprintf(mod_ctx->out_file, ",");
     }

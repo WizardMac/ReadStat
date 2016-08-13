@@ -279,12 +279,12 @@ static int handle_value_label(const char *val_labels, readstat_value_t value, co
     return 0;
 }
 
-static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
+static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
-    rt_column_t *column = &rt_ctx->file->columns[var_index];
-
     rt_ctx->obs_index = obs_index;
-    rt_ctx->var_index = var_index;
+    rt_ctx->var_index = readstat_variable_get_index(variable);
+
+    rt_column_t *column = &rt_ctx->file->columns[rt_ctx->var_index];
 
     if (column->type == READSTAT_TYPE_STRING_REF) {
         push_error_if_strings_differ(rt_ctx,

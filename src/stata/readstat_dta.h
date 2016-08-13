@@ -86,6 +86,8 @@ typedef struct dta_ctx_s {
     size_t         strls_count;
     size_t         strls_capacity;
 
+    readstat_variable_t     **variables;
+
     iconv_t        converter;
     readstat_error_handler error_handler;
     readstat_progress_handler progress_handler;

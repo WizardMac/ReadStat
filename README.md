@@ -145,10 +145,11 @@ int handle_variable(int index, readstat_variable_t *variable,
     return 0;
 }
 
-int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
+int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx) {
     int *my_var_count = (int *)ctx;
+    int var_index = readstat_variable_get_index(variable);
     readstat_type_t type = readstat_value_type(value);
-    if (!readstat_value_is_missing(value)) {
+    if (!readstat_value_is_system_missing(value)) {
         if (type == READSTAT_TYPE_STRING) {
             printf("%s", readstat_string_value(value));
         } else if (type == READSTAT_TYPE_INT8) {

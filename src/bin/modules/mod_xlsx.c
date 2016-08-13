@@ -25,7 +25,7 @@ static void finish_file(void *ctx);
 static int handle_info(int obs_count, int var_count, void *ctx);
 static int handle_variable(int index, readstat_variable_t *variable,
                            const char *val_labels, void *ctx);
-static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx);
+static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx);
 
 rs_module_t rs_mod_xlsx = {
     accept_file, /* accept */
@@ -79,14 +79,15 @@ static int handle_variable(int index, readstat_variable_t *variable,
     return 0;
 }
 
-static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
+static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx) {
     mod_xlsx_ctx_t *mod_ctx = (mod_xlsx_ctx_t *)ctx;
-    lxw_format *value_fmt = readstat_value_is_defined_missing(value) ? mod_ctx->missing_fmt : NULL;
+    lxw_format *value_fmt = readstat_value_is_defined_missing(value, variable) ? mod_ctx->missing_fmt : NULL;
+    int var_index = readstat_variable_get_index(variable);
 
     if (var_index == 0) {
         mod_ctx->row_count++;
     }
-    if (readstat_value_is_system_missing(value)) {
+    if (readstat_value_is_system_missing(value) || readstat_value_is_tagged_missing(value)) {
         worksheet_write_blank(mod_ctx->worksheet, obs_index+1, var_index, NULL);
     } else if (readstat_value_type(value) == READSTAT_TYPE_STRING) {
         worksheet_write_string(mod_ctx->worksheet, obs_index+1, var_index, readstat_string_value(value), value_fmt);

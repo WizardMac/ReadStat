@@ -154,8 +154,9 @@ static int handle_variable(int index, readstat_variable_t *variable,
     return 0;
 }
 
-static int handle_value(int obs_index, int var_index, readstat_value_t value, void *ctx) {
+static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
+    int var_index = readstat_variable_get_index(variable);
     if (var_index == 0) {
         rs_ctx->row_count++;
     }
@@ -163,7 +164,7 @@ static int handle_value(int obs_index, int var_index, readstat_value_t value, vo
         rs_ctx->var_count++;
     }
     if (rs_ctx->module->handle_value) {
-        return rs_ctx->module->handle_value(obs_index, var_index, value, rs_ctx->module_ctx);
+        return rs_ctx->module->handle_value(obs_index, variable, value, rs_ctx->module_ctx);
     }
     return 0;
 }

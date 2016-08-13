@@ -66,22 +66,6 @@ int spss_format(char *buffer, size_t len, spss_format_t *format) {
     return 0;
 }
 
-void spss_tag_missing_double(readstat_value_t *value, readstat_missingness_t *missingness) {
-    double fp_value = value->v.double_value;
-    value->is_system_missing = isnan(fp_value);
-    if (missingness) {
-        int i;
-        for (i=0; i<missingness->missing_ranges_count; i++) {
-            double lo = readstat_double_value(missingness->missing_ranges[2*i]);
-            double hi = readstat_double_value(missingness->missing_ranges[2*i+1]);
-            if (fp_value >= lo && fp_value <= hi) {
-                value->is_defined_missing = 1;
-                break;
-            }
-        }
-    }
-}
-
 int spss_varinfo_compare(const void *elem1, const void *elem2) {
     int offset = *(int *)elem1;
     const spss_varinfo_t *v = (const spss_varinfo_t *)elem2;
@@ -166,10 +150,6 @@ readstat_variable_t *spss_init_variable_for_info(spss_varinfo_t *info) {
     variable->display_width = info->display_width;
 
     return variable;
-}
-
-void spss_free_variable(readstat_variable_t *variable) {
-    free(variable);
 }
 
 int32_t spss_measure_from_readstat_measure(readstat_measure_t measure) {
