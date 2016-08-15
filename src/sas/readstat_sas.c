@@ -325,3 +325,12 @@ sas_header_info_t *sas_header_info_init(readstat_writer_t *writer, int is_64bit)
 
     return hinfo;
 }
+
+readstat_error_t sas_fill_page(readstat_writer_t *writer, sas_header_info_t *hinfo) {
+    if ((writer->bytes_written - hinfo->header_size) % hinfo->page_size) {
+        size_t num_zeros = (hinfo->page_size -
+                (writer->bytes_written - hinfo->header_size) % hinfo->page_size);
+        return readstat_write_zeros(writer, num_zeros);
+    }
+    return READSTAT_OK;
+}
