@@ -211,9 +211,9 @@ static int sas_catalog_block_size(int start_page, int start_page_pos, sas_catalo
     int next_page_pos = start_page_pos;
 
     int buffer_len = 0;
-    int block_len = 0;
+    int chain_link_len = 0;
 
-    char page[16];
+    char chain_link[16];
 
     // calculate buffer size needed
     while (next_page > 0 && next_page_pos > 0) {
@@ -221,15 +221,15 @@ static int sas_catalog_block_size(int start_page, int start_page_pos, sas_catalo
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
-        if (io->read(page, sizeof(page), io->io_ctx) < sizeof(page)) {
+        if (io->read(chain_link, sizeof(chain_link), io->io_ctx) < sizeof(chain_link)) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
-        next_page = sas_read4(&page[0], ctx->bswap);
-        next_page_pos = sas_read2(&page[4], ctx->bswap);
-        block_len = sas_read2(&page[6], ctx->bswap);
+        next_page = sas_read4(&chain_link[0], ctx->bswap);
+        next_page_pos = sas_read2(&chain_link[4], ctx->bswap);
+        chain_link_len = sas_read2(&chain_link[6], ctx->bswap);
 
-        buffer_len += block_len;
+        buffer_len += chain_link_len;
     }
 
 cleanup:
@@ -246,28 +246,28 @@ static readstat_error_t sas_catalog_read_block(char *buffer, size_t buffer_len,
     int next_page = start_page;
     int next_page_pos = start_page_pos;
 
-    int block_len = 0;
+    int chain_link_len = 0;
     int buffer_offset = 0;
 
-    char page[16];
+    char chain_link[16];
 
     while (next_page > 0 && next_page_pos > 0) {
         if (io->seek(ctx->header_size+(next_page-1)*ctx->page_size+next_page_pos, READSTAT_SEEK_SET, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
-        if (io->read(page, sizeof(page), io->io_ctx) < sizeof(page)) {
+        if (io->read(chain_link, sizeof(chain_link), io->io_ctx) < sizeof(chain_link)) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
-        next_page = sas_read4(&page[0], ctx->bswap);
-        next_page_pos = sas_read2(&page[4], ctx->bswap);
-        block_len = sas_read2(&page[6], ctx->bswap);
-        if (io->read(buffer + buffer_offset, block_len, io->io_ctx) < block_len) {
+        next_page = sas_read4(&chain_link[0], ctx->bswap);
+        next_page_pos = sas_read2(&chain_link[4], ctx->bswap);
+        chain_link_len = sas_read2(&chain_link[6], ctx->bswap);
+        if (io->read(buffer + buffer_offset, chain_link_len, io->io_ctx) < chain_link_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
-        buffer_offset += block_len;
+        buffer_offset += chain_link_len;
     }
 cleanup:
 

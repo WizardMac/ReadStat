@@ -762,6 +762,52 @@ rt_test_group_t _test_groups[] = {
         .label = "Value labels",
         .tests = {
             {
+                .label = "SAS numeric value labels",
+                .test_formats = RT_FORMAT_SAS7BCAT,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "LabelSet",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1.0 } },
+                                .label = "One"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2.0 } },
+                                .label = "Two"
+                            },
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "SAS string value labels",
+                .test_formats = RT_FORMAT_SAS7BCAT,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "$StringLabelSet",
+                        .type = READSTAT_TYPE_STRING,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "1" } },
+                                .label = "One"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "2" } },
+                                .label = "Two"
+                            },
+                        }
+                    }
+                }
+            },
+
+            {
                 .label = "DTA ancient value labels",
                 .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .test_formats = RT_FORMAT_DTA_104,
@@ -770,7 +816,7 @@ rt_test_group_t _test_groups[] = {
                     {
                         .name = "somelbl",
                         .type = READSTAT_TYPE_INT32,
-                        .value_labels_count = 2,
+                        .value_labels_count = 1,
                         .value_labels = {
                             {
                                 .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = -1 } },

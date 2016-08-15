@@ -9,14 +9,6 @@
 #include "readstat_sas.h"
 #include "readstat_sas_rle.h"
 
-#define HEADER_SIZE 1024
-#define PAGE_SIZE   4096
-
-#define COLUMN_TEXT_SIZE_32BIT  (PAGE_SIZE - SAS_PAGE_HEADER_SIZE_32BIT - SAS_SUBHEADER_POINTER_SIZE_32BIT)
-#define COLUMN_TEXT_SIZE_64BIT  (PAGE_SIZE - SAS_PAGE_HEADER_SIZE_64BIT - SAS_SUBHEADER_POINTER_SIZE_64BIT)
-
-#define SAS_DEFAULT_FILE_VERSION  90101
-
 typedef struct sas_subheader_s {
     uint32_t    signature;
     char       *data;
@@ -91,7 +83,7 @@ static size_t sas_row_length(readstat_writer_t *writer) {
 
 static int32_t sas_rows_per_page(readstat_writer_t *writer, sas_header_info_t *hinfo) {
     size_t row_length = sas_row_length(writer);
-    return (PAGE_SIZE - hinfo->page_header_size) / row_length;
+    return (hinfo->page_size - hinfo->page_header_size) / row_length;
 }
 
 static int32_t sas_count_data_pages(readstat_writer_t *writer, sas_header_info_t *hinfo) {
@@ -149,30 +141,7 @@ static sas_text_ref_t make_text_ref(sas_column_text_array_t *column_text_array,
     return text_ref;
 }
 
-static sas_header_info_t *sas_header_info_init(readstat_writer_t *writer) {
-    sas_header_info_t *hinfo = calloc(1, sizeof(sas_header_info_t));
-    hinfo->creation_time = writer->timestamp;
-    hinfo->modification_time = writer->timestamp;
-    hinfo->header_size = HEADER_SIZE;
-    hinfo->page_size = PAGE_SIZE;
-    hinfo->u64 = !!writer->is_64bit;
-
-    if (hinfo->u64) {
-        hinfo->page_header_size = SAS_PAGE_HEADER_SIZE_64BIT;
-        hinfo->subheader_pointer_size = SAS_SUBHEADER_POINTER_SIZE_64BIT;
-    } else {
-        hinfo->page_header_size = SAS_PAGE_HEADER_SIZE_32BIT;
-        hinfo->subheader_pointer_size = SAS_SUBHEADER_POINTER_SIZE_32BIT;
-    }
-
-    return hinfo;
-}
-
 static readstat_error_t sas_emit_header(readstat_writer_t *writer, sas_header_info_t *hinfo) {
-    readstat_error_t retval = READSTAT_OK;
-    struct tm epoch_tm = { .tm_year = 60, .tm_mday = 1 };
-    time_t epoch = mktime(&epoch_tm);
-
     sas_header_start_t header_start = {
         .a2 = hinfo->u64 ? SAS_ALIGNMENT_OFFSET_4 : SAS_ALIGNMENT_OFFSET_0,
         .a1 = SAS_ALIGNMENT_OFFSET_0,
@@ -186,73 +155,7 @@ static readstat_error_t sas_emit_header(readstat_writer_t *writer, sas_header_in
     memcpy(&header_start.magic, sas7bdat_magic_number, sizeof(header_start.magic));
     strncpy(header_start.file_label, writer->file_label, sizeof(header_start.file_label));
 
-    sas_header_end_t header_end = {
-        .host = "W32_VSPRO"
-    };
-
-    snprintf(header_end.release, sizeof(header_end.release),
-            "%1ld.%04ldM0", writer->version / 10000, writer->version % 10000);
-    header_end.release[sizeof(header_end.release)-1] = '0';
-
-    retval = readstat_write_bytes(writer, &header_start, sizeof(sas_header_start_t));
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-    retval = readstat_write_zeros(writer, hinfo->pad1);
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-    double creation_time = hinfo->creation_time - epoch;
-
-    retval = readstat_write_bytes(writer, &creation_time, sizeof(double));
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-    double modification_time = hinfo->modification_time - epoch;
-
-    retval = readstat_write_bytes(writer, &modification_time, sizeof(double));
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-    retval = readstat_write_zeros(writer, 16);
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-    uint32_t header_size = hinfo->header_size;
-    uint32_t page_size = hinfo->page_size;
-
-    retval = readstat_write_bytes(writer, &header_size, sizeof(uint32_t));
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-    retval = readstat_write_bytes(writer, &page_size, sizeof(uint32_t));
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-    if (hinfo->u64) {
-        uint64_t page_count = hinfo->page_count;
-        retval = readstat_write_bytes(writer, &page_count, sizeof(uint64_t));
-    } else {
-        uint32_t page_count = hinfo->page_count;
-        retval = readstat_write_bytes(writer, &page_count, sizeof(uint32_t));
-    }
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-    retval = readstat_write_zeros(writer, 8);
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-    retval = readstat_write_bytes(writer, &header_end, sizeof(sas_header_end_t));
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-    retval = readstat_write_zeros(writer, hinfo->header_size-writer->bytes_written);
-    if (retval != READSTAT_OK)
-        goto cleanup;
-
-cleanup:
-    return retval;
+    return sas_write_header(writer, hinfo, header_start);
 }
 
 static sas_subheader_t *sas_subheader_init(uint32_t signature, size_t len) {
@@ -451,8 +354,8 @@ static sas_subheader_array_t *sas_subheader_array_init(readstat_writer_t *writer
     sas_column_text_array_t *column_text_array = calloc(1, sizeof(sas_column_text_array_t));
     column_text_array->count = 1;
     column_text_array->column_texts = malloc(sizeof(sas_column_text_t *));
-    column_text_array->column_texts[0] = sas_column_text_init(0,
-            hinfo->u64 ? COLUMN_TEXT_SIZE_64BIT : COLUMN_TEXT_SIZE_32BIT);
+    column_text_array->column_texts[0] = sas_column_text_init(0, 
+            hinfo->page_size - hinfo->page_header_size - hinfo->subheader_pointer_size);
 
     row_size_subheader = sas_row_size_subheader_init(writer, hinfo);
     col_size_subheader = sas_col_size_subheader_init(writer, hinfo);
@@ -524,11 +427,11 @@ static readstat_error_t sas_emit_meta_pages(readstat_writer_t *writer) {
     sas_subheader_array_t *sarray = ctx->sarray;
     readstat_error_t retval = READSTAT_OK;
     int16_t page_type = SAS_PAGE_TYPE_META;
-    char *page = malloc(PAGE_SIZE);
+    char *page = malloc(hinfo->page_size);
     int64_t shp_written = 0;
 
     while (sarray->count > shp_written) {
-        memset(page, 0, PAGE_SIZE);
+        memset(page, 0, hinfo->page_size);
         int16_t shp_count = 0;
         size_t shp_data_offset = hinfo->page_size;
         size_t shp_ptr_offset = hinfo->page_header_size;
@@ -598,7 +501,7 @@ static readstat_error_t sas_emit_meta_pages(readstat_writer_t *writer) {
             memcpy(&page[20], &shp_count, sizeof(int16_t));
         }
 
-        retval = readstat_write_bytes(writer, page, PAGE_SIZE);
+        retval = readstat_write_bytes(writer, page, hinfo->page_size);
         if (retval != READSTAT_OK)
             goto cleanup;
     }
@@ -623,7 +526,7 @@ static readstat_error_t sas_validate_column_names(readstat_writer_t *writer) {
 static sas_write_ctx_t *sas_write_ctx_init(readstat_writer_t *writer) {
     sas_write_ctx_t *ctx = calloc(1, sizeof(sas_write_ctx_t));
 
-    ctx->hinfo = sas_header_info_init(writer);
+    ctx->hinfo = sas_header_info_init(writer, writer->is_64bit);
     ctx->sarray = sas_subheader_array_init(writer, ctx->hinfo);
 
     return ctx;

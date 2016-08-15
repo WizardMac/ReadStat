@@ -33,6 +33,8 @@ char *file_extension(long format) {
         return "savrow";
     if (format == RT_FORMAT_POR)
         return "por";
+    if (format == RT_FORMAT_SAS7BCAT)
+        return "sas7bcat";
     if (format == RT_FORMAT_SAS7BDAT_32BIT_COMP_NONE)
         return "sas7bdat32";
     if (format == RT_FORMAT_SAS7BDAT_32BIT_COMP_ROWS)
@@ -336,6 +338,8 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     } else if ((format & RT_FORMAT_SAS7BDAT)) {
         parse_ctx->file_format_version = sas_file_format_version(format);
         error = readstat_parse_sas7bdat(parser, NULL, parse_ctx);
+    } else if ((format & RT_FORMAT_SAS7BCAT)) {
+        error = readstat_parse_sas7bcat(parser, NULL, parse_ctx);
     }
     if (error != READSTAT_OK)
         goto cleanup;

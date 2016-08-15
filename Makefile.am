@@ -11,10 +11,11 @@ libreadstat_la_SOURCES = \
 	src/readstat_variable.c \
 	src/readstat_writer.c \
 	src/sas/readstat_sas.c \
-	src/sas/readstat_sas_catalog.c \
-	src/sas/readstat_sas_data.c \
+	src/sas/readstat_sas7bcat_read.c \
+	src/sas/readstat_sas7bcat_write.c \
+	src/sas/readstat_sas7bdat_read.c \
+	src/sas/readstat_sas7bdat_write.c \
 	src/sas/readstat_sas_rle.c \
-	src/sas/readstat_sas_write.c \
 	src/spss/readstat_por.c \
 	src/spss/readstat_por_parse.c \
 	src/spss/readstat_por_read.c \
