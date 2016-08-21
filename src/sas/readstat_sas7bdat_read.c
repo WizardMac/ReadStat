@@ -269,7 +269,7 @@ static readstat_error_t sas7bdat_parse_column_attributes_subheader(const char *s
             ctx->col_info[i].offset = sas_read4(&cap[0], ctx->bswap);
         }
 
-        off_t off=4;
+        readstat_off_t off=4;
         if (ctx->u64)
             off=8;
 
@@ -738,7 +738,7 @@ static readstat_error_t sas7bdat_parse_meta_pages_pass1(sas7bdat_ctx_t *ctx, int
             goto cleanup;
         }
 
-        off_t off = 0;
+        readstat_off_t off = 0;
         if (ctx->u64)
             off = 16;
 
@@ -804,7 +804,7 @@ static readstat_error_t sas7bdat_parse_amd_pages_pass1(int64_t last_examined_pag
             goto cleanup;
         }
 
-        off_t off = 0;
+        readstat_off_t off = 0;
         if (ctx->u64)
             off = 16;
 

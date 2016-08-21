@@ -599,7 +599,7 @@ static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len
     readstat_error_t retval = READSTAT_OK;
     double fp_value;
     int offset = 0;
-    off_t data_offset = 0;
+    readstat_off_t data_offset = 0;
     size_t raw_str_used = 0;
     int segment_offset = 0;
     int var_index = 0, col = 0;
@@ -696,12 +696,12 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
     int i;
     double fp_value;
     uint64_t missing_value = ctx->missing_double;
-    off_t data_offset = 0;
+    readstat_off_t data_offset = 0;
     unsigned char buffer[DATA_BUFFER_SIZE];
     int buffer_used = 0;
 
     size_t uncompressed_row_len = ctx->var_offset * 8;
-    off_t uncompressed_offset = 0;
+    readstat_off_t uncompressed_offset = 0;
     unsigned char *uncompressed_row = malloc(uncompressed_row_len);
 
     int bswap = ctx->bswap;

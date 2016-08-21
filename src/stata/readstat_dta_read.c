@@ -430,7 +430,7 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
             goto cleanup;
         }
         int j;
-        off_t offset = 0;
+        readstat_off_t offset = 0;
         for (j=0; j<ctx->nvar; j++) {
             size_t max_len;
             readstat_value_t value;
