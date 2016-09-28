@@ -1,7 +1,6 @@
 
 #include <stdlib.h>
 #include <time.h>
-#include <string.h>
 #include "readstat.h"
 #include "readstat_writer.h"
 
@@ -304,7 +303,9 @@ void readstat_add_note(readstat_writer_t *writer, const char *note) {
         writer->notes = realloc(writer->notes,
                 writer->notes_capacity * sizeof(const char *));
     }
-    writer->notes[writer->notes_count++] = strdup(note);
+    char *note_copy = malloc(strlen(note) + 1);
+    strcpy(note_copy, note);
+    writer->notes[writer->notes_count++] = note_copy;
 }
 
 void readstat_variable_set_label(readstat_variable_t *variable, const char *label) {
