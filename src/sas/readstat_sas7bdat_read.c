@@ -312,6 +312,7 @@ static readstat_error_t sas7bdat_parse_column_format_subheader(const char *subhe
 
 static readstat_error_t sas7bdat_handle_data_value(const char *col_data, col_info_t *col_info, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
+    char error_buf[ERROR_BUF_SIZE];
     int cb_retval = 0;
     readstat_value_t value;
     memset(&value, 0, sizeof(readstat_value_t));
