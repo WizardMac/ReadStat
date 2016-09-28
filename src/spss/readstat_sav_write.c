@@ -969,7 +969,7 @@ static readstat_error_t sav_write_compressed_row(void *writer_ctx, void *row, si
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     int i;
     size_t output_len = len + (len/8 + 7)/8*8;
-    char *output = malloc(output_len);
+    unsigned char *output = malloc(output_len);
     char *input = (char *)row;
 
     off_t input_offset = 0;

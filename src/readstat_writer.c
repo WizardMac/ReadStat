@@ -1,6 +1,7 @@
 
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include "readstat.h"
 #include "readstat_writer.h"
 
