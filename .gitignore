@@ -7,3 +7,5 @@
 **/.dirstamp
 **/*.lo
 **/*.o
+Makefile
+Makefile.in
