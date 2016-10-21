@@ -504,6 +504,16 @@ cleanup:
         if (out_retval)
             *out_retval = retval;
 
+        if (retval == READSTAT_ERROR_CONVERT_BAD_STRING) {
+            if (ctx->error_handler) {
+                char error_buf[ERROR_BUF_SIZE];
+                snprintf(error_buf, sizeof(error_buf),
+                        "ReadStat: Error converting variable #%d info to specified encoding: %s %s (%s)\n",
+                        i, variable->name, variable->format, variable->label);
+                ctx->error_handler(error_buf, ctx->user_ctx);
+            }
+        }
+
         return NULL;
     }
 
