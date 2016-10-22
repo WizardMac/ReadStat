@@ -50,6 +50,7 @@ static readstat_charset_entry_t _charset_table[] = {
     { .code = 64,    .name = "WINDOWS-1254" },
     { .code = 65,    .name = "WINDOWS-1255" },
     { .code = 66,    .name = "WINDOWS-1256" },
+    { .code = 67,    .name = "WINDOWS-1257" },
     { .code = 119,   .name = "EUC-TW" },
     { .code = 123,   .name = "BIG-5" },
     { .code = 125,   .name = "EUC-CN" },
