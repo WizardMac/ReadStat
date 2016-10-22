@@ -227,6 +227,10 @@ static readstat_error_t xport_begin_data(void *writer_ctx) {
     struct tm *ts = localtime(&writer->timestamp);
     readstat_error_t retval = READSTAT_OK;
 
+    retval = sas_validate_column_names(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
     if (writer->version == 5) {
         retval = xport_write_header_record(writer, "LIBRARY", 0, 0, 0, 0, 0, 0);
     } else {

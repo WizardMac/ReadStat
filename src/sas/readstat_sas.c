@@ -335,3 +335,43 @@ readstat_error_t sas_fill_page(readstat_writer_t *writer, sas_header_info_t *hin
     }
     return READSTAT_OK;
 }
+
+readstat_error_t sas_validate_name(const char *name) {
+    int j;
+    for (j=0; name[j]; j++) {
+        if (name[j] != '_' &&
+                !(name[j] >= 'a' && name[j] <= 'z') &&
+                !(name[j] >= 'A' && name[j] <= 'Z') &&
+                !(name[j] >= '0' && name[j] <= '9')) {
+            return READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER;
+        }
+    }
+    char first_char = name[0];
+    if (first_char != '_' &&
+            !(first_char >= 'a' && first_char <= 'z') &&
+            !(first_char >= 'A' && first_char <= 'Z')) {
+        return READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER;
+    }
+    if (strcmp(name, "_N_") == 0 || strcmp(name, "_ERROR_") == 0 ||
+            strcmp(name, "_NUMERIC_") == 0 || strcmp(name, "_CHARACTER_") == 0 ||
+            strcmp(name, "_ALL_") == 0) {
+        return READSTAT_ERROR_NAME_IS_RESERVED_WORD;
+    }
+
+    if (strlen(name) > 32)
+        return READSTAT_ERROR_NAME_IS_TOO_LONG;
+
+    return READSTAT_OK;
+}
+
+readstat_error_t sas_validate_column_names(readstat_writer_t *writer) {
+    int i;
+    for (i=0; i<writer->variables_count; i++) {
+        readstat_variable_t *variable = readstat_get_variable(writer, i);
+        readstat_error_t error = sas_validate_name(readstat_variable_get_name(variable));
+        if (error != READSTAT_OK)
+            return error;
+    }
+    return READSTAT_OK;
+}
+
