@@ -59,6 +59,9 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         error = readstat_begin_writing_sas7bdat(writer, buffer, file->rows);
     } else if ((format & RT_FORMAT_SAS7BCAT)) {
         error = readstat_begin_writing_sas7bcat(writer, buffer);
+    } else if ((format & RT_FORMAT_XPORT)) {
+        readstat_writer_set_file_format_version(writer, sas_file_format_version(format));
+        error = readstat_begin_writing_xport(writer, buffer, file->rows);
     } else if ((format & RT_FORMAT_SAV)) {
         if (format == RT_FORMAT_SAV_COMP_ROWS) {
             readstat_writer_set_compression(writer, READSTAT_COMPRESS_ROWS);

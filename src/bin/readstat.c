@@ -23,6 +23,7 @@
 #define RS_FORMAT_POR           0x04
 #define RS_FORMAT_SAS_DATA      0x08
 #define RS_FORMAT_SAS_CATALOG   0x10
+#define RS_FORMAT_XPORT         0x20
 
 #define RS_FORMAT_CAN_WRITE     (RS_FORMAT_DTA | RS_FORMAT_SAV)
 
@@ -46,6 +47,9 @@ int format(const char *filename) {
 
     if (strncmp(filename + len - 4, ".por", 4) == 0)
         return RS_FORMAT_POR;
+
+    if (strncmp(filename + len - 4, ".xpt", 4) == 0)
+        return RS_FORMAT_XPORT;
 
     if (len < sizeof(".sas7bdat")-1)
         return RS_FORMAT_UNKNOWN;
@@ -74,6 +78,9 @@ const char *format_name(int format) {
 
     if (format == RS_FORMAT_SAS_CATALOG)
         return "SAS catalog file (SAS7BCAT)";
+
+    if (format == RS_FORMAT_XPORT)
+        return "SAS portable file (XPORT)";
 
     return "Unknown";
 }
@@ -198,7 +205,7 @@ static void print_usage(const char *cmd) {
     fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat)\n", cmd);
 
     fprintf(stderr, "\n  Convert a file:\n");
-    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|por|sav|sas7bdat|csv"
+    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|por|sav|sas7bdat|xpt|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif
