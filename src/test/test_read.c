@@ -344,6 +344,9 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
         error = readstat_parse_sas7bdat(parser, NULL, parse_ctx);
     } else if ((format & RT_FORMAT_SAS7BCAT)) {
         error = readstat_parse_sas7bcat(parser, NULL, parse_ctx);
+    } else if ((format & RT_FORMAT_XPORT)) {
+        parse_ctx->file_format_version = sas_file_format_version(format);
+        error = readstat_parse_xport(parser, NULL, parse_ctx);
     }
     if (error != READSTAT_OK)
         goto cleanup;

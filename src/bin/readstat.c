@@ -80,7 +80,7 @@ const char *format_name(int format) {
         return "SAS catalog file (SAS7BCAT)";
 
     if (format == RS_FORMAT_XPORT)
-        return "SAS portable file (XPORT)";
+        return "SAS transport file (XPORT)";
 
     return "Unknown";
 }
@@ -189,6 +189,8 @@ readstat_error_t parse_file(readstat_parser_t *parser, const char *input_filenam
         error = readstat_parse_sas7bdat(parser, input_filename, ctx);
     } else if (input_format == RS_FORMAT_SAS_CATALOG) {
         error = readstat_parse_sas7bcat(parser, input_filename, ctx);
+    } else if (input_format == RS_FORMAT_XPORT) {
+        error = readstat_parse_xport(parser, input_filename, ctx);
     }
 
     return error;
@@ -202,10 +204,10 @@ static void print_usage(const char *cmd) {
     print_version();
 
     fprintf(stderr, "\n  View a file's metadata:\n");
-    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat)\n", cmd);
+    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat|xpt)\n", cmd);
 
     fprintf(stderr, "\n  Convert a file:\n");
-    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat) output.(dta|por|sav|sas7bdat|xpt|csv"
+    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat|xpt) output.(dta|por|sav|sas7bdat|xpt|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif

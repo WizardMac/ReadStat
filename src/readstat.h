@@ -151,6 +151,7 @@ typedef struct readstat_variable_s {
     readstat_measure_t      measure;
     readstat_alignment_t    alignment;
     int                     display_width;
+    int                     decimals;
 } readstat_variable_t;
 
 /* Value accessors */
@@ -307,6 +308,7 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
 readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path, void *user_ctx);
 readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *path, void *user_ctx);
 readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *path, void *user_ctx);
+readstat_error_t readstat_parse_xport(readstat_parser_t *parser, const char *path, void *user_ctx);
 
 
 /* Internal module callbacks */

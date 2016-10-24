@@ -6,39 +6,18 @@
 #include "../readstat.h"
 #include "../readstat_writer.h"
 #include "readstat_sas.h"
+#include "readstat_xport.h"
 #include "ieee.h"
 
 #define XPORT_DEFAULT_VERISON 8
-
-#pragma pack(push, 1)
-typedef struct xport_namestr_s {
-    uint16_t    ntype;
-    uint16_t    nhfun;
-    uint16_t    nlng;
-    uint16_t    nvar0;
-    char        nname[8];
-    char        nlabel[40];
-    char        nform[8];
-    uint16_t    nfl;
-    uint16_t    nfd;
-    uint16_t    nfj;
-    char        nfill[2];
-    char        niform[8];
-    uint16_t    nifl;
-    uint16_t    nifd;
-    uint32_t    npos;
-    char        longname[32];
-    uint16_t    labeln;
-    char        rest[18];
-} xport_namestr_t;
-#pragma pack(pop)
+#define RECORD_LEN 80
 
 static readstat_error_t xport_write_bytes(readstat_writer_t *writer, const void *bytes, size_t len) {
-    return readstat_write_bytes_as_lines(writer, bytes, len, 80, "\n");
+    return readstat_write_bytes_as_lines(writer, bytes, len, RECORD_LEN, "");
 }
 
 static readstat_error_t xport_finish_record(readstat_writer_t *writer) {
-    return readstat_write_line_padding(writer, ' ', 80, "\n");
+    return readstat_write_line_padding(writer, ' ', RECORD_LEN, "");
 }
 
 static readstat_error_t xport_write_record(readstat_writer_t *writer, const char *record) {
@@ -57,13 +36,22 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t xport_write_header_record(readstat_writer_t *writer, char *name,
-        unsigned int num1, unsigned int num2, unsigned int num3,
-        unsigned int num4, unsigned int num5, unsigned int num6) {
-    char record[81];
+static readstat_error_t xport_write_header_record_v8(readstat_writer_t *writer, 
+        xport_header_record_t *xrecord) {
+    char record[RECORD_LEN+1];
     snprintf(record, sizeof(record),
-            "HEADER RECORD*******%-8sHEADER RECORD!!!!!!!%010d%010d%010d",
-            name, num1, num2, num3);
+            "HEADER RECORD*******%-8sHEADER RECORD!!!!!!!%-30d",
+            xrecord->name, xrecord->num1);
+    return xport_write_record(writer, record);
+}
+
+static readstat_error_t xport_write_header_record(readstat_writer_t *writer, 
+        xport_header_record_t *xrecord) {
+    char record[RECORD_LEN+1];
+    snprintf(record, sizeof(record),
+            "HEADER RECORD*******%-8sHEADER RECORD!!!!!!!" "%05d%05d%05d" "%05d%05d%05d",
+            xrecord->name, xrecord->num1, xrecord->num2, xrecord->num3,
+            xrecord->num4, xrecord->num5, xrecord->num6);
     return xport_write_record(writer, record);
 }
 
@@ -94,12 +82,14 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
         } else {
             namestr.ntype = SAS_COLUMN_TYPE_NUM;
         }
+        /* TODO space-pad */
         strncpy(namestr.nname, variable->name, sizeof(namestr.nname));
+        /* TODO space-pad */
         strncpy(namestr.nlabel, variable->label, sizeof(namestr.nlabel));
 
         if (variable->format[0]) {
-            int decimals = 2;
-            int width = 8;
+            int decimals = 0;
+            int width = 0;
             char name[24];
 
             sscanf(variable->format, "%s%d.%d", name, &width, &decimals);
@@ -134,30 +124,30 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
 
         offset += width;
 
+        xport_namestr_bswap(&namestr);
+
         retval = xport_write_bytes(writer, &namestr, sizeof(xport_namestr_t));
         if (retval != READSTAT_OK)
             goto cleanup;
     }
 
     if (writer->version == 8 && num_long_labels) {
+        xport_header_record_t header = { 
+            .name = "LABELV8",
+            .num1 = num_long_labels };
         if (has_long_format) {
-            retval = xport_write_header_record(writer, "LABELV9", num_long_labels, 0, 0, 0, 0, 0);
-            if (retval != READSTAT_OK)
-                goto cleanup;
-        } else {
-            retval = xport_write_header_record(writer, "LABELV8", num_long_labels, 0, 0, 0, 0, 0);
-            if (retval != READSTAT_OK)
-                goto cleanup;
+            strcpy(header.name, "LABELV9");
         }
+        retval = xport_write_header_record_v8(writer, &header);
+        if (retval != READSTAT_OK)
+            goto cleanup;
 
         for (i=0; i<writer->variables_count; i++) {
             readstat_variable_t *variable = readstat_get_variable(writer, i);
             size_t label_len = strlen(variable->label);
             size_t name_len = strlen(variable->name);
             int has_long_label = 0;
-            int has_long_format = 0;
             int format_len = 0;
-            char labeldef[11];
             char format_name[24];
             memset(format_name, 0, sizeof(format_name));
 
@@ -171,10 +161,17 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
             }
 
             if (has_long_format) {
-                snprintf(labeldef, sizeof(labeldef), "%02d%02d%02d%02d%02d", 
-                        i, (int)name_len, (int)format_len, (int)format_len, (int)label_len);
+                uint16_t labeldef[5] = { i, name_len, format_len, format_len, label_len };
 
-                retval = readstat_write_string(writer, labeldef);
+                if (machine_is_little_endian()) {
+                    labeldef[0] = byteswap2(labeldef[0]);
+                    labeldef[1] = byteswap2(labeldef[1]);
+                    labeldef[2] = byteswap2(labeldef[2]);
+                    labeldef[3] = byteswap2(labeldef[3]);
+                    labeldef[4] = byteswap2(labeldef[4]);
+                }
+
+                retval = readstat_write_bytes(writer, labeldef, sizeof(labeldef));
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
@@ -195,10 +192,15 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
                     goto cleanup;
 
             } else if (has_long_label) {
-                snprintf(labeldef, sizeof(labeldef), "%02d%02d%02d", 
-                        i, (int)name_len, (int)label_len);
+                uint16_t labeldef[3] = { i, name_len, label_len };
 
-                retval = readstat_write_string(writer, labeldef);
+                if (machine_is_little_endian()) {
+                    labeldef[0] = byteswap2(labeldef[0]);
+                    labeldef[1] = byteswap2(labeldef[1]);
+                    labeldef[2] = byteswap2(labeldef[2]);
+                }
+
+                retval = readstat_write_bytes(writer, labeldef, sizeof(labeldef));
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
@@ -222,36 +224,104 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t xport_write_first_header_record(readstat_writer_t *writer) {
+    xport_header_record_t xrecord = { .name = "LIBRARY" };
+    if (writer->version == 8) {
+        strcpy(xrecord.name, "LIBV8");
+    }
+    return xport_write_header_record(writer, &xrecord);
+}
+
+static readstat_error_t xport_write_first_real_header_record(readstat_writer_t *writer,
+        const char *timestamp) {
+    char real_record[RECORD_LEN+1];
+    snprintf(real_record, sizeof(real_record),
+            "%-8s" "%-8s" "%-8s"    "%-8s"  "%-8s"    "%-24s" "%16s",
+            "SAS", "SAS", "SASLIB", "6.06", "bsd4.2", "",     timestamp);
+
+    return xport_write_record(writer, real_record);
+}
+
+static readstat_error_t xport_write_member_header_record(readstat_writer_t *writer) {
+    xport_header_record_t xrecord = { 
+        .name = "MEMBER",
+        .num4 = 160, .num6 = 140
+    };
+    if (writer->version == 8) {
+        strcpy(xrecord.name, "MEMBV8");
+    }
+    return xport_write_header_record(writer, &xrecord);
+}
+
+static readstat_error_t xport_write_descriptor_header_record(readstat_writer_t *writer) {
+    xport_header_record_t xrecord = { 
+        .name = "DSCRPTR"
+    };
+    if (writer->version == 8) {
+        strcpy(xrecord.name, "DSCPTV8");
+    }
+    return xport_write_header_record(writer, &xrecord);
+}
+
+static readstat_error_t xport_write_member_record(readstat_writer_t *writer,
+        char *timestamp) {
+    char member_header[RECORD_LEN+1];
+    snprintf(member_header, sizeof(member_header),
+            "%-8s" "%-8s"     "%-8s"    "%-8s"  "%-8s"    "%-24s" "%16s",
+            "SAS", "DATASET", "SASDATA", "6.06", "bsd4.2", "", timestamp);
+
+    return xport_write_record(writer, member_header);
+}
+
+static readstat_error_t xport_write_file_label_record(readstat_writer_t *writer,
+        char *timestamp) {
+    char member_header[RECORD_LEN+1];
+    snprintf(member_header, sizeof(member_header),
+            "%16s"     "%16s"  "%-40s"              "%-8s",
+            timestamp, "",     writer->file_label,  "" /* dstype? */);
+
+    return xport_write_record(writer, member_header);
+}
+
+static readstat_error_t xport_write_namestr_header_record(readstat_writer_t *writer) {
+    xport_header_record_t xrecord = { 
+        .name = "NAMESTR",
+        .num2 = writer->variables_count
+    };
+    if (writer->version == 8) {
+        strcpy(xrecord.name, "NAMSTV8");
+    }
+    return xport_write_header_record(writer, &xrecord);
+}
+
+static readstat_error_t xport_write_obs_header_record(readstat_writer_t *writer) {
+    xport_header_record_t xrecord = { 
+        .name = "OBS"
+    };
+    if (writer->version == 8) {
+        strcpy(xrecord.name, "OBSV8");
+    }
+    return xport_write_header_record(writer, &xrecord);
+}
+
 static readstat_error_t xport_begin_data(void *writer_ctx) {
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     struct tm *ts = localtime(&writer->timestamp);
     readstat_error_t retval = READSTAT_OK;
+    char timestamp[17];
+    snprintf(timestamp, sizeof(timestamp),
+            "%02d"       "%3s"              "%02d"             ":%02d:%02d:%02d",
+            ts->tm_mday, _xport_months[ts->tm_mon], ts->tm_year % 100, ts->tm_hour, ts->tm_min, ts->tm_sec);
 
     retval = sas_validate_column_names(writer);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    if (writer->version == 5) {
-        retval = xport_write_header_record(writer, "LIBRARY", 0, 0, 0, 0, 0, 0);
-    } else {
-        retval = xport_write_header_record(writer, "LIBV8",   0, 0, 0, 0, 0, 0);
-    }
+    retval = xport_write_first_header_record(writer);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    char month[12][4] = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" };
-
-    char timestamp[17];
-    snprintf(timestamp, sizeof(timestamp),
-            "%02d"       "%3s"              "%02d"             ":%02d:%02d:%02d",
-            ts->tm_mday, month[ts->tm_mon], ts->tm_year % 100, ts->tm_hour, ts->tm_min, ts->tm_sec);
-
-    char real_record[81];
-    snprintf(real_record, sizeof(real_record),
-            "%-8s" "%-8s" "%-8s"    "%-8s"  "%-8s"    "%-24s" "%16s",
-            "SAS", "SAS", "SASLIB", "6.06", "bsd4.2", "",     timestamp);
-
-    retval = xport_write_record(writer, real_record);
+    retval = xport_write_first_real_header_record(writer, timestamp);
     if (retval != READSTAT_OK)
         goto cleanup;
 
@@ -259,44 +329,23 @@ static readstat_error_t xport_begin_data(void *writer_ctx) {
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    if (writer->version == 5) {
-        retval = xport_write_header_record(writer, "MEMBER", 0, 0, 0, 160, 0, 140);
-    } else {
-        retval = xport_write_header_record(writer, "MEMBV8", 0, 0, 0, 160, 0, 140);
-    }
+    retval = xport_write_member_header_record(writer);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    if (writer->version == 5) {
-        retval = xport_write_header_record(writer, "DSCRPTR", 0, 0, 0, 0, 0, 0);
-    } else {
-        retval = xport_write_header_record(writer, "DSCPTV8", 0, 0, 0, 0, 0, 0);
-    }
+    retval = xport_write_descriptor_header_record(writer);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    char member_header[81];
-    snprintf(member_header, sizeof(member_header),
-            "%-8s" "%-8s"     "%-8s"    "%-8s"  "%-8s"    "%-24s" "%16s",
-            "SAS", "DATASET", "SASLIB", "6.06", "bsd4.2", "", timestamp);
-
-    retval = xport_write_record(writer, member_header);
+    retval = xport_write_member_record(writer, timestamp);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    snprintf(member_header, sizeof(member_header),
-            "%16s"     "%16s"  "%-40s"              "%-8s",
-            timestamp, "",     writer->file_label,  "" /* dstype? */);
-
-    retval = xport_write_record(writer, member_header);
+    retval = xport_write_file_label_record(writer, timestamp);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    if (writer->version == 5) {
-        retval = xport_write_header_record(writer, "NAMESTR", 0, writer->variables_count, 0, 0, 0, 0);
-    } else {
-        retval = xport_write_header_record(writer, "NAMSTV8", 0, writer->variables_count, 0, 0, 0, 0);
-    }
+    retval = xport_write_namestr_header_record(writer);
     if (retval != READSTAT_OK)
         goto cleanup;
 
@@ -304,11 +353,7 @@ static readstat_error_t xport_begin_data(void *writer_ctx) {
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    if (writer->version == 5) {
-        retval = xport_write_header_record(writer, "OBS", 0, 0, 0, 0, 0, 0);
-    } else {
-        retval = xport_write_header_record(writer, "OBSV8", 0, 0, 0, 0, 0, 0);
-    }
+    retval = xport_write_obs_header_record(writer);
     if (retval != READSTAT_OK)
         goto cleanup;
 
