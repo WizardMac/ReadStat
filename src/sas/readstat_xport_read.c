@@ -209,6 +209,10 @@ static readstat_error_t xport_read_timestamp_record(xport_ctx_t *ctx) {
         }
     }
 
+    if (ts.tm_year < 60) {
+        ts.tm_year += 100;
+    }
+
     ctx->timestamp = mktime(&ts);
 
 cleanup:
@@ -531,6 +535,12 @@ cleanup:
 }
 
 static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
+    if (!ctx->row_length)
+        return READSTAT_OK;
+
+    if (!ctx->value_handler)
+        return READSTAT_OK;
+
     readstat_error_t retval = READSTAT_OK;
     char *row = malloc(ctx->row_length);
     char *blank_row = malloc(ctx->row_length);

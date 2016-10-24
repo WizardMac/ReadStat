@@ -12,6 +12,12 @@
 #define XPORT_DEFAULT_VERISON 8
 #define RECORD_LEN 80
 
+static void copypad(char *dst, size_t dst_len, const char *src) {
+    strncpy(dst, src, dst_len);
+    if (strlen(src) < dst_len)
+        memset(&dst[strlen(src)], ' ', dst_len-strlen(src));
+}
+
 static readstat_error_t xport_write_bytes(readstat_writer_t *writer, const void *bytes, size_t len) {
     return readstat_write_bytes_as_lines(writer, bytes, len, RECORD_LEN, "");
 }
@@ -82,10 +88,9 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
         } else {
             namestr.ntype = SAS_COLUMN_TYPE_NUM;
         }
-        /* TODO space-pad */
-        strncpy(namestr.nname, variable->name, sizeof(namestr.nname));
-        /* TODO space-pad */
-        strncpy(namestr.nlabel, variable->label, sizeof(namestr.nlabel));
+
+        copypad(namestr.nname, sizeof(namestr.nname), variable->name);
+        copypad(namestr.nlabel, sizeof(namestr.nlabel), variable->label);
 
         if (variable->format[0]) {
             int decimals = 0;
@@ -94,11 +99,11 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
 
             sscanf(variable->format, "%s%d.%d", name, &width, &decimals);
 
-            strncpy(namestr.nform, name, sizeof(namestr.nform));
+            copypad(namestr.nform, sizeof(namestr.nform), name);
             namestr.nfl = width;
             namestr.nfd = decimals;
 
-            strncpy(namestr.niform, name, sizeof(namestr.niform));
+            copypad(namestr.niform, sizeof(namestr.niform), name);
             namestr.nifl = width;
             namestr.nifd = decimals;
 
@@ -109,7 +114,7 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
         }
 
         if (writer->version == 8) {
-            strncpy(namestr.longname, variable->name, sizeof(namestr.longname));
+            copypad(namestr.longname, sizeof(namestr.longname), variable->name);
 
             size_t label_len = strlen(variable->label);
             if (label_len > 40) {
