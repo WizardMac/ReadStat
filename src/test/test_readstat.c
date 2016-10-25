@@ -1639,7 +1639,7 @@ rt_test_group_t _test_groups[] = {
 
             {
                 .label = "Extreme values",
-                .test_formats = (RT_FORMAT_ALL & ~RT_FORMAT_XPORT),
+                .test_formats = RT_FORMAT_ALL,
                 .rows = 1,
                 .columns = {
                     { 

@@ -170,6 +170,12 @@ void xpt2ieee(unsigned char *xport, unsigned char *ieee) {
     /* adjusted by the number of positions shifted. A more */
     /* thorough discussion is in vzctdbl.c. */
 
+    if ((xport1 & 0x7fffffff) == 0x7fffffff && xport2 == 0xffffffff) {
+        ieee1 = (xport1 & 0x80000000) | 0x7ff00000;
+        ieee2 = 0;
+        goto doret;
+    }
+
     /* Get the first half of the ibm number without the exponent */
     /* into the ieee number */
     ieee1 = xport1 & 0x00ffffff;
@@ -186,21 +192,17 @@ void xpt2ieee(unsigned char *xport, unsigned char *ieee) {
     /* to be a power of 2 ieee exponent and how to shift the */
     /* fraction bits to restore the correct magnitude. */
 
-    if ((nib = (int)xport1) & 0x00800000)
+    if ((nib = (int)xport1) & 0x00800000) {
         shift = 3;
-    else
-        if (nib & 0x00400000)
-            shift = 2;
-        else
-            if (nib & 0x00200000)
-                shift = 1;
-            else
+    } else if (nib & 0x00400000) {
+        shift = 2;
+    } else if (nib & 0x00200000) {
+        shift = 1;
+    } else {
+        shift = 0;
+    }
 
-                shift = 0;
-
-    if (shift)
-    {
-
+    if (shift) {
         /* shift the ieee number down the correct number of places */
         /* then set the second half of the ieee number to be the */
         /* second half of the ibm number shifted appropriately, */
@@ -226,6 +228,7 @@ void xpt2ieee(unsigned char *xport, unsigned char *ieee) {
         (((((int32_t)(*temp & 0x7f) - 65) << 2) + shift + 1023) << 20) |
         (xport1 & 0x80000000);
 
+doret:
     REVERSE(&ieee1,sizeof(uint32_t));
     memcpy(ieee,((char *)&ieee1)+sizeof(uint32_t)-4,4);
     REVERSE(&ieee2,sizeof(uint32_t));
@@ -389,17 +392,18 @@ void ieee2xpt(unsigned char *ieee, unsigned char *xport) {
     /* appropriate flag. */
 
 doret:
-    if (-260 <= ieee_exp && ieee_exp <= 248) {
+    if (ieee_exp < -260) {
+        memset(xport,0x00,8);
+    } else if (ieee_exp > 248) {
+        memset(xport+1,0xFF,7);
+
+        *xport = 0x7F | ((ieee1 >> 24) & 0x80);
+    } else {
         REVERSE(&xport1,sizeof(uint32_t));
         memcpy(xport,((char *)&xport1)+sizeof(uint32_t)-4,4);
         REVERSE(&xport2,sizeof(uint32_t));
         memcpy(xport+4,((char *)&xport2)+sizeof(uint32_t)-4,4);
-        return;
     }
-    memset(xport,0xFF,8);
-
-    if (ieee_exp > 248)
-        *xport = 0x7f;
     return;
 }
 
