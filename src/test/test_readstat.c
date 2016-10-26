@@ -522,6 +522,19 @@ rt_test_group_t _test_groups[] = {
     },
 
     {
+        .label = "Variable labels",
+        .tests = {
+            {
+                .label = "XPORT long variable label",
+                .test_formats = RT_FORMAT_XPORT_8,
+                .columns = {
+                    { .name = "VAR1", .label = "This is a variable label that is longer than 40 bytes!" }
+                }
+            }
+        }
+    },
+
+    {
         .label = "Formats",
         .tests = {
             {
