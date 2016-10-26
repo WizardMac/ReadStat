@@ -427,6 +427,7 @@ static readstat_error_t xport_read_variables(xport_ctx_t *ctx) {
         }
         variable->display_width = namestr.nfl;
         variable->decimals = namestr.nfd;
+        variable->alignment = namestr.nfj ? READSTAT_ALIGNMENT_RIGHT : READSTAT_ALIGNMENT_LEFT;
 
         readstat_convert(variable->name, sizeof(variable->name),
                 namestr.nname, sizeof(namestr.nname), NULL);

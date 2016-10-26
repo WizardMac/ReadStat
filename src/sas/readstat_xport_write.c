@@ -113,6 +113,8 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
             }
         }
 
+        namestr.nfj = (variable->alignment == READSTAT_ALIGNMENT_RIGHT);
+
         if (writer->version == 8) {
             copypad(namestr.longname, sizeof(namestr.longname), variable->name);
 
