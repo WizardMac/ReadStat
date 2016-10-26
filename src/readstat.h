@@ -445,7 +445,7 @@ readstat_error_t readstat_writer_set_file_label(readstat_writer_t *writer, const
 readstat_error_t readstat_writer_set_file_timestamp(readstat_writer_t *writer, time_t timestamp);
 readstat_error_t readstat_writer_set_fweight_variable(readstat_writer_t *writer, const readstat_variable_t *variable);
 readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writer, 
-        long file_format_version); // e.g. 104-118 for DTA
+        long file_format_version); // e.g. 104-118 for DTA; 5 or 8 for SAS Transport
 readstat_error_t readstat_writer_set_file_format_is_64bit(readstat_writer_t *writer,
         int is_64bit); // applies only to SAS files; defaults to 1=true
 readstat_error_t readstat_writer_set_compression(readstat_writer_t *writer,
