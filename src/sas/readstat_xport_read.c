@@ -318,6 +318,10 @@ static readstat_error_t xport_read_labels_v8(xport_ctx_t *ctx, int label_count) 
             goto cleanup;
     }
 
+    retval = xport_skip_rest_of_record(ctx);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
     retval = xport_read_obs_header_record(ctx);
     if (retval != READSTAT_OK)
         goto cleanup;
@@ -386,6 +390,10 @@ static readstat_error_t xport_read_labels_v9(xport_ctx_t *ctx, int label_count) 
         if (retval != READSTAT_OK)
             goto cleanup;
     }
+
+    retval = xport_skip_rest_of_record(ctx);
+    if (retval != READSTAT_OK)
+        goto cleanup;
 
     retval = xport_read_obs_header_record(ctx);
     if (retval != READSTAT_OK)

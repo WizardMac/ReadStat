@@ -619,6 +619,13 @@ rt_test_group_t _test_groups[] = {
                     { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "10.3", .label_set = "10.3" },
                     { .name = "VAR2", .type = READSTAT_TYPE_STRING, .format = "$CHAR3.", .label_set = "$CHAR3." }
                 }
+            },
+            {
+                .label = "SAS long format",
+                .test_formats = RT_FORMAT_SAS7BDAT | RT_FORMAT_XPORT_8,
+                .columns = {
+                    { .name = "VAR3", .type = READSTAT_TYPE_DOUBLE, .format = "FAKEFORMAT12.8", .label_set = "FAKEFORMAT12.8" }
+                }
             }
         }
     },

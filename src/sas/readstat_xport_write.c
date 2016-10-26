@@ -73,7 +73,7 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
     int i;
     long offset = 0;
     int num_long_labels = 0;
-    int has_long_format = 0;
+    int any_has_long_format = 0;
     for (i=0; i<writer->variables_count; i++) {
         int needs_long_record = 0;
         readstat_variable_t *variable = readstat_get_variable(writer, i);
@@ -108,7 +108,7 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
             namestr.nifd = decimals;
 
             if (strlen(name) > 8) {
-                has_long_format = 1;
+                any_has_long_format = 1;
                 needs_long_record = 1;
             }
         }
@@ -136,11 +136,15 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
             goto cleanup;
     }
 
+    retval = xport_finish_record(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
     if (writer->version == 8 && num_long_labels) {
         xport_header_record_t header = { 
             .name = "LABELV8",
             .num1 = num_long_labels };
-        if (has_long_format) {
+        if (any_has_long_format) {
             strcpy(header.name, "LABELV9");
         }
         retval = xport_write_header_record_v8(writer, &header);
@@ -152,6 +156,7 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
             size_t label_len = strlen(variable->label);
             size_t name_len = strlen(variable->name);
             int has_long_label = 0;
+            int has_long_format = 0;
             int format_len = 0;
             char format_name[24];
             memset(format_name, 0, sizeof(format_name));
@@ -162,7 +167,15 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
                 int decimals = 2;
                 int width = 8;
 
-                sscanf(variable->format, "%s%d.%d", format_name, &width, &decimals);
+                int matches = sscanf(variable->format, "%s%d.%d", format_name, &width, &decimals);
+                if (matches < 1) {
+                    retval = READSTAT_ERROR_BAD_FORMAT_STRING;
+                    goto cleanup;
+                }
+                format_len = strlen(format_name);
+                if (format_len > 8) {
+                    has_long_format = 1;
+                }
             }
 
             if (has_long_format) {
@@ -218,11 +231,11 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
                     goto cleanup;
             }
         }
-    }
 
-    retval = xport_finish_record(writer);
-    if (retval != READSTAT_OK)
-        goto cleanup;
+        retval = xport_finish_record(writer);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+    }
 
 cleanup:
 
