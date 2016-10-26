@@ -2,6 +2,13 @@
 #include <string.h>
 #include "ieee.h"
 
+/* These routines are modified versions of those found in SAS publication TS-140,
+ * "RECORD LAYOUT OF A SAS VERSION 5 OR 6 DATA SET IN SAS TRANSPORT (XPORT) FORMAT"
+ * https://support.sas.com/techsup/technote/ts140.pdf
+ *
+ * Modifications include using stdint.h and supporting infinite IEEE values.
+ */
+
 static void xpt2ieee(unsigned char *xport, unsigned char *ieee);
 static void ieee2xpt(unsigned char *ieee, unsigned char *xport);
 
@@ -120,9 +127,9 @@ void xpt2ieee(unsigned char *xport, unsigned char *ieee) {
         return;
     }
 
-    memcpy(((char *)&xport1)+sizeof(uint32_t)-4,temp,4);
+    memcpy(&xport1,temp,sizeof(uint32_t));
     REVERSE(&xport1,sizeof(uint32_t));
-    memcpy(((char *)&xport2)+sizeof(uint32_t)-4,temp+4,4);
+    memcpy(&xport2,temp+4,sizeof(uint32_t));
     REVERSE(&xport2,sizeof(uint32_t));
 
     /***************************************************************/
@@ -230,9 +237,9 @@ void xpt2ieee(unsigned char *xport, unsigned char *ieee) {
 
 doret:
     REVERSE(&ieee1,sizeof(uint32_t));
-    memcpy(ieee,((char *)&ieee1)+sizeof(uint32_t)-4,4);
+    memcpy(ieee,&ieee1,sizeof(uint32_t));
     REVERSE(&ieee2,sizeof(uint32_t));
-    memcpy(ieee+4,((char *)&ieee2)+sizeof(uint32_t)-4,4);
+    memcpy(ieee+4,&ieee2,sizeof(uint32_t));
     return;
 }
 
@@ -257,9 +264,9 @@ void ieee2xpt(unsigned char *ieee, unsigned char *xport) {
     memcpy(ieee8,ieee,8);
 
     /*------get 2 longs for shifting------------------------------*/
-    memcpy(((char *)&ieee1)+sizeof(uint32_t)-4,ieee8,4);
+    memcpy(&ieee1,ieee8,sizeof(uint32_t));
     REVERSE(&ieee1,sizeof(uint32_t));
-    memcpy(((char *)&ieee2)+sizeof(uint32_t)-4,ieee8+4,4);
+    memcpy(&ieee2,ieee8+4,sizeof(uint32_t));
     REVERSE(&ieee2,sizeof(uint32_t));
 
     memset(xport,0,8);
@@ -400,9 +407,9 @@ doret:
         *xport = 0x7F | ((ieee1 >> 24) & 0x80);
     } else {
         REVERSE(&xport1,sizeof(uint32_t));
-        memcpy(xport,((char *)&xport1)+sizeof(uint32_t)-4,4);
+        memcpy(xport,&xport1,sizeof(uint32_t));
         REVERSE(&xport2,sizeof(uint32_t));
-        memcpy(xport+4,((char *)&xport2)+sizeof(uint32_t)-4,4);
+        memcpy(xport+4,&xport2,sizeof(uint32_t));
     }
     return;
 }
