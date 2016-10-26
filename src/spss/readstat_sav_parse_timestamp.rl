@@ -84,18 +84,18 @@ readstat_error_t sav_parse_date(const char *data, size_t len, struct tm *timesta
         year = integer2 %save_year;
 
         month = 
-            "Jan" %{ timestamp->tm_mon = 0; } |
-            "Feb" %{ timestamp->tm_mon = 1; } |
-            "Mar" %{ timestamp->tm_mon = 2; } |
-            "Apr" %{ timestamp->tm_mon = 3; } |
-            "May" %{ timestamp->tm_mon = 4; } |
-            "Jun" %{ timestamp->tm_mon = 5; } |
-            "Jul" %{ timestamp->tm_mon = 6; } |
-            "Aug" %{ timestamp->tm_mon = 7; } |
-            "Sep" %{ timestamp->tm_mon = 8; } |
-            "Oct" %{ timestamp->tm_mon = 9; } |
-            "Nov" %{ timestamp->tm_mon = 10; } |
-            "Dec" %{ timestamp->tm_mon = 11; };
+            ("Jan" | "JAN") %{ timestamp->tm_mon = 0; } |
+            ("Feb" | "FEB") %{ timestamp->tm_mon = 1; } |
+            ("Mar" | "MAR") %{ timestamp->tm_mon = 2; } |
+            ("Apr" | "APR") %{ timestamp->tm_mon = 3; } |
+            ("May" | "MAY") %{ timestamp->tm_mon = 4; } |
+            ("Jun" | "JUN") %{ timestamp->tm_mon = 5; } |
+            ("Jul" | "JUL") %{ timestamp->tm_mon = 6; } |
+            ("Aug" | "AUG") %{ timestamp->tm_mon = 7; } |
+            ("Sep" | "SEP") %{ timestamp->tm_mon = 8; } |
+            ("Oct" | "OCT") %{ timestamp->tm_mon = 9; } |
+            ("Nov" | "NOV") %{ timestamp->tm_mon = 10; } |
+            ("Dec" | "DEC") %{ timestamp->tm_mon = 11; };
 
         main := day " " month " " year;
 
