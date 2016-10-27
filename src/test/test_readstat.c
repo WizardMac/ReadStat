@@ -395,7 +395,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Column name begins with number",
                 .write_error = READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER,
-                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAS7BDAT,
+                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAS,
                 .rows = 0,
                 .columns = {
                     {
@@ -407,7 +407,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Column name contains dollar sign",
                 .write_error = READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
-                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAS7BDAT,
+                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAS,
                 .rows = 0,
                 .columns = {
                     {
@@ -465,7 +465,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "SAS column name is a reserved word",
                 .write_error = READSTAT_ERROR_NAME_IS_RESERVED_WORD,
-                .test_formats = RT_FORMAT_SAS7BDAT,
+                .test_formats = RT_FORMAT_SAS,
                 .rows = 0,
                 .columns = {
                     {
@@ -477,7 +477,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "SAS column name is too long",
                 .write_error = READSTAT_ERROR_NAME_IS_TOO_LONG,
-                .test_formats = RT_FORMAT_SAS7BDAT,
+                .test_formats = RT_FORMAT_SAS,
                 .columns = {
                     {
                         .name = "VAR123456789012345678901234567890",
@@ -516,6 +516,19 @@ rt_test_group_t _test_groups[] = {
                         .name = "var1",
                         .type = READSTAT_TYPE_DOUBLE
                     }
+                }
+            }
+        }
+    },
+
+    {
+        .label = "Variable labels",
+        .tests = {
+            {
+                .label = "XPORT long variable label",
+                .test_formats = RT_FORMAT_XPORT_8,
+                .columns = {
+                    { .name = "VAR1", .label = "This is a variable label that is longer than 40 bytes!" }
                 }
             }
         }
@@ -614,10 +627,17 @@ rt_test_group_t _test_groups[] = {
             },
             {
                 .label = "SAS formats",
-                .test_formats = RT_FORMAT_SAS7BDAT,
+                .test_formats = RT_FORMAT_SAS,
                 .columns = {
                     { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "10.3", .label_set = "10.3" },
                     { .name = "VAR2", .type = READSTAT_TYPE_STRING, .format = "$CHAR3.", .label_set = "$CHAR3." }
+                }
+            },
+            {
+                .label = "SAS long format",
+                .test_formats = RT_FORMAT_SAS7BDAT | RT_FORMAT_XPORT_8,
+                .columns = {
+                    { .name = "VAR3", .type = READSTAT_TYPE_DOUBLE, .format = "FAKEFORMAT12.8", .label_set = "FAKEFORMAT12.8" }
                 }
             }
         }
@@ -745,7 +765,7 @@ rt_test_group_t _test_groups[] = {
             {
                 .label = "Out-of-range tagged missing values",
                 .write_error = READSTAT_ERROR_TAGGED_VALUE_IS_OUT_OF_RANGE,
-                .test_formats = RT_FORMAT_DTA_114_AND_NEWER | RT_FORMAT_SAS7BDAT,
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER | RT_FORMAT_SAS,
                 .rows = 1,
                 .columns = {
                     {
@@ -759,8 +779,29 @@ rt_test_group_t _test_groups[] = {
             },
 
             {
-                .label = "In-range tagged missing doubles",
-                .test_formats = RT_FORMAT_DTA_114_AND_NEWER | RT_FORMAT_SAS7BDAT,
+                .label = "SAS in-range tagged missing doubles",
+                .test_formats = RT_FORMAT_SAS,
+                .rows = 7,
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'A' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'B' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'C' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'X' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'Y' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = 'Z' },
+                            { .type = READSTAT_TYPE_DOUBLE, .is_tagged_missing = 1, .tag = '_' }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "DTA in-range tagged missing doubles",
+                .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
                 .rows = 6,
                 .columns = {
                     {
