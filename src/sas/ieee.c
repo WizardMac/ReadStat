@@ -102,12 +102,12 @@ int get_native() {
 
 #ifdef LITTLE_ENDIAN
 #define DEFINE_REVERSE
-    void REVERSE();
+    void REVERSE(char *intp, int l);
 #endif
 
 #if !defined(DEFINE_REVERSE) && !defined(REVERSE)
 #define DEFINE_REVERSE
-    void REVERSE();
+    void REVERSE(char *intp, int l);
 #endif
 
 void xpt2ieee(unsigned char *xport, unsigned char *ieee) {
