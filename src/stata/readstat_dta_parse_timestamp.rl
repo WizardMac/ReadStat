@@ -27,19 +27,19 @@ readstat_error_t dta_parse_timestamp(const char *data, size_t len, struct tm *ti
 
         day = integer %{ timestamp->tm_mday = temp_val; };
 
-        month = 
-            ("Jan" | "JAN") %{ timestamp->tm_mon = 0; } |
-            ("Feb" | "FEB") %{ timestamp->tm_mon = 1; } |
-            ("Mar" | "MAR") %{ timestamp->tm_mon = 2; } |
-            ("Apr" | "APR") %{ timestamp->tm_mon = 3; } |
-            ("May" | "MAY") %{ timestamp->tm_mon = 4; } |
-            ("Jun" | "JUN") %{ timestamp->tm_mon = 5; } |
-            ("Jul" | "JUL") %{ timestamp->tm_mon = 6; } |
-            ("Aug" | "AUG") %{ timestamp->tm_mon = 7; } |
-            ("Sep" | "SEP") %{ timestamp->tm_mon = 8; } |
-            ("Oct" | "OCT") %{ timestamp->tm_mon = 9; } |
-            ("Nov" | "NOV") %{ timestamp->tm_mon = 10; } |
-            ("Dec" | "DEC") %{ timestamp->tm_mon = 11; };
+        month = # with some German variants thrown in
+            ("Jan"i) %{ timestamp->tm_mon = 0; } |
+            ("Feb"i) %{ timestamp->tm_mon = 1; } |
+            ("Mar"i) %{ timestamp->tm_mon = 2; } |
+            ("Apr"i) %{ timestamp->tm_mon = 3; } |
+            ("May"i | "Mai"i) %{ timestamp->tm_mon = 4; } |
+            ("Jun"i) %{ timestamp->tm_mon = 5; } |
+            ("Jul"i) %{ timestamp->tm_mon = 6; } |
+            ("Aug"i) %{ timestamp->tm_mon = 7; } |
+            ("Sep"i) %{ timestamp->tm_mon = 8; } |
+            ("Oct"i | "Okt"i) %{ timestamp->tm_mon = 9; } |
+            ("Nov"i) %{ timestamp->tm_mon = 10; } |
+            ("Dec"i | "Dez"i) %{ timestamp->tm_mon = 11; };
 
         year = integer %{ timestamp->tm_year = temp_val - 1900; };
         
