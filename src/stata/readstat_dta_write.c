@@ -99,8 +99,13 @@ static readstat_error_t dta_emit_header_time_stamp(readstat_writer_t *writer, dt
     time_t now = writer->timestamp;
     struct tm *time_s = localtime(&now);
     char *timestamp = calloc(1, ctx->timestamp_len);
-    uint8_t actual_timestamp_len = strftime(timestamp, ctx->timestamp_len, 
-            "%d %b %Y %H:%M", time_s);
+    /* There are locale/portability issues with strftime so hack something up */
+    char months[][4] = { 
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    uint8_t actual_timestamp_len = snprintf(timestamp, ctx->timestamp_len, "%02d %3s %04d %02d:%02d",
+            time_s->tm_mday, months[time_s->tm_mon], time_s->tm_year + 1900,
+            time_s->tm_hour, time_s->tm_min);
     if (actual_timestamp_len == 0) {
         error = READSTAT_ERROR_WRITE;
         goto cleanup;
