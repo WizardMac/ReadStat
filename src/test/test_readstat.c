@@ -1653,7 +1653,21 @@ rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Goodbye" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
                         }
-                    } 
+                    },
+                    {
+                        .name = "VAR7",
+                        .label = "Empty string variable",
+                        .type = READSTAT_TYPE_STRING,
+                        .alignment = READSTAT_ALIGNMENT_LEFT,
+                        .measure = READSTAT_MEASURE_ORDINAL,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                        }
+                    }
                 }
             },
 
