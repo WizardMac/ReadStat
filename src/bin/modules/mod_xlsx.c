@@ -22,7 +22,6 @@ typedef struct mod_xlsx_ctx_s {
 static int accept_file(const char *filename);
 static void *ctx_init(const char *filename);
 static void finish_file(void *ctx);
-static int handle_info(int obs_count, int var_count, void *ctx);
 static int handle_variable(int index, readstat_variable_t *variable,
                            const char *val_labels, void *ctx);
 static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx);
