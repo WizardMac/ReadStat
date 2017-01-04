@@ -13,7 +13,8 @@
 #include "write_missing_values.h"
 
 void handle_missing_discrete(struct context *ctx, readstat_variable_t *variable) {
-    int spss_date = variable->format && variable->format[0] && (strcmp(variable->format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
+    const char *format = readstat_variable_get_format(variable);
+    int spss_date = format && (strcmp(format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
     fprintf(ctx->fp, ", \"missing\": { \"type\": \"DISCRETE\", \"values\": [");
     
@@ -50,7 +51,8 @@ void handle_missing_discrete(struct context *ctx, readstat_variable_t *variable)
 }
 
 void handle_missing_range(struct context *ctx, readstat_variable_t *variable) {
-    int spss_date = variable->format && variable->format[0] && (strcmp(variable->format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
+    const char *format = readstat_variable_get_format(variable);
+    int spss_date = format && (strcmp(format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
     fprintf(ctx->fp, ", \"missing\": { \"type\": \"RANGE\", ");
     

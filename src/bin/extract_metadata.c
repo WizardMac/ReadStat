@@ -84,8 +84,9 @@ int extract_decimals(const char *s, char prefix) {
 
 int handle_variable_sav(int index, readstat_variable_t *variable, const char *val_labels, struct context *ctx) {
     char* type = "";
-    int has_format = variable->format && variable->format[0];
-    int sav_date = has_format && (strcmp(variable->format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
+    const char *format = readstat_variable_get_format(variable);
+    const char *label = readstat_variable_get_label(variable);
+    int sav_date = format && (strcmp(format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
     int decimals = -1;
 
     if (variable->type == READSTAT_TYPE_STRING) {
@@ -94,7 +95,7 @@ int handle_variable_sav(int index, readstat_variable_t *variable, const char *va
         type = "DATE";
     } else if (variable->type == READSTAT_TYPE_DOUBLE) {
         type = "NUMERIC";
-        decimals = extract_decimals(variable->format, 'F');
+        decimals = extract_decimals(format, 'F');
     } else {
         fprintf(stderr, "%s:%d unhandled type %s\n", __FILE__, __LINE__, readstat_type_str(variable->type));
         exit(EXIT_FAILURE);
@@ -111,10 +112,10 @@ int handle_variable_sav(int index, readstat_variable_t *variable, const char *va
     if (decimals > 0) {
         fprintf(ctx->fp, ", \"decimals\": %d", decimals);
     }
-    if (variable->label && variable->label[0]) {
-        char* lbl = quote_and_escape(variable->label);
-        fprintf(ctx->fp, ", \"label\": %s", lbl);
-        free(lbl);
+    if (label) {
+        char* quoted_label = quote_and_escape(label);
+        fprintf(ctx->fp, ", \"label\": %s", quoted_label);
+        free(quoted_label);
     }
 
     add_val_labels(ctx, variable, val_labels);
@@ -126,8 +127,9 @@ int handle_variable_sav(int index, readstat_variable_t *variable, const char *va
 
 int handle_variable_dta(int index, readstat_variable_t *variable, const char *val_labels, struct context *ctx) {
     char *type;
-    int has_format = variable->format && variable->format[0];
-    int dta_date = has_format && (strcmp(variable->format, "%td") == 0) && variable->type == READSTAT_TYPE_INT32;
+    const char *format = readstat_variable_get_format(variable);
+    const char *label = readstat_variable_get_label(variable);
+    int dta_date = format && (strcmp(format, "%td") == 0) && variable->type == READSTAT_TYPE_INT32;
     int decimals = -1;
 
     if (variable->type == READSTAT_TYPE_STRING) {
@@ -136,7 +138,7 @@ int handle_variable_dta(int index, readstat_variable_t *variable, const char *va
         type = "DATE";
     } else if (variable->type == READSTAT_TYPE_DOUBLE) {
         type = "NUMERIC";
-        decimals = extract_decimals(variable->format, '%');
+        decimals = extract_decimals(format, '%');
     } else {
         fprintf(stderr, "%s:%d unhandled type %s\n", __FILE__, __LINE__, readstat_type_str(variable->type));
         exit(EXIT_FAILURE);
@@ -153,10 +155,10 @@ int handle_variable_dta(int index, readstat_variable_t *variable, const char *va
     if (decimals > 0) {
         fprintf(ctx->fp, ", \"decimals\": %d", decimals);
     }
-    if (variable->label && variable->label[0]) {
-        char* lbl = quote_and_escape(variable->label);
-        fprintf(ctx->fp, ", \"label\": %s", lbl);
-        free(lbl);
+    if (label) {
+        char* quoted_label = quote_and_escape(label);
+        fprintf(ctx->fp, ", \"label\": %s", quoted_label);
+        free(quoted_label);
     }
 
     add_val_labels(ctx, variable, val_labels);

@@ -22,8 +22,9 @@ void add_val_labels(struct context *ctx, readstat_variable_t *variable, const ch
     } else {
         fprintf(stdout, "extracting value labels for %s\n", val_labels);
     }
-    int sav_date = variable->format && variable->format[0] && (strcmp(variable->format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
-    int dta_date = variable->format && variable->format[0] && (strcmp(variable->format, "%td") == 0) && variable->type == READSTAT_TYPE_INT32;
+    const char *format = readstat_variable_get_format(variable);
+    int sav_date = format && (strcmp(variable->format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
+    int dta_date = format && (strcmp(variable->format, "%td") == 0) && variable->type == READSTAT_TYPE_INT32;
     readstat_label_set_t * label_set = get_label_set(val_labels, ctx, 0);
     if (!label_set) {
         fprintf(stderr, "Could not find label set %s!\n", val_labels);
