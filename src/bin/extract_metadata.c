@@ -53,30 +53,16 @@ char* quote_and_escape(const char *src) {
 
 int extract_decimals(const char *s, char prefix) {
     if (s && s[0] && s[0]==prefix) {
-        char* dest = NULL;
-        const char* start = &s[1];
-        strtol(start, &dest, 10);
-        if (start == dest) {
-            fprintf(stderr, "%s:%d not a number: %s\n", __FILE__, __LINE__, start);
-            exit(EXIT_FAILURE);
-        }
-        if (dest[0] == '.' && dest[1]) {
-            char* start2 = &dest[1];
-            char* dest2 = NULL;
-            long int d = strtol(start2, &dest2, 10);
-            if (start2 == dest2) {
-                fprintf(stderr, "%s:%d not a number: %s\n", __FILE__, __LINE__, start2);
+        int decimals;
+        if (sscanf(s, "%*c%*d.%d", &decimals) == 1) {
+            if (decimals < 0 || decimals > 16) {
+                fprintf(stderr, "%s:%d decimals was %d, expected to be [0, 16]\n", __FILE__, __LINE__, decimals);
                 exit(EXIT_FAILURE);
             }
-            if (d < 0 || d > 16) {
-                fprintf(stderr, "%s:%d decimals was %ld, expected to be [0, 16]\n", __FILE__, __LINE__, d);
-                exit(EXIT_FAILURE);
-            }
-            return d;
-        } else {
-            fprintf(stderr, "%s:%d not a number: expected .somenumber, but got %s\n", __FILE__, __LINE__, dest);
-            exit(EXIT_FAILURE);
+            return decimals;
         }
+        fprintf(stderr, "%s:%d not a number: %s\n", __FILE__, __LINE__, &s[1]);
+        exit(EXIT_FAILURE);
     } else {
         return -1;
     }
