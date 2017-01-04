@@ -25,6 +25,8 @@ AC_PATH_PROG([RAGEL], [ragel], [true])
 AM_CONDITIONAL([HAVE_RAGEL], test "$RAGEL" != "true")
 AC_CHECK_LIB([xlsxwriter], [workbook_new], [true], [false])
 AM_CONDITIONAL([HAVE_XLSXWRITER], test "$ac_cv_lib_xlsxwriter_workbook_new" = yes)
+AC_CHECK_LIB([csv], [csv_parse], [true], [false])
+AM_CONDITIONAL([HAVE_CSVREADER], test "$ac_cv_lib_csv_csv_parse" = yes)
 AM_CONDITIONAL([CODE_COVERAGE_ENABLED], test "x$code_coverage" = "xyes")
 
 AC_OUTPUT([Makefile])

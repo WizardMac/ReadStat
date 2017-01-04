@@ -65,6 +65,118 @@ variables converted, e.g.
 At the moment value labels are supported, but the finer nuances of converting
 format strings (e.g. `%8.2g`) are not.
 
+Command-line Usage with CSV input
+==
+
+A prerequisite for CSV input is that the [libcsv](https://github.com/robertpostill/libcsv.git)
+library is found at compile time.
+
+CSV input is supported together with a metadata file describing the data:
+
+    readstat <input file.csv> <input metadata.json> <output file>
+
+The `<output file>` should end with `.dta`, `.sav`, or `.csv`.
+
+The `<input file.csv>` is a regular CSV file.
+
+The `<input metadata.json>` is a JSON file describing column types, value labels and missing values.
+The schema of this JSON file is fully described in [variablemetadata_schema.json](variablemetadata_schema.json)
+using [JSON Schema](http://json-schema.org/).
+
+The following is an example of a valid metadata file:
+
+    {
+        "type": "SPSS",
+        "variables": [
+            {
+                "type": "NUMERIC",
+                "name": "citizenship",
+                "label": "Citizenship of respondent",
+                "categories": [
+                    {
+                        "code": 1,
+                        "label": "Afghanistan"
+                    },
+                    {
+                        "code": 2,
+                        "label": "Albania"
+                    },
+                    {
+                        "code": 98,
+                        "label": "No answer"
+                    },
+                    {
+                        "code": 99,
+                        "label": "Not applicable"
+                    }
+                ],
+                "missing": {
+                    "type": "DISCRETE",
+                    "values": [
+                        98,
+                        99
+                    ]
+                }
+            }
+        ]
+    }
+
+Here the column `citizenship` is a numeric column with four possible values `1`, `2`, `98`, and `99`.
+`1` has the label `Afghanistan`, `2` has `Albania`, `98` has `No answer` and `99` has `Not applicable`.
+`98` and `99` are defined as missing values.
+
+Other column types are `STRING` and `DATE`. 
+All values in `DATE` columns are expected to conform to [ISO 8601 date](https://en.wikipedia.org/wiki/ISO_8601).
+Here is an example of `DATE` metadata:
+
+    {
+        "type": "SPSS",
+        "variables": [
+            {
+                "type": "DATE",
+                "name": "startdate",
+                "label": "Start date",
+                "categories": [
+                    {
+                        "code": "6666-01-01",
+                        "label": "no date available"
+                    }
+                ],
+                "missing": {
+                    "type": "DISCRETE",
+                    "values": [
+                        "6666-01-01",
+                        "9999-01-01"
+                    ]
+                }
+            }
+        ]
+    }
+
+Value labels are supported for `DATE`.
+
+The last column type is `STRING`:
+
+    {
+        "type": "SPSS",
+        "variables": [
+            {
+                "type": "STRING",
+                "name": "somestring",
+                "label": "Label of column",
+                "missing": {
+                    "type": "DISCRETE",
+                    "values": [
+                        "NA",
+                        "N/A"
+                    ]
+                }
+            }
+        ]
+    }
+
+Value labels are not supported for `STRING`.
+
 Library Usage: Reading Files
 ==
 

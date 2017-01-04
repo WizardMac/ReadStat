@@ -11,19 +11,18 @@
 #include "modules/mod_readstat.h"
 #include "modules/mod_csv.h"
 
+#if HAVE_CSVREADER
+#include "modules/produce_csv_column_header.h"
+#include "modules/mod_csv_reader.h"
+#endif
+
 #if HAVE_XLSXWRITER
 #include "modules/mod_xlsx.h"
 #endif
 
-#define RS_VERSION_STRING  "1.0-prerelease"
+#include "format.h"
 
-#define RS_FORMAT_UNKNOWN       0x00
-#define RS_FORMAT_DTA           0x01
-#define RS_FORMAT_SAV           0x02
-#define RS_FORMAT_POR           0x04
-#define RS_FORMAT_SAS_DATA      0x08
-#define RS_FORMAT_SAS_CATALOG   0x10
-#define RS_FORMAT_XPORT         0x20
+#define RS_VERSION_STRING  "1.0-prerelease"
 
 #define RS_FORMAT_CAN_WRITE     (RS_FORMAT_DTA | RS_FORMAT_SAV)
 
@@ -33,35 +32,6 @@ typedef struct rs_ctx_s {
     long         row_count;
     long         var_count;
 } rs_ctx_t;
-
-int format(const char *filename) {
-    size_t len = strlen(filename);
-    if (len < sizeof(".dta")-1)
-        return RS_FORMAT_UNKNOWN;
-
-    if (strncmp(filename + len - 4, ".dta", 4) == 0)
-        return RS_FORMAT_DTA;
-
-    if (strncmp(filename + len - 4, ".sav", 4) == 0)
-        return RS_FORMAT_SAV;
-
-    if (strncmp(filename + len - 4, ".por", 4) == 0)
-        return RS_FORMAT_POR;
-
-    if (strncmp(filename + len - 4, ".xpt", 4) == 0)
-        return RS_FORMAT_XPORT;
-
-    if (len < sizeof(".sas7bdat")-1)
-        return RS_FORMAT_UNKNOWN;
-
-    if (strncmp(filename + len - 9, ".sas7bdat", 9) == 0)
-        return RS_FORMAT_SAS_DATA;
-
-    if (strncmp(filename + len - 9, ".sas7bcat", 9) == 0)
-        return RS_FORMAT_SAS_CATALOG;
-
-    return RS_FORMAT_UNKNOWN;
-}
 
 const char *format_name(int format) {
     if (format == RS_FORMAT_DTA)
@@ -78,6 +48,9 @@ const char *format_name(int format) {
 
     if (format == RS_FORMAT_SAS_CATALOG)
         return "SAS catalog file (SAS7BCAT)";
+    
+    if (format == RS_FORMAT_CSV)
+        return "CSV";
 
     if (format == RS_FORMAT_XPORT)
         return "SAS transport file (XPORT)";
@@ -87,6 +60,10 @@ const char *format_name(int format) {
 
 int is_catalog(const char *filename) {
     return (format(filename) == RS_FORMAT_SAS_CATALOG);
+}
+
+int is_json(const char *filename) {
+    return (format(filename) == RS_FORMAT_JSON);
 }
 
 int can_read(const char *filename) {
@@ -227,6 +204,11 @@ static int convert_file(const char *input_filename, const char *catalog_filename
     struct timeval start_time, end_time;
     int input_format = format(input_filename);
     rs_module_t *module = rs_module_for_filename(modules, modules_count, output_filename);
+    #if HAVE_CSVREADER
+    struct csv_metadata csv_meta;
+    memset(&csv_meta, 0, sizeof(csv_metadata));
+    csv_meta.output_format = format(output_filename);
+    #endif
 
     gettimeofday(&start_time, NULL);
 
@@ -237,8 +219,10 @@ static int convert_file(const char *input_filename, const char *catalog_filename
 
     void *module_ctx = module->init(output_filename);
 
-    if (module_ctx == NULL)
+    if (module_ctx == NULL) {
+        error = READSTAT_ERROR_OPEN;
         goto cleanup;
+    }
 
     rs_ctx->module = module;
     rs_ctx->module_ctx = module_ctx;
@@ -248,17 +232,25 @@ static int convert_file(const char *input_filename, const char *catalog_filename
     readstat_set_info_handler(pass1_parser, &handle_info);
     readstat_set_value_label_handler(pass1_parser, &handle_value_label);
     readstat_set_fweight_handler(pass1_parser, &handle_fweight);
-
-    if (catalog_filename) {
+    
+    if (catalog_filename && input_format != RS_FORMAT_CSV) {
         error = parse_file(pass1_parser, catalog_filename, RS_FORMAT_SAS_CATALOG, rs_ctx);
         error_filename = catalog_filename;
+    } else if (catalog_filename && input_format == RS_FORMAT_CSV) {
+        #if HAVE_CSVREADER
+            error = readstat_parse_csv(pass1_parser, input_filename, catalog_filename, &csv_meta, rs_ctx);
+            error_filename = input_filename;
+        #else
+            fprintf(stderr, "Should never happen... Fix macros\n");
+            exit(EXIT_FAILURE);
+        #endif
     } else {
         error = parse_file(pass1_parser, input_filename, input_format, rs_ctx);
         error_filename = input_filename;
     }
     if (error != READSTAT_OK)
         goto cleanup;
-
+    
     // Pass 2 - Parse full file
     readstat_set_error_handler(pass2_parser, &handle_error);
     readstat_set_info_handler(pass2_parser, &handle_info);
@@ -267,7 +259,16 @@ static int convert_file(const char *input_filename, const char *catalog_filename
     readstat_set_variable_handler(pass2_parser, &handle_variable);
     readstat_set_value_handler(pass2_parser, &handle_value);
 
-    error = parse_file(pass2_parser, input_filename, input_format, rs_ctx);
+    if (catalog_filename && input_format == RS_FORMAT_CSV) {
+        #if HAVE_CSVREADER
+            error = readstat_parse_csv(pass2_parser, input_filename, catalog_filename, &csv_meta, rs_ctx);
+        #else
+            fprintf(stderr, "Should never happen... Fix macros\n");
+            exit(EXIT_FAILURE);
+        #endif
+    } else {
+        error = parse_file(pass2_parser, input_filename, input_format, rs_ctx);
+    }
     error_filename = input_filename;
     if (error != READSTAT_OK)
         goto cleanup;
@@ -280,6 +281,12 @@ static int convert_file(const char *input_filename, const char *catalog_filename
             (start_time.tv_sec + 1e-6 * start_time.tv_usec));
 
 cleanup:
+    #if HAVE_CSVREADER
+    if (csv_meta.column_width) {
+        free(csv_meta.column_width);
+        csv_meta.column_width = NULL;
+    }
+    #endif
     readstat_parser_free(pass1_parser);
     readstat_parser_free(pass2_parser);
 
@@ -363,7 +370,6 @@ int main(int argc, char** argv) {
 #if HAVE_XLSXWRITER
     modules[module_index++] = rs_mod_xlsx;
 #endif
-
     if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
         print_version();
         return 0;
@@ -383,6 +389,10 @@ int main(int argc, char** argv) {
         }
         input_filename = argv[1];
         output_filename = argv[2];
+    } else if (argc == 4 && can_read(argv[1]) && is_json(argv[2]) && can_read(argv[2]) && can_write(modules, modules_count, argv[3])) {
+        input_filename = argv[1];
+        catalog_filename = argv[2];
+        output_filename = argv[3];
     } else if (argc == 4) {
         if (!can_read(argv[1]) || !is_catalog(argv[2]) || !can_write(modules, modules_count, argv[3])) {
             print_usage(argv[0]);
@@ -396,9 +406,13 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (output_filename)
-        return convert_file(input_filename, catalog_filename, output_filename, modules, modules_count);
-
-    return dump_file(input_filename);
+    int ret;
+    if (output_filename) {
+        ret = convert_file(input_filename, catalog_filename, output_filename, modules, modules_count);
+    } else {
+        ret = dump_file(input_filename); 
+    }
+    free(modules);
+    return ret;
 }
 

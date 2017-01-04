@@ -69,7 +69,6 @@ static int accept_file(const char *filename) {
 }
 
 static void *ctx_init(const char *filename) {
-    size_t len = strlen(filename);
     mod_readstat_ctx_t *mod_ctx = malloc(sizeof(mod_readstat_ctx_t));
     mod_ctx->label_set_dict = ck_hash_table_init(1024);
     mod_ctx->is_sav = rs_ends_with(filename, ".sav");
@@ -144,7 +143,9 @@ static int handle_value_label(const char *val_labels, readstat_value_t value,
         ck_str_hash_insert(val_labels, label_set, mod_ctx->label_set_dict);
     }
 
-    if (type == READSTAT_TYPE_INT32) {
+    if (mod_ctx->is_dta && readstat_value_is_tagged_missing(value)) {
+        readstat_label_tagged_value(label_set, readstat_value_tag(value), label);
+    } else if (type == READSTAT_TYPE_INT32) {
         readstat_label_int32_value(label_set, readstat_int32_value(value), label);
     } else if (type == READSTAT_TYPE_DOUBLE) {
         readstat_label_double_value(label_set, readstat_double_value(value), label);
@@ -163,6 +164,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
     readstat_type_t type = readstat_variable_get_type(variable);
     const char *name = readstat_variable_get_name(variable);
     const char *label = readstat_variable_get_label(variable);
+    const char *format = readstat_variable_get_format(variable);
     size_t storage_width = readstat_variable_get_storage_width(variable);
     int display_width = readstat_variable_get_display_width(variable);
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
@@ -179,7 +181,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
     int i;
     for (i=0; i<missing_ranges_count; i++) {
         readstat_value_t lo_val = readstat_variable_get_missing_range_lo(variable, i);
-        readstat_value_t hi_val = readstat_variable_get_missing_range_lo(variable, i);
+        readstat_value_t hi_val = readstat_variable_get_missing_range_hi(variable, i);
         if (readstat_value_type(lo_val) == READSTAT_TYPE_DOUBLE) {
             double lo = readstat_double_value(lo_val);
             double hi = readstat_double_value(hi_val);
@@ -195,6 +197,12 @@ static int handle_variable(int index, readstat_variable_t *variable,
     readstat_variable_set_measure(new_variable, measure);
     readstat_variable_set_display_width(new_variable, display_width);
     readstat_variable_set_label(new_variable, label);
+    if (format && format[0] && mod_ctx->is_dta && format[0]!='%') {
+        // TODO I suppose you would need some translation from SPSS to DTA
+        fprintf(stderr, "%s:%d Unsupported format '%s' given for DTA, aborting...\n", __FILE__, __LINE__, format);
+        exit(EXIT_FAILURE);
+    }
+    readstat_variable_set_format(new_variable, format);
 
     return 0;
 }
@@ -233,6 +241,8 @@ static int handle_value(int obs_index, readstat_variable_t *old_variable, readst
 
     if (readstat_value_is_system_missing(value)) {
         error = readstat_insert_missing_value(writer, variable);
+    } else if (mod_ctx->is_dta && readstat_value_is_tagged_missing(value)) {
+        error = readstat_insert_tagged_missing_value(writer, variable, value.tag);
     } else if (type == READSTAT_TYPE_STRING) {
         error = readstat_insert_string_value(writer, variable, readstat_string_value(value));
     } else if (type == READSTAT_TYPE_INT8) {

@@ -7,6 +7,9 @@
 #include "../../readstat.h"
 #include "../module_util.h"
 #include "../module.h"
+#include "../../stata/readstat_dta_days.h"
+#include "../../spss/readstat_sav_date.h"
+#include "double_decimals.h"
 
 typedef struct mod_csv_ctx_s {
     FILE *out_file;
@@ -86,19 +89,45 @@ static int handle_value(int obs_index, readstat_variable_t *variable, readstat_v
     }
     if (readstat_value_is_system_missing(value)) {
         /* void */
+    } else if (readstat_value_is_tagged_missing(value)) {
+        /* void */
     } else if (type == READSTAT_TYPE_STRING) {
         /* TODO escape */
         fprintf(mod_ctx->out_file, "\"%s\"", readstat_string_value(value));
     } else if (type == READSTAT_TYPE_INT8) {
+        #ifdef __MINGW32__
+        __mingw_fprintf(mod_ctx->out_file, "%hhd", readstat_int8_value(value));
+        #else
         fprintf(mod_ctx->out_file, "%hhd", readstat_int8_value(value));
+        #endif
     } else if (type == READSTAT_TYPE_INT16) {
         fprintf(mod_ctx->out_file, "%hd", readstat_int16_value(value));
+    } else if (type == READSTAT_TYPE_INT32 && variable->format && variable->format[0] && 0 == strncmp("%td", variable->format, strlen("%td"))) {
+        int days = readstat_int32_value(value);
+        char days_str[255];
+        readstat_dta_days_string(days, days_str, sizeof(days_str)-1);
+        fprintf(mod_ctx->out_file, "%s", days_str);
+    } else if (type == READSTAT_TYPE_DOUBLE && variable->format && variable->format[0] && 0 == strncmp("EDATE40", variable->format, strlen("EDATE40"))) {
+        double v = readstat_double_value(value);
+        char date_str[255];
+        char *s = readstat_sav_date_string(v, date_str, sizeof(date_str)-1);
+        if (!s) {
+            fprintf(stderr, "%s:%d Could not parse SPSS date double: %lf\n", __FILE__, __LINE__, v);
+            exit(EXIT_FAILURE);
+        }
+        fprintf(mod_ctx->out_file, "%s", s);
     } else if (type == READSTAT_TYPE_INT32) {
         fprintf(mod_ctx->out_file, "%d", readstat_int32_value(value));
     } else if (type == READSTAT_TYPE_FLOAT) {
         fprintf(mod_ctx->out_file, "%f", readstat_float_value(value));
     } else if (type == READSTAT_TYPE_DOUBLE) {
-        fprintf(mod_ctx->out_file, "%lf", readstat_double_value(value));
+        double v = readstat_double_value(value);
+        int decimals = double_decimals(v);
+        if (decimals <= 6) {
+            fprintf(mod_ctx->out_file, "%lf", v);
+        } else {
+            fprintf(mod_ctx->out_file, "%.14f", v);
+        }
     }
     if (var_index == mod_ctx->var_count - 1) {
         fprintf(mod_ctx->out_file, "\n");
