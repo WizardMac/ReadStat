@@ -1,0 +1,606 @@
+{
+    "type": "object",
+    "oneOf": [
+        {
+            "$ref": "#/definitions/SPSS"
+        },
+        {
+            "$ref": "#/definitions/STATA"
+        }
+    ],
+    "definitions": {
+        "SPSS": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "SPSS"
+                    ]
+                },
+                "separator": {
+                    "enum": [
+                        ",", ";", "\t"
+                    ]
+                },
+                "variables": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "$ref": "#/definitions/SPSS-NUMERIC"
+                            },
+                            {
+                                "$ref": "#/definitions/SPSS-STRING"
+                            },
+                            {
+                                "$ref": "#/definitions/SPSS-DATE"
+                            }
+                        ]
+                    }
+                }
+            },
+            "additionalProperties": false
+        },
+        "SPSS-NUMERIC": {
+            "properties": {
+                "type": {
+                    "enum": [
+                        "NUMERIC"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                },
+                "label": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 255
+                },
+                "decimals": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 16
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "code": {
+                                "type": "number"
+                            },
+                            "label": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "code",
+                            "label"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "missing": {
+                    "type": "object",
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/NUMERIC-RANGE"
+                        },
+                        {
+                            "$ref": "#/definitions/SPSS-NUMERIC-DISCRETE"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "type",
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "SPSS-STRING": {
+            "properties": {
+                "type": {
+                    "enum": [
+                        "STRING"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                },
+                "label": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 255
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "code": {
+                                "type": "string"
+                            },
+                            "label": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "code",
+                            "label"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "missing": {
+                    "type": "object",
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/SPSS-STRING-DISCRETE"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "type",
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "SPSS-DATE": {
+            "properties": {
+                "type": {
+                    "enum": [
+                        "DATE"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                },
+                "label": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 255
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                            },
+                            "label": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "code",
+                            "label"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "missing": {
+                    "type": "object",
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/SPSS-DATE-DISCRETE"
+                        },
+                        {
+                            "$ref": "#/definitions/DATE-RANGE"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "type",
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "SPSS-NUMERIC-DISCRETE": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "DISCRETE"
+                    ]
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    },
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "uniqueItems": true
+                }
+            },
+            "required": [
+                "type",
+                "values"
+            ],
+            "additionalProperties": false
+        },
+        "SPSS-STRING-DISCRETE": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "DISCRETE"
+                    ]
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "uniqueItems": true
+                }
+            },
+            "required": [
+                "type",
+                "values"
+            ],
+            "additionalProperties": false
+        },
+        "SPSS-DATE-DISCRETE": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "DISCRETE"
+                    ]
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                    },
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "uniqueItems": true
+                }
+            },
+            "required": [
+                "type",
+                "values"
+            ]
+        },
+        "NUMERIC-RANGE": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "RANGE"
+                    ]
+                },
+                "low": {
+                    "type": "number"
+                },
+                "high": {
+                    "type": "number"
+                },
+                "discrete-value": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "type",
+                "low",
+                "high"
+            ],
+            "additionalProperties": false
+        },
+        "DATE-RANGE": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "RANGE"
+                    ]
+                },
+                "low": {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                },
+                "high": {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                },
+                "discrete-value": {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                }
+            },
+            "required": [
+                "type",
+                "low",
+                "high"
+            ],
+            "additionalProperties": false
+        },
+        "STATA": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "STATA"
+                    ]
+                },
+                "separator": {
+                    "enum": [
+                        ",", ";", "\t"
+                    ]
+                },
+                "variables": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "$ref": "#/definitions/STATA-NUMERIC"
+                            },
+                            {
+                                "$ref": "#/definitions/STATA-DATE"
+                            },
+                                                        {
+                                "$ref": "#/definitions/STATA-STRING"
+                            }
+                        ]
+                    }
+                }
+            },
+            "additionalProperties": false
+        },
+        "STATA-NUMERIC": {
+            "properties": {
+                "type": {
+                    "enum": [
+                        "NUMERIC"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                },
+                "label": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 255
+                },
+                "decimals": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 16
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "code": {
+                                "type": "number"
+                            },
+                            "label": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "code",
+                            "label"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "missing": {
+                    "type": "object",
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/STATA-NUMERIC-DISCRETE"
+                        },
+                        {
+                            "$ref": "#/definitions/NUMERIC-RANGE"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "type",
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "STATA-NUMERIC-DISCRETE": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "DISCRETE"
+                    ]
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    },
+                    "minItems": 1,
+                    "maxItems": 26,
+                    "uniqueItems": true
+                }
+            },
+            "required": [
+                "type",
+                "values"
+            ],
+            "additionalProperties": false
+        },
+        "STATA-DATE": {
+            "properties": {
+                "type": {
+                    "enum": [
+                        "DATE"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                },
+                "label": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 255
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "code": {
+                                "type": "string",
+                                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                            },
+                            "label": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "code",
+                            "label"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "missing": {
+                    "type": "object",
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/STATA-DATE-DISCRETE"
+                        },
+                        {
+                            "$ref": "#/definitions/DATE-RANGE"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "type",
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "STATA-DATE-DISCRETE": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "DISCRETE"
+                    ]
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                    },
+                    "minItems": 1,
+                    "maxItems": 26,
+                    "uniqueItems": true
+                }
+            },
+            "required": [
+                "type",
+                "values"
+            ]
+        },
+        "STATA-STRING": {
+            "properties": {
+                "type": {
+                    "enum": [
+                        "STRING"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32
+                },
+                "label": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 255
+                },
+                 "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "code": {
+                                "type": "string"
+                            },
+                            "label": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "code",
+                            "label"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "missing": {
+                    "type": "object",
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/STATA-STRING-DISCRETE"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "type",
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "STATA-STRING-DISCRETE": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "DISCRETE"
+                    ]
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "uniqueItems": true
+                }
+            },
+            "required": [
+                "type",
+                "values"
+            ],
+            "additionalProperties": false
+        }
+    }
+}
