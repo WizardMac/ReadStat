@@ -25,7 +25,6 @@ libreadstat_la_SOURCES = \
 	src/spss/readstat_por_read.c \
 	src/spss/readstat_por_write.c \
 	src/spss/readstat_sav.c \
-	src/spss/readstat_sav_date.c \
 	src/spss/readstat_sav_parse.c \
 	src/spss/readstat_sav_parse_timestamp.c \
 	src/spss/readstat_sav_read.c \
@@ -33,7 +32,6 @@ libreadstat_la_SOURCES = \
 	src/spss/readstat_spss.c \
 	src/spss/readstat_spss_parse.c \
 	src/stata/readstat_dta.c \
-	src/stata/readstat_dta_days.c \
 	src/stata/readstat_dta_parse_timestamp.c \
 	src/stata/readstat_dta_read.c \
 	src/stata/readstat_dta_write.c
@@ -72,7 +70,6 @@ noinst_HEADERS = \
        src/spss/readstat_spss.h \
        src/spss/readstat_spss_parse.h \
        src/stata/readstat_dta.h \
-       src/stata/readstat_dta_days.h \
        src/stata/readstat_dta_parse_timestamp.h \
        src/bin/module.h \
        src/bin/format.h \
@@ -129,14 +126,18 @@ readstat_SOURCES = \
 	src/bin/modules/produce_missingness_dta.c \
 	src/bin/modules/produce_missingness_sav.c \
 	src/bin/modules/produce_csv_column_header.c \
-	src/bin/modules/mod_readstat.c
+	src/bin/modules/mod_readstat.c \
+	src/bin/util/readstat_dta_days.c \
+	src/bin/util/readstat_sav_date.c
 
 extract_metadata_SOURCES = \
 	src/bin/format.c \
 	src/bin/extract_label_set.c \
 	src/bin/write_missing_values.c \
 	src/bin/write_value_labels.c \
-	src/bin/extract_metadata.c
+	src/bin/extract_metadata.c \
+	src/bin/util/readstat_dta_days.c \
+	src/bin/util/readstat_sav_date.c
 
 readstat_LDADD = libreadstat.la
 readstat_CFLAGS = -Wall -pedantic-errors -std=c99
@@ -175,12 +176,14 @@ test_readstat_LDADD = libreadstat.la
 test_readstat_CFLAGS = 
 
 test_dta_days_SOURCES = \
+	src/bin/util/readstat_dta_days.c \
 	src/test/test_dta_days.c
 
 test_dta_days_LDADD = libreadstat.la
 test_dta_days_CFLAGS = -g -Wall -Werror -pedantic-errors -std=c99
 
 test_sav_date_SOURCES = \
+	src/bin/util/readstat_sav_date.c \
 	src/test/test_sav_date.c
 
 test_sav_date_LDADD = libreadstat.la

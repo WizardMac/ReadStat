@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "../spss/readstat_sav_date.h"
-#include "../stata/readstat_dta_days.h"
+#include "util/readstat_sav_date.h"
+#include "util/readstat_dta_days.h"
 
 #include "extract_metadata.h"
 #include "write_missing_values.h"

@@ -5,7 +5,7 @@
 #include "../format.h"
 #include "json_metadata.h"
 
-#include "../../stata/readstat_dta_days.h"
+#include "../util/readstat_dta_days.h"
 #include "produce_csv_column_header.h"
 
 void produce_value_label_int32_date_dta(const char* column, struct csv_metadata *c, char *code, char *label) {

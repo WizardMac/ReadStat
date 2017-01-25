@@ -6,7 +6,7 @@
 #include "json_metadata.h"
 
 #include "produce_csv_column_header.h"
-#include "../../spss/readstat_sav_date.h"
+#include "../util/readstat_sav_date.h"
 
 void produce_value_label_double_date_sav(const char* column, struct csv_metadata *c, const char *code, const char *label) {
     char *endptr;

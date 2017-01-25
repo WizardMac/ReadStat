@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../stata/readstat_dta_days.h"
+#include "../util/readstat_dta_days.h"
 
 #include "produce_csv_value.h"
 #include "produce_csv_value_dta.h"

@@ -5,7 +5,7 @@
 #include "../format.h"
 #include "json_metadata.h"
 
-#include "../../stata/readstat_dta_days.h"
+#include "../util/readstat_dta_days.h"
 #include "produce_csv_value.h"
 #include "produce_csv_column_header.h"
 #include "produce_missingness_dta.h"

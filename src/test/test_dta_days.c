@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../stata/readstat_dta_days.h"
+#include "../bin/util/readstat_dta_days.h"
 
 static inline int is_leap(int year) {
     return ((year % 4 == 0 && year % 100 != 0) || year % 400 ==0);

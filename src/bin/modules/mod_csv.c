@@ -7,8 +7,8 @@
 #include "../../readstat.h"
 #include "../module_util.h"
 #include "../module.h"
-#include "../../stata/readstat_dta_days.h"
-#include "../../spss/readstat_sav_date.h"
+#include "../util/readstat_dta_days.h"
+#include "../util/readstat_sav_date.h"
 #include "double_decimals.h"
 
 typedef struct mod_csv_ctx_s {

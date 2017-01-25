@@ -4,7 +4,7 @@
 #include "produce_csv_value.h"
 #include "produce_csv_value_sav.h"
 #include "produce_csv_column_header.h"
-#include "../../spss/readstat_sav_date.h"
+#include "../util/readstat_sav_date.h"
 
 readstat_value_t value_double_date_sav(const char *s, size_t len, struct csv_metadata *c) {
     char *dest;

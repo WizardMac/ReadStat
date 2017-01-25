@@ -9,7 +9,7 @@
 
 #include "produce_csv_value.h"
 #include "produce_csv_column_header.h"
-#include "../../stata/readstat_dta_days.h"
+#include "../util/readstat_dta_days.h"
 #include "json_metadata.h"
 
 #define UNUSED(x) (void)(x)

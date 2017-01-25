@@ -5,7 +5,7 @@
 #include "../format.h"
 #include "json_metadata.h"
 
-#include "../../spss/readstat_sav_date.h"
+#include "../util/readstat_sav_date.h"
 #include "produce_csv_value.h"
 #include "produce_csv_column_header.h"
 #include "produce_missingness_sav.h"
