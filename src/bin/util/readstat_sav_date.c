@@ -53,7 +53,7 @@ char* readstat_sav_date_string(double seconds, char* dest, int size) {
     double secs = seconds;
     secs += 24710400.0;
     double days = secs / 86400.0;
-    double err = days - (int64_t)days;
+    double err = days - (long long)days;
     if (err != 0.0) {
         fprintf(stderr, "%s:%d time not supported. seconds was %lf, err was %lf\n", __FILE__, __LINE__, seconds, err);
         return NULL;
