@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 static inline int is_leap(int year) {
     return ((year % 4 == 0 && year % 100 != 0) || year % 400 ==0);
@@ -54,7 +53,7 @@ char* readstat_sav_date_string(double seconds, char* dest, int size) {
     double secs = seconds;
     secs += 24710400.0;
     double days = secs / 86400.0;
-    double err = ceil(days) - days;
+    double err = days - (int64_t)days;
     if (err != 0.0) {
         fprintf(stderr, "%s:%d time not supported. seconds was %lf, err was %lf\n", __FILE__, __LINE__, seconds, err);
         return NULL;
