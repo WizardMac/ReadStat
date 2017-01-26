@@ -175,7 +175,7 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
                 "Number of observations");
     }
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx) {
@@ -193,7 +193,7 @@ static int handle_metadata(const char *file_label, time_t timestamp, long format
                 format_version, "Format versions");
     }
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_note(int index, const char *note, void *ctx) {
@@ -201,7 +201,7 @@ static int handle_note(int index, const char *note, void *ctx) {
     push_error_if_strings_differ(rt_ctx, rt_ctx->file->notes[rt_ctx->notes_count++],
             note, "Note");
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_fweight(int var_index, void *ctx) {
@@ -211,7 +211,7 @@ static int handle_fweight(int var_index, void *ctx) {
     push_error_if_strings_differ(rt_ctx, rt_ctx->file->fweight,
             column->name, "Frequency weight");
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_variable(int index, readstat_variable_t *variable,
@@ -254,7 +254,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
 
     rt_ctx->variables_count++;
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_value_label(const char *val_labels, readstat_value_t value, const char *label, void *ctx) {
@@ -282,7 +282,7 @@ static int handle_value_label(const char *val_labels, readstat_value_t value, co
                 val_labels, "Label set");
     }
     rt_ctx->value_labels_count++;
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx) {
@@ -302,7 +302,7 @@ static int handle_value(int obs_index, readstat_variable_t *variable, readstat_v
                 value, "Data values");
     }
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static void handle_error(const char *error_message, void *ctx) {

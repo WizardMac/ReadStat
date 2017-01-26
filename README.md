@@ -191,8 +191,8 @@ data found in the file. It's up to the user to store this information in an
 appropriate data structure. If a context pointer is passed to the parse_* functions,
 it will be made available to the various callback functions.
 
-Callback functions should return 0 on success. Returning a non-zero value will
-abort the parsing process.
+Callback functions should return `READSTAT_HANDLER_OK` (zero) on success.
+Returning `READSTAT_HANDLER_ABORT` will abort the parsing process.
 
 Example: Return the number of records in a DTA file.
 
@@ -204,7 +204,7 @@ int handle_info(int obs_count, int var_count, void *ctx) {
 
     *my_count = obs_count;
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 int main(int argc, char *argv[]) {
@@ -240,7 +240,7 @@ int handle_info(int obs_count, int var_count, void *ctx) {
     
     *my_var_count = var_count;
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 int handle_variable(int index, readstat_variable_t *variable, 
@@ -254,7 +254,7 @@ int handle_variable(int index, readstat_variable_t *variable,
         printf("\t");
     }
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx) {
@@ -282,7 +282,7 @@ int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t 
         printf("\t");
     }
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 int main(int argc, char *argv[]) {
@@ -347,6 +347,7 @@ int main(int argc, char *argv[]) {
      *   readstat_begin_writing_por
      *   readstat_begin_writing_sas7bdat
      *   readstat_begin_writing_sav
+     *   readstat_begin_writing_xport
      */
 
     int fd = open("something.dta", O_CREAT | O_WRONLY);

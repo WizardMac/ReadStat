@@ -93,7 +93,7 @@ static int handle_fweight(int var_index, void *ctx) {
     if (rs_ctx->module->handle_fweight) {
         return rs_ctx->module->handle_fweight(var_index, rs_ctx->module_ctx);
     }
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_info(int obs_count, int var_count, void *ctx) {
@@ -101,7 +101,7 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
     if (rs_ctx->module->handle_info) {
         return rs_ctx->module->handle_info(obs_count, var_count, rs_ctx->module_ctx);
     }
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx) {
@@ -109,7 +109,7 @@ static int handle_metadata(const char *file_label, time_t timestamp, long format
     if (rs_ctx->module->handle_note) {
         return rs_ctx->module->handle_metadata(file_label, timestamp, format_version, rs_ctx->module_ctx);
     }
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_note(int note_index, const char *note, void *ctx) {
@@ -117,7 +117,7 @@ static int handle_note(int note_index, const char *note, void *ctx) {
     if (rs_ctx->module->handle_note) {
         return rs_ctx->module->handle_note(note_index, note, rs_ctx->module_ctx);
     }
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_value_label(const char *val_labels, readstat_value_t value,
@@ -126,7 +126,7 @@ static int handle_value_label(const char *val_labels, readstat_value_t value,
     if (rs_ctx->module->handle_value_label) {
         return rs_ctx->module->handle_value_label(val_labels, value, label, rs_ctx->module_ctx);
     }
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_variable(int index, readstat_variable_t *variable,
@@ -135,7 +135,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
     if (rs_ctx->module->handle_variable) {
         return rs_ctx->module->handle_variable(index, variable, val_labels, rs_ctx->module_ctx);
     }
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx) {
@@ -150,7 +150,7 @@ static int handle_value(int obs_index, readstat_variable_t *variable, readstat_v
     if (rs_ctx->module->handle_value) {
         return rs_ctx->module->handle_value(obs_index, variable, value, rs_ctx->module_ctx);
     }
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 readstat_error_t parse_file(readstat_parser_t *parser, const char *input_filename, int input_format, void *ctx) {
