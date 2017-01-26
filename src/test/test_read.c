@@ -204,8 +204,9 @@ static int handle_note(int index, const char *note, void *ctx) {
     return READSTAT_HANDLER_OK;
 }
 
-static int handle_fweight(int var_index, void *ctx) {
+static int handle_fweight(readstat_variable_t *variable, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
+    int var_index = readstat_variable_get_index(variable);
     rt_column_t *column = &rt_ctx->file->columns[var_index];
 
     push_error_if_strings_differ(rt_ctx, rt_ctx->file->fweight,

@@ -32,7 +32,7 @@ static int accept_file(const char *filename);
 static void *ctx_init(const char *filename);
 static void finish_file(void *ctx);
 
-static int handle_fweight(int var_index, void *ctx);
+static int handle_fweight(readstat_variable_t *variable, void *ctx);
 static int handle_info(int obs_count, int var_count, void *ctx);
 static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx);
 static int handle_note(int note_index, const char *note, void *ctx);
@@ -102,32 +102,37 @@ void finish_file(void *ctx) {
     }
 }
 
-static int handle_fweight(int var_index, void *ctx) {
+static int handle_fweight(readstat_variable_t *variable, void *ctx) {
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
     readstat_writer_t *writer = mod_ctx->writer;
-    readstat_writer_set_fweight_variable(writer, readstat_get_variable(writer, var_index));
-    return 0;
+    readstat_variable_t *new_variable = readstat_get_variable(writer, readstat_variable_get_index(variable));
+    readstat_writer_set_fweight_variable(writer, new_variable);
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_info(int obs_count, int var_count, void *ctx) {
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
     mod_ctx->var_count = var_count;
     mod_ctx->row_count = obs_count;
-    return (var_count == 0 || obs_count == 0);
+
+    if (var_count == 0 || obs_count == 0)
+        return READSTAT_HANDLER_ABORT;
+
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx) {
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
     readstat_writer_t *writer = mod_ctx->writer;
     readstat_writer_set_file_label(writer, file_label);
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_note(int note_index, const char *note, void *ctx) {
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
     readstat_writer_t *writer = mod_ctx->writer;
     readstat_add_note(writer, note);
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_value_label(const char *val_labels, readstat_value_t value,
@@ -153,7 +158,7 @@ static int handle_value_label(const char *val_labels, readstat_value_t value,
         readstat_label_string_value(label_set, readstat_string_value(value), label);
     }
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_variable(int index, readstat_variable_t *variable,
@@ -204,7 +209,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
     }
     readstat_variable_set_format(new_variable, format);
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }
 
 static int handle_value(int obs_index, readstat_variable_t *old_variable, readstat_value_t value, void *ctx) {
@@ -274,8 +279,8 @@ static int handle_value(int obs_index, readstat_variable_t *old_variable, readst
 cleanup:
     if (error != READSTAT_OK) {
         fprintf(stderr, "Error writing: %s\n", readstat_error_message(error));
-        return 1;
+        return READSTAT_HANDLER_ABORT;
     }
 
-    return 0;
+    return READSTAT_HANDLER_OK;
 }

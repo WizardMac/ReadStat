@@ -1276,7 +1276,7 @@ static readstat_error_t sav_handle_fweight(readstat_parser_t *parser, sav_ctx_t 
         for (i=0; i<ctx->var_index;) {
             spss_varinfo_t *info = &ctx->varinfo[i];
             if (info->offset == ctx->fweight_index - 1) {
-                if (parser->fweight_handler(info->index, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+                if (parser->fweight_handler(ctx->variables[info->index], ctx->user_ctx) != READSTAT_HANDLER_OK) {
                     retval = READSTAT_ERROR_USER_ABORT;
                     goto cleanup;
                 }

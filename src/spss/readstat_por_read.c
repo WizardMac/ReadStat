@@ -627,7 +627,7 @@ readstat_error_t handle_variables(por_ctx_t *ctx) {
         for (i=0; i<ctx->var_count; i++) {
             spss_varinfo_t *info = &ctx->varinfo[i];
             if (strcmp(info->name, ctx->fweight_name) == 0) {
-                if (ctx->fweight_handler(i, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+                if (ctx->fweight_handler(ctx->variables[i], ctx->user_ctx) != READSTAT_HANDLER_OK) {
                     retval = READSTAT_ERROR_USER_ABORT;
                     goto cleanup;
                 }

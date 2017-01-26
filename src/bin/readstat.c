@@ -88,10 +88,10 @@ static void handle_error(const char *msg, void *ctx) {
     fprintf(stderr, "%s", msg);
 }
 
-static int handle_fweight(int var_index, void *ctx) {
+static int handle_fweight(readstat_variable_t *variable, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
     if (rs_ctx->module->handle_fweight) {
-        return rs_ctx->module->handle_fweight(var_index, rs_ctx->module_ctx);
+        return rs_ctx->module->handle_fweight(variable, rs_ctx->module_ctx);
     }
     return READSTAT_HANDLER_OK;
 }

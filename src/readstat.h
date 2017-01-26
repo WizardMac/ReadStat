@@ -228,7 +228,7 @@ typedef int (*readstat_metadata_handler)(const char *file_label, time_t timestam
 typedef int (*readstat_note_handler)(int note_index, const char *note, void *ctx);
 typedef int (*readstat_variable_handler)(int index, readstat_variable_t *variable, 
         const char *val_labels, void *ctx);
-typedef int (*readstat_fweight_handler)(int var_index, void *ctx);
+typedef int (*readstat_fweight_handler)(readstat_variable_t *variable, void *ctx);
 typedef int (*readstat_value_handler)(int obs_index, readstat_variable_t *variable,
         readstat_value_t value, void *ctx);
 typedef int (*readstat_value_label_handler)(const char *val_labels, 
