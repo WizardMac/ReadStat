@@ -159,6 +159,7 @@ typedef struct readstat_variable_s {
     int                     display_width;
     int                     decimals;
     int                     skip;
+    int                     index_after_skipping;
 } readstat_variable_t;
 
 /* Value accessors */
@@ -203,8 +204,9 @@ const char *readstat_string_value(readstat_value_t value);
 
 readstat_type_class_t readstat_type_class(readstat_type_t type);
 
-/* Accessor methods for use inside a variable handler */
+/* Accessor methods for use inside variable handlers */
 int readstat_variable_get_index(const readstat_variable_t *variable);
+int readstat_variable_get_index_after_skipping(const readstat_variable_t *variable);
 const char *readstat_variable_get_name(const readstat_variable_t *variable);
 const char *readstat_variable_get_label(const readstat_variable_t *variable);
 const char *readstat_variable_get_format(const readstat_variable_t *variable);
