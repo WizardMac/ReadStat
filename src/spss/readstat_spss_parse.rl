@@ -10,6 +10,9 @@
     write data nofinal noerror;
 }%%
 
+/* TODO - SPSS v24 introduced the MTIME and YMDHMS formats; until their numeric
+ * codes are known, map them to DTIME and DATETIME, respectively.
+ */
 readstat_error_t spss_parse_format(const char *data, int count, spss_format_t *fmt) {
     unsigned char *p = (unsigned char *)data;
     unsigned char *pe = (unsigned char *)data + count;
@@ -53,9 +56,11 @@ readstat_error_t spss_parse_format(const char *data, int count, spss_format_t *f
                 "DATE"i %{ fmt->type = SPSS_FORMAT_TYPE_DATE; } |
                 "TIME"i %{ fmt->type = SPSS_FORMAT_TYPE_TIME; } |
                 "DATETIME"i %{ fmt->type = SPSS_FORMAT_TYPE_DATETIME; } |
+                "YMDHMS"i %{ fmt->type = SPSS_FORMAT_TYPE_DATETIME; } | # TODO (placeholder)
                 "ADATE"i %{ fmt->type = SPSS_FORMAT_TYPE_ADATE; } |
                 "JDATE"i %{ fmt->type = SPSS_FORMAT_TYPE_JDATE; } |
                 "DTIME"i %{ fmt->type = SPSS_FORMAT_TYPE_DTIME; } |
+                "MTIME"i %{ fmt->type = SPSS_FORMAT_TYPE_DTIME; } | # TODO (placeholder)
                 "WKDAY"i %{ fmt->type = SPSS_FORMAT_TYPE_WKDAY; } |
                 "MONTH"i %{ fmt->type = SPSS_FORMAT_TYPE_MONTH; } |
                 "MOYR"i %{ fmt->type = SPSS_FORMAT_TYPE_MOYR; } |
