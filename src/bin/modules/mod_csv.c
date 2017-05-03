@@ -38,12 +38,12 @@ rs_module_t rs_mod_csv = {
 };
 
 static int accept_file(const char *filename) {
-    return rs_ends_with(filename, ".csv");
+    return rs_ends_with(filename, ".csv") || strcmpi(filename, "stdout") == 0;
 }
 
 static void *ctx_init(const char *filename) {
     mod_csv_ctx_t *mod_ctx = malloc(sizeof(mod_csv_ctx_t));
-    mod_ctx->out_file = fopen(filename, "w");
+    mod_ctx->out_file = strcmpi(filename, "stdout") == 0 ? stdout : fopen(filename, "w");
     if (mod_ctx->out_file == NULL) {
         fprintf(stderr, "Error opening %s for writing: %s\n", filename, strerror(errno));
         return NULL;
@@ -54,7 +54,7 @@ static void *ctx_init(const char *filename) {
 static void finish_file(void *ctx) {
     mod_csv_ctx_t *mod_ctx = (mod_csv_ctx_t *)ctx;
     if (mod_ctx) {
-        if (mod_ctx->out_file != NULL)
+        if (mod_ctx->out_file != NULL && mod_ctx->out_file != stdout)
             fclose(mod_ctx->out_file);
     }
 }
