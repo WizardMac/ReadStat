@@ -173,7 +173,7 @@ test_readstat_SOURCES = \
 	src/test/test_write.c
 
 test_readstat_LDADD = libreadstat.la
-test_readstat_CFLAGS = 
+test_readstat_CFLAGS = -g -Wall -Werror -pedantic-errors -std=c99
 
 test_dta_days_SOURCES = \
 	src/bin/util/readstat_dta_days.c \
