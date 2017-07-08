@@ -4,6 +4,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <string.h>
+#include <inttypes.h>
 #include <sys/types.h>
 
 #include "../readstat.h"
@@ -179,8 +180,8 @@ static readstat_error_t dta_read_expansion_fields(dta_ctx_t *ctx) {
     if (ctx->file_is_xmlish && !ctx->note_handler) {
         if (io->seek(ctx->data_offset, READSTAT_SEEK_SET, io->io_ctx) == -1) {
             if (ctx->error_handler) {
-                snprintf(ctx->error_buf, sizeof(ctx->error_buf), "Failed to seek to data section (offset=%lld)",
-                        (unsigned long long)ctx->data_offset);
+                snprintf(ctx->error_buf, sizeof(ctx->error_buf), "Failed to seek to data section (offset=%" PRId64 ")",
+                        ctx->data_offset);
                 ctx->error_handler(ctx->error_buf, ctx->user_ctx);
             }
             return READSTAT_ERROR_SEEK;
@@ -391,8 +392,8 @@ static readstat_error_t dta_read_strls(dta_ctx_t *ctx) {
 
     if (io->seek(ctx->strls_offset, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         if (ctx->error_handler) {
-            snprintf(ctx->error_buf, sizeof(ctx->error_buf), "Failed to seek to strls section (offset=%lld)",
-                    (unsigned long long)ctx->strls_offset);
+            snprintf(ctx->error_buf, sizeof(ctx->error_buf), "Failed to seek to strls section (offset=%" PRId64 ")",
+                    ctx->strls_offset);
             ctx->error_handler(ctx->error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_SEEK;
@@ -614,8 +615,8 @@ static readstat_error_t dta_read_data(dta_ctx_t *ctx) {
 
     if (io->seek(ctx->data_offset, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         if (ctx->error_handler) {
-            snprintf(ctx->error_buf, sizeof(ctx->error_buf), "Failed to seek to data section (offset=%lld)",
-                    (unsigned long long)ctx->data_offset);
+            snprintf(ctx->error_buf, sizeof(ctx->error_buf), "Failed to seek to data section (offset=%" PRId64 ")",
+                    ctx->data_offset);
             ctx->error_handler(ctx->error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_SEEK;
@@ -868,8 +869,8 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
 
     if (io->seek(ctx->value_labels_offset, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         if (ctx->error_handler) {
-            snprintf(ctx->error_buf, sizeof(ctx->error_buf), "Failed to seek to value labels section (offset=%lld)",
-                    (unsigned long long)ctx->value_labels_offset);
+            snprintf(ctx->error_buf, sizeof(ctx->error_buf), "Failed to seek to value labels section (offset=%" PRId64 ")",
+                    ctx->value_labels_offset);
             ctx->error_handler(ctx->error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_SEEK;
