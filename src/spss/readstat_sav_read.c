@@ -796,8 +796,6 @@ static readstat_error_t sav_parse_machine_integer_info_record(const void *data, 
     }
     if (ctx->input_encoding) {
         src_charset = ctx->input_encoding;
-    } else if (record.character_code == SAV_CHARSET_UTF8) {
-        /* do nothing */
     } else {
         int i;
         for (i=0; i<sizeof(_charset_table)/sizeof(_charset_table[0]); i++) {
@@ -814,6 +812,7 @@ static readstat_error_t sav_parse_machine_integer_info_record(const void *data, 
             }
             return READSTAT_ERROR_UNSUPPORTED_CHARSET;
         }
+        ctx->input_encoding = src_charset;
     }
     if (src_charset && dst_charset && strcmp(src_charset, dst_charset) != 0) {
         iconv_t converter = iconv_open(dst_charset, src_charset);
@@ -1393,7 +1392,7 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
                         header.file_label, sizeof(header.file_label), ctx->converter)) != READSTAT_OK)
             goto cleanup;
 
-        if (parser->metadata_handler(ctx->file_label, ctx->timestamp, 2, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+        if (parser->metadata_handler(ctx->file_label, ctx->input_encoding, ctx->timestamp, 2, ctx->user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }

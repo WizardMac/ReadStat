@@ -512,7 +512,7 @@ static readstat_error_t sav_emit_integer_info_record(readstat_writer_t *writer) 
     machine_info.floating_point_rep = SAV_FLOATING_POINT_REP_IEEE;
     machine_info.compression_code = 1;
     machine_info.endianness = machine_is_little_endian() ? SAV_ENDIANNESS_LITTLE : SAV_ENDIANNESS_BIG;
-    machine_info.character_code = SAV_CHARSET_UTF8;
+    machine_info.character_code = 65001; // utf-8
 
     retval = readstat_write_bytes(writer, &machine_info, sizeof(machine_info));
 

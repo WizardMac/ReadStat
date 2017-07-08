@@ -750,7 +750,7 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
         goto cleanup;
 
     if (ctx->metadata_handler) {
-        if (ctx->metadata_handler(file_label, ctx->timestamp, ctx->version, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+        if (ctx->metadata_handler(file_label, NULL, ctx->timestamp, ctx->version, ctx->user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }

@@ -34,7 +34,7 @@ static void finish_file(void *ctx);
 
 static int handle_fweight(readstat_variable_t *variable, void *ctx);
 static int handle_info(int obs_count, int var_count, void *ctx);
-static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx);
+static int handle_metadata(const char *file_label, const char *encoding, time_t timestamp, long format_version, void *ctx);
 static int handle_note(int note_index, const char *note, void *ctx);
 static int handle_value_label(const char *val_labels, readstat_value_t value,
                               const char *label, void *ctx);
@@ -121,7 +121,7 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
     return READSTAT_HANDLER_OK;
 }
 
-static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx) {
+static int handle_metadata(const char *file_label, const char *encoding, time_t timestamp, long format_version, void *ctx) {
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
     readstat_writer_t *writer = mod_ctx->writer;
     readstat_writer_set_file_label(writer, file_label);

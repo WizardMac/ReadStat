@@ -1089,7 +1089,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     }
 
     if (parser->metadata_handler) {
-        if (parser->metadata_handler(ctx->data_label, ctx->timestamp, header.ds_format, user_ctx) != READSTAT_HANDLER_OK) {
+        if (parser->metadata_handler(ctx->data_label, NULL, ctx->timestamp, header.ds_format, user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }

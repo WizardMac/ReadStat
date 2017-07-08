@@ -178,7 +178,7 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
     return READSTAT_HANDLER_OK;
 }
 
-static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx) {
+static int handle_metadata(const char *file_label, const char *encoding, time_t timestamp, long format_version, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
 
     push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->label, file_label, 

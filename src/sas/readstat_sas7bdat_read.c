@@ -535,7 +535,7 @@ static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx) {
         }
     }
     if (ctx->metadata_handler) {
-        if (ctx->metadata_handler(ctx->file_label, ctx->timestamp, ctx->version, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+        if (ctx->metadata_handler(ctx->file_label, ctx->input_encoding, ctx->timestamp, ctx->version, ctx->user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }

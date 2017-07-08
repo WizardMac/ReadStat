@@ -104,10 +104,10 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
     return READSTAT_HANDLER_OK;
 }
 
-static int handle_metadata(const char *file_label, time_t timestamp, long format_version, void *ctx) {
+static int handle_metadata(const char *file_label, const char *orig_encoding, time_t timestamp, long format_version, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
     if (rs_ctx->module->handle_note) {
-        return rs_ctx->module->handle_metadata(file_label, timestamp, format_version, rs_ctx->module_ctx);
+        return rs_ctx->module->handle_metadata(file_label, orig_encoding, timestamp, format_version, rs_ctx->module_ctx);
     }
     return READSTAT_HANDLER_OK;
 }
@@ -311,17 +311,20 @@ static int dump_info(int obs_count, int var_count, void *ctx) {
     return 0;
 }
 
-static int dump_metadata(const char *file_label, time_t timestamp, long version, void *ctx) {
+static int dump_metadata(const char *file_label, const char *orig_encoding, time_t timestamp, long version, void *ctx) {
     if (file_label && file_label[0]) {
         printf("File label: %s\n", file_label);
+    }
+    if (version) {
+        printf("Format version: %ld\n", version);
+    }
+    if (orig_encoding) {
+        printf("Text encoding: %s\n", orig_encoding);
     }
     if (timestamp) {
         char buffer[128];
         strftime(buffer, sizeof(buffer), "%d %b %Y %H:%M", localtime(&timestamp));
         printf("Timestamp: %s\n", buffer);
-    }
-    if (version) {
-        printf("File format version: %ld\n", version);
     }
     return 0;
 }
