@@ -695,7 +695,7 @@ static readstat_error_t sav_emit_very_long_string_record(readstat_writer_t *writ
 
         char kv_data[8+1+5+1];
         snprintf(kv_data, sizeof(kv_data), "VAR%d=%05d", 
-                i, (int)r_variable->storage_width);
+                i, (int)r_variable->user_width);
 
         info_header.count += strlen(kv_data) + sizeof(tuple_separator);
     }
@@ -714,7 +714,7 @@ static readstat_error_t sav_emit_very_long_string_record(readstat_writer_t *writ
 
         char kv_data[8+1+5+1];
         snprintf(kv_data, sizeof(kv_data), "VAR%d=%05d", 
-                i, (int)r_variable->storage_width);
+                i, (int)r_variable->user_width);
 
         retval = readstat_write_string(writer, kv_data);
         if (retval != READSTAT_OK)

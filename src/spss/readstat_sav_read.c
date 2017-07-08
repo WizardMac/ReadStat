@@ -577,10 +577,10 @@ static readstat_error_t sav_read_data(sav_ctx_t *ctx) {
         }
     }
 
-    ctx->raw_string_len = longest_string;
+    ctx->raw_string_len = longest_string + sizeof(SAV_EIGHT_SPACES)-2;
     ctx->raw_string = malloc(ctx->raw_string_len);
 
-    ctx->utf8_string_len = 4*longest_string+1;
+    ctx->utf8_string_len = 4*longest_string+1 + sizeof(SAV_EIGHT_SPACES)-2;
     ctx->utf8_string = malloc(ctx->utf8_string_len);
 
     if (ctx->data_is_compressed) {
