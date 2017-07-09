@@ -20,9 +20,9 @@ AS_CASE([$host],
 AC_SUBST([EXTRA_LIBS])
 
 AS_CASE([$host],
-	[*mingw*], [EXTRA_CFLAGS="-Wno-pedantic-ms-format"],
-    [EXTRA_CFLAGS=""])
-AC_SUBST([EXTRA_CFLAGS])
+	[*mingw*], [EXTRA_WARNINGS="-Wno-pedantic-ms-format"],
+    [EXTRA_WARNINGS=""])
+AC_SUBST([EXTRA_WARNINGS])
 
 AS_CASE([$host],
 	[*mingw*|*cygwin*], [AS_IF([test "x$static_iconv" = "xyes"],
@@ -50,7 +50,7 @@ C compiler: $CC
 CFLAGS: $CFLAGS
 
 Host: $host
-Extra C flags: $EXTRA_CFLAGS
+Extra warnings: $EXTRA_WARNINGS
 Extra libs: $EXTRA_LIBS
 Extra ld flags: $EXTRA_LDFLAGS
 
