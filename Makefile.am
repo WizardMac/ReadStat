@@ -173,27 +173,27 @@ test_readstat_SOURCES = \
 	src/test/test_write.c
 
 test_readstat_LDADD = libreadstat.la
-test_readstat_CFLAGS = -g -Wall -Werror -pedantic-errors -std=c99
+test_readstat_CFLAGS = -g -Wall -Werror -pedantic-errors -std=c99 @EXTRA_CFLAGS@
 
 test_dta_days_SOURCES = \
 	src/bin/util/readstat_dta_days.c \
 	src/test/test_dta_days.c
 
 test_dta_days_LDADD = libreadstat.la
-test_dta_days_CFLAGS = -g -Wall -Werror -pedantic-errors -std=c99
+test_dta_days_CFLAGS = -g -Wall -Werror -pedantic-errors -std=c99 @EXTRA_CFLAGS@
 
 test_sav_date_SOURCES = \
 	src/bin/util/readstat_sav_date.c \
 	src/test/test_sav_date.c
 
 test_sav_date_LDADD = libreadstat.la
-test_sav_date_CFLAGS = -g -Wall -Werror -pedantic-errors -std=c99
+test_sav_date_CFLAGS = -g -Wall -Werror -pedantic-errors -std=c99 @EXTRA_CFLAGS@
 
 test_double_decimals_SOURCES = \
 	src/bin/modules/double_decimals.c \
 	src/test/test_double_decimals.c
 
-test_double_decimals_CFLAGS = -g -Wall -Werror -pedantic-errors -std=c99
+test_double_decimals_CFLAGS = -g -Wall -Werror -pedantic-errors -std=c99 @EXTRA_CFLAGS@
 
 
 TESTS = test_readstat test_dta_days test_sav_date test_double_decimals
