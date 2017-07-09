@@ -104,7 +104,6 @@ static readstat_charset_entry_t _charset_table[] = {
     { .code = 65001, .name = "UTF-8" }
 };
 
-#define SAV_EIGHT_SPACES              "        "
 #define SAV_LABEL_NAME_PREFIX         "labels"
 
 typedef struct value_label_s {

@@ -133,5 +133,7 @@ typedef struct sav_ctx_s {
 #define SAV_ENDIANNESS_BIG               1
 #define SAV_ENDIANNESS_LITTLE            2
 
+#define SAV_EIGHT_SPACES              "        "
+
 sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header, readstat_io_t *io);
 void sav_ctx_free(sav_ctx_t *ctx);

@@ -997,7 +997,7 @@ static readstat_error_t sav_write_compressed_row(void *writer_ctx, void *row, si
         if (variable->type == READSTAT_TYPE_STRING) {
             size_t width = variable->storage_width;
             while (width > 0) {
-                if (memcmp(&input[input_offset], "        ", 8) == 0) {
+                if (memcmp(&input[input_offset], SAV_EIGHT_SPACES, 8) == 0) {
                     output[control_offset++] = 254;
                 } else {
                     output[control_offset++] = 253;
