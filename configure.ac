@@ -11,12 +11,24 @@ AC_ARG_ENABLE([code-coverage], AS_HELP_STRING([--enable-code-coverage], [Enable 
 
 AC_CANONICAL_HOST
 AS_CASE([$host],
-	[*darwin*], [EXTRA_LIBS="-liconv" EXTRA_LDFLAGS=""],
-	[*linux*], [EXTRA_LIBS="-lm" EXTRA_LDFLAGS=""],
-	[*mingw*|*cygwin*], [AS_IF([test "x$static_iconv" = "xyes"], [EXTRA_LIBS="-lm" EXTRA_LDFLAGS="-Wl,-Bstatic,-liconv -no-undefined"], [EXTRA_LIBS="-liconv -lm" EXTRA_LDFLAGS="-no-undefined"])],
-	[EXTRA_LIBS="" EXTRA_LDFLAGS=""]
-)
+	[*darwin*], [EXTRA_LIBS="-liconv"],
+	[*linux*], [EXTRA_LIBS="-lm"],
+	[*mingw*|*cygwin*], [AS_IF([test "x$static_iconv" = "xyes"],
+                               [EXTRA_LIBS="-lm"],
+                               [EXTRA_LIBS="-liconv -lm"])],
+	[EXTRA_LIBS=""])
 AC_SUBST([EXTRA_LIBS])
+
+AS_CASE([$host],
+	[*mingw*], [EXTRA_CFLAGS="-Wno-pedantic-ms-format"],
+    [EXTRA_CFLAGS=""])
+AC_SUBST([EXTRA_CFLAGS])
+
+AS_CASE([$host],
+	[*mingw*|*cygwin*], [AS_IF([test "x$static_iconv" = "xyes"],
+                               [EXTRA_LDFLAGS="-Wl,-Bstatic,-liconv -no-undefined"],
+                               [EXTRA_LDFLAGS="-no-undefined"])],
+	[EXTRA_LDFLAGS=""])
 AC_SUBST([EXTRA_LDFLAGS])
 
 AC_ARG_VAR([RAGEL], [Ragel generator command])
@@ -38,6 +50,7 @@ C compiler: $CC
 CFLAGS: $CFLAGS
 
 Host: $host
+Extra C flags: $EXTRA_CFLAGS
 Extra libs: $EXTRA_LIBS
 Extra ld flags: $EXTRA_LDFLAGS
 

@@ -41,7 +41,7 @@ if HAVE_RAGEL
 	$(AM_V_GEN)$(RAGEL) $(RAGELFLAGS) -C $< -o $@
 endif
 
-libreadstat_la_CFLAGS = -Wall -pedantic-errors -std=c99
+libreadstat_la_CFLAGS = -Wall -pedantic-errors -std=c99 @EXTRA_CFLAGS@
 libreadstat_la_LIBADD = @EXTRA_LIBS@
 libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@
 
