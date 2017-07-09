@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "../readstat.h"
 
@@ -158,7 +159,7 @@ static void print_value(readstat_value_t value) {
     if (value.type == READSTAT_TYPE_STRING) {
         const char *string = readstat_string_value(value);
         if (string) {
-            printf("\"%s\" (length=%ld)", string, strlen(string));
+            printf("\"%s\" (length=%" PRId64 ")", string, (int64_t)strlen(string));
         } else {
             printf("(null)");
         }
@@ -169,11 +170,11 @@ static void print_value(readstat_value_t value) {
     } else if (value.type == READSTAT_TYPE_FLOAT) {
         printf("%f (float)", readstat_float_value(value));
     } else if (value.type == READSTAT_TYPE_INT8) {
-        printf("%hhd (int8)", readstat_int8_value(value));
+        printf("%" PRId8 " (int8)", readstat_int8_value(value));
     } else if (value.type == READSTAT_TYPE_INT16) {
-        printf("%hd (int16)", readstat_int16_value(value));
+        printf("%" PRId16 " (int16)", readstat_int16_value(value));
     } else if (value.type == READSTAT_TYPE_INT32) {
-        printf("%d (int32)", readstat_int32_value(value));
+        printf("%" PRId32 " (int32)", readstat_int32_value(value));
     }
 }
 
