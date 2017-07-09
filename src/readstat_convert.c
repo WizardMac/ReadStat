@@ -27,10 +27,9 @@ readstat_error_t readstat_convert(char *dst, size_t dst_len, const char *src, si
                 return READSTAT_ERROR_CONVERT_LONG_STRING;
             } else if (errno == EILSEQ) {
                 return READSTAT_ERROR_CONVERT_BAD_STRING;
-            } else if (errno == EINVAL) {
-                return READSTAT_ERROR_CONVERT_SHORT_STRING;
+            } else if (errno != EINVAL) { /* EINVAL indicates improper truncation; accept it */
+                return READSTAT_ERROR_CONVERT;
             }
-            return READSTAT_ERROR_CONVERT;
         }
         unpad(dst, dst_len - dst_left);
     } else {
