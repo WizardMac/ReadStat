@@ -96,7 +96,7 @@ static readstat_charset_entry_t _charset_table[] = {
     { .code = 50225, .name = "ISO-2022-KR" },
     { .code = 50229, .name = "ISO-2022-CN" },
     { .code = 51932, .name = "EUC-JP" },
-    { .code = 51936, .name = "EUC-CN" },
+    { .code = 51936, .name = "GBK" },
     { .code = 51949, .name = "EUC-KR" },
     { .code = 52936, .name = "HZ-GB-2312" },
     { .code = 54936, .name = "GB18030" },
