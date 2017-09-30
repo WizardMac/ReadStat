@@ -487,7 +487,7 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
                 readstat_convert(str_buf, sizeof(str_buf), &buf[offset], max_len, ctx->converter);
                 value.v.string_value = str_buf;
             } else if (value.type == READSTAT_TYPE_STRING_REF) {
-                dta_strl_t key;
+                dta_strl_t key = {0};
                 dta_interpret_strl_vo_bytes(ctx, (unsigned char *)&buf[offset], &key);
 
                 dta_strl_t **found = bsearch(&key, ctx->strls, ctx->strls_count, sizeof(dta_strl_t *), &dta_compare_strls);
