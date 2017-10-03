@@ -473,8 +473,7 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
         readstat_off_t offset = 0;
         for (j=0; j<ctx->nvar; j++) {
             size_t max_len;
-            readstat_value_t value;
-            memset(&value, 0, sizeof(readstat_value_t));
+            readstat_value_t value = { { 0 } };
 
             value.type = dta_type_info(ctx->typlist[j], &max_len, ctx);
 
