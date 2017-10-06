@@ -202,7 +202,6 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     variable.print = ctx->bswap ? byteswap4(variable.print) : variable.print;
     variable.write = ctx->bswap ? byteswap4(variable.write) : variable.write;
 
-    readstat_type_t dta_type = READSTAT_TYPE_DOUBLE;
     int32_t type = ctx->bswap ? byteswap4(variable.type) : variable.type;
     int i;
     if (type < 0) {
@@ -214,17 +213,12 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
         prev->width++;
         return 0;
     }
-    if (type > 0) {
-        dta_type = READSTAT_TYPE_STRING;
-        // len = type;
-    }
     spss_varinfo_t *info = &ctx->varinfo[ctx->var_index];
     memset(info, 0, sizeof(spss_varinfo_t));
     info->width = 1;
     info->n_segments = 1;
     info->index = ctx->var_index;
     info->offset = ctx->var_offset;
-    info->type = dta_type;
 
     retval = readstat_convert(info->name, sizeof(info->name),
             variable.name, sizeof(variable.name), ctx->converter);
@@ -243,6 +237,12 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     info->write_format.decimal_places = (variable.write & 0x000000FF);
     info->write_format.width = (variable.write & 0x0000FF00) >> 8;
     info->write_format.type = (variable.write  & 0x00FF0000) >> 16;
+
+    if (type > 0 || info->print_format.type == SPSS_FORMAT_TYPE_A || info->write_format.type == SPSS_FORMAT_TYPE_A) {
+        info->type = READSTAT_TYPE_STRING;
+    } else {
+        info->type = READSTAT_TYPE_DOUBLE;
+    }
     
     if (variable.has_var_label) {
         int32_t label_len;
