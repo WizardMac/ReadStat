@@ -147,7 +147,7 @@ typedef struct readstat_missingness_s {
 typedef struct readstat_variable_s {
     readstat_type_t         type;
     int                     index;
-    char                    name[256];
+    char                    name[300];
     char                    format[256];
     char                    label[1024];
     readstat_label_set_t   *label_set;
