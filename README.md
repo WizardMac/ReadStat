@@ -389,3 +389,8 @@ Second, install a number of additional packages at the msys2 command line:
 
 Finally, start a MINGW command line (not the msys2 prompt!) and follow the general install instructions for this package.
 
+
+Docker
+==
+
+A dockerized version is available [here](https://github.com/jbn/readstat)
