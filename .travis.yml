@@ -4,6 +4,7 @@ sudo: required
 compiler:
   - clang
   - gcc
+  - gcc-7.2
 
 addons:
   apt:
