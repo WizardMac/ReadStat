@@ -93,12 +93,18 @@ static readstat_error_t sav_emit_header(readstat_writer_t *writer) {
 
     char creation_date[sizeof(header.creation_date)+1];
     snprintf(creation_date, sizeof(creation_date),
-            "%02d %3s %02d", time_s->tm_mday, months[time_s->tm_mon], time_s->tm_year % 100);
+            "%02d %3.3s %02d", 
+            (unsigned int)time_s->tm_mday % 100,
+            months[time_s->tm_mon],
+            (unsigned int)time_s->tm_year % 100);
     strncpy(header.creation_date, creation_date, sizeof(header.creation_date));
 
     char creation_time[sizeof(header.creation_time)+1];
     snprintf(creation_time, sizeof(creation_time),
-            "%02d:%02d:%02d", time_s->tm_hour, time_s->tm_min, time_s->tm_sec);
+            "%02d:%02d:%02d",
+            (unsigned int)time_s->tm_hour % 100,
+            (unsigned int)time_s->tm_min % 100,
+            (unsigned int)time_s->tm_sec % 100);
     strncpy(header.creation_time, creation_time, sizeof(header.creation_time));
     
     memset(header.file_label, ' ', sizeof(header.file_label));
