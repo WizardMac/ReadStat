@@ -330,23 +330,25 @@ static readstat_error_t xport_write_obs_header_record(readstat_writer_t *writer)
     return xport_write_header_record(writer, &xrecord);
 }
 
-static void xport_format_timestamp(time_t timestamp, char *output, size_t output_len) {
+static void xport_format_timestamp(char *output, size_t output_len, time_t timestamp) {
     struct tm *ts = localtime(&timestamp);
 
-    char *p = output;
-    p += snprintf(p, 2, "%02d", ts->tm_mday);
-    p += snprintf(p, 3, "%3.3s", _xport_months[ts->tm_mon]);
-    p += snprintf(p, 2, "%02d", ts->tm_year % 100);
-    p += snprintf(p, 3, ":%02d", ts->tm_hour);
-    p += snprintf(p, 3, ":%02d", ts->tm_min);
-    p += snprintf(p, 3, ":%02d", ts->tm_sec);
+    snprintf(output, output_len, 
+            "%02d%3.3s%02d:%02d:%02d:%02d",
+            (unsigned int)ts->tm_mday % 100, 
+            _xport_months[ts->tm_mon],
+            (unsigned int)ts->tm_year % 100,
+            (unsigned int)ts->tm_hour % 100,
+            (unsigned int)ts->tm_min % 100,
+            (unsigned int)ts->tm_sec % 100
+            );
 }
 
 static readstat_error_t xport_begin_data(void *writer_ctx) {
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     readstat_error_t retval = READSTAT_OK;
     char timestamp[17];
-    xport_format_timestamp(writer->timestamp, timestamp, sizeof(timestamp));
+    xport_format_timestamp(timestamp, sizeof(timestamp), writer->timestamp);
 
     retval = sas_validate_column_names(writer);
     if (retval != READSTAT_OK)
