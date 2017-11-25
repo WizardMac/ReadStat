@@ -10,7 +10,7 @@ addons:
     sources:
     - sourceline: 'ppa:jonathonf/gcc-7.2'
     packages:
-    - gcc-7.2
+    - gcc-7
 
 before_script:
   - ./autogen.sh
