@@ -5,10 +5,12 @@ compiler:
   - clang
   - gcc
 
-before_install:
-  - sudo add-apt-repository ppa:jonathonf/gcc-7.2
-  - sudo apt-get update -q
-  - sudo apt-get install gcc-7.2 -y
+addons:
+  apt:
+    sources:
+    - sourceline: 'ppa:jonathonf/gcc-7.2'
+    packages:
+    - gcc-7.2
 
 before_script:
   - ./autogen.sh
