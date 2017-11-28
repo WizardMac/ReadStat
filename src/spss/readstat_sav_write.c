@@ -58,7 +58,7 @@ static readstat_error_t sav_encode_variable_format(int32_t *out_code,
 }
 
 static size_t sav_format_variable_name(char *output, size_t output_len, int i) {
-    snprintf(output, output_len, "VAR%d", i);
+    snprintf(output, output_len, "VAR%d", (unsigned int)i % 100000);
     return strlen(output);
 }
 
