@@ -267,7 +267,7 @@ typedef struct readstat_io_s {
     readstat_read_handler          read;
     readstat_update_handler        update;
     void                          *io_ctx;
-    int                            external_io;
+    int                            io_ctx_needs_free;
 } readstat_io_t;
 
 typedef struct readstat_parser_s {
