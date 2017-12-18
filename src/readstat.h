@@ -286,7 +286,7 @@ typedef struct readstat_parser_s {
     long                           row_limit;
 } readstat_parser_t;
 
-readstat_parser_t *readstat_parser_init();
+readstat_parser_t *readstat_parser_init(void);
 void readstat_parser_free(readstat_parser_t *parser);
 void readstat_io_free(readstat_io_t *io);
 
@@ -415,7 +415,7 @@ typedef struct readstat_writer_s {
 
 
 // First call this...
-readstat_writer_t *readstat_writer_init();
+readstat_writer_t *readstat_writer_init(void);
 
 // Then specify a function that will handle the output bytes...
 readstat_error_t readstat_set_data_writer(readstat_writer_t *writer, readstat_data_writer data_writer);
