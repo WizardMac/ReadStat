@@ -85,6 +85,15 @@ uint16_t sas_read2(const char *data, int bswap) {
     return bswap ? byteswap2(tmp) : tmp;
 }
 
+time_t sas_convert_time(double time, time_t epoch) {
+    time += epoch;
+    if (time > INT64_MAX)
+        return INT64_MAX;
+    if (time < INT64_MIN)
+        return INT64_MIN;
+    return time;
+}
+
 readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo, 
         readstat_error_handler error_handler, void *user_ctx) {
     sas_header_start_t  header_start;
@@ -142,16 +151,23 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
     }
 
     double creation_time, modification_time;
+
     if (io->read(&creation_time, sizeof(double), io->io_ctx) < sizeof(double)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
+    if (bswap)
+        creation_time = byteswap_double(creation_time);
+
     if (io->read(&modification_time, sizeof(double), io->io_ctx) < sizeof(double)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
-    hinfo->creation_time = bswap ? byteswap_double(creation_time) + epoch : creation_time + epoch;
-    hinfo->modification_time = bswap ? byteswap_double(creation_time) + epoch : creation_time + epoch;
+    if (bswap)
+        modification_time = byteswap_double(modification_time);
+
+    hinfo->creation_time = sas_convert_time(creation_time, epoch);
+    hinfo->modification_time = sas_convert_time(modification_time, epoch);
 
     if (io->seek(16, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
