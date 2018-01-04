@@ -50,6 +50,8 @@ typedef struct sas7bdat_ctx_s {
     int64_t        header_size;
     int64_t        page_count;
     int64_t        page_size;
+    char          *page;
+
     int64_t        page_header_size;
     int64_t        subheader_pointer_size;
 
@@ -102,6 +104,9 @@ static void sas7bdat_ctx_free(sas7bdat_ctx_t *ctx) {
     if (ctx->scratch_buffer)
         free(ctx->scratch_buffer);
 
+    if (ctx->page)
+        free(ctx->page);
+
     if (ctx->converter)
         iconv_close(ctx->converter);
 
@@ -126,6 +131,10 @@ static readstat_error_t sas7bdat_parse_column_text_subheader(const char *subhead
     ctx->text_blobs = realloc(ctx->text_blobs, ctx->text_blob_count * sizeof(char *));
     ctx->text_blob_lengths = realloc(ctx->text_blob_lengths,
             ctx->text_blob_count * sizeof(ctx->text_blob_lengths[0]));
+    if (ctx->text_blobs == NULL || ctx->text_blob_lengths == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
 
     if ((blob = malloc(len-signature_len)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
@@ -216,6 +225,15 @@ static readstat_error_t sas7bdat_copy_text_ref(char *out_buffer, size_t out_buff
             ctx->converter);
 }
 
+static readstat_error_t sas7bdat_realloc_col_info(sas7bdat_ctx_t *ctx, size_t count) {
+    ctx->col_info_count = count;
+    ctx->col_info = realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
+    if (ctx->col_info == NULL) {
+        return READSTAT_ERROR_MALLOC;
+    }
+    return READSTAT_OK;
+}
+
 static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     size_t signature_len = ctx->u64 ? 8 : 4;
@@ -230,10 +248,10 @@ static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subhead
     }
 
     ctx->col_names_count += cmax;
-    if (ctx->col_info_count < ctx->col_names_count) {
-        ctx->col_info_count = ctx->col_names_count;
-        ctx->col_info = realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
-    }
+
+    if ((retval = sas7bdat_realloc_col_info(ctx, ctx->col_names_count)) != READSTAT_OK)
+        goto cleanup;
+
     for (i=ctx->col_names_count-cmax; i<ctx->col_names_count; i++) {
         ctx->col_info[i].name_ref = sas7bdat_parse_text_ref(cnp, ctx);
         cnp += 8;
@@ -257,10 +275,9 @@ static readstat_error_t sas7bdat_parse_column_attributes_subheader(const char *s
         goto cleanup;
     }
     ctx->col_attrs_count += cmax;
-    if (ctx->col_info_count < ctx->col_attrs_count) {
-        ctx->col_info_count = ctx->col_attrs_count;
-        ctx->col_info = realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
-    }
+    if ((retval = sas7bdat_realloc_col_info(ctx, ctx->col_attrs_count)) != READSTAT_OK)
+        goto cleanup;
+
     for (i=ctx->col_attrs_count-cmax; i<ctx->col_attrs_count; i++) {
         if (ctx->u64) {
             ctx->col_info[i].offset = sas_read8(&cap[0], ctx->bswap);
@@ -380,6 +397,11 @@ static readstat_error_t sas7bdat_parse_single_row(const char *data, sas7bdat_ctx
     if (ctx->value_handler) {
         ctx->scratch_buffer_len = 4*ctx->max_col_width+1;
         ctx->scratch_buffer = realloc(ctx->scratch_buffer, ctx->scratch_buffer_len);
+        if (ctx->scratch_buffer == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+
         for (j=0; j<ctx->column_count; j++) {
             col_info_t *col_info = &ctx->col_info[j];
             readstat_variable_t *variable = ctx->variables[j];
@@ -418,12 +440,15 @@ static readstat_error_t sas7bdat_parse_subheader_rle(const char *subheader, size
         return READSTAT_OK;
 
     readstat_error_t retval = READSTAT_OK;
-    char *buffer = malloc(ctx->row_length);
-    if (buffer == NULL) {
+    char *buffer = NULL;
+    size_t bytes_decompressed = 0;
+
+    if ((buffer = malloc(ctx->row_length)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
-    size_t bytes_decompressed = sas_rle_decompress(
+
+    bytes_decompressed = sas_rle_decompress(
             buffer, ctx->row_length, subheader, len);
 
     if (bytes_decompressed != ctx->row_length) {
@@ -750,7 +775,6 @@ static readstat_error_t sas7bdat_parse_meta_pages_pass1(sas7bdat_ctx_t *ctx, int
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
     int64_t i;
-    char *page = malloc(ctx->page_size);
 
     /* look for META and MIX pages at beginning... */
     for (i=0; i<ctx->page_count; i++) {
@@ -772,24 +796,24 @@ static readstat_error_t sas7bdat_parse_meta_pages_pass1(sas7bdat_ctx_t *ctx, int
         size_t head_len = off + 16 + 2;
         size_t tail_len = ctx->page_size - head_len;
 
-        if (io->read(page, head_len, io->io_ctx) < head_len) {
+        if (io->read(ctx->page, head_len, io->io_ctx) < head_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
-        uint16_t page_type = sas_read2(&page[off+16], ctx->bswap);
+        uint16_t page_type = sas_read2(&ctx->page[off+16], ctx->bswap);
 
         if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA)
             break;
         if ((page_type & SAS_PAGE_TYPE_COMP))
             continue;
 
-        if (io->read(page + head_len, tail_len, io->io_ctx) < tail_len) {
+        if (io->read(ctx->page + head_len, tail_len, io->io_ctx) < tail_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
-        if ((retval = sas7bdat_parse_page_pass1(page, ctx->page_size, ctx)) != READSTAT_OK) {
+        if ((retval = sas7bdat_parse_page_pass1(ctx->page, ctx->page_size, ctx)) != READSTAT_OK) {
             if (ctx->error_handler && retval != READSTAT_ERROR_USER_ABORT) {
                 int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf), 
@@ -802,8 +826,6 @@ static readstat_error_t sas7bdat_parse_meta_pages_pass1(sas7bdat_ctx_t *ctx, int
     }
 
 cleanup:
-    if (page)
-        free(page);
     if (outLastExaminedPage)
         *outLastExaminedPage = i;
 
@@ -814,7 +836,6 @@ static readstat_error_t sas7bdat_parse_amd_pages_pass1(int64_t last_examined_pag
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
     int64_t i;
-    char *page = malloc(ctx->page_size);
     int64_t amd_page_count = 0;
 
     /* ...then AMD pages at the end */
@@ -837,12 +858,12 @@ static readstat_error_t sas7bdat_parse_amd_pages_pass1(int64_t last_examined_pag
         size_t head_len = off + 16 + 2;
         size_t tail_len = ctx->page_size - head_len;
 
-        if (io->read(page, head_len, io->io_ctx) < head_len) {
+        if (io->read(ctx->page, head_len, io->io_ctx) < head_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
-        uint16_t page_type = sas_read2(&page[off+16], ctx->bswap);
+        uint16_t page_type = sas_read2(&ctx->page[off+16], ctx->bswap);
 
         if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_DATA) {
             /* Usually AMD pages are at the end but sometimes data pages appear after them */
@@ -853,12 +874,12 @@ static readstat_error_t sas7bdat_parse_amd_pages_pass1(int64_t last_examined_pag
         if ((page_type & SAS_PAGE_TYPE_COMP))
             continue;
 
-        if (io->read(page + head_len, tail_len, io->io_ctx) < tail_len) {
+        if (io->read(ctx->page + head_len, tail_len, io->io_ctx) < tail_len) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
-        if ((retval = sas7bdat_parse_page_pass1(page, ctx->page_size, ctx)) != READSTAT_OK) {
+        if ((retval = sas7bdat_parse_page_pass1(ctx->page, ctx->page_size, ctx)) != READSTAT_OK) {
             if (ctx->error_handler && retval != READSTAT_ERROR_USER_ABORT) {
                 int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf), 
@@ -873,8 +894,6 @@ static readstat_error_t sas7bdat_parse_amd_pages_pass1(int64_t last_examined_pag
     }
 
 cleanup:
-    if (page)
-        free(page);
 
     return retval;
 }
@@ -883,18 +902,17 @@ static readstat_error_t sas7bdat_parse_all_pages_pass2(sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
     int64_t i;
-    char *page = malloc(ctx->page_size);
 
     for (i=0; i<ctx->page_count; i++) {
         if ((retval = sas7bdat_update_progress(ctx)) != READSTAT_OK) {
             goto cleanup;
         }
-        if (io->read(page, ctx->page_size, io->io_ctx) < ctx->page_size) {
+        if (io->read(ctx->page, ctx->page_size, io->io_ctx) < ctx->page_size) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
 
-        if ((retval = sas7bdat_parse_page_pass2(page, ctx->page_size, ctx)) != READSTAT_OK) {
+        if ((retval = sas7bdat_parse_page_pass2(ctx->page, ctx->page_size, ctx)) != READSTAT_OK) {
             if (ctx->error_handler && retval != READSTAT_ERROR_USER_ABORT) {
                 int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf), 
@@ -908,8 +926,6 @@ static readstat_error_t sas7bdat_parse_all_pages_pass2(sas7bdat_ctx_t *ctx) {
             break;
     }
 cleanup:
-    if (page)
-        free(page);
 
     return retval;
 }
@@ -974,6 +990,10 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->version = 10000 * hinfo->major_version + hinfo->minor_version;
     if (ctx->input_encoding == NULL) {
         ctx->input_encoding = hinfo->encoding;
+    }
+    if ((ctx->page = malloc(ctx->page_size)) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
     }
 
     if (ctx->input_encoding && ctx->output_encoding && strcmp(ctx->input_encoding, ctx->output_encoding) != 0) {
