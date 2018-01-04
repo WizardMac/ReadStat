@@ -176,7 +176,7 @@ readstat_type_class_t readstat_value_type_class(readstat_value_t value);
  *    SAS files.
  * 3. Defined missing. The value is a real number but is to be treated as
  *    missing according to the variable's missingness rules (such as "value < 0 ||
- *    value == 999"). Occurs only in spss files. access the rules via:
+ *    value == 999"). Occurs only in SPSS files. access the rules via:
  *
  *       readstat_variable_get_missing_ranges_count()
  *       readstat_variable_get_missing_range_lo()
