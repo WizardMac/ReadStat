@@ -226,10 +226,12 @@ static readstat_error_t sas7bdat_copy_text_ref(char *out_buffer, size_t out_buff
 }
 
 static readstat_error_t sas7bdat_realloc_col_info(sas7bdat_ctx_t *ctx, size_t count) {
-    ctx->col_info_count = count;
-    ctx->col_info = realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
-    if (ctx->col_info == NULL) {
-        return READSTAT_ERROR_MALLOC;
+    if (ctx->col_info_count < count) {
+        ctx->col_info_count = count;
+        ctx->col_info = realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
+        if (ctx->col_info == NULL) {
+            return READSTAT_ERROR_MALLOC;
+        }
     }
     return READSTAT_OK;
 }
@@ -314,15 +316,15 @@ static readstat_error_t sas7bdat_parse_column_format_subheader(const char *subhe
     readstat_error_t retval = READSTAT_OK;
 
     ctx->col_formats_count++;
-    if (ctx->col_info_count < ctx->col_formats_count) {
-        ctx->col_info_count = ctx->col_formats_count;
-    }
+    if ((retval = sas7bdat_realloc_col_info(ctx, ctx->col_formats_count)) != READSTAT_OK)
+        goto cleanup;
 
     ctx->col_info[ctx->col_formats_count-1].format_ref = sas7bdat_parse_text_ref(
             ctx->u64 ? &subheader[46] : &subheader[34], ctx);
     ctx->col_info[ctx->col_formats_count-1].label_ref = sas7bdat_parse_text_ref(
             ctx->u64 ? &subheader[52] : &subheader[40], ctx);
 
+cleanup:
     return retval;
 }
 
