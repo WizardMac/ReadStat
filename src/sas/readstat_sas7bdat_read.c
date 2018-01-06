@@ -205,7 +205,7 @@ static sas_text_ref_t sas7bdat_parse_text_ref(const char *data, sas7bdat_ctx_t *
 }
 
 static readstat_error_t sas7bdat_copy_text_ref(char *out_buffer, size_t out_buffer_len, sas_text_ref_t text_ref, sas7bdat_ctx_t *ctx) {
-    if (text_ref.index < 0 || text_ref.index >= ctx->text_blob_count)
+    if (text_ref.index >= ctx->text_blob_count)
         return READSTAT_ERROR_PARSE;
     
     if (text_ref.length == 0) {
@@ -215,9 +215,6 @@ static readstat_error_t sas7bdat_copy_text_ref(char *out_buffer, size_t out_buff
 
     char *blob = ctx->text_blobs[text_ref.index];
 
-    if (text_ref.offset < 0 || text_ref.length < 0)
-        return READSTAT_ERROR_PARSE;
-    
     if (text_ref.offset + text_ref.length > ctx->text_blob_lengths[text_ref.index])
         return READSTAT_ERROR_PARSE;
 
