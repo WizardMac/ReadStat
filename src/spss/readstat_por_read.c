@@ -730,7 +730,7 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
     
     if (por_utf8_encode(check, sizeof(check), tr_check, sizeof(tr_check), ctx->byte2unicode) == -1) {
         if (ctx->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "Error converting check string: %.*s\n", (int)sizeof(check), check);
+            snprintf(error_buf, sizeof(error_buf), "Error converting check string: %.*s", (int)sizeof(check), check);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_CONVERT;

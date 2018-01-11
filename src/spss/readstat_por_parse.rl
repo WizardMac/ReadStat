@@ -78,7 +78,8 @@ ssize_t readstat_por_parse_double(const char *data, size_t len, double *result,
         retval = -1;
         if (error_cb) {
             char error_buf[1024];
-            snprintf(error_buf, sizeof(error_buf), "Read bytes: %ld   String: %s  Ending state: %d\n", (long)(p - (const unsigned char *)data), data, cs);
+            snprintf(error_buf, sizeof(error_buf), "Read bytes: %ld   String: %.*s  Ending state: %d",
+                    (long)(p - (const unsigned char *)data), (int)len, data, cs);
             error_cb(error_buf, user_ctx);
         }
     }

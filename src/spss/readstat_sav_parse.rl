@@ -106,7 +106,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
                 memcpy(ctx->varinfo[found->index].longname, temp_val, str_len);
                 ctx->varinfo[found->index].longname[str_len] = '\0';
             } else if (ctx->error_handler) {
-                snprintf(error_buf, sizeof(error_buf), "Failed to find %s\n", temp_key);
+                snprintf(error_buf, sizeof(error_buf), "Failed to find %s", temp_key);
                 ctx->error_handler(error_buf, ctx->user_ctx);
             }
         }
@@ -141,8 +141,8 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
         if (ctx->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "Error parsing string \"%s\" around byte #%ld/%d, character %c\n", 
-                    (char *)data, (long)(p - c_data), count, *p);
+            snprintf(error_buf, sizeof(error_buf), "Error parsing string \"%.*s\" around byte #%ld/%d, character %c", 
+                    count, (char *)data, (long)(p - c_data), count, *p);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_PARSE;
@@ -243,7 +243,8 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     
     if (cs < %%{ write first_final; }%% || p != pe) {
         if (ctx->error_handler) {
-            snprintf(error_buf, error_buf_len, "Parsed %ld of %ld bytes\nRemaining bytes: %s\n", (long)(p - c_data), (long)(pe - c_data), p);
+            snprintf(error_buf, error_buf_len, "Parsed %ld of %ld bytes. Remaining bytes: %.*s",
+                    (long)(p - c_data), (long)(pe - c_data), (int)(pe - p), p);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_PARSE;
