@@ -268,7 +268,7 @@ rt_test_group_t _test_groups[] = {
 
             {
                 .label = "Four 1024-byte strings in SAS7BDAT", /* Test 4096+ byte rows */
-                .test_formats = RT_FORMAT_SAS7BDAT_COMP_NONE,
+                .test_formats = RT_FORMAT_SAS7BDAT,
                 .rows = 1,
                 .columns = {
                     {
