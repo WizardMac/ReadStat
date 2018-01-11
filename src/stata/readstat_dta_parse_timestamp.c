@@ -133,7 +133,7 @@ readstat_error_t dta_parse_timestamp(const char *data, size_t len, struct tm *ti
     const char *pe = p + len;
     const char *eof = pe;
     int cs;
-    int temp_val = 0;
+    unsigned int temp_val = 0;
     
 #line 139 "src/stata/readstat_dta_parse_timestamp.c"
 	{
