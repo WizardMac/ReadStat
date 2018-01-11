@@ -615,11 +615,17 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
 
     int i;
     const char *shp = &page[ctx->page_header_size];
+    int lshp = ctx->subheader_pointer_size;
+
+    if (ctx->page_header_size + subheader_count*lshp > ctx->page_size) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
     for (i=0; i<subheader_count; i++) {
         uint64_t offset = 0, len = 0;
         uint32_t signature = 0;
         unsigned char compression = 0;
-        int lshp = ctx->subheader_pointer_size;
         if (ctx->u64) {
             offset = sas_read8(&shp[0], ctx->bswap);
             len = sas_read8(&shp[8], ctx->bswap);
@@ -631,8 +637,7 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
         }
 
         if (len > 0 && compression != SAS_COMPRESSION_TRUNC) {
-            if (offset > page_size || offset + len > page_size ||
-                    offset < ctx->page_header_size+subheader_count*lshp) {
+            if (offset + len > page_size || offset < ctx->page_header_size+subheader_count*lshp) {
                 retval = READSTAT_ERROR_PARSE;
                 goto cleanup;
             }
