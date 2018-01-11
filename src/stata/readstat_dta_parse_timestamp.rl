@@ -55,7 +55,7 @@ readstat_error_t dta_parse_timestamp(const char *data, size_t len, struct tm *ti
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
         if (ctx->error_handler) {
-            snprintf(ctx->error_buf, sizeof(ctx->error_buf), "Invalid timestamp string (length=%d): %*s", (int)len, (int)-len, data);
+            snprintf(ctx->error_buf, sizeof(ctx->error_buf), "Invalid timestamp string (length=%d): %.*s", (int)len, (int)len, data);
             ctx->error_handler(ctx->error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_BAD_TIMESTAMP;

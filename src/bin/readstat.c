@@ -85,7 +85,7 @@ int can_write(rs_module_t *modules, long modules_count, char *filename) {
 }
 
 static void handle_error(const char *msg, void *ctx) {
-    fprintf(stderr, "%s", msg);
+    fprintf(stderr, "%s\n", msg);
 }
 
 static int handle_fweight(readstat_variable_t *variable, void *ctx) {

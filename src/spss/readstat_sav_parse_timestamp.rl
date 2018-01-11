@@ -40,7 +40,7 @@ readstat_error_t sav_parse_time(const char *data, size_t len, struct tm *timesta
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
         if (ctx->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "Invalid time string (length=%d): %*s", (int)len, (int)-len, data);
+            snprintf(error_buf, sizeof(error_buf), "Invalid time string (length=%d): %.*s", (int)len, (int)len, data);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_BAD_TIMESTAMP;
@@ -105,7 +105,7 @@ readstat_error_t sav_parse_date(const char *data, size_t len, struct tm *timesta
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
         if (ctx->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "Invalid date string (length=%d): %*s", (int)len, (int)-len, data);
+            snprintf(error_buf, sizeof(error_buf), "Invalid date string (length=%d): %.*s", (int)len, (int)len, data);
             ctx->error_handler(error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_BAD_TIMESTAMP;
