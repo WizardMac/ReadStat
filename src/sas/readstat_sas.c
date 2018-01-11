@@ -189,13 +189,12 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
     }
 
     hinfo->header_size = bswap ? byteswap4(header_size) : header_size;
+    hinfo->page_size = bswap ? byteswap4(page_size) : page_size;
 
-    if (hinfo->header_size < 1024) {
+    if (hinfo->header_size < 1024 || hinfo->page_size < 1024) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
-
-    hinfo->page_size = bswap ? byteswap4(page_size) : page_size;
 
     if (hinfo->u64) {
         hinfo->page_header_size = SAS_PAGE_HEADER_SIZE_64BIT;
