@@ -88,9 +88,11 @@ uint16_t sas_read2(const char *data, int bswap) {
 
 time_t sas_convert_time(double time, time_t epoch) {
     time += epoch;
-    if (time > INT64_MAX)
+    if (isnan(time))
+        return 0;
+    if (time > 1.0 * INT64_MAX)
         return INT64_MAX;
-    if (time < INT64_MIN)
+    if (time < 1.0 * INT64_MIN)
         return INT64_MIN;
     return time;
 }
