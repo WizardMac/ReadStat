@@ -360,10 +360,10 @@ static readstat_error_t xport_read_labels_v9(xport_ctx_t *ctx, int label_count) 
             goto cleanup;
         }
 
-        char name[name_len];
-        char format[format_len];
-        char informat[informat_len];
-        char label[label_len];
+        char name[name_len+1];
+        char format[format_len+1];
+        char informat[informat_len+1];
+        char label[label_len+1];
 
         readstat_variable_t *variable = ctx->variables[index];
 
