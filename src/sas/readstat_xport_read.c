@@ -614,6 +614,7 @@ static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
 
 cleanup:
     free(row);
+    free(blank_row);
     return retval;
 }
 
