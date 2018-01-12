@@ -1173,7 +1173,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
         ctx->record_len += max_len;
     }
 
-    if (ctx->nvar > 0 && ctx->record_len == 0) {
+    if ((ctx->nvar > 0 || ctx->nobs > 0) && ctx->record_len == 0) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
