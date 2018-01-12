@@ -6,6 +6,7 @@ libreadstat_la_SOURCES = \
 	src/readstat_convert.c \
 	src/readstat_error.c \
 	src/readstat_io_unistd.c \
+	src/readstat_malloc.c \
 	src/readstat_parser.c \
 	src/readstat_value.c \
 	src/readstat_variable.c \
@@ -57,6 +58,7 @@ noinst_HEADERS = \
        src/readstat_convert.h \
        src/readstat_iconv.h \
        src/readstat_io_unistd.h \
+       src/readstat_malloc.h \
        src/readstat_writer.h \
        src/sas/ieee.h \
        src/sas/readstat_sas.h \

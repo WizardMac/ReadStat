@@ -11,6 +11,7 @@
 #include "../readstat_bits.h"
 #include "../readstat_iconv.h"
 #include "../readstat_convert.h"
+#include "../readstat_malloc.h"
 
 #include "readstat_dta.h"
 #include "readstat_dta_parse_timestamp.h"
@@ -123,7 +124,10 @@ static readstat_error_t dta_read_descriptors(dta_ctx_t *ctx) {
     unsigned char *buffer = NULL;
     int i;
 
-    buffer = malloc(buffer_len);
+    if ((buffer = readstat_malloc(buffer_len)) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
 
     if ((retval = dta_read_chunk(ctx, "<variable_types>", buffer, 
                     buffer_len, "</variable_types>")) != READSTAT_OK)
@@ -246,7 +250,10 @@ static readstat_error_t dta_read_expansion_fields(dta_ctx_t *ctx) {
         }
 
         if (ctx->note_handler && len >= 2 * ctx->ch_metadata_len) {
-            buffer = realloc(buffer, len + 1);
+            if ((buffer = readstat_realloc(buffer, len + 1)) == NULL) {
+                retval = READSTAT_ERROR_MALLOC;
+                goto cleanup;
+            }
             buffer[len] = '\0';
 
             if (io->read(buffer, len, io->io_ctx) != len) {
@@ -407,7 +414,7 @@ static readstat_error_t dta_read_strls(dta_ctx_t *ctx) {
         goto cleanup;
 
     ctx->strls_capacity = 100;
-    ctx->strls = malloc(ctx->strls_capacity * sizeof(dta_strl_t *));
+    ctx->strls = readstat_malloc(ctx->strls_capacity * sizeof(dta_strl_t *));
 
     while (1) {
         char tag[3];
@@ -427,10 +434,17 @@ static readstat_error_t dta_read_strls(dta_ctx_t *ctx) {
 
             if (ctx->strls_count == ctx->strls_capacity) {
                 ctx->strls_capacity *= 2;
-                ctx->strls = realloc(ctx->strls, sizeof(dta_strl_t *) * ctx->strls_capacity);
+                if ((ctx->strls = readstat_realloc(ctx->strls, sizeof(dta_strl_t *) * ctx->strls_capacity)) == NULL) {
+                    retval = READSTAT_ERROR_MALLOC;
+                    goto cleanup;
+                }
             }
 
-            dta_strl_t *strl_ptr = malloc(sizeof(dta_strl_t) + strl.len);
+            dta_strl_t *strl_ptr = readstat_malloc(sizeof(dta_strl_t) + strl.len);
+            if (strl_ptr == NULL) {
+                retval = READSTAT_ERROR_MALLOC;
+                goto cleanup;
+            }
             memcpy(strl_ptr, &strl, sizeof(dta_strl_t));
 
             ctx->strls[ctx->strls_count++] = strl_ptr;
@@ -786,7 +800,7 @@ static readstat_error_t dta_read_label_and_timestamp(dta_ctx_t *ctx) {
         label_len = ctx->data_label_len;
     }
 
-    if ((data_label_buffer = malloc(label_len+1)) == NULL) {
+    if ((data_label_buffer = readstat_malloc(label_len+1)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -802,7 +816,7 @@ static readstat_error_t dta_read_label_and_timestamp(dta_ctx_t *ctx) {
         label_len = strlen(data_label_buffer);
     }
 
-    if ((ctx->data_label = malloc(4*label_len+1)) == NULL) {
+    if ((ctx->data_label = readstat_malloc(4*label_len+1)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -829,7 +843,7 @@ static readstat_error_t dta_read_label_and_timestamp(dta_ctx_t *ctx) {
     }
 
     if (timestamp_len) {
-        timestamp_buffer = malloc(timestamp_len);
+        timestamp_buffer = readstat_malloc(timestamp_len);
         
         if (io->read(timestamp_buffer, timestamp_len, io->io_ctx) != timestamp_len) {
             retval = READSTAT_ERROR_READ;
@@ -968,7 +982,7 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
         if (io->seek(ctx->value_label_table_padding_len, READSTAT_SEEK_CUR, io->io_ctx) == -1)
             break;
 
-        if ((table_buffer = realloc(table_buffer, len)) == NULL) {
+        if ((table_buffer = readstat_realloc(table_buffer, len)) == NULL) {
             retval = READSTAT_ERROR_MALLOC;
             goto cleanup;
         }
