@@ -17,7 +17,7 @@ before_script:
   - ./autogen.sh
 
 script:
-  - ./configure --enable-code-coverage && make && make check
+  - ./configure --enable-code-coverage --enable-sanitizers && make && make check
 
 after_success:
   - mv src/sas/.libs/*.gc* .

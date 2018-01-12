@@ -41,9 +41,9 @@ if HAVE_RAGEL
 	$(AM_V_GEN)$(RAGEL) $(RAGELFLAGS) -C $< -o $@
 endif
 
-libreadstat_la_CFLAGS = -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
+libreadstat_la_CFLAGS = -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 libreadstat_la_LIBADD = @EXTRA_LIBS@
-libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@
+libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@ @SANITIZERS@
 
 if CODE_COVERAGE_ENABLED
 libreadstat_la_CFLAGS += -O0 -fprofile-arcs -ftest-coverage
@@ -140,10 +140,10 @@ extract_metadata_SOURCES = \
 	src/bin/util/readstat_sav_date.c
 
 readstat_LDADD = libreadstat.la
-readstat_CFLAGS = -Wall -Werror -pedantic-errors -std=c99
+readstat_CFLAGS = -Wall -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 extract_metadata_LDADD = libreadstat.la
-extract_metadata_CFLAGS = -Wall -Werror -pedantic-errors -std=c99
+extract_metadata_CFLAGS = -Wall -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 if HAVE_XLSXWRITER
 readstat_SOURCES += src/bin/modules/mod_xlsx.c
@@ -173,27 +173,27 @@ test_readstat_SOURCES = \
 	src/test/test_write.c
 
 test_readstat_LDADD = libreadstat.la
-test_readstat_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
+test_readstat_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 test_dta_days_SOURCES = \
 	src/bin/util/readstat_dta_days.c \
 	src/test/test_dta_days.c
 
 test_dta_days_LDADD = libreadstat.la
-test_dta_days_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
+test_dta_days_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 test_sav_date_SOURCES = \
 	src/bin/util/readstat_sav_date.c \
 	src/test/test_sav_date.c
 
 test_sav_date_LDADD = libreadstat.la
-test_sav_date_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
+test_sav_date_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 test_double_decimals_SOURCES = \
 	src/bin/modules/double_decimals.c \
 	src/test/test_double_decimals.c
 
-test_double_decimals_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
+test_double_decimals_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 
 TESTS = test_readstat test_dta_days test_sav_date test_double_decimals
