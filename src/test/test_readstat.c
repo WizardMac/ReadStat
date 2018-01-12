@@ -1962,6 +1962,7 @@ int main(int argc, char *argv[]) {
                     print_error(&parse_ctx->errors[i]);
                 }
                 parse_ctx_free(parse_ctx);
+                buffer_free(buffer);
                 return 1;
             }
 
@@ -1978,8 +1979,10 @@ cleanup:
         printf("Error running test \"%s\" (format=%s): %s\n", 
                 _test_groups[g].tests[t].label,
                 file_extension(f), readstat_error_message(error));
+        buffer_free(buffer);
         return 1;
     }
+    buffer_free(buffer);
 
     return 0;
 }

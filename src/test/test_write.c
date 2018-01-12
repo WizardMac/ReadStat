@@ -15,10 +15,7 @@ static void handle_error(const char *error_message, void *ctx) {
 
 static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
     rt_buffer_t *buffer = (rt_buffer_t *)ctx;
-    while (len > buffer->size - buffer->used) {
-        buffer->size *= 2;
-    }
-    buffer->bytes = realloc(buffer->bytes, buffer->size);
+    buffer_grow(buffer, len);
     if (buffer->bytes == NULL) {
         return -1;
     }

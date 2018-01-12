@@ -17,6 +17,13 @@ void buffer_reset(rt_buffer_t *buffer) {
     buffer->used = 0;
 }
 
+void buffer_grow(rt_buffer_t *buffer, size_t len) {
+    while (len > buffer->size - buffer->used) {
+        buffer->size *= 2;
+    }
+    buffer->bytes = realloc(buffer->bytes, buffer->size);
+}
+
 void buffer_free(rt_buffer_t *buffer) {
     free(buffer->bytes);
     free(buffer);
