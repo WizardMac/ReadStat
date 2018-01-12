@@ -1950,7 +1950,7 @@ int main(int argc, char *argv[]) {
 
                 error = read_file(parse_ctx, f);
                 if (error != READSTAT_OK)
-                    goto cleanup;
+                    break;
 
                 if (old_errors_count != parse_ctx->errors_count)
                     dump_buffer(buffer, f);
@@ -1961,10 +1961,14 @@ int main(int argc, char *argv[]) {
                 for (i=0; i<parse_ctx->errors_count; i++) {
                     print_error(&parse_ctx->errors[i]);
                 }
+                parse_ctx_free(parse_ctx);
                 return 1;
             }
 
-            free(parse_ctx);
+            parse_ctx_free(parse_ctx);
+
+            if (error != READSTAT_OK)
+                goto cleanup;
         }
     }
 
