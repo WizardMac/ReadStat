@@ -3,7 +3,7 @@
 #define MAX_MALLOC_SIZE (1<<20) /* One megabyte ought to be enough for anyone */
 
 void *readstat_malloc(size_t len) {
-    if (len > MAX_MALLOC_SIZE) {
+    if (len > MAX_MALLOC_SIZE || len == 0) {
         return NULL;
     }
     return malloc(len);
@@ -17,7 +17,7 @@ void *readstat_calloc(size_t count, size_t size) {
 }
 
 void *readstat_realloc(void *ptr, size_t len) {
-    if (len > MAX_MALLOC_SIZE) {
+    if (len > MAX_MALLOC_SIZE || len == 0) {
         if (ptr)
             free(ptr);
         return NULL;

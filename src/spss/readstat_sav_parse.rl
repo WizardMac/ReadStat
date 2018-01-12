@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "../readstat.h"
 #include "../readstat_iconv.h"
+#include "../readstat_malloc.h"
 
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
@@ -38,7 +39,7 @@ static int count_vars(sav_ctx_t *ctx) {
 }
 
 static varlookup_t *build_lookup_table(int var_count, sav_ctx_t *ctx) {
-    varlookup_t *table = malloc(var_count * sizeof(varlookup_t));
+    varlookup_t *table = readstat_malloc(var_count * sizeof(varlookup_t));
     int offset = 0;
     int i;
     spss_varinfo_t *last_info = NULL;
@@ -83,7 +84,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
     if (ctx->converter) {
         size_t input_len = count;
         size_t output_len = input_len * 4;
-        pe = p = output_buffer = malloc(output_len);
+        pe = p = output_buffer = readstat_malloc(output_len);
         size_t status = iconv(ctx->converter, 
                 (readstat_iconv_inbuf_t)&data, &input_len,
                 (char **)&pe, &output_len);
@@ -176,7 +177,7 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     size_t str_len = 0;
 
     size_t error_buf_len = 1024 + count;
-    char *error_buf = malloc(error_buf_len);
+    char *error_buf = readstat_malloc(error_buf_len);
     unsigned char *p = NULL;
     unsigned char *pe = NULL;
 
@@ -188,7 +189,7 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
         size_t input_len = count;
         size_t output_len = input_len * 4;
 
-        pe = p = output_buffer = malloc(output_len);
+        pe = p = output_buffer = readstat_malloc(output_len);
 
         size_t status = iconv(ctx->converter, 
                 (readstat_iconv_inbuf_t)&data, &input_len,
