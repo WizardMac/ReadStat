@@ -379,8 +379,9 @@ static readstat_error_t sav_submit_value_labels(value_label_t *value_labels, int
     for (i=0; i<label_count; i++) {
         value_label_t *vlabel = &value_labels[i];
         readstat_value_t value = { .type = value_type };
+        double val_d = 0.0;
+        char unpadded_val[8*4+1];
         if (value_type == READSTAT_TYPE_DOUBLE) {
-            double val_d = 0.0;
             memcpy(&val_d, vlabel->value, 8);
             if (ctx->bswap)
                 val_d = byteswap_double(val_d);
@@ -388,7 +389,6 @@ static readstat_error_t sav_submit_value_labels(value_label_t *value_labels, int
             value.v.double_value = val_d;
             sav_tag_missing_double(&value, ctx);
         } else {
-            char unpadded_val[8*4+1];
             retval = readstat_convert(unpadded_val, sizeof(unpadded_val), vlabel->value, 8, ctx->converter);
             if (retval != READSTAT_OK)
                 break;
