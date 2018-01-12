@@ -96,6 +96,7 @@ noinst_HEADERS = \
        src/bin/modules/mod_readstat.h \
        src/bin/modules/mod_xlsx.h \
        src/test/test_buffer.h \
+       src/test/test_buffer_io.h \
        src/test/test_dta.h \
        src/test/test_error.h \
        src/test/test_read.h \
@@ -165,6 +166,7 @@ check_PROGRAMS = \
 
 test_readstat_SOURCES = \
 	src/test/test_buffer.c \
+	src/test/test_buffer_io.c \
 	src/test/test_dta.c \
 	src/test/test_error.c \
 	src/test/test_read.c \
