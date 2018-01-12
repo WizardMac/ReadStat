@@ -1316,10 +1316,11 @@ static readstat_error_t dta_end_data(void *writer_ctx) {
         goto cleanup;
 
 cleanup:
-    dta_ctx_free(writer->module_ctx);
-    writer->module_ctx = NULL;
-
     return error;
+}
+
+static void dta_module_ctx_free(void *module_ctx) {
+    dta_ctx_free(module_ctx);
 }
 
 readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *user_ctx, long row_count) {
@@ -1366,6 +1367,7 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
 
     writer->callbacks.begin_data = &dta_begin_data;
     writer->callbacks.end_data = &dta_end_data;
+    writer->callbacks.module_ctx_free = &dta_module_ctx_free;
 
     return readstat_begin_writing_file(writer, user_ctx, row_count);
 }

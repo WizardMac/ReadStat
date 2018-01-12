@@ -348,6 +348,7 @@ typedef readstat_error_t (*readstat_write_tagged_callback)(void *row_data, const
 typedef readstat_error_t (*readstat_begin_data_callback)(void *writer);
 typedef readstat_error_t (*readstat_write_row_callback)(void *writer, void *row_data, size_t row_len);
 typedef readstat_error_t (*readstat_end_data_callback)(void *writer);
+typedef void (*readstat_module_ctx_free_callback)(void *module_ctx);
 
 typedef struct readstat_writer_callbacks_s {
     readstat_variable_width_callback    variable_width;
@@ -364,6 +365,7 @@ typedef struct readstat_writer_callbacks_s {
     readstat_begin_data_callback        begin_data;
     readstat_write_row_callback         write_row;
     readstat_end_data_callback          end_data;
+    readstat_module_ctx_free_callback   module_ctx_free;
 } readstat_writer_callbacks_t;
 
 /* You'll need to define one of these to get going. Should return # bytes written,

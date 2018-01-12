@@ -604,8 +604,11 @@ static readstat_error_t sas7bdat_end_data(void *writer_ctx) {
         retval = sas_fill_page(writer, ctx->hinfo);
     }
 
-    sas7bdat_write_ctx_free(ctx);
     return retval;
+}
+
+static void sas7bdat_module_ctx_free(void *module_ctx) {
+    sas7bdat_write_ctx_free(module_ctx);
 }
 
 static readstat_error_t sas7bdat_write_double(void *row, const readstat_variable_t *var, double value) {
@@ -779,6 +782,7 @@ readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void
 
     writer->callbacks.begin_data = &sas7bdat_begin_data;
     writer->callbacks.end_data = &sas7bdat_end_data;
+    writer->callbacks.module_ctx_free = &sas7bdat_module_ctx_free;
 
     writer->callbacks.write_row = &sas7bdat_write_row;
 

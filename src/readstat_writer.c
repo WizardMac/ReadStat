@@ -118,6 +118,9 @@ static readstat_error_t readstat_begin_writing_data(readstat_writer_t *writer) {
 void readstat_writer_free(readstat_writer_t *writer) {
     int i;
     if (writer) {
+        if (writer->callbacks.module_ctx_free && writer->module_ctx) {
+            writer->callbacks.module_ctx_free(writer->module_ctx);
+        }
         if (writer->variables) {
             for (i=0; i<writer->variables_count; i++) {
                 readstat_variable_free(writer->variables[i]);
