@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $CC = "clang" ]; then
+if [[ $CC == 'clang' ]]; then
     ./configure --enable-code-coverage --enable-sanitizers
 else
     ./configure

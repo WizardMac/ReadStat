@@ -17,7 +17,7 @@ before_script:
   - ./autogen.sh
 
 script:
-  - ./travis/configure.sh
+  - ./.travis/configure.sh
   - make
   - make check
 
