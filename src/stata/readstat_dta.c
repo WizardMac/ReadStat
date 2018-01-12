@@ -42,7 +42,8 @@ readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
     ctx->nvar = ctx->bswap ? byteswap2(nvar) : nvar;
     ctx->nobs = ctx->bswap ? byteswap4(nobs) : nobs;
 
-    ctx->variables = calloc(ctx->nvar, sizeof(readstat_variable_t *));
+    if (ctx->nvar)
+        ctx->variables = calloc(ctx->nvar, sizeof(readstat_variable_t *));
 
     ctx->machine_is_twos_complement = READSTAT_MACHINE_IS_TWOS_COMPLEMENT;
 
