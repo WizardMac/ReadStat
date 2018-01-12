@@ -595,6 +595,11 @@ static readstat_error_t dta_handle_row(const unsigned char *buf, dta_ctx_t *ctx)
             continue;
         }
 
+        if (offset + max_len > ctx->record_len) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
+
         if (value.type == READSTAT_TYPE_STRING) {
             readstat_convert(str_buf, sizeof(str_buf), (const char *)&buf[offset], max_len, ctx->converter);
             value.v.string_value = str_buf;
@@ -635,7 +640,7 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
     int i;
     readstat_error_t retval = READSTAT_OK;
 
-    if ((buf = malloc(ctx->record_len)) == NULL) {
+    if ((buf = readstat_malloc(ctx->record_len)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -948,7 +953,7 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
     while (1) {
         size_t len = 0;
         char labname[129];
-        int32_t i = 0, n = 0;
+        uint32_t i = 0, n = 0;
 
         if (ctx->value_label_table_len_len == 2) {
             int16_t table_header_len;
@@ -1004,26 +1009,26 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
                     goto cleanup;
                 }
             }
-        } else {
+        } else if (len > 8) {
             if ((retval = dta_read_tag(ctx, "</lbl>")) != READSTAT_OK) {
                 goto cleanup;
             }
 
-            n = *(int32_t *)table_buffer;
+            n = *(uint32_t *)table_buffer;
 
-            int32_t txtlen = *((int32_t *)table_buffer+1);
+            uint32_t txtlen = *((uint32_t *)table_buffer+1);
             if (ctx->bswap) {
                 n = byteswap4(n);
                 txtlen = byteswap4(txtlen);
             }
 
-            if (8*n + 8 > len || 8*n + 8 + txtlen > len || n < 0 || txtlen < 0) {
+            if (txtlen > len - 8 || n > (len - 8 - txtlen) / 8) {
                 break;
             }
 
-            int32_t *off = (int32_t *)table_buffer+2;
-            int32_t *val = (int32_t *)table_buffer+2+n;
-            char *txt = &table_buffer[8*n+8];
+            uint32_t *off = (uint32_t *)table_buffer+2;
+            uint32_t *val = (uint32_t *)table_buffer+2+n;
+            char *txt = &table_buffer[8LL*n+8];
 
             if (ctx->bswap) {
                 for (i=0; i<n; i++) {

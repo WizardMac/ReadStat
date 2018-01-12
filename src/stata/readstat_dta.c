@@ -6,6 +6,7 @@
 
 #include "../readstat.h"
 #include "../readstat_iconv.h"
+#include "../readstat_malloc.h"
 #include "../readstat_bits.h"
 
 #include "readstat_dta.h"
@@ -42,8 +43,12 @@ readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
     ctx->nvar = ctx->bswap ? byteswap2(nvar) : nvar;
     ctx->nobs = ctx->bswap ? byteswap4(nobs) : nobs;
 
-    if (ctx->nvar)
-        ctx->variables = calloc(ctx->nvar, sizeof(readstat_variable_t *));
+    if (ctx->nvar) {
+        if ((ctx->variables = readstat_calloc(ctx->nvar, sizeof(readstat_variable_t *))) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+    }
 
     ctx->machine_is_twos_complement = READSTAT_MACHINE_IS_TWOS_COMPLEMENT;
 
