@@ -79,14 +79,15 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
         size_t label_len = sas_read2(&lbp2[8], ctx->bswap);
         size_t value_entry_len = 6 + lbp1[2];
         const char *label = &lbp2[10];
+        char string_val[4*16+1];
         readstat_value_t value = { .type = is_string ? READSTAT_TYPE_STRING : READSTAT_TYPE_DOUBLE };
         if (is_string) {
-            char val[4*16+1];
-            retval = readstat_convert(val, sizeof(val), &lbp1[value_entry_len-16], 16, ctx->converter);
+            retval = readstat_convert(string_val, sizeof(string_val),
+                    &lbp1[value_entry_len-16], 16, ctx->converter);
             if (retval != READSTAT_OK)
                 goto cleanup;
 
-            value.v.string_value = val;
+            value.v.string_value = string_val;
         } else {
             uint64_t val = sas_read8(&lbp1[22], bswap_doubles);
             double dval = NAN;
