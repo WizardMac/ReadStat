@@ -19,7 +19,7 @@
 #define SAS_RLE_COMMAND_INSERT_BLANK2  14
 #define SAS_RLE_COMMAND_INSERT_ZERO2   15
 
-size_t sas_rle_decompress(void *output_buf, size_t output_len, 
+ssize_t sas_rle_decompress(void *output_buf, size_t output_len, 
         const void *input_buf, size_t input_len) {
     /* TODO bounds checking */
     unsigned char *buffer = (unsigned char *)output_buf;
@@ -79,11 +79,17 @@ size_t sas_rle_decompress(void *output_buf, size_t output_len,
                 break;
         }
         if (copy_len) {
+            if (output + copy_len > buffer + output_len) {
+                return -1;
+            }
             memcpy(output, input, copy_len);
             input += copy_len;
             output += copy_len;
         }
         if (insert_len) {
+            if (output + insert_len > buffer + output_len) {
+                return -1;
+            }
             memset(output, insert_byte, insert_len);
             output += insert_len;
         }
@@ -216,7 +222,7 @@ size_t sas_rle_insert_run(unsigned char *output_buf, unsigned char last_byte, si
     return out - output_buf;
 }
 
-size_t sas_rle_compress(void *output_buf, size_t output_len,
+ssize_t sas_rle_compress(void *output_buf, size_t output_len,
         const void *input_buf, size_t input_len) {
     /* TODO bounds check */
     const unsigned char *p = (const unsigned char *)input_buf;

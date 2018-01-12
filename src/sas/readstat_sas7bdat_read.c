@@ -440,7 +440,7 @@ static readstat_error_t sas7bdat_parse_subheader_rle(const char *subheader, size
 
     readstat_error_t retval = READSTAT_OK;
     char *buffer = NULL;
-    size_t bytes_decompressed = 0;
+    ssize_t bytes_decompressed = 0;
 
     if ((buffer = malloc(ctx->row_length)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;

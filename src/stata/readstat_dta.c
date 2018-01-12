@@ -168,37 +168,39 @@ readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
         }
     }
 
-    ctx->typlist_len = ctx->nvar * sizeof(uint16_t);
-    ctx->varlist_len = ctx->variable_name_len * ctx->nvar * sizeof(char);
     ctx->srtlist_len = (ctx->nvar + 1) * sizeof(int16_t);
-    ctx->fmtlist_len = ctx->fmtlist_entry_len * ctx->nvar * sizeof(char);
-    ctx->lbllist_len = ctx->lbllist_entry_len * ctx->nvar * sizeof(char);
-    ctx->variable_labels_len = ctx->variable_labels_entry_len * ctx->nvar * sizeof(char);
-
-    if ((ctx->typlist = malloc(ctx->typlist_len)) == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
-        goto cleanup;
-    }
-    if ((ctx->varlist = malloc(ctx->varlist_len)) == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
-        goto cleanup;
-    }
-    if ((ctx->srtlist = malloc(ctx->srtlist_len)) == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
-        goto cleanup;
-    }
-    if ((ctx->fmtlist = malloc(ctx->fmtlist_len)) == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
-        goto cleanup;
-    }
-    if ((ctx->lbllist = malloc(ctx->lbllist_len)) == NULL) {
+    if ((ctx->srtlist = readstat_malloc(ctx->srtlist_len)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
 
-    if ((ctx->variable_labels = malloc(ctx->variable_labels_len)) == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
-        goto cleanup;
+    if (ctx->nvar > 0) {
+        ctx->typlist_len = ctx->nvar * sizeof(uint16_t);
+        ctx->varlist_len = ctx->variable_name_len * ctx->nvar * sizeof(char);
+        ctx->fmtlist_len = ctx->fmtlist_entry_len * ctx->nvar * sizeof(char);
+        ctx->lbllist_len = ctx->lbllist_entry_len * ctx->nvar * sizeof(char);
+        ctx->variable_labels_len = ctx->variable_labels_entry_len * ctx->nvar * sizeof(char);
+
+        if ((ctx->typlist = readstat_malloc(ctx->typlist_len)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        if ((ctx->varlist = readstat_malloc(ctx->varlist_len)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        if ((ctx->fmtlist = readstat_malloc(ctx->fmtlist_len)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        if ((ctx->lbllist = readstat_malloc(ctx->lbllist_len)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        if ((ctx->variable_labels = readstat_malloc(ctx->variable_labels_len)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
     }
 
     ctx->initialized = 1;

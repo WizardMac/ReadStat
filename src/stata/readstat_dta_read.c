@@ -124,7 +124,7 @@ static readstat_error_t dta_read_descriptors(dta_ctx_t *ctx) {
     unsigned char *buffer = NULL;
     int i;
 
-    if ((buffer = readstat_malloc(buffer_len)) == NULL) {
+    if (ctx->nvar && (buffer = readstat_malloc(buffer_len)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -226,19 +226,19 @@ static readstat_error_t dta_read_expansion_fields(dta_ctx_t *ctx) {
         }
 
         if (ctx->expansion_len_len == 2) {
-            int16_t len16;
-            if (io->read(&len16, sizeof(int16_t), io->io_ctx) != sizeof(int16_t)) {
+            uint16_t len16;
+            if (io->read(&len16, sizeof(uint16_t), io->io_ctx) != sizeof(uint16_t)) {
                 retval = READSTAT_ERROR_READ;
                 goto cleanup;
             }
             len = ctx->bswap ? byteswap2(len16) : len16;
         } else {
-            int32_t len32;
-            if (io->read(&len32, sizeof(int32_t), io->io_ctx) != sizeof(int32_t)) {
+            uint32_t len32;
+            if (io->read(&len32, sizeof(uint32_t), io->io_ctx) != sizeof(uint32_t)) {
                 retval = READSTAT_ERROR_READ;
                 goto cleanup;
             }
-            len = ctx->bswap ? byteswap2(len32) : len32;
+            len = ctx->bswap ? byteswap4(len32) : len32;
         }
 
         if (data_type == 0 && len == 0)
@@ -640,7 +640,7 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
     int i;
     readstat_error_t retval = READSTAT_OK;
 
-    if ((buf = readstat_malloc(ctx->record_len)) == NULL) {
+    if (ctx->record_len && (buf = readstat_malloc(ctx->record_len)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -1162,13 +1162,12 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
         }
     }
 
-    if (dta_read_map(ctx) != READSTAT_OK) {
+    if ((retval = dta_read_map(ctx)) != READSTAT_OK) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
 
-    if (dta_read_descriptors(ctx) != READSTAT_OK) {
-        retval = READSTAT_ERROR_READ;
+    if ((retval = dta_read_descriptors(ctx)) != READSTAT_OK) {
         goto cleanup;
     }
 

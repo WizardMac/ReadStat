@@ -423,7 +423,7 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
     if (ctx->bswap)
         label_count = byteswap4(label_count);
     
-    if ((value_labels = readstat_malloc(label_count * sizeof(value_label_t))) == NULL) {
+    if (label_count && (value_labels = readstat_malloc(label_count * sizeof(value_label_t))) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -463,7 +463,7 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
     if (ctx->bswap)
         var_count = byteswap4(var_count);
     
-    if ((vars = readstat_malloc(var_count * sizeof(int32_t))) == NULL) {
+    if (var_count && (vars = readstat_malloc(var_count * sizeof(int32_t))) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -710,12 +710,12 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
 
     size_t uncompressed_row_len = ctx->var_offset * 8;
     readstat_off_t uncompressed_offset = 0;
-    unsigned char *uncompressed_row = readstat_malloc(uncompressed_row_len);
+    unsigned char *uncompressed_row = NULL;
 
     int bswap = ctx->bswap;
     ctx->bswap = 0;
 
-    if (uncompressed_row == NULL) {
+    if (uncompressed_row_len && (uncompressed_row = readstat_malloc(uncompressed_row_len)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto done;
     }
@@ -847,7 +847,7 @@ static readstat_error_t sav_store_variable_display_parameter_record(const void *
     int i;
 
     ctx->variable_display_values = readstat_realloc(ctx->variable_display_values, count * sizeof(int32_t));
-    if (ctx->variable_display_values == NULL)
+    if (count > 0 && ctx->variable_display_values == NULL)
         return READSTAT_ERROR_MALLOC;
 
     ctx->variable_display_values_count = count;
