@@ -5,6 +5,7 @@
 #include "test_types.h"
 #include "test_error.h"
 #include "test_buffer.h"
+#include "test_buffer_io.h"
 #include "test_readstat.h"
 #include "test_read.h"
 #include "test_dta.h"
