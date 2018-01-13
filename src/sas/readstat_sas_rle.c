@@ -21,11 +21,14 @@
 
 ssize_t sas_rle_decompress(void *output_buf, size_t output_len, 
         const void *input_buf, size_t input_len) {
-    /* TODO bounds checking */
     unsigned char *buffer = (unsigned char *)output_buf;
     unsigned char *output = buffer;
 
     const unsigned char *input = (const unsigned char *)input_buf;
+
+    size_t command_lengths[] = {
+        1, 0, 0, 0, 2, 1, 1, 1,
+        0, 0, 0, 0, 1, 0, 0, 0 };
 
     while (input < (const unsigned char *)input_buf + input_len) {
         unsigned char control = *input++;
@@ -34,6 +37,9 @@ ssize_t sas_rle_decompress(void *output_buf, size_t output_len,
         int copy_len = 0;
         int insert_len = 0;
         unsigned char insert_byte = '\0';
+        if (input + command_lengths[command] >= (const unsigned char *)input_buf + input_len) {
+            return -1;
+        }
         switch (command) {
             case SAS_RLE_COMMAND_COPY64:
                 copy_len = (*input++) + 64 + length * 256;
