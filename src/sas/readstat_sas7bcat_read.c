@@ -140,7 +140,7 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
     int label_count_used = 0;
     char name[4*32+1];
 
-    if (data_size < 110)
+    if (data_size < 50)
         goto cleanup;
 
     pad = (data[2] & 0x08) ? 4 : 0; // might be 0x10, not sure
@@ -155,11 +155,17 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
     }
 
     if ((data[2] & 0x80)) { // has long name
+        if (data_size < 106 + pad + 32)
+            goto cleanup;
+
         retval = readstat_convert(name, sizeof(name), &data[106+pad], 32, ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
         pad += 32;
     }
+
+    if (data_size < 106 + pad)
+        goto cleanup;
 
     if ((retval = sas7bcat_parse_value_labels(&data[106+pad], data_size - 106 - pad, 
                     label_count_used, label_count_capacity, name, ctx)) != READSTAT_OK)
