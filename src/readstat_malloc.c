@@ -13,6 +13,9 @@ void *readstat_calloc(size_t count, size_t size) {
     if (count > MAX_MALLOC_SIZE || size > MAX_MALLOC_SIZE || count * size > MAX_MALLOC_SIZE) {
         return NULL;
     }
+    if (count == 0 || size == 0) {
+        return NULL;
+    }
     return calloc(count, size);
 }
 
