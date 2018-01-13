@@ -64,7 +64,7 @@ typedef struct sas7bdat_ctx_s {
     int            col_attrs_count;
     int            col_formats_count;
 
-    int            max_col_width;
+    size_t         max_col_width;
     char          *scratch_buffer;
     size_t         scratch_buffer_len;
 
@@ -156,9 +156,19 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t sas7bdat_parse_column_size_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
-    readstat_error_t retval = READSTAT_OK;
+static readstat_error_t sas7bdat_realloc_col_info(sas7bdat_ctx_t *ctx, size_t count) {
+    if (ctx->col_info_count < count) {
+        ctx->col_info_count = count;
+        ctx->col_info = readstat_realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
+        if (ctx->col_info == NULL) {
+            return READSTAT_ERROR_MALLOC;
+        }
+    }
+    return READSTAT_OK;
+}
 
+
+static readstat_error_t sas7bdat_parse_column_size_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
     uint64_t col_count;
 
     if (ctx->u64) {
@@ -169,7 +179,7 @@ static readstat_error_t sas7bdat_parse_column_size_subheader(const char *subhead
 
     ctx->column_count = col_count;
 
-    return retval;
+    return sas7bdat_realloc_col_info(ctx, ctx->column_count);
 }
 
 static readstat_error_t sas7bdat_parse_row_size_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
@@ -221,17 +231,6 @@ static readstat_error_t sas7bdat_copy_text_ref(char *out_buffer, size_t out_buff
 
     return readstat_convert(out_buffer, out_buffer_len, &blob[text_ref.offset], text_ref.length,
             ctx->converter);
-}
-
-static readstat_error_t sas7bdat_realloc_col_info(sas7bdat_ctx_t *ctx, size_t count) {
-    if (ctx->col_info_count < count) {
-        ctx->col_info_count = count;
-        ctx->col_info = readstat_realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
-        if (ctx->col_info == NULL) {
-            return READSTAT_ERROR_MALLOC;
-        }
-    }
-    return READSTAT_OK;
 }
 
 static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
