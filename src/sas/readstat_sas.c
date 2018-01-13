@@ -362,7 +362,7 @@ readstat_error_t sas_fill_page(readstat_writer_t *writer, sas_header_info_t *hin
     return READSTAT_OK;
 }
 
-readstat_error_t sas_validate_name(const char *name) {
+static readstat_error_t sas_validate_name(const char *name) {
     int j;
     for (j=0; name[j]; j++) {
         if (name[j] != '_' &&
@@ -390,14 +390,6 @@ readstat_error_t sas_validate_name(const char *name) {
     return READSTAT_OK;
 }
 
-readstat_error_t sas_validate_column_names(readstat_writer_t *writer) {
-    int i;
-    for (i=0; i<writer->variables_count; i++) {
-        readstat_variable_t *variable = readstat_get_variable(writer, i);
-        readstat_error_t error = sas_validate_name(readstat_variable_get_name(variable));
-        if (error != READSTAT_OK)
-            return error;
-    }
-    return READSTAT_OK;
+readstat_error_t sas_validate_variable(readstat_variable_t *variable) {
+    return sas_validate_name(readstat_variable_get_name(variable));
 }
-

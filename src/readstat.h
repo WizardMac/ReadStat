@@ -93,7 +93,8 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_NOTE_IS_TOO_LONG,
     READSTAT_ERROR_STRING_REFS_NOT_SUPPORTED,
     READSTAT_ERROR_STRING_REF_IS_REQUIRED,
-    READSTAT_ERROR_ROW_IS_TOO_WIDE_FOR_PAGE
+    READSTAT_ERROR_ROW_IS_TOO_WIDE_FOR_PAGE,
+    READSTAT_ERROR_ROW_IS_EMPTY
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);
@@ -334,6 +335,7 @@ typedef struct readstat_string_ref_s {
 } readstat_string_ref_t;
 
 typedef size_t (*readstat_variable_width_callback)(readstat_type_t type, size_t user_width);
+typedef readstat_error_t (*readstat_variable_ok_callback)(readstat_variable_t *variable);
 
 typedef readstat_error_t (*readstat_write_int8_callback)(void *row_data, const readstat_variable_t *variable, int8_t value);
 typedef readstat_error_t (*readstat_write_int16_callback)(void *row_data, const readstat_variable_t *variable, int16_t value);
@@ -352,6 +354,7 @@ typedef void (*readstat_module_ctx_free_callback)(void *module_ctx);
 
 typedef struct readstat_writer_callbacks_s {
     readstat_variable_width_callback    variable_width;
+    readstat_variable_ok_callback       variable_ok;
     readstat_write_int8_callback        write_int8;
     readstat_write_int16_callback       write_int16;
     readstat_write_int32_callback       write_int32;

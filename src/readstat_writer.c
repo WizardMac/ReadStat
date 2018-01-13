@@ -106,12 +106,21 @@ static readstat_error_t readstat_begin_writing_data(readstat_writer_t *writer) {
         variable->offset = row_len;
         row_len += variable->storage_width;
     }
+    if (writer->callbacks.variable_ok) {
+        for (i=0; i<writer->variables_count; i++) {
+            readstat_variable_t *variable = readstat_get_variable(writer, i);
+            retval = writer->callbacks.variable_ok(variable);
+            if (retval != READSTAT_OK)
+                goto cleanup;
+        }
+    }
     if (writer->callbacks.begin_data) {
         retval = writer->callbacks.begin_data(writer);
     }
     writer->row_len = row_len;
     writer->row = malloc(writer->row_len);
 
+cleanup:
     return retval;
 }
 
