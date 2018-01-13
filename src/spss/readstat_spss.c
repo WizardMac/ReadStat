@@ -153,8 +153,8 @@ readstat_variable_t *spss_init_variable_for_info(spss_varinfo_t *info, int index
     return variable;
 }
 
-int32_t spss_measure_from_readstat_measure(readstat_measure_t measure) {
-    int32_t sav_measure = SAV_MEASURE_UNKNOWN;
+uint32_t spss_measure_from_readstat_measure(readstat_measure_t measure) {
+    uint32_t sav_measure = SAV_MEASURE_UNKNOWN;
     if (measure == READSTAT_MEASURE_NOMINAL) {
         sav_measure = SAV_MEASURE_NOMINAL;
     } else if (measure == READSTAT_MEASURE_ORDINAL) {
@@ -165,7 +165,7 @@ int32_t spss_measure_from_readstat_measure(readstat_measure_t measure) {
     return sav_measure;
 }
 
-readstat_measure_t spss_measure_to_readstat_measure(int32_t sav_measure) {
+readstat_measure_t spss_measure_to_readstat_measure(uint32_t sav_measure) {
     if (sav_measure == SAV_MEASURE_NOMINAL)
         return READSTAT_MEASURE_NOMINAL;
     if (sav_measure == SAV_MEASURE_ORDINAL)
@@ -175,8 +175,8 @@ readstat_measure_t spss_measure_to_readstat_measure(int32_t sav_measure) {
     return READSTAT_MEASURE_UNKNOWN;
 }
 
-int32_t spss_alignment_from_readstat_alignment(readstat_alignment_t alignment) {
-    int32_t sav_alignment = 0;
+uint32_t spss_alignment_from_readstat_alignment(readstat_alignment_t alignment) {
+    uint32_t sav_alignment = 0;
     if (alignment == READSTAT_ALIGNMENT_LEFT) {
         sav_alignment = SAV_ALIGNMENT_LEFT;
     } else if (alignment == READSTAT_ALIGNMENT_CENTER) {
@@ -187,7 +187,7 @@ int32_t spss_alignment_from_readstat_alignment(readstat_alignment_t alignment) {
     return sav_alignment;
 }
 
-readstat_alignment_t spss_alignment_to_readstat_alignment(int32_t sav_alignment) {
+readstat_alignment_t spss_alignment_to_readstat_alignment(uint32_t sav_alignment) {
     if (sav_alignment == SAV_ALIGNMENT_LEFT)
         return READSTAT_ALIGNMENT_LEFT;
     if (sav_alignment == SAV_ALIGNMENT_CENTER)

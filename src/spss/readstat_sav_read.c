@@ -129,8 +129,8 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx);
 
 static readstat_error_t sav_read_dictionary_termination_record(sav_ctx_t *ctx);
 
-static readstat_error_t sav_parse_machine_floating_point_record(const void *data, sav_ctx_t *ctx);
-static readstat_error_t sav_store_variable_display_parameter_record(const void *data, int count, sav_ctx_t *ctx);
+static readstat_error_t sav_parse_machine_floating_point_record(const void *data, size_t size, size_t count, sav_ctx_t *ctx);
+static readstat_error_t sav_store_variable_display_parameter_record(const void *data, size_t size, size_t count, sav_ctx_t *ctx);
 static readstat_error_t sav_parse_variable_display_parameter_record(sav_ctx_t *ctx);
 static readstat_error_t sav_parse_machine_integer_info_record(const void *data, size_t data_len, sav_ctx_t *ctx);
 static readstat_error_t sav_parse_long_value_labels_record(const void *data, size_t data_len, sav_ctx_t *ctx);
@@ -834,7 +834,10 @@ static readstat_error_t sav_parse_machine_integer_info_record(const void *data, 
     return READSTAT_OK;
 }
 
-static readstat_error_t sav_parse_machine_floating_point_record(const void *data, sav_ctx_t *ctx) {
+static readstat_error_t sav_parse_machine_floating_point_record(const void *data, size_t size, size_t count, sav_ctx_t *ctx) {
+    if (size != 8 || count != 3)
+        return READSTAT_ERROR_PARSE;
+
     sav_machine_floating_point_info_record_t fp_info;
     memcpy(&fp_info, data, sizeof(sav_machine_floating_point_info_record_t));
 
@@ -847,11 +850,14 @@ static readstat_error_t sav_parse_machine_floating_point_record(const void *data
 
 /* We don't yet know how many real variables there are, so store the values in the record
  * and make sense of them later. */
-static readstat_error_t sav_store_variable_display_parameter_record(const void *data, int count, sav_ctx_t *ctx) {
-    const int32_t *data_ptr = data;
+static readstat_error_t sav_store_variable_display_parameter_record(const void *data, size_t size, size_t count, sav_ctx_t *ctx) {
+    if (size != 4)
+        return READSTAT_ERROR_PARSE;
+
+    const uint32_t *data_ptr = data;
     int i;
 
-    ctx->variable_display_values = readstat_realloc(ctx->variable_display_values, count * sizeof(int32_t));
+    ctx->variable_display_values = readstat_realloc(ctx->variable_display_values, count * sizeof(uint32_t));
     if (count > 0 && ctx->variable_display_values == NULL)
         return READSTAT_ERROR_MALLOC;
 
@@ -1192,12 +1198,12 @@ static readstat_error_t sav_parse_records_pass2(sav_ctx_t *ctx) {
                         /* parsed in pass 1 */
                         break;
                     case SAV_RECORD_SUBTYPE_FP_INFO:
-                        retval = sav_parse_machine_floating_point_record(data_buf, ctx);
+                        retval = sav_parse_machine_floating_point_record(data_buf, size, count, ctx);
                         if (retval != READSTAT_OK)
                             goto cleanup;
                         break;
                     case SAV_RECORD_SUBTYPE_VAR_DISPLAY:
-                        retval = sav_store_variable_display_parameter_record(data_buf, count, ctx);
+                        retval = sav_store_variable_display_parameter_record(data_buf, size, count, ctx);
                         if (retval != READSTAT_OK)
                             goto cleanup;
                         break;
