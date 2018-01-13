@@ -195,6 +195,10 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
+    if (hinfo->header_size > (1<<20) || hinfo->page_size > (1<<24)) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
 
     if (hinfo->u64) {
         hinfo->page_header_size = SAS_PAGE_HEADER_SIZE_64BIT;
@@ -218,6 +222,10 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
             goto cleanup;
         }
         hinfo->page_count = bswap ? byteswap4(page_count) : page_count;
+    }
+    if (hinfo->page_count > (1<<24)) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
     }
     
     if (io->seek(8, READSTAT_SEEK_CUR, io->io_ctx) == -1) {

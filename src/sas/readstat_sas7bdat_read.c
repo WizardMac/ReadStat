@@ -577,6 +577,10 @@ static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx) {
         }
     }
     ctx->variables = readstat_calloc(ctx->column_count, sizeof(readstat_variable_t *));
+    if (ctx->variables == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
     int i;
     int index_after_skipping = 0;
     for (i=0; i<ctx->column_count; i++) {
