@@ -9,6 +9,7 @@
 #include "readstat_sas_rle.h"
 #include "../readstat_iconv.h"
 #include "../readstat_convert.h"
+#include "../readstat_malloc.h"
 
 #define SAS_COMPRESSION_SIGNATURE_RLE  "SASYZCRL"
 #define SAS_COMPRESSION_SIGNATURE_RDC  "SASYZCR2"
@@ -128,15 +129,15 @@ static readstat_error_t sas7bdat_parse_column_text_subheader(const char *subhead
         goto cleanup;
     }
     ctx->text_blob_count++;
-    ctx->text_blobs = realloc(ctx->text_blobs, ctx->text_blob_count * sizeof(char *));
-    ctx->text_blob_lengths = realloc(ctx->text_blob_lengths,
+    ctx->text_blobs = readstat_realloc(ctx->text_blobs, ctx->text_blob_count * sizeof(char *));
+    ctx->text_blob_lengths = readstat_realloc(ctx->text_blob_lengths,
             ctx->text_blob_count * sizeof(ctx->text_blob_lengths[0]));
     if (ctx->text_blobs == NULL || ctx->text_blob_lengths == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
 
-    if ((blob = malloc(len-signature_len)) == NULL) {
+    if ((blob = readstat_malloc(len-signature_len)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -225,7 +226,7 @@ static readstat_error_t sas7bdat_copy_text_ref(char *out_buffer, size_t out_buff
 static readstat_error_t sas7bdat_realloc_col_info(sas7bdat_ctx_t *ctx, size_t count) {
     if (ctx->col_info_count < count) {
         ctx->col_info_count = count;
-        ctx->col_info = realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
+        ctx->col_info = readstat_realloc(ctx->col_info, ctx->col_info_count * sizeof(col_info_t));
         if (ctx->col_info == NULL) {
             return READSTAT_ERROR_MALLOC;
         }
@@ -294,8 +295,16 @@ static readstat_error_t sas7bdat_parse_column_attributes_subheader(const char *s
 
         if (cap[off+6] == SAS_COLUMN_TYPE_NUM) {
             ctx->col_info[i].type = READSTAT_TYPE_DOUBLE;
+            if (ctx->col_info[i].width > 8 || ctx->col_info[i].width < 3) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
         } else if (cap[off+6] == SAS_COLUMN_TYPE_CHR) {
             ctx->col_info[i].type = READSTAT_TYPE_STRING;
+            if (ctx->col_info[i].width < 0) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
         } else {
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
@@ -395,7 +404,7 @@ static readstat_error_t sas7bdat_parse_single_row(const char *data, sas7bdat_ctx
     int j;
     if (ctx->value_handler) {
         ctx->scratch_buffer_len = 4*ctx->max_col_width+1;
-        ctx->scratch_buffer = realloc(ctx->scratch_buffer, ctx->scratch_buffer_len);
+        ctx->scratch_buffer = readstat_realloc(ctx->scratch_buffer, ctx->scratch_buffer_len);
         if (ctx->scratch_buffer == NULL) {
             retval = READSTAT_ERROR_MALLOC;
             goto cleanup;
@@ -407,6 +416,10 @@ static readstat_error_t sas7bdat_parse_single_row(const char *data, sas7bdat_ctx
             if (variable->skip)
                 continue;
 
+            if (col_info->offset < 0 || col_info->offset + col_info->width > ctx->row_length) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
             retval = sas7bdat_handle_data_value(variable, col_info, &data[col_info->offset], ctx);
             if (retval != READSTAT_OK) {
                 goto cleanup;
@@ -419,11 +432,15 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t sas7bdat_parse_rows(const char *data, sas7bdat_ctx_t *ctx) {
+static readstat_error_t sas7bdat_parse_rows(const char *data, size_t len, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     int i;
     size_t row_offset=0;
     for (i=0; i<ctx->page_row_count && ctx->parsed_row_count < ctx->row_limit; i++) {
+        if (row_offset + ctx->row_length > len) {
+            retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
+            goto cleanup;
+        }
         if ((retval = sas7bdat_parse_single_row(&data[row_offset], ctx)) != READSTAT_OK)
             goto cleanup;
 
@@ -442,7 +459,7 @@ static readstat_error_t sas7bdat_parse_subheader_rle(const char *subheader, size
     char *buffer = NULL;
     ssize_t bytes_decompressed = 0;
 
-    if ((buffer = malloc(ctx->row_length)) == NULL) {
+    if ((buffer = readstat_malloc(ctx->row_length)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -505,7 +522,7 @@ cleanup:
 static readstat_variable_t *sas7bdat_init_variable(sas7bdat_ctx_t *ctx, int i, 
         int index_after_skipping, readstat_error_t *out_retval) {
     readstat_error_t retval = READSTAT_OK;
-    readstat_variable_t *variable = calloc(1, sizeof(readstat_variable_t));
+    readstat_variable_t *variable = readstat_calloc(1, sizeof(readstat_variable_t));
 
     variable->index = i;
     variable->index_after_skipping = index_after_skipping;
@@ -560,7 +577,7 @@ static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx) {
             goto cleanup;
         }
     }
-    ctx->variables = calloc(ctx->column_count, sizeof(readstat_variable_t *));
+    ctx->variables = readstat_calloc(ctx->column_count, sizeof(readstat_variable_t *));
     int i;
     int index_after_skipping = 0;
     for (i=0; i<ctx->column_count; i++) {
@@ -767,7 +784,7 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
             goto cleanup;
         }
         if (ctx->value_handler) {
-            retval = sas7bdat_parse_rows(data, ctx);
+            retval = sas7bdat_parse_rows(data, page + page_size - data, ctx);
         }
     } 
 cleanup:
@@ -995,7 +1012,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     if (ctx->input_encoding == NULL) {
         ctx->input_encoding = hinfo->encoding;
     }
-    if ((ctx->page = malloc(ctx->page_size)) == NULL) {
+    if ((ctx->page = readstat_malloc(ctx->page_size)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
