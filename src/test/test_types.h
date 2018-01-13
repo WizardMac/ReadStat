@@ -9,6 +9,8 @@
 #define RT_MAX_VALUE_LABELS          2
 #define RT_MAX_STRING               64
 #define RT_MAX_VALUE_LABEL_STRING  121
+#define MAX_TESTS_PER_GROUP 20
+
 
 typedef struct rt_label_set_s {
     char                    name[RT_MAX_STRING];
@@ -61,6 +63,12 @@ typedef struct rt_test_file_s {
 
     char                fweight[RT_MAX_STRING];
 } rt_test_file_t;
+
+typedef struct rt_test_group_s {
+    char             label[80];
+    rt_test_file_t   tests[MAX_TESTS_PER_GROUP];
+} rt_test_group_t;
+
 
 typedef struct rt_error_s {
     readstat_value_t    received;

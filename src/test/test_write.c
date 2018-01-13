@@ -39,40 +39,6 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_writer_set_file_timestamp(writer, mktime(&timestamp));
     }
 
-    if ((format & RT_FORMAT_DTA)) {
-        long version = dta_file_format_version(format);
-        if (version == -1) {
-            error = READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
-            goto cleanup;
-        }
-        readstat_writer_set_file_format_version(writer, version);
-        error = readstat_begin_writing_dta(writer, buffer, file->rows);
-    } else if ((format & RT_FORMAT_SAS7BDAT)) {
-        if ((format & RT_FORMAT_SAS7BDAT_COMP_ROWS)) {
-            readstat_writer_set_compression(writer, READSTAT_COMPRESS_ROWS);
-        }
-        readstat_writer_set_file_format_version(writer, sas_file_format_version(format));
-        readstat_writer_set_file_format_is_64bit(writer, !!(format & RT_FORMAT_SAS7BDAT_64BIT));
-        error = readstat_begin_writing_sas7bdat(writer, buffer, file->rows);
-    } else if ((format & RT_FORMAT_SAS7BCAT)) {
-        error = readstat_begin_writing_sas7bcat(writer, buffer);
-    } else if ((format & RT_FORMAT_XPORT)) {
-        readstat_writer_set_file_format_version(writer, sas_file_format_version(format));
-        error = readstat_begin_writing_xport(writer, buffer, file->rows);
-    } else if ((format & RT_FORMAT_SAV)) {
-        if (format == RT_FORMAT_SAV_COMP_ROWS) {
-            readstat_writer_set_compression(writer, READSTAT_COMPRESS_ROWS);
-        }
-        error = readstat_begin_writing_sav(writer, buffer, file->rows);
-    } else if (format == RT_FORMAT_POR) {
-        error = readstat_begin_writing_por(writer, buffer, file->rows);
-    } else {
-        error = READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
-    }
-
-    if (error != READSTAT_OK)
-        goto cleanup;
-
     int i, j;
     int did_set_fweight = 0;
     for (j=0; j<file->notes_count; j++) {
@@ -105,6 +71,14 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
     }
     for (j=0; j<file->string_refs_count; j++) {
         readstat_add_string_ref(writer, file->string_refs[j]);
+    }
+    if (file->columns_count == 0) {
+        int c;
+        for (c=0; c<RT_MAX_COLS; c++) {
+            if (!file->columns[c].name[0])
+                break;
+            file->columns_count++;
+        }
     }
     for (j=0; j<file->columns_count; j++) {
         rt_column_t *column = &file->columns[j];
@@ -158,6 +132,40 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         error = READSTAT_ERROR_BAD_FREQUENCY_WEIGHT;
         goto cleanup;
     }
+
+    if ((format & RT_FORMAT_DTA)) {
+        long version = dta_file_format_version(format);
+        if (version == -1) {
+            error = READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
+            goto cleanup;
+        }
+        readstat_writer_set_file_format_version(writer, version);
+        error = readstat_begin_writing_dta(writer, buffer, file->rows);
+    } else if ((format & RT_FORMAT_SAS7BDAT)) {
+        if ((format & RT_FORMAT_SAS7BDAT_COMP_ROWS)) {
+            readstat_writer_set_compression(writer, READSTAT_COMPRESS_ROWS);
+        }
+        readstat_writer_set_file_format_version(writer, sas_file_format_version(format));
+        readstat_writer_set_file_format_is_64bit(writer, !!(format & RT_FORMAT_SAS7BDAT_64BIT));
+        error = readstat_begin_writing_sas7bdat(writer, buffer, file->rows);
+    } else if ((format & RT_FORMAT_SAS7BCAT)) {
+        error = readstat_begin_writing_sas7bcat(writer, buffer);
+    } else if ((format & RT_FORMAT_XPORT)) {
+        readstat_writer_set_file_format_version(writer, sas_file_format_version(format));
+        error = readstat_begin_writing_xport(writer, buffer, file->rows);
+    } else if ((format & RT_FORMAT_SAV)) {
+        if (format == RT_FORMAT_SAV_COMP_ROWS) {
+            readstat_writer_set_compression(writer, READSTAT_COMPRESS_ROWS);
+        }
+        error = readstat_begin_writing_sav(writer, buffer, file->rows);
+    } else if (format == RT_FORMAT_POR) {
+        error = readstat_begin_writing_por(writer, buffer, file->rows);
+    } else {
+        error = READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
+    }
+
+    if (error != READSTAT_OK)
+        goto cleanup;
 
     for (i=0; i<file->rows; i++) {
         error = readstat_begin_row(writer);
