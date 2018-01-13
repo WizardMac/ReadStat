@@ -406,17 +406,17 @@ cleanup:
 }
 
 static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
-    int32_t label_count;
+    uint32_t label_count;
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
-    int32_t *vars = NULL;
+    uint32_t *vars = NULL;
+    uint32_t var_count;
     int32_t rec_type;
-    int32_t var_count;
     readstat_type_t value_type = READSTAT_TYPE_STRING;
     char label_buf[256];
     value_label_t *value_labels = NULL;
 
-    if (io->read(&label_count, sizeof(int32_t), io->io_ctx) < sizeof(int32_t)) {
+    if (io->read(&label_count, sizeof(uint32_t), io->io_ctx) < sizeof(uint32_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
@@ -456,23 +456,23 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
-    if (io->read(&var_count, sizeof(int32_t), io->io_ctx) < sizeof(int32_t)) {
+    if (io->read(&var_count, sizeof(uint32_t), io->io_ctx) < sizeof(uint32_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
     if (ctx->bswap)
         var_count = byteswap4(var_count);
     
-    if (var_count && (vars = readstat_malloc(var_count * sizeof(int32_t))) == NULL) {
+    if (var_count && (vars = readstat_malloc(var_count * sizeof(uint32_t))) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
-    if (io->read(vars, var_count * sizeof(int32_t), io->io_ctx) < var_count * sizeof(int32_t)) {
+    if (io->read(vars, var_count * sizeof(uint32_t), io->io_ctx) < var_count * sizeof(uint32_t)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
     for (i=0; i<var_count; i++) {
-        int var_offset = vars[i];
+        uint32_t var_offset = vars[i];
         if (ctx->bswap)
             var_offset = byteswap4(var_offset);
 
@@ -1388,7 +1388,7 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
  
     sav_set_n_segments_and_var_count(ctx);
 
-    if (ctx->record_count > 0 && ctx->var_count == 0) {
+    if (ctx->var_count == 0) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
