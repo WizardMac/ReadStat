@@ -653,7 +653,7 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
         }
 
         if (len > 0 && compression != SAS_COMPRESSION_TRUNC) {
-            if (offset + len > page_size || offset < ctx->page_header_size+subheader_count*lshp) {
+            if (offset > page_size || offset + len > page_size || offset < ctx->page_header_size+subheader_count*lshp) {
                 retval = READSTAT_ERROR_PARSE;
                 goto cleanup;
             }
