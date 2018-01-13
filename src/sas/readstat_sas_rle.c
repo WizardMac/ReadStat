@@ -37,7 +37,7 @@ ssize_t sas_rle_decompress(void *output_buf, size_t output_len,
         int copy_len = 0;
         int insert_len = 0;
         unsigned char insert_byte = '\0';
-        if (input + command_lengths[command] >= (const unsigned char *)input_buf + input_len) {
+        if (input + command_lengths[command] > (const unsigned char *)input_buf + input_len) {
             return -1;
         }
         switch (command) {
@@ -86,6 +86,9 @@ ssize_t sas_rle_decompress(void *output_buf, size_t output_len,
         }
         if (copy_len) {
             if (output + copy_len > buffer + output_len) {
+                return -1;
+            }
+            if (input + copy_len > (const unsigned char *)input_buf + input_len) {
                 return -1;
             }
             memcpy(output, input, copy_len);
