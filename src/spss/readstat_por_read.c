@@ -14,6 +14,7 @@
 #include "../readstat.h"
 #include "../readstat_iconv.h"
 #include "../readstat_convert.h"
+#include "../readstat_malloc.h"
 #include "../CKHashTable.h"
 
 #include "readstat_por_parse.h"
@@ -172,6 +173,7 @@ static readstat_error_t maybe_read_string(por_ctx_t *ctx, char *data, size_t len
     double value;
     int finished = 0;
     char error_buf[1024];
+    size_t string_length = 0;
     retval = maybe_read_double(ctx, &value, &finished);
     if (retval != READSTAT_OK || finished) {
         if (out_finished)
@@ -180,11 +182,11 @@ static readstat_error_t maybe_read_string(por_ctx_t *ctx, char *data, size_t len
         return retval;
     }
     
-    size_t string_length = (size_t)value;
-    if (string_length <= 0 || string_length > 20000) {
+    if (value <= 0 || value > 20000 || isnan(value)) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
+    string_length = (size_t)value;
     
     if (string_length > ctx->string_buffer_len) {
         ctx->string_buffer_len = string_length;
@@ -227,12 +229,16 @@ static readstat_error_t read_string(por_ctx_t *ctx, char *data, size_t len) {
 static readstat_error_t read_variable_count_record(por_ctx_t *ctx) {
     double value;
     readstat_error_t retval = READSTAT_OK;
+    if (ctx->var_count) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
     if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
         goto cleanup;
     }
     ctx->var_count = (int)value;
-    ctx->variables = calloc(ctx->var_count, sizeof(readstat_variable_t *));
-    ctx->varinfo = calloc(ctx->var_count, sizeof(spss_varinfo_t));
+    ctx->variables = readstat_calloc(ctx->var_count, sizeof(readstat_variable_t *));
+    ctx->varinfo = readstat_calloc(ctx->var_count, sizeof(spss_varinfo_t));
     if (ctx->info_handler) {
         if (ctx->info_handler(-1, ctx->var_count, ctx->user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
@@ -316,7 +322,7 @@ static readstat_error_t read_missing_value_record(por_ctx_t *ctx) {
     char string[256];
     spss_varinfo_t *varinfo = NULL;
 
-    if (ctx->var_offset < 0 || ctx->var_offset == ctx->var_count) {
+    if (ctx->var_offset < 0 || ctx->var_offset >= ctx->var_count) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
