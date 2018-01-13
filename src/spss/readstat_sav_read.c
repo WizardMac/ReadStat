@@ -583,6 +583,11 @@ static readstat_error_t sav_read_data(sav_ctx_t *ctx) {
     ctx->utf8_string_len = 4*longest_string+1 + sizeof(SAV_EIGHT_SPACES)-2;
     ctx->utf8_string = readstat_malloc(ctx->utf8_string_len);
 
+    if (ctx->raw_string == NULL || ctx->utf8_string == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto done;
+    }
+
     if (ctx->data_is_compressed) {
         retval = sav_read_compressed_data(ctx);
     } else {
