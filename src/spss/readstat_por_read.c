@@ -259,10 +259,19 @@ static readstat_error_t read_variable_record(por_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     double value;
     int i;
+    spss_varinfo_t *varinfo = NULL;
+    spss_format_t *formats[2];
+
     ctx->var_offset++;
 
-    spss_varinfo_t *varinfo = &ctx->varinfo[ctx->var_offset];
-    spss_format_t *formats[2] = { &varinfo->print_format, &varinfo->write_format };
+    if (ctx->var_offset == ctx->var_count) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
+    varinfo = &ctx->varinfo[ctx->var_offset];
+    formats[0] = &varinfo->print_format;
+    formats[1] = &varinfo->write_format;
 
     if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
         goto cleanup;
@@ -305,12 +314,20 @@ static readstat_error_t read_missing_value_record(por_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     double value;
     char string[256];
-    if (ctx->varinfo[ctx->var_offset].type == READSTAT_TYPE_DOUBLE) {
+    spss_varinfo_t *varinfo = NULL;
+
+    if (ctx->var_offset < 0 || ctx->var_offset == ctx->var_count) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    varinfo = &ctx->varinfo[ctx->var_offset];
+
+    if (varinfo->type == READSTAT_TYPE_DOUBLE) {
         if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
             goto cleanup;
         }
-        ctx->varinfo[ctx->var_offset].missing_values[ctx->varinfo[ctx->var_offset].n_missing_values++] = value;
-        if (ctx->varinfo[ctx->var_offset].n_missing_values > 3) {
+        varinfo->missing_values[varinfo->n_missing_values++] = value;
+        if (varinfo->n_missing_values > 3) {
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
         }
@@ -327,17 +344,25 @@ static readstat_error_t read_missing_value_range_record(por_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     double value;
     char string[256];
-    if (ctx->varinfo[ctx->var_offset].type == READSTAT_TYPE_DOUBLE) {
-        ctx->varinfo[ctx->var_offset].missing_range = 1;
+    spss_varinfo_t *varinfo = NULL;
+
+    if (ctx->var_offset < 0 || ctx->var_offset == ctx->var_count) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    varinfo = &ctx->varinfo[ctx->var_offset];
+
+    if (varinfo->type == READSTAT_TYPE_DOUBLE) {
+        varinfo->missing_range = 1;
         if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
             goto cleanup;
         }
-        ctx->varinfo[ctx->var_offset].missing_values[0] = value;
+        varinfo->missing_values[0] = value;
         if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
             goto cleanup;
         }
-        ctx->varinfo[ctx->var_offset].missing_values[1] = value;
-        ctx->varinfo[ctx->var_offset].n_missing_values = 2;
+        varinfo->missing_values[1] = value;
+        varinfo->n_missing_values = 2;
     } else {
         if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
             goto cleanup;
@@ -354,14 +379,22 @@ static readstat_error_t read_missing_value_lo_range_record(por_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     double value;
     char string[256];
-    if (ctx->varinfo[ctx->var_offset].type == READSTAT_TYPE_DOUBLE) {
-        ctx->varinfo[ctx->var_offset].missing_range = 1;
+    spss_varinfo_t *varinfo = NULL;
+
+    if (ctx->var_offset < 0 || ctx->var_offset == ctx->var_count) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    varinfo = &ctx->varinfo[ctx->var_offset];
+
+    if (varinfo->type == READSTAT_TYPE_DOUBLE) {
+        varinfo->missing_range = 1;
         if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
             goto cleanup;
         }
-        ctx->varinfo[ctx->var_offset].missing_values[0] = -HUGE_VAL;
-        ctx->varinfo[ctx->var_offset].missing_values[1] = value;
-        ctx->varinfo[ctx->var_offset].n_missing_values = 2;
+        varinfo->missing_values[0] = -HUGE_VAL;
+        varinfo->missing_values[1] = value;
+        varinfo->n_missing_values = 2;
     } else {
         if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
             goto cleanup;
@@ -375,14 +408,22 @@ static readstat_error_t read_missing_value_hi_range_record(por_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     double value;
     char string[256];
-    if (ctx->varinfo[ctx->var_offset].type == READSTAT_TYPE_DOUBLE) {
-        ctx->varinfo[ctx->var_offset].missing_range = 1;
+    spss_varinfo_t *varinfo = NULL;
+
+    if (ctx->var_offset < 0 || ctx->var_offset == ctx->var_count) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    varinfo = &ctx->varinfo[ctx->var_offset];
+
+    if (varinfo->type == READSTAT_TYPE_DOUBLE) {
+        varinfo->missing_range = 1;
         if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
             goto cleanup;
         }
-        ctx->varinfo[ctx->var_offset].missing_values[0] = value;
-        ctx->varinfo[ctx->var_offset].missing_values[1] = HUGE_VAL;
-        ctx->varinfo[ctx->var_offset].n_missing_values = 2;
+        varinfo->missing_values[0] = value;
+        varinfo->missing_values[1] = HUGE_VAL;
+        varinfo->n_missing_values = 2;
     } else {
         if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
             goto cleanup;
@@ -420,12 +461,20 @@ cleanup:
 static readstat_error_t read_variable_label_record(por_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     char string[256];
+    spss_varinfo_t *varinfo = NULL;
+
+    if (ctx->var_offset < 0 || ctx->var_offset == ctx->var_count) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    varinfo = &ctx->varinfo[ctx->var_offset];
+
     if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
         goto cleanup;
     }
 
-    ctx->varinfo[ctx->var_offset].label = malloc(strlen(string) + 1);
-    strcpy(ctx->varinfo[ctx->var_offset].label, string);
+    varinfo->label = malloc(strlen(string) + 1);
+    strcpy(varinfo->label, string);
 
 cleanup:
     return retval;
