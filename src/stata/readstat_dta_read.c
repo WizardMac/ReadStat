@@ -588,7 +588,9 @@ static readstat_error_t dta_handle_row(const unsigned char *buf, dta_ctx_t *ctx)
         size_t max_len;
         readstat_value_t value = { { 0 } };
 
-        value.type = dta_type_info(ctx->typlist[j], &max_len, ctx);
+        retval = dta_type_info(ctx->typlist[j], ctx, &max_len, &value.type);
+        if (retval != READSTAT_OK)
+            goto cleanup;
 
         if (ctx->variables[j]->skip) {
             offset += max_len;
@@ -895,7 +897,10 @@ static readstat_error_t dta_handle_variables(dta_ctx_t *ctx) {
 
     for (i=0; i<ctx->nvar; i++) {
         size_t      max_len;
-        readstat_type_t type = dta_type_info(ctx->typlist[i], &max_len, ctx);
+        readstat_type_t type;
+        retval = dta_type_info(ctx->typlist[i], ctx, &max_len, &type);
+        if (retval != READSTAT_OK)
+            goto cleanup;
 
         if (type == READSTAT_TYPE_STRING)
             max_len++; /* might append NULL */
@@ -1173,7 +1178,9 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
 
     for (i=0; i<ctx->nvar; i++) {
         size_t      max_len;
-        dta_type_info(ctx->typlist[i], &max_len, ctx);
+        if ((retval = dta_type_info(ctx->typlist[i], ctx, &max_len, NULL)) != READSTAT_OK)
+            goto cleanup;
+
         ctx->record_len += max_len;
     }
 

@@ -244,7 +244,9 @@ void dta_ctx_free(dta_ctx_t *ctx) {
     free(ctx);
 }
 
-readstat_type_t dta_type_info(uint16_t typecode, size_t *max_len, dta_ctx_t *ctx) {
+readstat_error_t dta_type_info(uint16_t typecode, dta_ctx_t *ctx,
+        size_t *max_len, readstat_type_t *out_type) {
+    readstat_error_t retval = READSTAT_OK;
     size_t len = 0;
     readstat_type_t type = READSTAT_TYPE_STRING;
     if (ctx->typlist_version == 111) {
@@ -279,7 +281,7 @@ readstat_type_t dta_type_info(uint16_t typecode, size_t *max_len, dta_ctx_t *ctx
             default:
                 len = typecode; type = READSTAT_TYPE_STRING; break;
         }
-    } else {
+    } else if (typecode < 0x7F) {
         switch (typecode) {
             case DTA_OLD_TYPE_CODE_INT8:
                 len = 1; type = READSTAT_TYPE_INT8; break;
@@ -292,10 +294,17 @@ readstat_type_t dta_type_info(uint16_t typecode, size_t *max_len, dta_ctx_t *ctx
             case DTA_OLD_TYPE_CODE_DOUBLE:
                 len = 8; type = READSTAT_TYPE_DOUBLE; break;
             default:
-                len = typecode - 0x7F; type = READSTAT_TYPE_STRING; break;
+                retval = READSTAT_ERROR_PARSE; break;
         }
+    } else {
+        len = typecode - 0x7F;
+        type = READSTAT_TYPE_STRING;
     }
     
-    *max_len = len;
-    return type;
+    if (max_len)
+        *max_len = len;
+    if (out_type)
+        *out_type = type;
+
+    return retval;
 }
