@@ -61,6 +61,10 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
             goto cleanup;
         }
         if (i<label_count_used) {
+            if (&lbp1[10+ctx->pad1+4] - value_start > value_labels_len) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
             uint32_t label_pos = sas_read4(&lbp1[10+ctx->pad1], ctx->bswap);
             if (label_pos >= label_count_used) {
                 retval = READSTAT_ERROR_PARSE;
@@ -232,6 +236,7 @@ static int sas7bcat_block_size(int start_page, int start_page_pos, sas7bcat_ctx_
     readstat_io_t *io = ctx->io;
     int next_page = start_page;
     int next_page_pos = start_page_pos;
+    int link_count = 0;
 
     int buffer_len = 0;
     int chain_link_len = 0;
@@ -239,7 +244,7 @@ static int sas7bcat_block_size(int start_page, int start_page_pos, sas7bcat_ctx_
     char chain_link[16];
 
     // calculate buffer size needed
-    while (next_page > 0 && next_page_pos > 0 && next_page <= ctx->page_count) {
+    while (next_page > 0 && next_page_pos > 0 && next_page <= ctx->page_count && link_count++ < ctx->page_count) {
         if (io->seek(ctx->header_size+(next_page-1)*ctx->page_size+next_page_pos, READSTAT_SEEK_SET, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
