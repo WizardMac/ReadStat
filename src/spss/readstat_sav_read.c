@@ -246,13 +246,13 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     }
     
     if (variable.has_var_label) {
-        int32_t label_len;
-        if (io->read(&label_len, sizeof(int32_t), io->io_ctx) < sizeof(int32_t)) {
+        uint32_t label_len;
+        if (io->read(&label_len, sizeof(uint32_t), io->io_ctx) < sizeof(uint32_t)) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
         label_len = ctx->bswap ? byteswap4(label_len) : label_len;
-        int32_t label_capacity = (label_len + 3) / 4 * 4;
+        uint32_t label_capacity = (label_len + 3) / 4 * 4;
         char *label_buf = readstat_malloc(label_capacity);
         size_t out_label_len = (size_t)label_len*4+1;
         info->label = readstat_malloc(out_label_len);
