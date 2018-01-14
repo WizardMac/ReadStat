@@ -3,7 +3,6 @@
 #include "../readstat.h"
 
 #include "../test/test_types.h"
-#include "../test/test_buffer.h"
 #include "../test/test_buffer_io.h"
 
 static int handle_info(int obs_count, int var_count, void *ctx) {
@@ -35,18 +34,13 @@ static int handle_value_label(const char *val_labels, readstat_value_t value, co
     return READSTAT_HANDLER_OK;
 }
 
-int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+readstat_parser_t *fuzzer_parser_init(const uint8_t *Data, size_t Size) {
     readstat_parser_t *parser = readstat_parser_init();
-    rt_buffer_t buffer = { .bytes = Data, .size = Size, .used = Size };
-    rt_buffer_ctx_t buffer_ctx = { .buffer = &buffer };
-
     readstat_set_open_handler(parser, rt_open_handler);
     readstat_set_close_handler(parser, rt_close_handler);
     readstat_set_seek_handler(parser, rt_seek_handler);
     readstat_set_read_handler(parser, rt_read_handler);
     readstat_set_update_handler(parser, rt_update_handler);
-
-    readstat_set_io_ctx(parser, &buffer_ctx);
 
     readstat_set_info_handler(parser, &handle_info);
     readstat_set_metadata_handler(parser, &handle_metadata);
@@ -56,9 +50,5 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     readstat_set_value_handler(parser, &handle_value);
     readstat_set_value_label_handler(parser, &handle_value_label);
 
-    readstat_parse_sav(parser, NULL, NULL);
-
-    readstat_parser_free(parser);
-
-    return 0;  // Non-zero return values are reserved for future use.
+    return parser;
 }
