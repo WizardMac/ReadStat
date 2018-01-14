@@ -671,6 +671,7 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
         uint64_t offset = 0, len = 0;
         uint32_t signature = 0;
         unsigned char compression = 0;
+        size_t signature_len = ctx->u64 ? 8 : 4;
         if (ctx->u64) {
             offset = sas_read8(&shp[0], ctx->bswap);
             len = sas_read8(&shp[8], ctx->bswap);
@@ -687,8 +688,12 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
                 goto cleanup;
             }
             if (compression == SAS_COMPRESSION_NONE) {
+                if (len < signature_len) {
+                    retval = READSTAT_ERROR_PARSE;
+                    goto cleanup;
+                }
                 signature = sas_read4(page + offset, ctx->bswap);
-                if (!ctx->little_endian && signature == -1 && ctx->u64) {
+                if (!ctx->little_endian && signature == -1 && signature_len == 8) {
                     signature = sas_read4(page + offset + 4, ctx->bswap);
                 }
                 if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
