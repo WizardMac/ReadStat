@@ -42,7 +42,7 @@ if HAVE_RAGEL
 	$(AM_V_GEN)$(RAGEL) $(RAGELFLAGS) -C $< -o $@
 endif
 
-libreadstat_la_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+libreadstat_la_CFLAGS = -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 libreadstat_la_LIBADD = @EXTRA_LIBS@
 libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@ @SANITIZERS@
 
@@ -95,14 +95,19 @@ noinst_HEADERS = \
        src/bin/modules/produce_missingness.h \
        src/bin/modules/produce_missingness_dta.h \
        src/bin/modules/produce_missingness_sav.h \
+       src/bin/modules/mod_csv_reader.h \
        src/bin/modules/mod_readstat.h \
        src/bin/modules/mod_xlsx.h \
+       src/bin/util/readstat_dta_days.h \
+       src/bin/util/readstat_sav_date.h \
        src/test/test_buffer.h \
        src/test/test_buffer_io.h \
        src/test/test_dta.h \
        src/test/test_error.h \
+       src/test/test_list.h \
        src/test/test_read.h \
        src/test/test_readstat.h \
+       src/test/test_sas.h \
        src/test/test_types.h \
        src/test/test_write.h
 
@@ -115,7 +120,6 @@ readstat_SOURCES = \
 	src/bin/format.c \
 	src/bin/module_util.c \
 	src/bin/modules/double_decimals.c \
-	src/bin/modules/mod_csv.c \
 	src/bin/modules/jsmn.c \
 	src/bin/modules/json_metadata.c \
 	src/bin/modules/produce_csv_value_dta.c \
@@ -129,6 +133,7 @@ readstat_SOURCES = \
 	src/bin/modules/produce_missingness_dta.c \
 	src/bin/modules/produce_missingness_sav.c \
 	src/bin/modules/produce_csv_column_header.c \
+	src/bin/modules/mod_csv.c \
 	src/bin/modules/mod_readstat.c \
 	src/bin/util/readstat_dta_days.c \
 	src/bin/util/readstat_sav_date.c
