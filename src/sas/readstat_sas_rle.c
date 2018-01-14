@@ -30,6 +30,7 @@ ssize_t sas_rle_decompress(void *output_buf, size_t output_len,
         [SAS_RLE_COMMAND_COPY64] = 1,
         [SAS_RLE_COMMAND_INSERT_BYTE18] = 2,
         [SAS_RLE_COMMAND_INSERT_AT17] = 1,
+        [SAS_RLE_COMMAND_INSERT_BLANK17] = 1,
         [SAS_RLE_COMMAND_INSERT_ZERO17] = 1,
         [SAS_RLE_COMMAND_INSERT_BYTE3] = 1
     };
