@@ -42,19 +42,19 @@ typedef struct sas7bdat_ctx_s {
     int            bswap;
     int            did_submit_columns;
 
-    int32_t        row_length;
-    int32_t        page_row_count;
-    int32_t        parsed_row_count;
-    int32_t        column_count;
-    int32_t        row_limit;
+    uint32_t        row_length;
+    uint32_t        page_row_count;
+    uint32_t        parsed_row_count;
+    uint32_t        column_count;
+    uint32_t        row_limit;
 
-    int64_t        header_size;
-    int64_t        page_count;
-    int64_t        page_size;
-    char          *page;
+    uint64_t        header_size;
+    uint64_t        page_count;
+    uint64_t        page_size;
+    char           *page;
 
-    int64_t        page_header_size;
-    int64_t        subheader_pointer_size;
+    uint64_t        page_header_size;
+    uint64_t        subheader_pointer_size;
 
     int            text_blob_count;
     size_t        *text_blob_lengths;
@@ -889,8 +889,8 @@ cleanup:
 static readstat_error_t sas7bdat_parse_amd_pages_pass1(int64_t last_examined_page_pass1, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
-    int64_t i;
-    int64_t amd_page_count = 0;
+    uint64_t i;
+    uint64_t amd_page_count = 0;
 
     /* ...then AMD pages at the end */
     for (i=ctx->page_count-1; i>last_examined_page_pass1; i--) {
