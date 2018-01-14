@@ -26,9 +26,13 @@ ssize_t sas_rle_decompress(void *output_buf, size_t output_len,
 
     const unsigned char *input = (const unsigned char *)input_buf;
 
-    size_t command_lengths[] = {
-        1, 0, 0, 0, 2, 1, 1, 1,
-        0, 0, 0, 0, 1, 0, 0, 0 };
+    size_t command_lengths[16] = {
+        [SAS_RLE_COMMAND_COPY64] = 1,
+        [SAS_RLE_COMMAND_INSERT_BYTE18] = 2,
+        [SAS_RLE_COMMAND_INSERT_AT17] = 1,
+        [SAS_RLE_COMMAND_INSERT_ZERO17] = 1,
+        [SAS_RLE_COMMAND_INSERT_BYTE3] = 1
+    };
 
     while (input < (const unsigned char *)input_buf + input_len) {
         unsigned char control = *input++;
