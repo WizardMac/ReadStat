@@ -897,9 +897,9 @@ static readstat_error_t sav_parse_long_value_labels_record(const void *data, siz
         return READSTAT_OK;
 
     readstat_error_t retval = READSTAT_OK;
-    int32_t label_name_len = 0;
-    int32_t label_count = 0;
-    int32_t i = 0;
+    uint32_t label_name_len = 0;
+    uint32_t label_count = 0;
+    uint32_t i = 0;
     const char *data_ptr = data;
     const char *data_end = data_ptr + data_len;
     char var_name_buf[256*4+1];
@@ -909,16 +909,16 @@ static readstat_error_t sav_parse_long_value_labels_record(const void *data, siz
     
     memset(label_name_buf, '\0', sizeof(label_name_buf));
 
-    if (data_ptr + sizeof(int32_t) > data_end) {
+    if (data_ptr + sizeof(uint32_t) > data_end) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
 
-    memcpy(&label_name_len, data_ptr, sizeof(int32_t));
+    memcpy(&label_name_len, data_ptr, sizeof(uint32_t));
     if (ctx->bswap)
         label_name_len = byteswap4(label_name_len);
 
-    data_ptr += sizeof(int32_t);
+    data_ptr += sizeof(uint32_t);
 
     if (data_ptr + label_name_len > data_end) {
         retval = READSTAT_ERROR_PARSE;
@@ -947,33 +947,33 @@ static readstat_error_t sav_parse_long_value_labels_record(const void *data, siz
         goto cleanup;
     }
 
-    data_ptr += sizeof(int32_t);
+    data_ptr += sizeof(uint32_t);
 
-    if (data_ptr + sizeof(int32_t) > data_end) {
+    if (data_ptr + sizeof(uint32_t) > data_end) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
 
-    memcpy(&label_count, data_ptr, sizeof(int32_t));
+    memcpy(&label_count, data_ptr, sizeof(uint32_t));
     if (ctx->bswap)
         label_count = byteswap4(label_count);
 
-    data_ptr += sizeof(int32_t);
+    data_ptr += sizeof(uint32_t);
 
     for (i=0; i<label_count; i++) {
-        int32_t value_len = 0, label_len = 0;
-        int32_t value_buffer_len = 0, label_buffer_len = 0;
+        uint32_t value_len = 0, label_len = 0;
+        uint32_t value_buffer_len = 0, label_buffer_len = 0;
 
-        if (data_ptr + sizeof(int32_t) > data_end) {
+        if (data_ptr + sizeof(uint32_t) > data_end) {
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
         }
 
-        memcpy(&value_len, data_ptr, sizeof(int32_t));
+        memcpy(&value_len, data_ptr, sizeof(uint32_t));
         if (ctx->bswap)
             value_len = byteswap4(value_len);
 
-        data_ptr += sizeof(int32_t);
+        data_ptr += sizeof(uint32_t);
 
         value_buffer_len = value_len*4+1;
         value_buffer = readstat_realloc(value_buffer, value_buffer_len);
@@ -993,16 +993,16 @@ static readstat_error_t sav_parse_long_value_labels_record(const void *data, siz
 
         data_ptr += value_len;
 
-        if (data_ptr + sizeof(int32_t) > data_end) {
+        if (data_ptr + sizeof(uint32_t) > data_end) {
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
         }
 
-        memcpy(&label_len, data_ptr, sizeof(int32_t));
+        memcpy(&label_len, data_ptr, sizeof(uint32_t));
         if (ctx->bswap)
             label_len = byteswap4(label_len);
 
-        data_ptr += sizeof(int32_t);
+        data_ptr += sizeof(uint32_t);
 
         label_buffer_len = label_len*4+1;
         label_buffer = readstat_realloc(label_buffer, label_buffer_len);
