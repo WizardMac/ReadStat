@@ -866,7 +866,8 @@ static readstat_error_t dta_read_label_and_timestamp(dta_ctx_t *ctx) {
                 memmove(timestamp_buffer+1, timestamp_buffer, timestamp_len-1);
                 timestamp_buffer[0] = last_data_label_char;
             }
-            if ((retval = dta_parse_timestamp(timestamp_buffer, timestamp_len, &timestamp, ctx)) != READSTAT_OK) {
+            if ((retval = dta_parse_timestamp(timestamp_buffer, timestamp_len,
+                            &timestamp, ctx->error_handler, ctx->user_ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
 

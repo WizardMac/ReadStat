@@ -1313,11 +1313,13 @@ readstat_error_t sav_parse_timestamp(sav_ctx_t *ctx, sav_file_header_record_t *h
     readstat_error_t retval = READSTAT_OK;
     struct tm timestamp = { .tm_isdst = -1 };
 
-    if ((retval = sav_parse_time(header->creation_time, sizeof(header->creation_time), &timestamp, ctx)) 
+    if ((retval = sav_parse_time(header->creation_time, sizeof(header->creation_time),
+                    &timestamp, ctx->error_handler, ctx->user_ctx)) 
             != READSTAT_OK)
         goto cleanup;
 
-    if ((retval = sav_parse_date(header->creation_date, sizeof(header->creation_date), &timestamp, ctx)) 
+    if ((retval = sav_parse_date(header->creation_date, sizeof(header->creation_date),
+                    &timestamp, ctx->error_handler, ctx->user_ctx)) 
             != READSTAT_OK)
         goto cleanup;
 

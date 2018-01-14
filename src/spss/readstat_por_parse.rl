@@ -20,7 +20,7 @@ ssize_t readstat_por_parse_double(const char *data, size_t len, double *result,
     uint64_t temp_val = 0;
     
     const unsigned char *p = (const unsigned char *)data;
-    // const unsigned char *eof = p + len;
+    const unsigned char *pe = p + len;
     
     int cs;
     int is_negative = 0, exp_is_negative = 0;
@@ -60,7 +60,7 @@ ssize_t readstat_por_parse_double(const char *data, size_t len, double *result,
         main := " "* (missing_value | nonmissing_value | nonmissing_fraction ) @{ success = 1; fbreak; };
         
         write init;
-        write exec noend;
+        write exec;
     }%%
 
     if (!isnan(val)) {
