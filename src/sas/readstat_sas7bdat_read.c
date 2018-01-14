@@ -170,6 +170,12 @@ static readstat_error_t sas7bdat_realloc_col_info(sas7bdat_ctx_t *ctx, size_t co
 
 static readstat_error_t sas7bdat_parse_column_size_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
     uint64_t col_count;
+    readstat_error_t retval = READSTAT_OK;
+
+    if (len < (ctx->u64 ? 16 : 8)) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
 
     if (ctx->u64) {
         col_count = sas_read8(&subheader[8], ctx->bswap);
@@ -179,13 +185,21 @@ static readstat_error_t sas7bdat_parse_column_size_subheader(const char *subhead
 
     ctx->column_count = col_count;
 
-    return sas7bdat_realloc_col_info(ctx, ctx->column_count);
+    retval = sas7bdat_realloc_col_info(ctx, ctx->column_count);
+
+cleanup:
+    return retval;
 }
 
 static readstat_error_t sas7bdat_parse_row_size_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     uint64_t total_row_count;
     uint64_t row_length, page_row_count;
+
+    if (len < (ctx->u64 ? 128 : 64)) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
 
     if (ctx->u64) {
         row_length = sas_read8(&subheader[40], ctx->bswap);
@@ -202,6 +216,7 @@ static readstat_error_t sas7bdat_parse_row_size_subheader(const char *subheader,
     if (ctx->row_limit == 0 || total_row_count < ctx->row_limit)
         ctx->row_limit = total_row_count;
 
+cleanup:
     return retval;
 }
 
@@ -319,6 +334,11 @@ cleanup:
 
 static readstat_error_t sas7bdat_parse_column_format_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
+
+    if (len < (ctx->u64 ? 58 : 46)) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
 
     ctx->col_formats_count++;
     if ((retval = sas7bdat_realloc_col_info(ctx, ctx->col_formats_count)) != READSTAT_OK)
