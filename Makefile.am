@@ -225,6 +225,9 @@ generate_corpus_LDADD = libreadstat.la
 generate_corpus_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 if HAVE_FUZZER
+noinst_HEADERS += \
+	src/fuzz/fuzz_format.h
+
 bin_PROGRAMS += \
 	fuzz_compression_sas_rle \
 	fuzz_format_dta \
