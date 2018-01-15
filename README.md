@@ -395,7 +395,7 @@ Fuzz Testing
 
 To assist in fuzz testing, ReadStat ships with target files designed to work with [libFuzzer](http://llvm.org/docs/LibFuzzer.html).
 
-1. `./configure --enable-sanitizers` turns on sanitizer and sanitizer-coverage flags taken from the  Dockerfile linked above
+1. `./configure --enable-sanitizers` turns on useful sanitizer and sanitizer-coverage flags
 1. `make` will create a new binary called `generate_corpus`. Running this program will use the ReadStat test suite to create a corpus of test files in `corpus/`. There is a subdirectory for each sub-format (`dta104`, `dta105`, etc.). Currently a total of 398 files are created.
 1. If libFuzzer is found on the system, `make` will also create seven fuzzer targets, one for each of six file formats, and a seventh fuzzer for testing the SAS compression routines.
    * `fuzz_format_dta`
