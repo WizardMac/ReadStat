@@ -19,6 +19,10 @@
 #include "../test/test_write.h"
 #include "../test/test_list.h"
 
+#if (defined(_WIN32) || defined(__WIN32__))
+#define mkdir(A, B) mkdir(A)
+#endif
+
 static void dump_buffer(rt_buffer_t *buffer, long format, int test_case) {
     char filename[128];
     snprintf(filename, sizeof(filename), "corpus/%s/test-case-%03d", 
