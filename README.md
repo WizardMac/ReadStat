@@ -390,6 +390,35 @@ Second, install a number of additional packages at the msys2 command line:
 Finally, start a MINGW command line (not the msys2 prompt!) and follow the general install instructions for this package.
 
 
+Fuzz Testing
+==
+
+To assist in fuzz testing, ReadStat ships with target files designed to work with [libFuzzer](http://llvm.org/docs/LibFuzzer.html).
+
+1. `./configure --enable-sanitizers` turns on sanitizer and sanitizer-coverage flags taken from the  Dockerfile linked above
+1. `make` will create a new binary called `generate_corpus`. Running this program will use the ReadStat test suite to create a corpus of test files in `corpus/`. There is a subdirectory for each sub-format (`dta104`, `dta105`, etc.). Currently a total of 398 files are created.
+1. If libFuzzer is found on the system, `make` will also create seven fuzzer targets, one for each of six file formats, and a seventh fuzzer for testing the SAS compression routines.
+   * `fuzz_format_dta`
+   * `fuzz_format_por`
+   * `fuzz_format_sas7bcat`
+   * `fuzz_format_sas7bdat`
+   * `fuzz_format_sav`
+   * `fuzz_format_xport`
+   * `fuzz_compression_sas_rle`
+
+For best results, each sub-directory of the corpus should be passed to the relevant fuzzer, e.g.:
+
+* `./fuzz_format_dta corpus/dta104`
+* `./fuzz_format_dta corpus/dta110`
+* ...
+* `./fuzz_format_xport corpus/xpt5`
+* `./fuzz_format_xport corpus/xpt8`
+
+Finally, the compression fuzzer can be invoked without a corpus:
+
+* `./fuzz_compression_sas_rle`
+
+
 Docker
 ==
 
