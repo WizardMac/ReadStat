@@ -21,8 +21,8 @@
 
 static void dump_buffer(rt_buffer_t *buffer, long format) {
     char filename[128];
-    snprintf(filename, sizeof(filename), "corpus/%s/dump-%08x", 
-            file_extension(format), arc4random());
+    snprintf(filename, sizeof(filename), "corpus/%s/dump-%08lx", 
+            file_extension(format), random() & 0xFFFFFFFF);
 
     int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd == -1) {
@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
     rt_buffer_t *buffer = buffer_init();
     int g, t, f;
     int file_count = 0;
+    srandomdev();
 
     if (mkdir("corpus", 0755) == -1 && errno != EEXIST)
         perror("corpus");
