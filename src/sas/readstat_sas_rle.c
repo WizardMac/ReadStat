@@ -55,7 +55,7 @@ ssize_t sas_rle_decompress(void *output_buf, size_t output_len,
                 copy_len = (*input++) + 64 + length * 256;
                 break;
             case SAS_RLE_COMMAND_INSERT_BYTE18:
-                insert_len = (*input++) + 18 + length * 16;
+                insert_len = (*input++) + 18 + length * 256;
                 insert_byte = *input++;
                 break;
             case SAS_RLE_COMMAND_INSERT_AT17:
