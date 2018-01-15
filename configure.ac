@@ -1,6 +1,8 @@
-AC_INIT([readstat], [0.1.1])
+AC_INIT([readstat], [0.2.0])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
+
+AC_SUBST([READSTAT_VERSION], [0.2.0])
 
 LT_INIT([disable-static])
 

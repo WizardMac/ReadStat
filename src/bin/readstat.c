@@ -22,7 +22,7 @@
 
 #include "format.h"
 
-#define RS_VERSION_STRING  "1.0-prerelease"
+#define RS_VERSION_STRING  READSTAT_VERSION "-prerelease"
 
 #define RS_FORMAT_CAN_WRITE     (RS_FORMAT_DTA | RS_FORMAT_SAV)
 
