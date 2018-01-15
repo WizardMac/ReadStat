@@ -113,7 +113,6 @@ noinst_HEADERS = \
 
 bin_PROGRAMS = \
     extract_metadata \
-    generate_corpus \
 	readstat
 
 noinst_PROGRAMS = \
@@ -227,15 +226,6 @@ generate_corpus_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std
 if HAVE_FUZZER
 noinst_HEADERS += \
 	src/fuzz/fuzz_format.h
-
-bin_PROGRAMS += \
-	fuzz_compression_sas_rle \
-	fuzz_format_dta \
-	fuzz_format_por \
-	fuzz_format_sas7bcat \
-	fuzz_format_sas7bdat \
-	fuzz_format_sav \
-	fuzz_format_xport
 
 noinst_PROGRAMS += \
 	fuzz_compression_sas_rle \
