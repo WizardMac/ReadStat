@@ -43,7 +43,6 @@ int main(int argc, char *argv[]) {
     rt_buffer_t *buffer = buffer_init();
     int g, t, f;
     int file_count = 0, test_count = 0;
-    srandomdev();
 
     if (mkdir("corpus", 0755) == -1 && errno != EEXIST)
         perror("corpus");
