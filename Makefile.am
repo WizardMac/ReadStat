@@ -50,6 +50,8 @@ if CODE_COVERAGE_ENABLED
 libreadstat_la_CFLAGS += -O0 -fprofile-arcs -ftest-coverage
 endif
 
+man1_MANS = man/readstat.man
+
 include_HEADERS = src/readstat.h
 
 noinst_HEADERS = \
