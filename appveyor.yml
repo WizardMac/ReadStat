@@ -1,0 +1,66 @@
+version: 0.1.{build}
+
+os: Windows Server 2012 R2
+
+platform: x64
+
+environment:
+  matrix:
+  - TOOLCHAIN: "msys2"
+  - TOOLCHAIN: "cygwin"
+
+branches:
+  only:
+    - master
+
+skip_tags: true
+
+install:
+  - ps: |
+      if ($env:TOOLCHAIN -eq "msys2")
+      {
+        C:\msys64\usr\bin\bash --login -c "pacman -S --noconfirm mingw-w64-x86_64-cmake"
+        C:\msys64\usr\bin\bash --login -c "pacman -S --noconfirm mingw-w64-x86_64-ragel"
+      }
+      else
+      {
+        c:\cygwin64\setup-x86_64.exe -qnNdO -s http://cygwin.mirror.constant.com -l C:/cygwin64/var/cache/setup -P libiconv-devel -P ragel
+      }
+build_script:
+  - ps: |
+      if ($env:TOOLCHAIN -eq "msys2")
+      {
+        $env:MSYSTEM="MINGW64"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && ./autogen.sh"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && ./configure"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && make"
+      }
+      else
+      {
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && ./autogen.sh"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && ./configure"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && make"
+      }
+
+test_script:
+  - ps: |
+      if ($env:TOOLCHAIN -eq "msys2")
+      {
+        $env:MSYSTEM="MINGW64"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && make check"
+      }
+      else
+      {
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && make check"
+      }
+
+on_finish:
+  - ps: |
+      if ($env:TOOLCHAIN -eq "msys2")
+      {
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && cat ./test-suite.log"
+      }
+      else
+      {
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && cat ./test-suite.log"
+      }

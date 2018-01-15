@@ -1,0 +1,29 @@
+language: c
+sudo: required
+
+compiler:
+  - clang
+  - gcc
+  - gcc-7
+
+addons:
+  apt:
+    sources:
+    - sourceline: 'ppa:ubuntu-toolchain-r/test'
+    packages:
+    - gcc-7
+
+before_script:
+  - ./autogen.sh
+
+script:
+  - ./.travis/configure.sh
+  - make
+  - make check
+
+after_success:
+  - mv src/sas/.libs/*.gc* .
+  - mv src/spss/.libs/*.gc* .
+  - mv src/stata/.libs/*.gc* .
+  - mv src/.libs/*.gc* .
+  - bash <(curl -s https://codecov.io/bash)

@@ -15,36 +15,64 @@ static readstat_value_t make_double_value(double dval) {
     return value;
 }
 
-const char *readstat_variable_get_name(readstat_variable_t *variable) {
+const char *readstat_variable_get_name(const readstat_variable_t *variable) {
     if (variable->name[0])
         return variable->name;
 
     return NULL;
 }
 
-const char *readstat_variable_get_label(readstat_variable_t *variable) {
+const char *readstat_variable_get_label(const readstat_variable_t *variable) {
     if (variable->label[0])
         return variable->label;
 
     return NULL;
 }
 
-const char *readstat_variable_get_format(readstat_variable_t *variable) {
+const char *readstat_variable_get_format(const readstat_variable_t *variable) {
     if (variable->format[0])
         return variable->format;
 
     return NULL;
 }
 
-readstat_types_t readstat_variable_get_type(readstat_variable_t *variable) {
+readstat_type_t readstat_variable_get_type(const readstat_variable_t *variable) {
     return variable->type;
 }
 
-int readstat_variable_get_missing_ranges_count(readstat_variable_t *variable) {
+readstat_type_class_t readstat_variable_get_type_class(const readstat_variable_t *variable) {
+    return readstat_type_class(variable->type);
+}
+
+int readstat_variable_get_index(const readstat_variable_t *variable) {
+    return variable->index;
+}
+
+int readstat_variable_get_index_after_skipping(const readstat_variable_t *variable) {
+    return variable->index_after_skipping;
+}
+
+size_t readstat_variable_get_storage_width(const readstat_variable_t *variable) {
+    return variable->storage_width;
+}
+
+readstat_measure_t readstat_variable_get_measure(const readstat_variable_t *variable) {
+    return variable->measure;
+}
+
+readstat_alignment_t readstat_variable_get_alignment(const readstat_variable_t *variable) {
+    return variable->alignment;
+}
+
+int readstat_variable_get_display_width(const readstat_variable_t *variable) {
+    return variable->display_width;
+}
+
+int readstat_variable_get_missing_ranges_count(const readstat_variable_t *variable) {
     return variable->missingness.missing_ranges_count;
 }
 
-readstat_value_t readstat_variable_get_missing_range_lo(readstat_variable_t *variable, int i) {
+readstat_value_t readstat_variable_get_missing_range_lo(const readstat_variable_t *variable, int i) {
     if (i < variable->missingness.missing_ranges_count &&
             2*i+1 < sizeof(variable->missingness.missing_ranges)/sizeof(variable->missingness.missing_ranges[0])) {
         return variable->missingness.missing_ranges[2*i];
@@ -53,7 +81,7 @@ readstat_value_t readstat_variable_get_missing_range_lo(readstat_variable_t *var
     return make_blank_value();
 }
 
-readstat_value_t readstat_variable_get_missing_range_hi(readstat_variable_t *variable, int i) {
+readstat_value_t readstat_variable_get_missing_range_hi(const readstat_variable_t *variable, int i) {
     if (i < variable->missingness.missing_ranges_count &&
             2*i+1 < sizeof(variable->missingness.missing_ranges)/sizeof(variable->missingness.missing_ranges[0])) {
         return variable->missingness.missing_ranges[2*i+1];

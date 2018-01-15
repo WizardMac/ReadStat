@@ -1,0 +1,73 @@
+.TH READSTAT 1 "18 January 2018"
+.SH NAME
+readstat \- read and write data set files from SAS, SPSS, and Stata
+.SH SYNOPSIS
+.B readstat
+.IR input-file
+.P
+.B readstat
+.IR input-file
+.IR output-file
+.P
+.B readstat
+.IR input.sas7bdat
+.IR catalog.sas7bcat
+.IR output-file
+.SH DESCRIPTION
+.B readstat
+converts data set files from popular statistics packages stored in both plain-text and binary formats.
+.PP
+In the first invocation style,
+.B readstat
+displays metadata from \fIinput\-file\fR, including the row count, column count, text encoding, and timestamp.
+.IR input\-file
+should be a file with one of the following extensions:
+.TP
+.IR sas7bdat
+SAS binary file, created with SAS version 7 or newer
+.TP
+.IR xpt
+SAS portable file, version 5 or version 8, created with the SAS XPORT command
+.TP
+.IR sav
+SPSS binary file (\fIzsav\fR compressed files not supported)
+.TP
+.IR por
+SPSS portable file
+.TP
+.IR dta
+Stata binary file, version 104 or newer
+.PP
+If the row count cannot be determined from the file header, which is sometimes the case with SPSS binary files and always the case with SPSS portable files,
+.B readstat
+will report a value of -1.
+.PP
+In the second invocation style,
+.B readstat
+converts
+.IR input-file
+to \fIoutput-file\fR, e.g. a SAS portable file to a Stata binary file. 
+In addition to the preceding extension list, \fIoutput-file\fR may have extension
+.IR csv
+or
+\fIxlsx\fR, which creates a CSV or Excel file, respectively.
+.B readstat
+is fairly cautious and will refuse to overwrite an existing file.
+.PP
+The third invocation style is necessary because SAS stores value labels in a
+"catalog file" separate from the main data set. When three arguments are
+provided,
+.B readstat
+will read data from a SAS data set \fIinput.sas7bdat\fR,
+and named value labels from \fIcatalog.sas7bcat\fR, writing the output in the
+desired format to \fIoutput-file\fR.
+.PP
+Both input and output formats are implied by the file extension.
+.SH BUGS
+SAS binary files created by \fBreadstat\fR do not open with current versions of
+SAS.
+.PP
+The finer details of format strings (e.g. "%8.2g") are not properly
+converted between file formats.
+.SH AUTHOR
+Copyright (C) 2012-2018 Evan Miller, and others where indicated.
