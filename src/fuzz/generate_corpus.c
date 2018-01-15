@@ -19,10 +19,10 @@
 #include "../test/test_write.h"
 #include "../test/test_list.h"
 
-static void dump_buffer(rt_buffer_t *buffer, long format) {
+static void dump_buffer(rt_buffer_t *buffer, long format, int test_case) {
     char filename[128];
-    snprintf(filename, sizeof(filename), "corpus/%s/dump-%08lx", 
-            file_extension(format), random() & 0xFFFFFFFF);
+    snprintf(filename, sizeof(filename), "corpus/%s/test-case-%03d", 
+            file_extension(format), test_case);
 
     int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd == -1) {
@@ -38,7 +38,7 @@ static void dump_buffer(rt_buffer_t *buffer, long format) {
 int main(int argc, char *argv[]) {
     rt_buffer_t *buffer = buffer_init();
     int g, t, f;
-    int file_count = 0;
+    int file_count = 0, test_count = 0;
     srandomdev();
 
     if (mkdir("corpus", 0755) == -1 && errno != EEXIST)
@@ -69,12 +69,13 @@ int main(int argc, char *argv[]) {
                     printf("Error writing to file \"%s\": %s\n", file->label, readstat_error_message(error));
                     exit(1);
                 }
-                dump_buffer(buffer, f);
+                dump_buffer(buffer, f, test_count);
                 file_count++;
             }
+            test_count++;
         }
     }
     buffer_free(buffer);
-    printf("Generated %d corpus files\n", file_count);
+    printf("Generated %d corpus files (%d test cases)\n", file_count, test_count);
     return 0;
 }
