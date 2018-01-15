@@ -10,6 +10,7 @@
 
 CC=clang
 
+.PHONY: corpus
 corpus:
 	$(CC) -fsanitize=address -lreadstat generate_corpus.c ../test/test_buffer.c ../test/test_write.c ../test/test_read.c ../test/test_buffer_io.c ../test/test_error.c ../test/test_dta.c ../test/test_sas.c -o generate_corpus
 	mkdir -p corpus
@@ -21,7 +22,7 @@ RLE = sas
 
 .PHONY: formats
 formats:
-	$(foreach format,$(FORMATS), $(CC) -lstdc++ -lreadstat -fsanitize-coverage=trace-pc-guard -fsanitize=address fuzz_format_$(format).c $$format fuzzer.c ../test/test_buffer_io.c libFuzzer.a -o fuzz_format_$(format);)
+	$(foreach format,$(FORMATS), $(CC) -lstdc++ -lreadstat -fsanitize-coverage=trace-pc-guard -fsanitize=address fuzz_format_$(format).c $$format fuzz_format.c ../test/test_buffer_io.c libFuzzer.a -o fuzz_format_$(format);)
 	$(foreach format,$(FORMATS), install_name_tool -change /usr/local/lib/libreadstat.0.dylib /Users/emiller/Code/ReadStat/.libs/libreadstat.0.dylib fuzz_format_$(format);)
 
 .PHONY: grammars
@@ -38,7 +39,8 @@ rle:
 
 .PHONY: clean
 clean:
-	rm fuzzer_dta
-	rm fuzzer_sas7bdat
+	$(foreach format,$(FORMATS), rm fuzz_format_$(format);)
+	$(foreach format,$(GRAMMARS), rm fuzz_grammar_$(format);)
+	$(foreach format,$(RLE), rm fuzz_rle_$(format)_compress fuzz_rle_$(format)_decompress;)
 	rm generate_corpus
 	rm -r corpus/*

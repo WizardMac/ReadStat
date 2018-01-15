@@ -5,7 +5,7 @@
 #include "../test/test_buffer.h"
 #include "../test/test_buffer_io.h"
 
-#include "fuzzer.h"
+#include "fuzz_format.h"
 
 int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     rt_buffer_t buffer = { .bytes = Data, .size = Size, .used = Size };
