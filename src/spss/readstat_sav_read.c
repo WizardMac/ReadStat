@@ -186,6 +186,88 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t sav_read_variable_label(spss_varinfo_t *info, sav_ctx_t *ctx) {
+    readstat_io_t *io = ctx->io;
+    readstat_error_t retval = READSTAT_OK;
+    uint32_t label_len, label_capacity;
+    size_t out_label_len;
+    char *label_buf = NULL;
+    if (io->read(&label_len, sizeof(uint32_t), io->io_ctx) < sizeof(uint32_t)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+    label_len = ctx->bswap ? byteswap4(label_len) : label_len;
+
+    label_capacity = (label_len + 3) / 4 * 4;
+    if ((label_buf = readstat_malloc(label_capacity)) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
+
+    out_label_len = (size_t)label_len*4+1;
+    if ((info->label = readstat_malloc(out_label_len)) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
+
+    if (io->read(label_buf, label_capacity, io->io_ctx) < label_capacity) {
+        retval = READSTAT_ERROR_READ;
+        free(info->label);
+        info->label = NULL;
+        goto cleanup;
+    }
+
+    retval = readstat_convert(info->label, out_label_len, label_buf, label_len, ctx->converter);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    if (label_buf)
+        free(label_buf);
+
+    return retval;
+}
+
+static readstat_error_t sav_read_variable_missing_values(spss_varinfo_t *info, sav_ctx_t *ctx) {
+    readstat_io_t *io = ctx->io;
+    readstat_error_t retval = READSTAT_OK;
+    int i;
+
+    if (info->n_missing_values < 0) {
+        info->missing_range = 1;
+        info->n_missing_values = abs(info->n_missing_values);
+    } else {
+        info->missing_range = 0;
+    }
+    if (info->n_missing_values > 3) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+    if (io->read(info->missing_values, info->n_missing_values * sizeof(double), io->io_ctx) < info->n_missing_values * sizeof(double)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+    for (i=0; i<info->n_missing_values; i++) {
+        if (ctx->bswap) {
+            info->missing_values[i] = byteswap_double(info->missing_values[i]);
+        }
+
+        uint64_t long_value = 0;
+        memcpy(&long_value, &info->missing_values[i], 8);
+
+        if (long_value == ctx->missing_double)
+            info->missing_values[i] = NAN;
+        if (long_value == ctx->lowest_double)
+            info->missing_values[i] = -HUGE_VAL;
+        if (long_value == ctx->highest_double)
+            info->missing_values[i] = HUGE_VAL;
+    }
+
+cleanup:
+
+    return retval;
+}
+
 static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
     sav_variable_record_t variable;
@@ -204,7 +286,6 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     variable.write = ctx->bswap ? byteswap4(variable.write) : variable.write;
 
     int32_t type = ctx->bswap ? byteswap4(variable.type) : variable.type;
-    int i;
     if (type < 0) {
         if (ctx->var_index == 0) {
             return READSTAT_ERROR_PARSE;
@@ -220,6 +301,7 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     info->n_segments = 1;
     info->index = ctx->var_index;
     info->offset = ctx->var_offset;
+    info->labels_index = -1;
 
     retval = readstat_convert(info->name, sizeof(info->name),
             variable.name, sizeof(variable.name), ctx->converter);
@@ -246,65 +328,15 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     }
     
     if (variable.has_var_label) {
-        uint32_t label_len;
-        if (io->read(&label_len, sizeof(uint32_t), io->io_ctx) < sizeof(uint32_t)) {
-            retval = READSTAT_ERROR_READ;
+        if ((retval = sav_read_variable_label(info, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
-        label_len = ctx->bswap ? byteswap4(label_len) : label_len;
-        uint32_t label_capacity = (label_len + 3) / 4 * 4;
-        char *label_buf = readstat_malloc(label_capacity);
-        size_t out_label_len = (size_t)label_len*4+1;
-        info->label = readstat_malloc(out_label_len);
-        if (label_buf == NULL || info->label == NULL) {
-            retval = READSTAT_ERROR_MALLOC;
-            goto cleanup;
-        }
-        if (io->read(label_buf, label_capacity, io->io_ctx) < label_capacity) {
-            retval = READSTAT_ERROR_READ;
-            free(label_buf);
-            free(info->label);
-            info->label = NULL;
-            goto cleanup;
-        }
-        retval = readstat_convert(info->label, out_label_len, label_buf, label_len, ctx->converter);
-        free(label_buf);
-        if (retval != READSTAT_OK)
-            goto cleanup;
     }
-    
-    ctx->varinfo[ctx->var_index].labels_index = -1;
     
     if (variable.n_missing_values) {
         info->n_missing_values = ctx->bswap ? byteswap4(variable.n_missing_values) : variable.n_missing_values;
-        if (info->n_missing_values < 0) {
-            info->missing_range = 1;
-            info->n_missing_values = abs(info->n_missing_values);
-        } else {
-            info->missing_range = 0;
-        }
-        if (info->n_missing_values > 3) {
-            retval = READSTAT_ERROR_PARSE;
+        if ((retval = sav_read_variable_missing_values(info, ctx)) != READSTAT_OK) {
             goto cleanup;
-        }
-        if (io->read(info->missing_values, info->n_missing_values * sizeof(double), io->io_ctx) < info->n_missing_values * sizeof(double)) {
-            retval = READSTAT_ERROR_READ;
-            goto cleanup;
-        }
-        for (i=0; i<info->n_missing_values; i++) {
-            if (ctx->bswap) {
-                info->missing_values[i] = byteswap_double(info->missing_values[i]);
-            }
-
-            uint64_t long_value = 0;
-            memcpy(&long_value, &info->missing_values[i], 8);
-
-            if (long_value == ctx->missing_double)
-                info->missing_values[i] = NAN;
-            if (long_value == ctx->lowest_double)
-                info->missing_values[i] = -HUGE_VAL;
-            if (long_value == ctx->highest_double)
-                info->missing_values[i] = HUGE_VAL;
         }
     }
     
@@ -1149,23 +1181,19 @@ static readstat_error_t sav_parse_records_pass2(sav_ctx_t *ctx) {
         
         switch (rec_type) {
             case SAV_RECORD_TYPE_VARIABLE:
-                retval = sav_read_variable_record(ctx);
-                if (retval)
+                if ((retval = sav_read_variable_record(ctx)) != READSTAT_OK)
                     goto cleanup;
                 break;
             case SAV_RECORD_TYPE_VALUE_LABEL:
-                retval = sav_read_value_label_record(ctx);
-                if (retval)
+                if ((retval = sav_read_value_label_record(ctx)) != READSTAT_OK)
                     goto cleanup;
                 break;
             case SAV_RECORD_TYPE_DOCUMENT:
-                retval = sav_read_document_record(ctx);
-                if (retval)
+                if ((retval = sav_read_document_record(ctx)) != READSTAT_OK)
                     goto cleanup;
                 break;
             case SAV_RECORD_TYPE_DICT_TERMINATION:
-                retval = sav_read_dictionary_termination_record(ctx);
-                if (retval)
+                if ((retval = sav_read_dictionary_termination_record(ctx)) != READSTAT_OK)
                     goto cleanup;
                 done = 1;
                 break;
