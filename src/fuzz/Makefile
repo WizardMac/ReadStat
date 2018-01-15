@@ -17,6 +17,7 @@ corpus:
 
 FORMATS = dta por sav sas7bdat sas7bcat xport
 GRAMMARS = por_double sav_time sav_date spss_format dta_timestamp
+RLE = sas
 
 .PHONY: formats
 formats:
@@ -27,6 +28,13 @@ formats:
 grammars:
 	$(foreach format,$(GRAMMARS), $(CC) -lstdc++ -lreadstat -fsanitize-coverage=trace-pc-guard -fsanitize=address fuzz_grammar_$(format).c $$format libFuzzer.a -o fuzz_grammar_$(format);)
 	$(foreach format,$(GRAMMARS), install_name_tool -change /usr/local/lib/libreadstat.0.dylib /Users/emiller/Code/ReadStat/.libs/libreadstat.0.dylib fuzz_grammar_$(format);)
+
+.PHONY: rle
+rle:
+	$(foreach format,$(RLE), $(CC) -lstdc++ -L../../.libs -lreadstat -fsanitize-coverage=trace-pc-guard -fsanitize=address fuzz_rle_$(format)_compress.c $$format libFuzzer.a -o fuzz_rle_$(format)_compress;)
+	$(foreach format,$(RLE), $(CC) -lstdc++ -L../../.libs -lreadstat -fsanitize-coverage=trace-pc-guard -fsanitize=address fuzz_rle_$(format)_decompress.c $$format libFuzzer.a -o fuzz_rle_$(format)_decompress;)
+	$(foreach format,$(RLE), install_name_tool -change /usr/local/lib/libreadstat.0.dylib /Users/emiller/Code/ReadStat/.libs/libreadstat.0.dylib fuzz_rle_$(format)_compress;)
+	$(foreach format,$(RLE), install_name_tool -change /usr/local/lib/libreadstat.0.dylib /Users/emiller/Code/ReadStat/.libs/libreadstat.0.dylib fuzz_rle_$(format)_decompress;)
 
 .PHONY: clean
 clean:
