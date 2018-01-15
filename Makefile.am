@@ -42,7 +42,7 @@ if HAVE_RAGEL
 	$(AM_V_GEN)$(RAGEL) $(RAGELFLAGS) -C $< -o $@
 endif
 
-libreadstat_la_CFLAGS = -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+libreadstat_la_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 libreadstat_la_LIBADD = @EXTRA_LIBS@
 libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@ @SANITIZERS@
 
@@ -112,8 +112,12 @@ noinst_HEADERS = \
        src/test/test_write.h
 
 bin_PROGRAMS = \
-   readstat \
-   extract_metadata
+    extract_metadata \
+    generate_corpus \
+	readstat
+
+noinst_PROGRAMS = \
+	generate_corpus
 
 readstat_SOURCES = \
 	src/bin/readstat.c \
@@ -206,6 +210,93 @@ test_double_decimals_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors
 
 
 TESTS = test_readstat test_dta_days test_sav_date test_double_decimals
+
+generate_corpus_SOURCES = \
+	src/fuzz/generate_corpus.c \
+	src/test/test_buffer.c \
+	src/test/test_write.c \
+	src/test/test_read.c \
+	src/test/test_buffer_io.c \
+	src/test/test_error.c \
+	src/test/test_dta.c \
+	src/test/test_sas.c
+
+generate_corpus_LDADD = libreadstat.la
+generate_corpus_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+if HAVE_FUZZER
+bin_PROGRAMS += \
+	fuzz_compression_sas_rle \
+	fuzz_format_dta \
+	fuzz_format_por \
+	fuzz_format_sas7bcat \
+	fuzz_format_sas7bdat \
+	fuzz_format_sav \
+	fuzz_format_xport
+
+noinst_PROGRAMS += \
+	fuzz_compression_sas_rle \
+	fuzz_format_dta \
+	fuzz_format_por \
+	fuzz_format_sav \
+	fuzz_format_sas7bcat \
+	fuzz_format_sas7bdat \
+	fuzz_format_xport
+
+fuzz_format_dta_SOURCES = \
+	src/fuzz/fuzz_format.c \
+	src/fuzz/fuzz_format_dta.c \
+	src/test/test_buffer_io.c
+
+fuzz_format_dta_LDADD = libreadstat.la -lstdc++ -lFuzzer
+fuzz_format_dta_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_format_por_SOURCES = \
+	src/fuzz/fuzz_format.c \
+	src/fuzz/fuzz_format_por.c \
+	src/test/test_buffer_io.c
+
+fuzz_format_por_LDADD = libreadstat.la -lstdc++ -lFuzzer
+fuzz_format_por_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_format_sas7bcat_SOURCES = \
+	src/fuzz/fuzz_format.c \
+	src/fuzz/fuzz_format_sas7bcat.c \
+	src/test/test_buffer_io.c
+
+fuzz_format_sas7bcat_LDADD = libreadstat.la -lstdc++ -lFuzzer
+fuzz_format_sas7bcat_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_format_sas7bdat_SOURCES = \
+	src/fuzz/fuzz_format.c \
+	src/fuzz/fuzz_format_sas7bdat.c \
+	src/test/test_buffer_io.c
+
+fuzz_format_sas7bdat_LDADD = libreadstat.la -lstdc++ -lFuzzer
+fuzz_format_sas7bdat_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_format_sav_SOURCES = \
+	src/fuzz/fuzz_format.c \
+	src/fuzz/fuzz_format_sav.c \
+	src/test/test_buffer_io.c
+
+fuzz_format_sav_LDADD = libreadstat.la -lstdc++ -lFuzzer
+fuzz_format_sav_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_format_xport_SOURCES = \
+	src/fuzz/fuzz_format.c \
+	src/fuzz/fuzz_format_xport.c \
+	src/test/test_buffer_io.c
+
+fuzz_format_xport_LDADD = libreadstat.la -lstdc++ -lFuzzer
+fuzz_format_xport_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_compression_sas_rle_SOURCES = \
+	src/fuzz/fuzz_compression_sas_rle.c
+
+fuzz_compression_sas_rle_LDADD = libreadstat.la -lstdc++ -lFuzzer
+fuzz_compression_sas_rle_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+endif
 
 install-exec-hook:
 	@(cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES))
