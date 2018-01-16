@@ -22,8 +22,6 @@
 
 #include "format.h"
 
-#define RS_VERSION_STRING  READSTAT_VERSION "-prerelease"
-
 #define RS_FORMAT_CAN_WRITE     (RS_FORMAT_DTA | RS_FORMAT_SAV)
 
 typedef struct rs_ctx_s {
@@ -174,7 +172,7 @@ readstat_error_t parse_file(readstat_parser_t *parser, const char *input_filenam
 }
 
 static void print_version() {
-    fprintf(stderr, "ReadStat version " RS_VERSION_STRING "\n");
+    fprintf(stderr, "ReadStat version " READSTAT_VERSION "\n");
 }
 
 static void print_usage(const char *cmd) {
@@ -198,7 +196,7 @@ static void print_usage(const char *cmd) {
 }
 
 static int convert_file(const char *input_filename, const char *catalog_filename, const char *output_filename,
-        rs_module_t *modules, int modules_count) {
+        rs_module_t *modules, int modules_count, int force) {
     readstat_error_t error = READSTAT_OK;
     const char *error_filename = NULL;
     struct timeval start_time, end_time;
@@ -217,7 +215,17 @@ static int convert_file(const char *input_filename, const char *catalog_filename
 
     rs_ctx_t *rs_ctx = calloc(1, sizeof(rs_ctx_t));
 
-    void *module_ctx = module->init(output_filename);
+    void *module_ctx = NULL;
+    
+    int file_exists = 0;
+    struct stat filestat;
+    if (!force && stat(output_filename, &filestat) == 0) {
+        error = READSTAT_ERROR_OPEN;
+        file_exists = 1;
+        goto cleanup;
+    }
+    
+    module_ctx = module->init(output_filename);
 
     if (module_ctx == NULL) {
         error = READSTAT_ERROR_OPEN;
@@ -297,8 +305,12 @@ cleanup:
     free(rs_ctx);
 
     if (error != READSTAT_OK) {
-        fprintf(stderr, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
-        unlink(output_filename);
+        if (file_exists) {
+            fprintf(stderr, "Error opening %s: File exists (Use -f to overwrite)\n", error_filename);
+        } else {
+            fprintf(stderr, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
+            unlink(output_filename);
+        }
         return 1;
     }
 
@@ -360,6 +372,7 @@ int main(int argc, char** argv) {
     rs_module_t *modules = NULL;
     long modules_count = 2;
     long module_index = 0;
+    int force = 0;
 
 #if HAVE_XLSXWRITER
     modules_count++;
@@ -373,47 +386,49 @@ int main(int argc, char** argv) {
 #if HAVE_XLSXWRITER
     modules[module_index++] = rs_mod_xlsx;
 #endif
+
     if (argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
         print_version();
         return 0;
-    } else if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
+    }
+    if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
         print_usage(argv[0]);
         return 0;
-    } else if (argc == 2) {
-        if (!can_read(argv[1])) {
-            print_usage(argv[0]);
-            return 1;
+    }
+    if (argc > 1) {
+        int argpos = 1;
+        if (strcmp(argv[argpos], "-f") == 0) {
+            force = 1;
+            argpos++;
         }
-        input_filename = argv[1];
-    } else if (argc == 3) {
-        if (!can_read(argv[1]) || !can_write(modules, modules_count, argv[2])) {
-            print_usage(argv[0]);
-            return 1;
+        if (argpos + 1 == argc) {
+            if (can_read(argv[argpos])) {
+                input_filename = argv[argpos];
+            }
+        } else if (argpos + 2 == argc) {
+            if (can_read(argv[argpos]) && can_write(modules, modules_count, argv[argpos+1])) {
+                input_filename = argv[1];
+                output_filename = argv[2];
+            }
+        } else if (argpos + 3 == argc) {
+            if (can_read(argv[argpos]) && (is_json(argv[argpos+1]) || is_catalog(argv[argpos+1]))
+                    && can_write(modules, modules_count, argv[argpos+2])) {
+                input_filename = argv[1];
+                catalog_filename = argv[2];
+                output_filename = argv[3];
+            }
         }
-        input_filename = argv[1];
-        output_filename = argv[2];
-    } else if (argc == 4 && can_read(argv[1]) && is_json(argv[2]) && can_read(argv[2]) && can_write(modules, modules_count, argv[3])) {
-        input_filename = argv[1];
-        catalog_filename = argv[2];
-        output_filename = argv[3];
-    } else if (argc == 4) {
-        if (!can_read(argv[1]) || !is_catalog(argv[2]) || !can_write(modules, modules_count, argv[3])) {
-            print_usage(argv[0]);
-            return 1;
-        }
-        input_filename = argv[1];
-        catalog_filename = argv[2];
-        output_filename = argv[3];
-    } else {
-        print_usage(argv[0]);
-        return 1;
     }
 
     int ret;
     if (output_filename) {
-        ret = convert_file(input_filename, catalog_filename, output_filename, modules, modules_count);
-    } else {
+        ret = convert_file(input_filename, catalog_filename, output_filename,
+                modules, modules_count, force);
+    } else if (input_filename) {
         ret = dump_file(input_filename); 
+    } else {
+        print_usage(argv[0]);
+        ret = 1;
     }
     free(modules);
     return ret;
