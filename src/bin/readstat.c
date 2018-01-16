@@ -308,9 +308,9 @@ cleanup:
 
     if (error != READSTAT_OK) {
         if (file_exists) {
-            fprintf(stdout, "Error opening %s: File exists (Use -f to overwrite)\n", output_filename);
+            fprintf(stderr, "Error opening %s: File exists (Use -f to overwrite)\n", output_filename);
         } else {
-            fprintf(stdout, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
+            fprintf(stderr, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
             unlink(output_filename);
         }
         return 1;
@@ -359,7 +359,7 @@ static int dump_file(const char *input_filename) {
     readstat_parser_free(parser);
 
     if (error != READSTAT_OK) {
-        fprintf(stdout, "Error processing %s: %s\n", input_filename, readstat_error_message(error));
+        fprintf(stderr, "Error processing %s: %s\n", input_filename, readstat_error_message(error));
         return 1;
     }
 
