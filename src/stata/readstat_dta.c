@@ -12,7 +12,7 @@
 #include "readstat_dta.h"
 
 #define DTA_MIN_VERSION 104
-#define DTA_MAX_VERSION 118
+#define DTA_MAX_VERSION 119
 
 dta_ctx_t *dta_ctx_alloc(readstat_io_t *io) {
     dta_ctx_t *ctx = calloc(1, sizeof(dta_ctx_t));
@@ -26,7 +26,7 @@ dta_ctx_t *dta_ctx_alloc(readstat_io_t *io) {
     return ctx;
 }
 
-readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs,
+readstat_error_t dta_ctx_init(dta_ctx_t *ctx, uint16_t nvar, uint32_t nobs,
         unsigned char byteorder, unsigned char ds_format,
         const char *input_encoding, const char *output_encoding) {
     readstat_error_t retval = READSTAT_OK;

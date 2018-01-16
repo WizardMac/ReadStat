@@ -22,6 +22,8 @@ long dta_file_format_version(long format_code) {
         version = 117;
     } else if (format_code == RT_FORMAT_DTA_118) {
         version = 118;
+    } else if (format_code == RT_FORMAT_DTA_119) {
+        version = 119;
     }
     return version;
 }

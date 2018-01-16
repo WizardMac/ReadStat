@@ -517,7 +517,7 @@ static rt_test_group_t _test_groups[] = {
         .tests = {
             {
                 .label = "UTF-8 value",
-                .test_formats = RT_FORMAT_DTA_118 | RT_FORMAT_SAV | RT_FORMAT_SAS7BDAT,
+                .test_formats = RT_FORMAT_DTA_118_AND_NEWER | RT_FORMAT_SAV | RT_FORMAT_SAS7BDAT,
                 .rows = 1,
                 .columns = {
                     {
@@ -542,7 +542,7 @@ static rt_test_group_t _test_groups[] = {
             },
             {
                 .label = "UTF-8 column label",
-                .test_formats = RT_FORMAT_DTA_118 | RT_FORMAT_SAV | RT_FORMAT_SAS7BDAT,
+                .test_formats = RT_FORMAT_DTA_118_AND_NEWER | RT_FORMAT_SAV | RT_FORMAT_SAS7BDAT,
                 .rows = 0,
                 .columns = {
                     {
@@ -554,7 +554,7 @@ static rt_test_group_t _test_groups[] = {
             },
             {
                 .label = "UTF-8 value label",
-                .test_formats = RT_FORMAT_DTA_118,
+                .test_formats = RT_FORMAT_DTA_118_AND_NEWER,
                 .rows = 0,
                 .label_sets_count = 1,
                 .label_sets = {

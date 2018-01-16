@@ -7,8 +7,8 @@ typedef struct dta_header_s {
     unsigned char    byteorder;
     unsigned char    filetype;
     unsigned char    unused;
-    int16_t          nvar;
-    int32_t          nobs;
+    uint16_t         nvar;
+    uint32_t         nobs;
 } dta_header_t;
 
 typedef struct dta_117_strl_header_s {
@@ -167,7 +167,7 @@ typedef struct dta_ctx_s {
 #define DTA_OLD_TYPE_CODE_DOUBLE   'd'
 
 dta_ctx_t *dta_ctx_alloc(readstat_io_t *io);
-readstat_error_t dta_ctx_init(dta_ctx_t *ctx, int16_t nvar, int32_t nobs, 
+readstat_error_t dta_ctx_init(dta_ctx_t *ctx, uint16_t nvar, uint32_t nobs, 
         unsigned char byteorder, unsigned char ds_format,
         const char *input_encoding, const char *output_encoding);
 void dta_ctx_free(dta_ctx_t *ctx);

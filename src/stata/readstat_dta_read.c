@@ -713,7 +713,6 @@ cleanup:
 
 static readstat_error_t dta_read_xmlish_preamble(dta_ctx_t *ctx, dta_header_t *header) {
     readstat_error_t retval = READSTAT_OK;
-    readstat_io_t *io = ctx->io;
     
     if ((retval = dta_read_tag(ctx, "<stata_dta>")) != READSTAT_OK) {
         goto cleanup;
@@ -731,6 +730,7 @@ static readstat_error_t dta_read_xmlish_preamble(dta_ctx_t *ctx, dta_header_t *h
     header->ds_format = 100 * (ds_format[0] - '0') + 10 * (ds_format[1] - '0') + (ds_format[2] - '0');
 
     char byteorder[3];
+    int byteswap = 0;
     if ((retval = dta_read_chunk(ctx, "<byteorder>", byteorder, 
                     sizeof(byteorder), "</byteorder>")) != READSTAT_OK) {
         goto cleanup;
@@ -743,35 +743,36 @@ static readstat_error_t dta_read_xmlish_preamble(dta_ctx_t *ctx, dta_header_t *h
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
+    byteswap = DTA_HILO ^ machine_is_little_endian();
 
-    if ((retval = dta_read_chunk(ctx, "<K>", &header->nvar, 
-                    sizeof(int16_t), "</K>")) != READSTAT_OK) {
-        goto cleanup;
-    }
-
-    if ((retval = dta_read_tag(ctx, "<N>")) != READSTAT_OK) {
-        goto cleanup;
-    }
-    if (io->read(&header->nobs, sizeof(int32_t), io->io_ctx) != sizeof(int32_t)) {
-        retval = READSTAT_ERROR_READ;
-        goto cleanup;
-    }
-    if (header->ds_format >= 118) {
-        /* Only support files < 4 billion rows for now */
-        if (header->byteorder == DTA_HILO) {
-            if (io->read(&header->nobs, sizeof(int32_t), io->io_ctx) != sizeof(int32_t)) {
-                retval = READSTAT_ERROR_READ;
-                goto cleanup;
-            }
-        } else {
-            if (io->seek(4, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
-                retval = READSTAT_ERROR_SEEK;
-                goto cleanup;
-            }
+    if (header->ds_format >= 119) {
+        /* Read 32-bit K but store as 16-bit */
+        uint32_t nvar;
+        if ((retval = dta_read_chunk(ctx, "<K>", &nvar, 
+                        sizeof(uint32_t), "</K>")) != READSTAT_OK) {
+            goto cleanup;
+        }
+        header->nvar = byteswap ? nvar >> 16 : nvar;
+    } else {
+        if ((retval = dta_read_chunk(ctx, "<K>", &header->nvar, 
+                        sizeof(uint16_t), "</K>")) != READSTAT_OK) {
+            goto cleanup;
         }
     }
-    if ((retval = dta_read_tag(ctx, "</N>")) != READSTAT_OK) {
-        goto cleanup;
+
+    if (header->ds_format >= 118) {
+        /* Read 64-bit N but store as 32-bit */
+        uint64_t nobs;
+        if ((retval = dta_read_chunk(ctx, "<N>", &nobs, 
+                        sizeof(uint64_t), "</N>")) != READSTAT_OK) {
+            goto cleanup;
+        }
+        header->nobs = byteswap ? nobs >> 32 : nobs;
+    } else {
+        if ((retval = dta_read_chunk(ctx, "<N>", &header->nobs, 
+                        sizeof(uint32_t), "</N>")) != READSTAT_OK) {
+            goto cleanup;
+        }
     }
 
 cleanup:
