@@ -230,6 +230,7 @@ static int convert_file(const char *input_filename, const char *catalog_filename
 
     if (module_ctx == NULL) {
         error = READSTAT_ERROR_OPEN;
+        error_filename = output_filename;
         goto cleanup;
     }
 
@@ -307,7 +308,7 @@ cleanup:
 
     if (error != READSTAT_OK) {
         if (file_exists) {
-            fprintf(stderr, "Error opening %s: File exists (Use -f to overwrite)\n", error_filename);
+            fprintf(stderr, "Error opening %s: File exists (Use -f to overwrite)\n", output_filename);
         } else {
             fprintf(stderr, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
             unlink(output_filename);
@@ -408,15 +409,15 @@ int main(int argc, char** argv) {
             }
         } else if (argpos + 2 == argc) {
             if (can_read(argv[argpos]) && can_write(modules, modules_count, argv[argpos+1])) {
-                input_filename = argv[1];
-                output_filename = argv[2];
+                input_filename = argv[argpos];
+                output_filename = argv[argpos+1];
             }
         } else if (argpos + 3 == argc) {
             if (can_read(argv[argpos]) && (is_json(argv[argpos+1]) || is_catalog(argv[argpos+1]))
                     && can_write(modules, modules_count, argv[argpos+2])) {
-                input_filename = argv[1];
-                catalog_filename = argv[2];
-                output_filename = argv[3];
+                input_filename = argv[argpos];
+                catalog_filename = argv[argpos+1];
+                output_filename = argv[argpos+2];
             }
         }
     }
