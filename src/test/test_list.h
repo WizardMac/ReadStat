@@ -551,6 +551,32 @@ static rt_test_group_t _test_groups[] = {
                         .type = READSTAT_TYPE_DOUBLE
                     }
                 }
+            },
+            {
+                .label = "UTF-8 value label",
+                .test_formats = RT_FORMAT_DTA_118,
+                .rows = 0,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "somelbl",
+                        .type = READSTAT_TYPE_INT32,
+                        .value_labels_count = 1,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 6 } },
+                                .label = "F" "\xc3\xbc" "nf"
+                            }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .label_set = "somelbl"
+                    }
+                }
             }
         }
     },
@@ -1158,7 +1184,7 @@ static rt_test_group_t _test_groups[] = {
                             {
                                 .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 2 } },
                                 .label = "Two"
-                            },
+                            }
                         }
                     }
                 },
