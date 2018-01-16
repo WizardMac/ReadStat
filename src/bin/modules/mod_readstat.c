@@ -169,18 +169,21 @@ static int handle_variable(int index, readstat_variable_t *variable,
     readstat_type_t type = readstat_variable_get_type(variable);
     const char *name = readstat_variable_get_name(variable);
     const char *label = readstat_variable_get_label(variable);
-    const char *format = readstat_variable_get_format(variable);
     size_t storage_width = readstat_variable_get_storage_width(variable);
     int display_width = readstat_variable_get_display_width(variable);
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
     readstat_alignment_t alignment = readstat_variable_get_alignment(variable);
     readstat_measure_t measure = readstat_variable_get_measure(variable);
+    // TODO format translation (readstat_variable_get_format + readstat_variable_set_format)
     
     readstat_variable_t *new_variable = readstat_add_variable(writer, name, type, storage_width);
 
     if (val_labels) {
         readstat_label_set_t *label_set = (readstat_label_set_t *)ck_str_hash_lookup(val_labels, mod_ctx->label_set_dict);
         readstat_variable_set_label_set(new_variable, label_set);
+        if (mod_ctx->is_sas7bdat) {
+            readstat_variable_set_format(new_variable, val_labels);
+        }
     }
 
     int i;
@@ -202,12 +205,6 @@ static int handle_variable(int index, readstat_variable_t *variable,
     readstat_variable_set_measure(new_variable, measure);
     readstat_variable_set_display_width(new_variable, display_width);
     readstat_variable_set_label(new_variable, label);
-    if (format && format[0] && mod_ctx->is_dta && format[0]!='%') {
-        // TODO I suppose you would need some translation from SPSS to DTA
-        fprintf(stderr, "%s:%d Unsupported format '%s' given for DTA, aborting...\n", __FILE__, __LINE__, format);
-        exit(EXIT_FAILURE);
-    }
-    readstat_variable_set_format(new_variable, format);
 
     return READSTAT_HANDLER_OK;
 }
