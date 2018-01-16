@@ -33,7 +33,7 @@ Command-line Usage
 
 Standard usage:
 
-    readstat <input file> <output file>
+    readstat [-f] <input file> <output file>
 
 Where:
 
@@ -43,8 +43,7 @@ Where:
 If [libxlsxwriter](http://libxlsxwriter.github.io) is found at compile-time, an
 XLSX file (ending in `.xlsx`) can be written instead.
 
-Note that ReadStat will not overwrite existing files, so if you get a "File
-exists" error, delete the file you intend to replace.
+Use the `-f` option to overwrite an existing output file.
 
 If you have a SAS catalog file containing the data set's value labels, a second
 invocation style is supported:
