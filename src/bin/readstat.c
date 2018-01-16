@@ -173,23 +173,23 @@ readstat_error_t parse_file(readstat_parser_t *parser, const char *input_filenam
 }
 
 static void print_version() {
-    fprintf(stderr, "ReadStat version " READSTAT_VERSION "\n");
+    fprintf(stdout, "ReadStat version " READSTAT_VERSION "\n");
 }
 
 static void print_usage(const char *cmd) {
     print_version();
 
-    fprintf(stderr, "\n  View a file's metadata:\n");
-    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat|xpt)\n", cmd);
+    fprintf(stdout, "\n  View a file's metadata:\n");
+    fprintf(stdout, "\n     %s input.(dta|por|sav|sas7bdat|xpt)\n", cmd);
 
-    fprintf(stderr, "\n  Convert a file:\n");
-    fprintf(stderr, "\n     %s input.(dta|por|sav|sas7bdat|xpt) output.(dta|por|sav|sas7bdat|xpt|csv"
+    fprintf(stdout, "\n  Convert a file:\n");
+    fprintf(stdout, "\n     %s input.(dta|por|sav|sas7bdat|xpt) output.(dta|por|sav|sas7bdat|xpt|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif
             ")\n", cmd);
-    fprintf(stderr, "\n  Convert a file if your value labels are stored in a separate SAS catalog file:\n");
-    fprintf(stderr, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|por|sav|csv"
+    fprintf(stdout, "\n  Convert a file if your value labels are stored in a separate SAS catalog file:\n");
+    fprintf(stdout, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|por|sav|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif
@@ -285,7 +285,7 @@ static int convert_file(const char *input_filename, const char *catalog_filename
 
     gettimeofday(&end_time, NULL);
 
-    fprintf(stderr, "Converted %ld variables and %ld rows in %.2lf seconds\n",
+    fprintf(stdout, "Converted %ld variables and %ld rows in %.2lf seconds\n",
             rs_ctx->var_count, rs_ctx->row_count, 
             (end_time.tv_sec + 1e-6 * end_time.tv_usec) -
             (start_time.tv_sec + 1e-6 * start_time.tv_usec));
@@ -308,9 +308,9 @@ cleanup:
 
     if (error != READSTAT_OK) {
         if (file_exists) {
-            fprintf(stderr, "Error opening %s: File exists (Use -f to overwrite)\n", output_filename);
+            fprintf(stdout, "Error opening %s: File exists (Use -f to overwrite)\n", output_filename);
         } else {
-            fprintf(stderr, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
+            fprintf(stdout, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
             unlink(output_filename);
         }
         return 1;
@@ -359,7 +359,7 @@ static int dump_file(const char *input_filename) {
     readstat_parser_free(parser);
 
     if (error != READSTAT_OK) {
-        fprintf(stderr, "Error processing %s: %s\n", input_filename, readstat_error_message(error));
+        fprintf(stdout, "Error processing %s: %s\n", input_filename, readstat_error_message(error));
         return 1;
     }
 
