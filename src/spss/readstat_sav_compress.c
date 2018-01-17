@@ -3,6 +3,10 @@
 
 #include "readstat_sav_compress.h"
 
+size_t sav_compressed_length(size_t uncompressed_length) {
+    return uncompressed_length + (uncompressed_length/8 + 8)/8*8;
+}
+
 int sav_decompress(struct sav_compression_state_s *state) {
     double fp_value;
     int i = 8 - state->i;

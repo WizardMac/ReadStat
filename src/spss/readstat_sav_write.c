@@ -8,13 +8,16 @@
 #include <math.h>
 #include <float.h>
 #include <time.h>
+#include <malloc/malloc.h>
 
 #include "../readstat.h"
 #include "../readstat_iconv.h"
 #include "../readstat_bits.h"
+#include "../readstat_malloc.h"
 #include "../readstat_writer.h"
 
 #include "readstat_sav.h"
+#include "readstat_sav_compress.h"
 #include "readstat_spss_parse.h"
 
 #define MAX_STRING_SIZE             255
@@ -975,15 +978,16 @@ static readstat_error_t sav_begin_data(void *writer_ctx) {
         goto cleanup;
 
 cleanup:
+    if (retval == READSTAT_OK && writer->compression == READSTAT_COMPRESS_ROWS) {
+        writer->module_ctx = readstat_malloc(sav_compressed_length(writer->row_len));
+    }
     return retval;
 }
 
 static readstat_error_t sav_write_compressed_row(void *writer_ctx, void *row, size_t len) {
-    readstat_error_t retval = READSTAT_OK;
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
+    unsigned char *output = writer->module_ctx;
     int i;
-    size_t output_len = len + (len/8 + 8)/8*8;
-    unsigned char *output = malloc(output_len);
     char *input = (char *)row;
 
     off_t input_offset = 0;
@@ -1041,11 +1045,7 @@ static readstat_error_t sav_write_compressed_row(void *writer_ctx, void *row, si
     if (writer->current_row + 1 == writer->row_count)
         output[control_offset] = 252;
 
-    retval = readstat_write_bytes(writer, output, output_offset);
-
-    free(output);
-
-    return retval;
+    return readstat_write_bytes(writer, output, output_offset);
 }
 
 readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count) {
@@ -1063,6 +1063,7 @@ readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *use
 
     if (writer->compression == READSTAT_COMPRESS_ROWS) {
         writer->callbacks.write_row = &sav_write_compressed_row;
+        writer->callbacks.module_ctx_free = &free;
     } else if (writer->compression == READSTAT_COMPRESS_NONE) {
         /* void */
     } else {

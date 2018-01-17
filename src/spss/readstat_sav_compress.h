@@ -12,4 +12,5 @@ struct sav_compression_state_s {
     int                   i;
 };
 
+size_t sav_compressed_length(size_t uncompressed_length);
 int sav_decompress(struct sav_compression_state_s *state);

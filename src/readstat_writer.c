@@ -114,11 +114,11 @@ static readstat_error_t readstat_begin_writing_data(readstat_writer_t *writer) {
                 goto cleanup;
         }
     }
+    writer->row_len = row_len;
+    writer->row = malloc(writer->row_len);
     if (writer->callbacks.begin_data) {
         retval = writer->callbacks.begin_data(writer);
     }
-    writer->row_len = row_len;
-    writer->row = malloc(writer->row_len);
 
 cleanup:
     return retval;
