@@ -127,6 +127,7 @@ noinst_HEADERS = \
        src/test/test_read.h \
        src/test/test_readstat.h \
        src/test/test_sas.h \
+       src/test/test_sav.h \
        src/test/test_types.h \
        src/test/test_write.h
 
@@ -204,6 +205,7 @@ test_readstat_SOURCES = \
 	src/test/test_read.c \
 	src/test/test_readstat.c \
 	src/test/test_sas.c \
+	src/test/test_sav.c \
 	src/test/test_write.c
 
 test_readstat_LDADD = libreadstat.la
@@ -240,7 +242,8 @@ generate_corpus_SOURCES = \
 	src/test/test_buffer_io.c \
 	src/test/test_error.c \
 	src/test/test_dta.c \
-	src/test/test_sas.c
+	src/test/test_sas.c \
+	src/test/test_sav.c
 
 generate_corpus_LDADD = libreadstat.la
 generate_corpus_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@

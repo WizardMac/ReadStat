@@ -10,6 +10,7 @@
 #include "test_read.h"
 #include "test_dta.h"
 #include "test_sas.h"
+#include "test_sav.h"
 
 char *file_extension(long format) {
     if (format == RT_FORMAT_DTA_104)
@@ -281,7 +282,7 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
         parse_ctx->file_format_version = dta_file_format_version(format);
         error = readstat_parse_dta(parser, NULL, parse_ctx);
     } else if ((format & RT_FORMAT_SAV)) {
-        parse_ctx->file_format_version = 2;
+        parse_ctx->file_format_version = sav_file_format_version(format);
         error = readstat_parse_sav(parser, NULL, parse_ctx);
     } else if (format == RT_FORMAT_POR) {
         parse_ctx->file_format_version = 0;
