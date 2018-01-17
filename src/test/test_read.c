@@ -34,6 +34,8 @@ char *file_extension(long format) {
         return "sav";
     if (format == RT_FORMAT_SAV_COMP_ROWS)
         return "savrow";
+    if (format == RT_FORMAT_SAV_COMP_ZLIB)
+        return "zsav";
     if (format == RT_FORMAT_POR)
         return "por";
     if (format == RT_FORMAT_SAS7BCAT)

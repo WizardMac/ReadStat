@@ -54,7 +54,8 @@ typedef enum readstat_alignment_e {
 
 typedef enum readstat_compress_e {
     READSTAT_COMPRESS_NONE,
-    READSTAT_COMPRESS_ROWS
+    READSTAT_COMPRESS_ROWS,
+    READSTAT_COMPRESS_BINARY
 } readstat_compress_t;
 
 typedef enum readstat_error_e {
@@ -470,7 +471,9 @@ readstat_error_t readstat_writer_set_file_format_version(readstat_writer_t *writ
 readstat_error_t readstat_writer_set_file_format_is_64bit(readstat_writer_t *writer,
         int is_64bit); // applies only to SAS files; defaults to 1=true
 readstat_error_t readstat_writer_set_compression(readstat_writer_t *writer,
-        readstat_compress_t compression); // applies only to SAS and SAV files
+        readstat_compress_t compression); 
+        // READSTAT_COMPRESS_BINARY is supported only with SAV files (i.e. ZSAV files)
+        // READSTAT_COMPRESS_ROWS is supported only with sas7bdat and SAV files
 
 // Optional error handler
 readstat_error_t readstat_writer_set_error_handler(readstat_writer_t *writer, 

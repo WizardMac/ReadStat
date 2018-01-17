@@ -21,15 +21,18 @@
 #define SAV_VARINFO_INITIAL_CAPACITY  512
 
 sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header, readstat_io_t *io) {
-    sav_ctx_t *ctx = NULL;
-    if ((ctx = readstat_malloc(sizeof(sav_ctx_t))) == NULL) {
+    sav_ctx_t *ctx = readstat_calloc(1, sizeof(sav_ctx_t));
+    if (ctx == NULL) {
         return NULL;
     }
-    memset(ctx, 0, sizeof(sav_ctx_t));
     
     ctx->bswap = !(header->layout_code == 2 || header->layout_code == 3);
 
-    ctx->data_is_compressed = (header->compressed != 0);
+    if (header->compression == 1 || byteswap4(header->compression) == 1) {
+        ctx->compression = READSTAT_COMPRESS_ROWS;
+    } else if (header->compression == 2 || byteswap4(header->compression) == 2) {
+        ctx->compression = READSTAT_COMPRESS_BINARY;
+    }
     ctx->record_count = ctx->bswap ? byteswap4(header->ncases) : header->ncases;
     ctx->fweight_index = ctx->bswap ? byteswap4(header->weight_index) : header->weight_index;
 

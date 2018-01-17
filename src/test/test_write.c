@@ -156,6 +156,8 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
     } else if ((format & RT_FORMAT_SAV)) {
         if (format == RT_FORMAT_SAV_COMP_ROWS) {
             readstat_writer_set_compression(writer, READSTAT_COMPRESS_ROWS);
+        } else if (format == RT_FORMAT_SAV_COMP_ZLIB) {
+            readstat_writer_set_compression(writer, READSTAT_COMPRESS_BINARY);
         }
         error = readstat_begin_writing_sav(writer, buffer, file->rows);
     } else if (format == RT_FORMAT_POR) {

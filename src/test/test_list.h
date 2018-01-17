@@ -51,7 +51,7 @@ static rt_test_group_t _test_groups[] = {
         .tests = {
             {
                 .label = "SAV row compression",
-                .test_formats = RT_FORMAT_SAV_COMP_ROWS,
+                .test_formats = RT_FORMAT_SAV_COMP,
                 .rows = 3,
                 .columns = {
                     {

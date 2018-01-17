@@ -13,7 +13,7 @@ typedef struct sav_file_header_record_s {
     char     prod_name[60];
     int32_t  layout_code;
     int32_t  nominal_case_size;
-    int32_t  compressed;
+    int32_t  compression;
     int32_t  weight_index;
     int32_t  ncases;
     double   bias; /* TODO is this portable? */
@@ -105,7 +105,7 @@ typedef struct sav_ctx_s {
 
     double         bias;
 
-    unsigned int   data_is_compressed:1;
+    readstat_compress_t  compression;
     unsigned int   bswap:1;
 } sav_ctx_t;
 

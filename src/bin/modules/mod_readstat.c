@@ -20,6 +20,7 @@ typedef struct mod_readstat_ctx_s {
     int out_fd;
 
     unsigned int is_sav:1;
+    unsigned int is_zsav:1;
     unsigned int is_dta:1;
     unsigned int is_por:1;
     unsigned int is_sas7bdat:1;
@@ -63,6 +64,7 @@ static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
 static int accept_file(const char *filename) {
     return (rs_ends_with(filename, ".dta") ||
             rs_ends_with(filename, ".sav") ||
+            rs_ends_with(filename, ".zsav") ||
             rs_ends_with(filename, ".por") ||
             rs_ends_with(filename, ".sas7bdat") ||
             rs_ends_with(filename, ".xpt"));
@@ -72,6 +74,7 @@ static void *ctx_init(const char *filename) {
     mod_readstat_ctx_t *mod_ctx = malloc(sizeof(mod_readstat_ctx_t));
     mod_ctx->label_set_dict = ck_hash_table_init(1024);
     mod_ctx->is_sav = rs_ends_with(filename, ".sav");
+    mod_ctx->is_zsav = rs_ends_with(filename, ".zsav");
     mod_ctx->is_dta = rs_ends_with(filename, ".dta");
     mod_ctx->is_por = rs_ends_with(filename, ".por");
     mod_ctx->is_sas7bdat = rs_ends_with(filename, ".sas7bdat");
@@ -221,6 +224,10 @@ static int handle_value(int obs_index, readstat_variable_t *old_variable, readst
     if (var_index == 0) {
         if (obs_index == 0) {
             if (mod_ctx->is_sav) {
+                readstat_writer_set_compression(writer, READSTAT_COMPRESS_ROWS);
+                error = readstat_begin_writing_sav(writer, mod_ctx, mod_ctx->row_count);
+            } else if (mod_ctx->is_zsav) {
+                readstat_writer_set_compression(writer, READSTAT_COMPRESS_BINARY);
                 error = readstat_begin_writing_sav(writer, mod_ctx, mod_ctx->row_count);
             } else if (mod_ctx->is_dta) {
                 error = readstat_begin_writing_dta(writer, mod_ctx, mod_ctx->row_count);

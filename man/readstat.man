@@ -32,7 +32,10 @@ SAS binary file, created with SAS version 7 or newer
 SAS portable file, version 5 or version 8, created with the SAS XPORT command
 .TP
 .IR sav
-SPSS binary file (\fIzsav\fR compressed files not supported)
+SPSS uncompressed binary file
+.TP
+.IR zsav
+SPSS compressed binary file
 .TP
 .IR por
 SPSS portable file

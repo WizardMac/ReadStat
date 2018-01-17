@@ -19,6 +19,10 @@
 #include "readstat_sav_parse.h"
 #include "readstat_sav_parse_timestamp.h"
 
+#if HAVE_ZLIB
+#include "readstat_zsav_read.h"
+#endif
+
 #define DATA_BUFFER_SIZE    65536
 
 /* Others defined in table below */
@@ -116,8 +120,10 @@ typedef struct value_label_s {
 
 static readstat_error_t sav_update_progress(sav_ctx_t *ctx);
 static readstat_error_t sav_read_data(sav_ctx_t *ctx);
-static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx);
-static readstat_error_t sav_read_uncompressed_data(sav_ctx_t *ctx);
+static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx,
+        readstat_error_t (*row_handler)(unsigned char *, size_t, sav_ctx_t *));
+static readstat_error_t sav_read_uncompressed_data(sav_ctx_t *ctx,
+        readstat_error_t (*row_handler)(unsigned char *, size_t, sav_ctx_t *));
 
 static readstat_error_t sav_skip_variable_record(sav_ctx_t *ctx);
 static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx);
@@ -598,45 +604,6 @@ static readstat_error_t sav_read_dictionary_termination_record(sav_ctx_t *ctx) {
     return retval;
 }
 
-static readstat_error_t sav_read_data(sav_ctx_t *ctx) {
-    readstat_error_t retval = READSTAT_OK;
-    int longest_string = 256;
-    int i;
-
-    for (i=0; i<ctx->var_count; i++) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
-        if (info->string_length > longest_string) {
-            longest_string = info->string_length;
-        }
-    }
-
-    ctx->raw_string_len = longest_string + sizeof(SAV_EIGHT_SPACES)-2;
-    ctx->raw_string = readstat_malloc(ctx->raw_string_len);
-
-    ctx->utf8_string_len = 4*longest_string+1 + sizeof(SAV_EIGHT_SPACES)-2;
-    ctx->utf8_string = readstat_malloc(ctx->utf8_string_len);
-
-    if (ctx->raw_string == NULL || ctx->utf8_string == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
-        goto done;
-    }
-
-    if (ctx->data_is_compressed) {
-        retval = sav_read_compressed_data(ctx);
-    } else {
-        retval = sav_read_uncompressed_data(ctx);
-    }
-    if (retval != READSTAT_OK)
-        goto done;
-
-    if (ctx->record_count != -1 && ctx->current_row != ctx->row_limit) {
-        retval = READSTAT_ERROR_ROW_COUNT_MISMATCH;
-    }
-
-done:
-    return retval;
-}
-
 static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len, sav_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     double fp_value;
@@ -707,7 +674,53 @@ done:
     return retval;
 }
 
-static readstat_error_t sav_read_uncompressed_data(sav_ctx_t *ctx) {
+static readstat_error_t sav_read_data(sav_ctx_t *ctx) {
+    readstat_error_t retval = READSTAT_OK;
+    int longest_string = 256;
+    int i;
+
+    for (i=0; i<ctx->var_count; i++) {
+        spss_varinfo_t *info = &ctx->varinfo[i];
+        if (info->string_length > longest_string) {
+            longest_string = info->string_length;
+        }
+    }
+
+    ctx->raw_string_len = longest_string + sizeof(SAV_EIGHT_SPACES)-2;
+    ctx->raw_string = readstat_malloc(ctx->raw_string_len);
+
+    ctx->utf8_string_len = 4*longest_string+1 + sizeof(SAV_EIGHT_SPACES)-2;
+    ctx->utf8_string = readstat_malloc(ctx->utf8_string_len);
+
+    if (ctx->raw_string == NULL || ctx->utf8_string == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto done;
+    }
+
+    if (ctx->compression == READSTAT_COMPRESS_ROWS) {
+        retval = sav_read_compressed_data(ctx, &sav_process_row);
+    } else if (ctx->compression == READSTAT_COMPRESS_BINARY) {
+#if HAVE_ZLIB
+        retval = zsav_read_compressed_data(ctx, &sav_process_row);
+#else
+        retval = READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
+#endif
+    } else {
+        retval = sav_read_uncompressed_data(ctx, &sav_process_row);
+    }
+    if (retval != READSTAT_OK)
+        goto done;
+
+    if (ctx->record_count != -1 && ctx->current_row != ctx->row_limit) {
+        retval = READSTAT_ERROR_ROW_COUNT_MISMATCH;
+    }
+
+done:
+    return retval;
+}
+
+static readstat_error_t sav_read_uncompressed_data(sav_ctx_t *ctx,
+        readstat_error_t (*row_handler)(unsigned char *, size_t, sav_ctx_t *)) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
     unsigned char *buffer = NULL;
@@ -724,7 +737,7 @@ static readstat_error_t sav_read_uncompressed_data(sav_ctx_t *ctx) {
         if ((bytes_read = io->read(buffer, buffer_len, io->io_ctx)) != buffer_len)
             goto done;
 
-        retval = sav_process_row(buffer, buffer_len, ctx);
+        retval = row_handler(buffer, buffer_len, ctx);
         if (retval != READSTAT_OK)
             goto done;
     }
@@ -735,7 +748,8 @@ done:
     return retval;
 }
 
-static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
+static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx,
+        readstat_error_t (*row_handler)(unsigned char *, size_t, sav_ctx_t *)) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
     readstat_off_t data_offset = 0;
@@ -746,7 +760,7 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
     readstat_off_t uncompressed_offset = 0;
     unsigned char *uncompressed_row = NULL;
 
-    struct sav_compression_state_s state = { 
+    struct sav_row_stream_s state = { 
         .missing_value = ctx->missing_double,
         .bias = ctx->bias };
 
@@ -773,13 +787,13 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
         state.next_out = &uncompressed_row[uncompressed_offset];
         state.avail_out = uncompressed_row_len - uncompressed_offset;
 
-        int finished = sav_decompress(&state);
+        int finished = sav_decompress_row(&state);
 
         uncompressed_offset = uncompressed_row_len - state.avail_out;
         data_offset = buffer_used - state.avail_in;
 
         if (state.avail_out == 0) {
-            retval = sav_process_row(uncompressed_row, uncompressed_row_len, ctx);
+            retval = row_handler(uncompressed_row, uncompressed_row_len, ctx);
             if (retval != READSTAT_OK)
                 goto done;
 

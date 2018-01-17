@@ -23,8 +23,6 @@
 
 #include "format.h"
 
-#define RS_FORMAT_CAN_WRITE     (RS_FORMAT_DTA | RS_FORMAT_SAV)
-
 typedef struct rs_ctx_s {
     rs_module_t *module;
     void        *module_ctx;
@@ -38,6 +36,9 @@ const char *format_name(int format) {
 
     if (format == RS_FORMAT_SAV)
         return "SPSS binary file (SAV)";
+
+    if (format == RS_FORMAT_ZSAV)
+        return "SPSS compressed binary file (ZSAV)";
 
     if (format == RS_FORMAT_POR)
         return "SPSS portable file (POR)";
@@ -157,7 +158,8 @@ readstat_error_t parse_file(readstat_parser_t *parser, const char *input_filenam
 
     if (input_format == RS_FORMAT_DTA) {
         error = readstat_parse_dta(parser, input_filename, ctx);
-    } else if (input_format == RS_FORMAT_SAV) {
+    } else if (input_format == RS_FORMAT_SAV ||
+            input_format == RS_FORMAT_ZSAV) {
         error = readstat_parse_sav(parser, input_filename, ctx);
     } else if (input_format == RS_FORMAT_POR) {
         error = readstat_parse_por(parser, input_filename, ctx);
@@ -180,16 +182,32 @@ static void print_usage(const char *cmd) {
     print_version();
 
     fprintf(stdout, "\n  View a file's metadata:\n");
-    fprintf(stdout, "\n     %s input.(dta|por|sav|sas7bdat|xpt)\n", cmd);
+    fprintf(stdout, "\n     %s input.(dta|por|sav|sas7bdat|xpt"
+#if HAVE_ZLIB
+            "|zsav"
+#endif
+            ")\n", cmd);
 
     fprintf(stdout, "\n  Convert a file:\n");
-    fprintf(stdout, "\n     %s input.(dta|por|sav|sas7bdat|xpt) output.(dta|por|sav|sas7bdat|xpt|csv"
+    fprintf(stdout, "\n     %s input.(dta|por|sav|sas7bdat|xpt"
+#if HAVE_ZLIB
+            "|zsav"
+#endif
+            ") output.(dta|por|sav|sas7bdat|xpt"
+#if HAVE_ZLIB
+            "|zsav"
+#endif
+            "|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif
             ")\n", cmd);
     fprintf(stdout, "\n  Convert a file if your value labels are stored in a separate SAS catalog file:\n");
-    fprintf(stdout, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|por|sav|csv"
+    fprintf(stdout, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|por|sav|xpt"
+#if HAVE_ZLIB
+            "|zsav"
+#endif
+            "|csv"
 #if HAVE_XLSXWRITER
             "|xlsx"
 #endif
