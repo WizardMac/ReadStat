@@ -26,6 +26,7 @@ libreadstat_la_SOURCES = \
 	src/spss/readstat_por_read.c \
 	src/spss/readstat_por_write.c \
 	src/spss/readstat_sav.c \
+	src/spss/readstat_sav_compress.c \
 	src/spss/readstat_sav_parse.c \
 	src/spss/readstat_sav_parse_timestamp.c \
 	src/spss/readstat_sav_read.c \
@@ -69,6 +70,7 @@ noinst_HEADERS = \
        src/spss/readstat_por.h \
        src/spss/readstat_por_parse.h \
        src/spss/readstat_sav.h \
+       src/spss/readstat_sav_compress.h \
        src/spss/readstat_sav_parse.h \
        src/spss/readstat_sav_parse_timestamp.h \
        src/spss/readstat_spss.h \
@@ -231,6 +233,7 @@ noinst_HEADERS += \
 
 noinst_PROGRAMS += \
 	fuzz_compression_sas_rle \
+	fuzz_compression_sav \
 	fuzz_format_dta \
 	fuzz_format_por \
 	fuzz_format_sav \
@@ -291,4 +294,10 @@ fuzz_compression_sas_rle_SOURCES = \
 
 fuzz_compression_sas_rle_LDADD = libreadstat.la -lstdc++ -lFuzzer
 fuzz_compression_sas_rle_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_compression_sav_SOURCES = \
+	src/fuzz/fuzz_compression_sav.c
+
+fuzz_compression_sav_LDADD = libreadstat.la -lstdc++ -lFuzzer
+fuzz_compression_sav_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 endif

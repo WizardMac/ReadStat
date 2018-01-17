@@ -15,6 +15,7 @@
 #include "../readstat_malloc.h"
 
 #include "readstat_sav.h"
+#include "readstat_sav_compress.h"
 #include "readstat_sav_parse.h"
 #include "readstat_sav_parse_timestamp.h"
 
@@ -737,10 +738,6 @@ done:
 static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
-    unsigned char chunk[8];
-    int i;
-    double fp_value;
-    uint64_t missing_value = ctx->missing_double;
     readstat_off_t data_offset = 0;
     unsigned char buffer[DATA_BUFFER_SIZE];
     int buffer_used = 0;
@@ -748,6 +745,8 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
     size_t uncompressed_row_len = ctx->var_offset * 8;
     readstat_off_t uncompressed_offset = 0;
     unsigned char *uncompressed_row = NULL;
+
+    struct sav_compression_state_s state = { .missing_value = ctx->missing_double };
 
     int bswap = ctx->bswap;
     ctx->bswap = 0;
@@ -758,11 +757,7 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
     }
 
     while (1) {
-        if (data_offset >= buffer_used) {
-            retval = sav_update_progress(ctx);
-            if (retval != READSTAT_OK)
-                goto done;
-
+        if (state.avail_in == 0) {
             if ((buffer_used = io->read(buffer, sizeof(buffer), io->io_ctx)) == -1 ||
                 buffer_used == 0 || (buffer_used % 8) != 0)
                 goto done;
@@ -770,52 +765,29 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
             data_offset = 0;
         }
 
-        memcpy(chunk, &buffer[data_offset], 8);
-        data_offset += 8;
-        
-        for (i=0; i<8; i++) {
-            switch (chunk[i]) {
-                case 0:
-                    break;
-                case 252:
-                    goto done;
-                case 253:
-                    if (data_offset >= buffer_used) {
-                        if ((buffer_used = io->read(buffer, sizeof(buffer), io->io_ctx)) == -1 ||
-                            buffer_used == 0 || (buffer_used % 8) != 0)
-                            goto done;
+        state.next_in = &buffer[data_offset];
+        state.avail_in = buffer_used - data_offset;
 
-                        data_offset = 0;
-                    }
-                    memcpy(&uncompressed_row[uncompressed_offset], &buffer[data_offset], 8);
-                    uncompressed_offset += 8;
-                    data_offset += 8;
-                    break;
-                case 254:
-                    memcpy(&uncompressed_row[uncompressed_offset], SAV_EIGHT_SPACES, 8);
-                    uncompressed_offset += 8;
-                    break;
-                case 255:
-                    memcpy(&uncompressed_row[uncompressed_offset], &missing_value, sizeof(uint64_t));
-                    uncompressed_offset += 8;
-                    break;
-                default:
-                    fp_value = chunk[i] - 100.0;
-                    memcpy(&uncompressed_row[uncompressed_offset], &fp_value, sizeof(double));
-                    uncompressed_offset += 8;
-                    break;
-            }
-            if (uncompressed_offset == uncompressed_row_len) {
-                retval = sav_process_row(uncompressed_row, uncompressed_row_len, ctx);
-                if (retval != READSTAT_OK)
-                    goto done;
+        state.next_out = &uncompressed_row[uncompressed_offset];
+        state.avail_out = uncompressed_row_len - uncompressed_offset;
 
-                uncompressed_offset = 0;
-            }
-            if (ctx->current_row == ctx->row_limit)
+        int finished = sav_decompress(&state);
+
+        uncompressed_offset = uncompressed_row_len - state.avail_out;
+        data_offset = buffer_used - state.avail_in;
+
+        if (state.avail_out == 0) {
+            retval = sav_process_row(uncompressed_row, uncompressed_row_len, ctx);
+            if (retval != READSTAT_OK)
                 goto done;
+
+            uncompressed_offset = 0;
         }
+
+        if (finished || ctx->current_row == ctx->row_limit)
+            goto done;
     }
+
 done:
     if (uncompressed_row)
         free(uncompressed_row);
