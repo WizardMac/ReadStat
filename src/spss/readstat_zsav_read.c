@@ -180,6 +180,8 @@ cleanup:
         free(uncompressed_row);
     if (ztrailer_entries)
         free(ztrailer_entries);
+    if (compressed_block)
+        free(compressed_block);
     if (uncompressed_block)
         free(uncompressed_block);
 
