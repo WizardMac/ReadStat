@@ -9,9 +9,9 @@ Originally developed for [Wizard](http://www.wizardmac.com/), ReadStat is a
 command-line tool and MIT-licensed C library for reading files from popular
 stats packages. Supported formats include:
 
-* SAS: SAS7BDAT and SAS7BCAT
-* Stata: DTA
-* SPSS: POR and SAV
+* SAS: SAS7BDAT, SAS7BCAT, and XPORT
+* Stata: DTA 104-119
+* SPSS: POR, SAV, and ZSAV
 
 There is also write support for all formats except SAS7BCAT. For reading in R
 data files, please see the related
@@ -37,11 +37,14 @@ Standard usage:
 
 Where:
 
-* `<input file>` ends with `.dta`, `.por`, `.sav`, or `.sas7bdat`, and
-* `<output file>` ends with `.dta`, `.por`, `.sav`, `.sas7bdat`, or `.csv`
+* `<input file>` ends with `.dta`, `.por`, `.sav`, `.sas7bdat`, or `.xpt`and
+* `<output file>` ends with `.dta`, `.por`, `.sav`, `.sas7bdat`, `.xpt` or `.csv`
 
 If [libxlsxwriter](http://libxlsxwriter.github.io) is found at compile-time, an
 XLSX file (ending in `.xlsx`) can be written instead.
+
+If zlib is found at compile-time, compressed SPSS files (`.zsav`) can be read
+and written as well.
 
 Use the `-f` option to overwrite an existing output file.
 
@@ -54,7 +57,7 @@ Where:
 
 * `<input file>` ends with `.sas7bdat`
 * `<catalog file>` ends with `.sas7bcat`
-* `<output file>` ends with `.dta`, `.por`, `.sav`, or `.csv`
+* `<output file>` ends with `.dta`, `.por`, `.sav`, `.xpt`, or `.csv`
 
 If the file conversion succeeds, ReadStat will report the number of rows and
 variables converted, e.g.
@@ -395,8 +398,8 @@ Fuzz Testing
 To assist in fuzz testing, ReadStat ships with target files designed to work with [libFuzzer](http://llvm.org/docs/LibFuzzer.html).
 
 1. `./configure --enable-sanitizers` turns on useful sanitizer and sanitizer-coverage flags
-1. `make` will create a new binary called `generate_corpus`. Running this program will use the ReadStat test suite to create a corpus of test files in `corpus/`. There is a subdirectory for each sub-format (`dta104`, `dta105`, etc.). Currently a total of 432 files are created.
-1. If libFuzzer is found on the system, `make` will also create seven fuzzer targets, one for each of six file formats, and a seventh fuzzer for testing the SAS compression routines.
+1. `make` will create a new binary called `generate_corpus`. Running this program will use the ReadStat test suite to create a corpus of test files in `corpus/`. There is a subdirectory for each sub-format (`dta104`, `dta105`, etc.). Currently a total of 468 files are created.
+1. If libFuzzer is found on the system, `make` will also create eight fuzzer targets, one for each of six file formats, and two fuzzers for testing the compression routines.
    * `fuzz_format_dta`
    * `fuzz_format_por`
    * `fuzz_format_sas7bcat`
@@ -404,18 +407,22 @@ To assist in fuzz testing, ReadStat ships with target files designed to work wit
    * `fuzz_format_sav`
    * `fuzz_format_xport`
    * `fuzz_compression_sas_rle`
+   * `fuzz_compression_sav`
 
 For best results, each sub-directory of the corpus should be passed to the relevant fuzzer, e.g.:
 
 * `./fuzz_format_dta corpus/dta104`
 * `./fuzz_format_dta corpus/dta110`
 * ...
+* `./fuzz_format_sav corpus/sav`
+* `./fuzz_format_sav corpus/zsav`
 * `./fuzz_format_xport corpus/xpt5`
 * `./fuzz_format_xport corpus/xpt8`
 
-Finally, the compression fuzzer can be invoked without a corpus:
+Finally, the compression fuzzers can be invoked without a corpus:
 
 * `./fuzz_compression_sas_rle`
+* `./fuzz_compression_sav`
 
 
 Docker
