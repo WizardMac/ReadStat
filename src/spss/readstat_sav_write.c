@@ -1024,6 +1024,16 @@ readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *use
     writer->callbacks.write_missing_number = &sav_write_missing_number;
     writer->callbacks.begin_data = &sav_begin_data;
 
+    if (writer->version == 2) {
+        if (writer->compression == READSTAT_COMPRESS_BINARY) {
+            return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
+        }
+    } else if (writer->version == 3) {
+        writer->compression = READSTAT_COMPRESS_BINARY;
+    } else if (writer->version != 0) {
+        return READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
+    }
+
     if (writer->compression == READSTAT_COMPRESS_ROWS) {
         writer->callbacks.write_row = &sav_write_compressed_row;
         writer->callbacks.module_ctx_free = &free;
