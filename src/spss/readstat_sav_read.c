@@ -1430,7 +1430,8 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
                         header.file_label, sizeof(header.file_label), ctx->converter)) != READSTAT_OK)
             goto cleanup;
 
-        if (parser->metadata_handler(ctx->file_label, ctx->input_encoding, ctx->timestamp, 2, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+        if (parser->metadata_handler(ctx->file_label, ctx->input_encoding, ctx->timestamp,
+                    ctx->format_version, ctx->user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }

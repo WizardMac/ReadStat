@@ -92,6 +92,7 @@ static readstat_error_t sav_emit_header(readstat_writer_t *writer) {
         header.compression = 1;
     } else if (writer->compression == READSTAT_COMPRESS_BINARY) {
         header.compression = 2;
+        header.layout_code = 3;
     }
     if (writer->fweight_variable) {
         int32_t dictionary_index = 1 + writer->fweight_variable->offset / 8;

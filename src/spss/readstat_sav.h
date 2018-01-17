@@ -104,6 +104,7 @@ typedef struct sav_ctx_s {
     uint64_t       highest_double;
 
     double         bias;
+    int            format_version;
 
     readstat_compress_t  compression;
     unsigned int   bswap:1;
