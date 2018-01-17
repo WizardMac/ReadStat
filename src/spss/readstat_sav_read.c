@@ -746,7 +746,9 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx) {
     readstat_off_t uncompressed_offset = 0;
     unsigned char *uncompressed_row = NULL;
 
-    struct sav_compression_state_s state = { .missing_value = ctx->missing_double };
+    struct sav_compression_state_s state = { 
+        .missing_value = ctx->missing_double,
+        .bias = ctx->bias };
 
     int bswap = ctx->bswap;
     ctx->bswap = 0;

@@ -49,7 +49,7 @@ int sav_decompress(struct sav_compression_state_s *state) {
                     state->avail_out -= 8;
                     break;
                 default:
-                    fp_value = state->chunk[i] - 100.0;
+                    fp_value = state->chunk[i] - state->bias;
                     memcpy(state->next_out, &fp_value, sizeof(double));
                     state->next_out += 8;
                     state->avail_out -= 8;

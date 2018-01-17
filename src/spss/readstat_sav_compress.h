@@ -7,6 +7,7 @@ struct sav_compression_state_s {
     size_t                avail_out;
 
     uint64_t              missing_value;
+    double                bias;
 
     unsigned char         chunk[8];
     int                   i;

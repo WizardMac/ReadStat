@@ -37,12 +37,7 @@ sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header, readstat_io_t *io) {
     ctx->lowest_double = SAV_LOWEST_DOUBLE;
     ctx->highest_double = SAV_HIGHEST_DOUBLE;
     
-    double bias = ctx->bswap ? byteswap_double(header->bias) : header->bias;
-    
-    if (bias != 100.0) {
-        sav_ctx_free(ctx);
-        return NULL;
-    }
+    ctx->bias = ctx->bswap ? byteswap_double(header->bias) : header->bias;
     
     ctx->varinfo_capacity = SAV_VARINFO_INITIAL_CAPACITY;
     
