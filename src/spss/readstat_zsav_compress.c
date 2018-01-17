@@ -1,6 +1,7 @@
 
 #include <zlib.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "readstat_zsav_compress.h"
 
