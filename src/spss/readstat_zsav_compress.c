@@ -74,15 +74,17 @@ int zsav_compress_row(void *input, size_t input_len, int finish, zsav_ctx_t *ctx
 
     /* If the row won't fit into this block, keep writing and flushing
      * until the remainder fits. */
-    while (row_len > row_off && (row_len - row_off) + block->uncompressed_size > ctx->uncompressed_block_size) {
+    while (row_len - row_off > ctx->uncompressed_block_size - block->uncompressed_size) {
+
+        block->stream.avail_in = ctx->uncompressed_block_size - block->uncompressed_size;
+        row_off += ctx->uncompressed_block_size - block->uncompressed_size;
 
         if ((deflate_status = deflate(&block->stream, Z_FINISH)) != Z_STREAM_END) {
             goto cleanup;
         }
 
         block->compressed_size = block->compressed_data_capacity - block->stream.avail_out;
-        block->uncompressed_size += row_len - block->stream.avail_in;
-        row_off += row_len - block->stream.avail_in;
+        block->uncompressed_size = ctx->uncompressed_block_size - block->stream.avail_in;
 
         block = zsav_add_block(ctx);
 
