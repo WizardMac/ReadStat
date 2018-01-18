@@ -10,6 +10,7 @@
 #include "test_read.h"
 #include "test_dta.h"
 #include "test_sas.h"
+#include "test_sav.h"
 
 char *file_extension(long format) {
     if (format == RT_FORMAT_DTA_104)
@@ -28,10 +29,14 @@ char *file_extension(long format) {
         return "dta117";
     if (format == RT_FORMAT_DTA_118)
         return "dta118";
+    if (format == RT_FORMAT_DTA_119)
+        return "dta119";
     if (format == RT_FORMAT_SAV_COMP_NONE)
         return "sav";
     if (format == RT_FORMAT_SAV_COMP_ROWS)
         return "savrow";
+    if (format == RT_FORMAT_SAV_COMP_ZLIB)
+        return "zsav";
     if (format == RT_FORMAT_POR)
         return "por";
     if (format == RT_FORMAT_SAS7BCAT)
@@ -73,7 +78,7 @@ rt_parse_ctx_t *parse_ctx_init(rt_buffer_t *buffer, rt_test_file_t *file) {
 void parse_ctx_reset(rt_parse_ctx_t *parse_ctx, long file_format) {
     parse_ctx->file_format = file_format;
     parse_ctx->file_extension = file_extension(file_format);
-    if ((file_format & RT_FORMAT_DTA_118)) {
+    if ((file_format & RT_FORMAT_DTA_118_AND_NEWER)) {
         parse_ctx->max_file_label_len = 321;
     } else if ((file_format & RT_FORMAT_DTA_105_AND_OLDER)) {
         parse_ctx->max_file_label_len = 32;
@@ -277,7 +282,7 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
         parse_ctx->file_format_version = dta_file_format_version(format);
         error = readstat_parse_dta(parser, NULL, parse_ctx);
     } else if ((format & RT_FORMAT_SAV)) {
-        parse_ctx->file_format_version = 2;
+        parse_ctx->file_format_version = sav_file_format_version(format);
         error = readstat_parse_sav(parser, NULL, parse_ctx);
     } else if (format == RT_FORMAT_POR) {
         parse_ctx->file_format_version = 0;

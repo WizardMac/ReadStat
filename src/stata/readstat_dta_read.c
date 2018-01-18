@@ -16,6 +16,8 @@
 #include "readstat_dta.h"
 #include "readstat_dta_parse_timestamp.h"
 
+#define MAX_VALUE_LABEL_LEN 32000
+
 static readstat_error_t dta_update_progress(dta_ctx_t *ctx);
 static readstat_error_t dta_read_descriptors(dta_ctx_t *ctx);
 static readstat_error_t dta_read_tag(dta_ctx_t *ctx, const char *tag);
@@ -603,7 +605,9 @@ static readstat_error_t dta_handle_row(const unsigned char *buf, dta_ctx_t *ctx)
         }
 
         if (value.type == READSTAT_TYPE_STRING) {
-            readstat_convert(str_buf, sizeof(str_buf), (const char *)&buf[offset], max_len, ctx->converter);
+            retval = readstat_convert(str_buf, sizeof(str_buf), (const char *)&buf[offset], max_len, ctx->converter);
+            if (retval != READSTAT_OK)
+                goto cleanup;
             value.v.string_value = str_buf;
         } else if (value.type == READSTAT_TYPE_STRING_REF) {
             dta_strl_t key = dta_interpret_strl_vo_bytes(ctx, &buf[offset]);
@@ -709,7 +713,6 @@ cleanup:
 
 static readstat_error_t dta_read_xmlish_preamble(dta_ctx_t *ctx, dta_header_t *header) {
     readstat_error_t retval = READSTAT_OK;
-    readstat_io_t *io = ctx->io;
     
     if ((retval = dta_read_tag(ctx, "<stata_dta>")) != READSTAT_OK) {
         goto cleanup;
@@ -727,6 +730,7 @@ static readstat_error_t dta_read_xmlish_preamble(dta_ctx_t *ctx, dta_header_t *h
     header->ds_format = 100 * (ds_format[0] - '0') + 10 * (ds_format[1] - '0') + (ds_format[2] - '0');
 
     char byteorder[3];
+    int byteswap = 0;
     if ((retval = dta_read_chunk(ctx, "<byteorder>", byteorder, 
                     sizeof(byteorder), "</byteorder>")) != READSTAT_OK) {
         goto cleanup;
@@ -739,35 +743,36 @@ static readstat_error_t dta_read_xmlish_preamble(dta_ctx_t *ctx, dta_header_t *h
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
+    byteswap = DTA_HILO ^ machine_is_little_endian();
 
-    if ((retval = dta_read_chunk(ctx, "<K>", &header->nvar, 
-                    sizeof(int16_t), "</K>")) != READSTAT_OK) {
-        goto cleanup;
-    }
-
-    if ((retval = dta_read_tag(ctx, "<N>")) != READSTAT_OK) {
-        goto cleanup;
-    }
-    if (io->read(&header->nobs, sizeof(int32_t), io->io_ctx) != sizeof(int32_t)) {
-        retval = READSTAT_ERROR_READ;
-        goto cleanup;
-    }
-    if (header->ds_format >= 118) {
-        /* Only support files < 4 billion rows for now */
-        if (header->byteorder == DTA_HILO) {
-            if (io->read(&header->nobs, sizeof(int32_t), io->io_ctx) != sizeof(int32_t)) {
-                retval = READSTAT_ERROR_READ;
-                goto cleanup;
-            }
-        } else {
-            if (io->seek(4, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
-                retval = READSTAT_ERROR_SEEK;
-                goto cleanup;
-            }
+    if (header->ds_format >= 119) {
+        /* Read 32-bit K but store as 16-bit */
+        uint32_t nvar;
+        if ((retval = dta_read_chunk(ctx, "<K>", &nvar, 
+                        sizeof(uint32_t), "</K>")) != READSTAT_OK) {
+            goto cleanup;
+        }
+        header->nvar = byteswap ? nvar >> 16 : nvar;
+    } else {
+        if ((retval = dta_read_chunk(ctx, "<K>", &header->nvar, 
+                        sizeof(uint16_t), "</K>")) != READSTAT_OK) {
+            goto cleanup;
         }
     }
-    if ((retval = dta_read_tag(ctx, "</N>")) != READSTAT_OK) {
-        goto cleanup;
+
+    if (header->ds_format >= 118) {
+        /* Read 64-bit N but store as 32-bit */
+        uint64_t nobs;
+        if ((retval = dta_read_chunk(ctx, "<N>", &nobs, 
+                        sizeof(uint64_t), "</N>")) != READSTAT_OK) {
+            goto cleanup;
+        }
+        header->nobs = byteswap ? nobs >> 32 : nobs;
+    } else {
+        if ((retval = dta_read_chunk(ctx, "<N>", &header->nobs, 
+                        sizeof(uint32_t), "</N>")) != READSTAT_OK) {
+            goto cleanup;
+        }
     }
 
 cleanup:
@@ -938,6 +943,7 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
     readstat_error_t retval = READSTAT_OK;
     char *table_buffer = NULL;
+    char *utf8_buffer = NULL;
 
     if (io->seek(ctx->value_labels_offset, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         if (ctx->error_handler) {
@@ -1005,10 +1011,11 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
         if (ctx->value_label_table_len_len == 2) {
             for (i=0; i<n; i++) {
                 readstat_value_t value = { .v = { .i32_value = i }, .type = READSTAT_TYPE_INT32 };
+                char label_buf[4*8+1];
 
-                char label_buf[9];
-                memcpy(label_buf, &table_buffer[8*i], 8);
-                label_buf[8] = '\0';
+                retval = readstat_convert(label_buf, sizeof(label_buf), &table_buffer[8*i], 8, ctx->converter);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
 
                 if (label_buf[0] && ctx->value_label_handler(labname, value, label_buf, ctx->user_ctx) != READSTAT_HANDLER_OK) {
                     retval = READSTAT_ERROR_USER_ABORT;
@@ -1035,6 +1042,16 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
             uint32_t *off = (uint32_t *)table_buffer+2;
             uint32_t *val = (uint32_t *)table_buffer+2+n;
             char *txt = &table_buffer[8LL*n+8];
+            size_t utf8_buffer_len = 4*txtlen+1;
+            if (txtlen > MAX_VALUE_LABEL_LEN+1)
+                utf8_buffer_len = 4*MAX_VALUE_LABEL_LEN+1;
+
+            utf8_buffer = realloc(utf8_buffer, utf8_buffer_len);
+            /* Much bigger than we need but whatever */
+            if (utf8_buffer == NULL) {
+                retval = READSTAT_ERROR_MALLOC;
+                goto cleanup;
+            }
 
             if (ctx->bswap) {
                 for (i=0; i<n; i++) {
@@ -1049,29 +1066,42 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
             }
 
             for (i=0; i<n; i++) {
-                if (off[i] < txtlen) {
-                    readstat_value_t value = { .v = { .i32_value = val[i] }, .type = READSTAT_TYPE_INT32 };
-                    if (val[i] > ctx->max_int32) {
-                        if (ctx->supports_tagged_missing && val[i] > DTA_113_MISSING_INT32) {
-                            value.tag = 'a' + (val[i] - DTA_113_MISSING_INT32_A);
-                            value.is_tagged_missing = 1;
-                        } else{
-                            value.is_system_missing = 1;
-                        }
+                if (off[i] >= txtlen) {
+                    retval = READSTAT_ERROR_PARSE;
+                    goto cleanup;
+                }
+
+                readstat_value_t value = { .v = { .i32_value = val[i] }, .type = READSTAT_TYPE_INT32 };
+                size_t max_label_len = txtlen - off[i];
+                if (max_label_len > MAX_VALUE_LABEL_LEN)
+                    max_label_len = MAX_VALUE_LABEL_LEN;
+
+                if (val[i] > ctx->max_int32) {
+                    if (ctx->supports_tagged_missing && val[i] > DTA_113_MISSING_INT32) {
+                        value.tag = 'a' + (val[i] - DTA_113_MISSING_INT32_A);
+                        value.is_tagged_missing = 1;
+                    } else{
+                        value.is_system_missing = 1;
                     }
-                    if (ctx->value_label_handler(labname, value, &txt[off[i]], ctx->user_ctx) != READSTAT_HANDLER_OK) {
-                        retval = READSTAT_ERROR_USER_ABORT;
-                        goto cleanup;
-                    }
+                }
+
+                retval = readstat_convert(utf8_buffer, utf8_buffer_len, &txt[off[i]], max_label_len, ctx->converter);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
+                if (ctx->value_label_handler(labname, value, utf8_buffer, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+                    retval = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
                 }
             }
         }
-
     }
 
 cleanup:
     if (table_buffer)
         free(table_buffer);
+    if (utf8_buffer)
+        free(utf8_buffer);
 
     return retval;
 }

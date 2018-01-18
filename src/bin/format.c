@@ -63,6 +63,9 @@ int format(const char *filename) {
     if (strncmp(filename + len - 5, ".json", 5) == 0)
         return RS_FORMAT_JSON;
 
+    if (strncmp(filename + len - 5, ".zsav", 5) == 0)
+        return RS_FORMAT_ZSAV;
+
     if (len < sizeof(".sas7bdat")-1)
         return RS_FORMAT_UNKNOWN;
 

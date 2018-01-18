@@ -51,7 +51,7 @@ static rt_test_group_t _test_groups[] = {
         .tests = {
             {
                 .label = "SAV row compression",
-                .test_formats = RT_FORMAT_SAV_COMP_ROWS,
+                .test_formats = RT_FORMAT_SAV_COMP,
                 .rows = 3,
                 .columns = {
                     {
@@ -517,7 +517,7 @@ static rt_test_group_t _test_groups[] = {
         .tests = {
             {
                 .label = "UTF-8 value",
-                .test_formats = RT_FORMAT_DTA_118 | RT_FORMAT_SAV | RT_FORMAT_SAS7BDAT,
+                .test_formats = RT_FORMAT_DTA_118_AND_NEWER | RT_FORMAT_SAV | RT_FORMAT_SAS7BDAT,
                 .rows = 1,
                 .columns = {
                     {
@@ -542,13 +542,39 @@ static rt_test_group_t _test_groups[] = {
             },
             {
                 .label = "UTF-8 column label",
-                .test_formats = RT_FORMAT_DTA_118 | RT_FORMAT_SAV | RT_FORMAT_SAS7BDAT,
+                .test_formats = RT_FORMAT_DTA_118_AND_NEWER | RT_FORMAT_SAV | RT_FORMAT_SAS7BDAT,
                 .rows = 0,
                 .columns = {
                     {
                         .name = "strasse",
                         .label = "Stra" "\xc3\x9f" "e",
                         .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
+                .label = "UTF-8 value label",
+                .test_formats = RT_FORMAT_DTA_118_AND_NEWER,
+                .rows = 0,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "somelbl",
+                        .type = READSTAT_TYPE_INT32,
+                        .value_labels_count = 1,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 6 } },
+                                .label = "F" "\xc3\xbc" "nf"
+                            }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .label_set = "somelbl"
                     }
                 }
             }
@@ -1158,7 +1184,7 @@ static rt_test_group_t _test_groups[] = {
                             {
                                 .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 2 } },
                                 .label = "Two"
-                            },
+                            }
                         }
                     }
                 },

@@ -26,6 +26,7 @@ libreadstat_la_SOURCES = \
 	src/spss/readstat_por_read.c \
 	src/spss/readstat_por_write.c \
 	src/spss/readstat_sav.c \
+	src/spss/readstat_sav_compress.c \
 	src/spss/readstat_sav_parse.c \
 	src/spss/readstat_sav_parse_timestamp.c \
 	src/spss/readstat_sav_read.c \
@@ -37,6 +38,13 @@ libreadstat_la_SOURCES = \
 	src/stata/readstat_dta_read.c \
 	src/stata/readstat_dta_write.c
 
+if HAVE_ZLIB
+libreadstat_la_SOURCES += \
+	src/spss/readstat_zsav_compress.c \
+	src/spss/readstat_zsav_read.c \
+	src/spss/readstat_zsav_write.c
+endif
+
 if HAVE_RAGEL
 .rl.c:
 	$(AM_V_GEN)$(RAGEL) $(RAGELFLAGS) -C $< -o $@
@@ -46,11 +54,16 @@ libreadstat_la_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=
 libreadstat_la_LIBADD = @EXTRA_LIBS@
 libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@ @SANITIZERS@
 
+if HAVE_ZLIB
+libreadstat_la_LIBADD += -lz
+libreadstat_la_CFLAGS += -DHAVE_ZLIB=1
+endif
+
 if CODE_COVERAGE_ENABLED
 libreadstat_la_CFLAGS += -O0 -fprofile-arcs -ftest-coverage
 endif
 
-man1_MANS = man/readstat.man
+dist_man1_MANS = man/readstat.man
 
 include_HEADERS = src/readstat.h
 
@@ -69,10 +82,14 @@ noinst_HEADERS = \
        src/spss/readstat_por.h \
        src/spss/readstat_por_parse.h \
        src/spss/readstat_sav.h \
+       src/spss/readstat_sav_compress.h \
        src/spss/readstat_sav_parse.h \
        src/spss/readstat_sav_parse_timestamp.h \
        src/spss/readstat_spss.h \
        src/spss/readstat_spss_parse.h \
+       src/spss/readstat_zsav_compress.h \
+       src/spss/readstat_zsav_read.h \
+       src/spss/readstat_zsav_write.h \
        src/stata/readstat_dta.h \
        src/stata/readstat_dta_parse_timestamp.h \
        src/bin/module.h \
@@ -110,6 +127,7 @@ noinst_HEADERS = \
        src/test/test_read.h \
        src/test/test_readstat.h \
        src/test/test_sas.h \
+       src/test/test_sav.h \
        src/test/test_types.h \
        src/test/test_write.h
 
@@ -145,6 +163,9 @@ readstat_SOURCES = \
 
 readstat_LDADD = libreadstat.la
 readstat_CFLAGS = -DREADSTAT_VERSION=\"@READSTAT_VERSION@\" -Wall -Werror -pedantic-errors -std=c99 @SANITIZERS@
+if HAVE_ZLIB
+readstat_CFLAGS += -DHAVE_ZLIB=1
+endif
 
 extract_metadata_SOURCES = \
 	src/bin/format.c \
@@ -184,10 +205,11 @@ test_readstat_SOURCES = \
 	src/test/test_read.c \
 	src/test/test_readstat.c \
 	src/test/test_sas.c \
+	src/test/test_sav.c \
 	src/test/test_write.c
 
 test_readstat_LDADD = libreadstat.la
-test_readstat_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+test_readstat_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@ -DDEBUG=1
 
 test_dta_days_SOURCES = \
 	src/bin/util/readstat_dta_days.c \
@@ -220,7 +242,8 @@ generate_corpus_SOURCES = \
 	src/test/test_buffer_io.c \
 	src/test/test_error.c \
 	src/test/test_dta.c \
-	src/test/test_sas.c
+	src/test/test_sas.c \
+	src/test/test_sav.c
 
 generate_corpus_LDADD = libreadstat.la
 generate_corpus_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
@@ -231,6 +254,7 @@ noinst_HEADERS += \
 
 noinst_PROGRAMS += \
 	fuzz_compression_sas_rle \
+	fuzz_compression_sav \
 	fuzz_format_dta \
 	fuzz_format_por \
 	fuzz_format_sav \
@@ -291,4 +315,10 @@ fuzz_compression_sas_rle_SOURCES = \
 
 fuzz_compression_sas_rle_LDADD = libreadstat.la -lstdc++ -lFuzzer
 fuzz_compression_sas_rle_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_compression_sav_SOURCES = \
+	src/fuzz/fuzz_compression_sav.c
+
+fuzz_compression_sav_LDADD = libreadstat.la -lstdc++ -lFuzzer
+fuzz_compression_sav_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 endif

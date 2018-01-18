@@ -6,10 +6,12 @@ readstat \- read and write data set files from SAS, SPSS, and Stata
 .IR input-file
 .P
 .B readstat
+[\fB-f\fR]
 .IR input-file
 .IR output-file
 .P
 .B readstat
+[\fB-f\fR]
 .IR input.sas7bdat
 .IR catalog.sas7bcat
 .IR output-file
@@ -30,7 +32,10 @@ SAS binary file, created with SAS version 7 or newer
 SAS portable file, version 5 or version 8, created with the SAS XPORT command
 .TP
 .IR sav
-SPSS binary file (\fIzsav\fR compressed files not supported)
+SPSS uncompressed binary file
+.TP
+.IR zsav
+SPSS compressed binary file
 .TP
 .IR por
 SPSS portable file
@@ -51,8 +56,6 @@ In addition to the preceding extension list, \fIoutput-file\fR may have extensio
 .IR csv
 or
 \fIxlsx\fR, which creates a CSV or Excel file, respectively.
-.B readstat
-is fairly cautious and will refuse to overwrite an existing file.
 .PP
 The third invocation style is necessary because SAS stores value labels in a
 "catalog file" separate from the main data set. When three arguments are
@@ -63,6 +66,10 @@ and named value labels from \fIcatalog.sas7bcat\fR, writing the output in the
 desired format to \fIoutput-file\fR.
 .PP
 Both input and output formats are implied by the file extension.
+.SH OPTIONS
+.TP
+.BR \-f
+Overwrite any existing \fIoutput-file\fR.
 .SH BUGS
 SAS binary files created by \fBreadstat\fR do not open with current versions of
 SAS.

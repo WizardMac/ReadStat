@@ -20,6 +20,7 @@ typedef struct mod_readstat_ctx_s {
     int out_fd;
 
     unsigned int is_sav:1;
+    unsigned int is_zsav:1;
     unsigned int is_dta:1;
     unsigned int is_por:1;
     unsigned int is_sas7bdat:1;
@@ -63,6 +64,7 @@ static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
 static int accept_file(const char *filename) {
     return (rs_ends_with(filename, ".dta") ||
             rs_ends_with(filename, ".sav") ||
+            rs_ends_with(filename, ".zsav") ||
             rs_ends_with(filename, ".por") ||
             rs_ends_with(filename, ".sas7bdat") ||
             rs_ends_with(filename, ".xpt"));
@@ -72,11 +74,12 @@ static void *ctx_init(const char *filename) {
     mod_readstat_ctx_t *mod_ctx = malloc(sizeof(mod_readstat_ctx_t));
     mod_ctx->label_set_dict = ck_hash_table_init(1024);
     mod_ctx->is_sav = rs_ends_with(filename, ".sav");
+    mod_ctx->is_zsav = rs_ends_with(filename, ".zsav");
     mod_ctx->is_dta = rs_ends_with(filename, ".dta");
     mod_ctx->is_por = rs_ends_with(filename, ".por");
     mod_ctx->is_sas7bdat = rs_ends_with(filename, ".sas7bdat");
     mod_ctx->is_xport = rs_ends_with(filename, ".xpt");
-    mod_ctx->out_fd = open(filename, O_CREAT | O_WRONLY | O_EXCL, 0644);
+    mod_ctx->out_fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (mod_ctx->out_fd == -1) {
         fprintf(stderr, "Error opening %s for writing: %s\n", filename, strerror(errno));
         return NULL;
@@ -169,18 +172,21 @@ static int handle_variable(int index, readstat_variable_t *variable,
     readstat_type_t type = readstat_variable_get_type(variable);
     const char *name = readstat_variable_get_name(variable);
     const char *label = readstat_variable_get_label(variable);
-    const char *format = readstat_variable_get_format(variable);
     size_t storage_width = readstat_variable_get_storage_width(variable);
     int display_width = readstat_variable_get_display_width(variable);
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
     readstat_alignment_t alignment = readstat_variable_get_alignment(variable);
     readstat_measure_t measure = readstat_variable_get_measure(variable);
+    // TODO format translation (readstat_variable_get_format + readstat_variable_set_format)
     
     readstat_variable_t *new_variable = readstat_add_variable(writer, name, type, storage_width);
 
     if (val_labels) {
         readstat_label_set_t *label_set = (readstat_label_set_t *)ck_str_hash_lookup(val_labels, mod_ctx->label_set_dict);
         readstat_variable_set_label_set(new_variable, label_set);
+        if (mod_ctx->is_sas7bdat) {
+            readstat_variable_set_format(new_variable, val_labels);
+        }
     }
 
     int i;
@@ -202,12 +208,6 @@ static int handle_variable(int index, readstat_variable_t *variable,
     readstat_variable_set_measure(new_variable, measure);
     readstat_variable_set_display_width(new_variable, display_width);
     readstat_variable_set_label(new_variable, label);
-    if (format && format[0] && mod_ctx->is_dta && format[0]!='%') {
-        // TODO I suppose you would need some translation from SPSS to DTA
-        fprintf(stderr, "%s:%d Unsupported format '%s' given for DTA, aborting...\n", __FILE__, __LINE__, format);
-        exit(EXIT_FAILURE);
-    }
-    readstat_variable_set_format(new_variable, format);
 
     return READSTAT_HANDLER_OK;
 }
@@ -224,6 +224,10 @@ static int handle_value(int obs_index, readstat_variable_t *old_variable, readst
     if (var_index == 0) {
         if (obs_index == 0) {
             if (mod_ctx->is_sav) {
+                readstat_writer_set_compression(writer, READSTAT_COMPRESS_ROWS);
+                error = readstat_begin_writing_sav(writer, mod_ctx, mod_ctx->row_count);
+            } else if (mod_ctx->is_zsav) {
+                readstat_writer_set_compression(writer, READSTAT_COMPRESS_BINARY);
                 error = readstat_begin_writing_sav(writer, mod_ctx, mod_ctx->row_count);
             } else if (mod_ctx->is_dta) {
                 error = readstat_begin_writing_dta(writer, mod_ctx, mod_ctx->row_count);

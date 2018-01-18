@@ -20,7 +20,9 @@
 #define DTA_DEFAULT_FORMAT_FLOAT   "9.0g"
 #define DTA_DEFAULT_FORMAT_DOUBLE "10.0g"
 
-#define DTA_DEFAULT_FILE_VERSION   118
+#define DTA_FILE_VERSION_MIN     104
+#define DTA_FILE_VERSION_MAX     119
+#define DTA_FILE_VERSION_DEFAULT 118
 
 #define DTA_OLD_MAX_WIDTH    128
 #define DTA_111_MAX_WIDTH    244
@@ -881,17 +883,24 @@ static readstat_error_t dta_emit_header(readstat_writer_t *writer, dta_ctx_t *ct
     if (error != READSTAT_OK)
         goto cleanup;
 
-    error = dta_write_chunk(writer, ctx, "<K>", &header->nvar, sizeof(int16_t), "</K>");
-    if (error != READSTAT_OK)
-        goto cleanup;
-
-    if (header->ds_format >= 118) {
-        int64_t nobs = header->nobs;
-        error = dta_write_chunk(writer, ctx, "<N>", &nobs, sizeof(int64_t), "</N>");
+    if (header->ds_format >= 119) {
+        uint32_t nvar = header->nvar;
+        error = dta_write_chunk(writer, ctx, "<K>", &nvar, sizeof(uint32_t), "</K>");
         if (error != READSTAT_OK)
             goto cleanup;
     } else {
-        error = dta_write_chunk(writer, ctx, "<N>", &header->nobs, sizeof(int32_t), "</N>");
+        error = dta_write_chunk(writer, ctx, "<K>", &header->nvar, sizeof(uint16_t), "</K>");
+        if (error != READSTAT_OK)
+            goto cleanup;
+    }
+
+    if (header->ds_format >= 118) {
+        uint64_t nobs = header->nobs;
+        error = dta_write_chunk(writer, ctx, "<N>", &nobs, sizeof(uint64_t), "</N>");
+        if (error != READSTAT_OK)
+            goto cleanup;
+    } else {
+        error = dta_write_chunk(writer, ctx, "<N>", &header->nobs, sizeof(uint32_t), "</N>");
         if (error != READSTAT_OK)
             goto cleanup;
     }
@@ -1341,9 +1350,9 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
         return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
 
     if (writer->version == 0)
-        writer->version = DTA_DEFAULT_FILE_VERSION;
+        writer->version = DTA_FILE_VERSION_DEFAULT;
 
-    if (writer->version >= 119 || writer->version < 104) {
+    if (writer->version > DTA_FILE_VERSION_MAX || writer->version < DTA_FILE_VERSION_MIN) {
         return READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
     }
     
@@ -1363,7 +1372,7 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
         writer->callbacks.variable_ok = &dta_old_variable_ok;
     }
 
-    if (writer->version == 118) {
+    if (writer->version >= 118) {
         writer->callbacks.write_string_ref = &dta_118_write_string_ref;
     } else if (writer->version == 117) {
         writer->callbacks.write_string_ref = &dta_117_write_string_ref;
