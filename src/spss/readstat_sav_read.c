@@ -140,7 +140,7 @@ static readstat_error_t sav_parse_machine_floating_point_record(const void *data
 static readstat_error_t sav_store_variable_display_parameter_record(const void *data, size_t size, size_t count, sav_ctx_t *ctx);
 static readstat_error_t sav_parse_variable_display_parameter_record(sav_ctx_t *ctx);
 static readstat_error_t sav_parse_machine_integer_info_record(const void *data, size_t data_len, sav_ctx_t *ctx);
-static readstat_error_t sav_parse_long_value_labels_record(const void *data, size_t data_len, sav_ctx_t *ctx);
+static readstat_error_t sav_parse_long_value_labels_record(const void *data, size_t size, size_t count, sav_ctx_t *ctx);
 
 static void sav_tag_missing_double(readstat_value_t *value, sav_ctx_t *ctx) {
     double fp_value = value->v.double_value;
@@ -912,16 +912,18 @@ static readstat_error_t sav_parse_variable_display_parameter_record(sav_ctx_t *c
     return READSTAT_OK;
 }
 
-static readstat_error_t sav_parse_long_value_labels_record(const void *data, size_t data_len, sav_ctx_t *ctx) {
+static readstat_error_t sav_parse_long_value_labels_record(const void *data, size_t size, size_t count, sav_ctx_t *ctx) {
     if (!ctx->value_label_handler)
         return READSTAT_OK;
+    if (size != 1)
+        return READSTAT_ERROR_PARSE;
 
     readstat_error_t retval = READSTAT_OK;
     uint32_t label_name_len = 0;
     uint32_t label_count = 0;
     uint32_t i = 0;
     const char *data_ptr = data;
-    const char *data_end = data_ptr + data_len;
+    const char *data_end = data_ptr + count;
     char var_name_buf[256*4+1];
     char label_name_buf[256];
     char *value_buffer = NULL;
@@ -1204,7 +1206,7 @@ static readstat_error_t sav_parse_records_pass2(sav_ctx_t *ctx) {
                         goto cleanup;
                     }
                 }
-                if (io->read(data_buf, data_len, io->io_ctx) < data_len) {
+                if (data_len == 0 || io->read(data_buf, data_len, io->io_ctx) < data_len) {
                     retval = READSTAT_ERROR_PARSE;
                     goto cleanup;
                 }
@@ -1234,7 +1236,7 @@ static readstat_error_t sav_parse_records_pass2(sav_ctx_t *ctx) {
                             goto cleanup;
                         break;
                     case SAV_RECORD_SUBTYPE_LONG_VALUE_LABELS:
-                        retval = sav_parse_long_value_labels_record(data_buf, count, ctx);
+                        retval = sav_parse_long_value_labels_record(data_buf, size, count, ctx);
                         if (retval != READSTAT_OK)
                             goto cleanup;
                     default: /* misc. info */
