@@ -99,7 +99,7 @@ int zsav_compress_row(void *input, size_t input_len, int finish, zsav_ctx_t *ctx
     deflate_status = deflate(&block->stream, finish ? Z_FINISH : Z_NO_FLUSH);
 
     block->compressed_size = block->compressed_data_capacity - block->stream.avail_out;
-    block->uncompressed_size += row_len - block->stream.avail_in;
+    block->uncompressed_size += (row_len - row_off) - block->stream.avail_in;
 
 cleanup:
     return deflate_status;
