@@ -79,7 +79,7 @@ static void *ctx_init(const char *filename) {
     mod_ctx->is_por = rs_ends_with(filename, ".por");
     mod_ctx->is_sas7bdat = rs_ends_with(filename, ".sas7bdat");
     mod_ctx->is_xport = rs_ends_with(filename, ".xpt");
-    mod_ctx->out_fd = open(filename, O_CREAT | O_WRONLY | O_EXCL, 0644);
+    mod_ctx->out_fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (mod_ctx->out_fd == -1) {
         fprintf(stderr, "Error opening %s for writing: %s\n", filename, strerror(errno));
         return NULL;
