@@ -28,6 +28,21 @@ Bootstrap autotools by running ./autogen.sh and then proceed as usual:
 
 If you're on Windows see [Windows specific notes](#windows-specific-notes).
 
+
+Language Bindings
+==
+
+* Julia: [ReadStat.jl](https://github.com/WizardMac/ReadStat.jl)
+* R: [haven](https://github.com/hadley/haven)
+
+
+Docker
+==
+
+A dockerized version is available [here](https://github.com/jbn/readstat)
+
+
+
 Command-line Usage
 ==
 
@@ -370,13 +385,6 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-Language Bindings
-==
-
-* Julia: [ReadStat.jl](https://github.com/WizardMac/ReadStat.jl)
-* R: [haven](https://github.com/hadley/haven)
-
-
 Windows specific notes
 ==
 
@@ -425,7 +433,3 @@ Finally, the compression fuzzers can be invoked without a corpus:
 * `./fuzz_compression_sav`
 
 
-Docker
-==
-
-A dockerized version is available [here](https://github.com/jbn/readstat)
