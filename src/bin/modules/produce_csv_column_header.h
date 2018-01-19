@@ -14,7 +14,7 @@ typedef struct csv_metadata {
     int output_format;
     size_t* column_width;
     int open_row;
-    readstat_parser_t *parser;
+    readstat_callbacks_t handle;
     void *user_ctx;
     readstat_variable_t* variables;
     int* is_date;

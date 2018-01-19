@@ -32,6 +32,7 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
     readstat_writer_t *writer = readstat_writer_init();
     readstat_set_data_writer(writer, &write_data);
     readstat_writer_set_file_label(writer, file->label);
+    readstat_writer_set_table_name(writer, file->table_name);
     readstat_writer_set_error_handler(writer, &handle_error);
     if (file->timestamp.tm_year) {
         struct tm timestamp = file->timestamp;

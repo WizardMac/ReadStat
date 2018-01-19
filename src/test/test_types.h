@@ -46,6 +46,7 @@ typedef struct rt_test_file_s {
     long                test_formats;
 
     char                label[80];
+    char                table_name[32];
     struct tm           timestamp;
     long                rows;
 
@@ -115,6 +116,7 @@ typedef struct rt_parse_ctx_s {
     const char      *file_extension;
 
     size_t           max_file_label_len;
+    size_t           max_table_name_len;
 
     rt_buffer_ctx_t *buffer_ctx;
 } rt_parse_ctx_t;

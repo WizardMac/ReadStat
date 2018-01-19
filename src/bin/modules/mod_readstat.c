@@ -34,8 +34,7 @@ static void *ctx_init(const char *filename);
 static void finish_file(void *ctx);
 
 static int handle_fweight(readstat_variable_t *variable, void *ctx);
-static int handle_info(int obs_count, int var_count, void *ctx);
-static int handle_metadata(const char *file_label, const char *encoding, time_t timestamp, long format_version, void *ctx);
+static int handle_metadata(readstat_metadata_t *metadata, void *ctx);
 static int handle_note(int note_index, const char *note, void *ctx);
 static int handle_value_label(const char *val_labels, readstat_value_t value,
                               const char *label, void *ctx);
@@ -44,16 +43,17 @@ static int handle_variable(int index, readstat_variable_t *variable,
 static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx);
 
 rs_module_t rs_mod_readstat = {
-    accept_file, /* accept */
-    ctx_init, /* init */
-    finish_file, /* finish */
-    handle_info,
-    handle_metadata,
-    handle_note,
-    handle_variable,
-    handle_fweight,
-    handle_value,
-    handle_value_label
+    .accept = accept_file,
+    .init = ctx_init,
+    .finish = finish_file,
+    .handle = {
+        .metadata = handle_metadata,
+        .note = handle_note,
+        .variable = handle_variable,
+        .fweight = handle_fweight,
+        .value = handle_value,
+        .value_label = handle_value_label
+    }
 };
 
 static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
@@ -113,21 +113,16 @@ static int handle_fweight(readstat_variable_t *variable, void *ctx) {
     return READSTAT_HANDLER_OK;
 }
 
-static int handle_info(int obs_count, int var_count, void *ctx) {
-    mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
-    mod_ctx->var_count = var_count;
-    mod_ctx->row_count = obs_count;
-
-    if (var_count == 0 || obs_count == 0)
-        return READSTAT_HANDLER_ABORT;
-
-    return READSTAT_HANDLER_OK;
-}
-
-static int handle_metadata(const char *file_label, const char *encoding, time_t timestamp, long format_version, void *ctx) {
+static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
     readstat_writer_t *writer = mod_ctx->writer;
-    readstat_writer_set_file_label(writer, file_label);
+    mod_ctx->var_count = readstat_get_var_count(metadata);
+    mod_ctx->row_count = readstat_get_row_count(metadata);
+
+    if (mod_ctx->var_count == 0 || mod_ctx->row_count == 0)
+        return READSTAT_HANDLER_ABORT;
+
+    readstat_writer_set_file_label(writer, readstat_get_file_label(metadata));
     return READSTAT_HANDLER_OK;
 }
 

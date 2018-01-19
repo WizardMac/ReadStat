@@ -100,5 +100,5 @@ void produce_csv_value_dta(const char *s, size_t len, struct csv_metadata *c) {
         exit(EXIT_FAILURE);
     }
 
-    c->parser->value_handler(obs_index, var, value, c->user_ctx);
+    c->handle.value(obs_index, var, value, c->user_ctx);
 }

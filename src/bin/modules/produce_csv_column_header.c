@@ -81,11 +81,11 @@ void produce_column_header(void *s, size_t len, void *data) {
     snprintf(var->name, sizeof(var->name), "%.*s", (int)len, column);
 
     produce_missingness(c, column);
-    if (c->parser->value_label_handler) {
+    if (c->handle.value_label) {
         produce_value_label(c, column);
     }
 
-    if (c->parser->variable_handler && c->pass == 2) {
-        c->parser->variable_handler(c->columns, var, column, c->user_ctx);
+    if (c->handle.variable && c->pass == 2) {
+        c->handle.variable(c->columns, var, column, c->user_ctx);
     }
 }

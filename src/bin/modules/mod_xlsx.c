@@ -27,16 +27,13 @@ static int handle_variable(int index, readstat_variable_t *variable,
 static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx);
 
 rs_module_t rs_mod_xlsx = {
-    accept_file, /* accept */
-    ctx_init, /* init */
-    finish_file, /* finish */
-    NULL, /* info */
-    NULL, /* metadata */
-    NULL, /* note */
-    handle_variable,
-    NULL, /* fweight */
-    handle_value,
-    NULL /* value label */
+    .accept = accept_file,
+    .init = ctx_init,
+    .finish = finish_file,
+    .handle = {
+        .variable = handle_variable,
+        .value = handle_value
+    }
 };
 
 static int accept_file(const char *filename) {

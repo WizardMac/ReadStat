@@ -91,6 +91,11 @@ void parse_ctx_reset(rt_parse_ctx_t *parse_ctx, long file_format) {
     } else {
         parse_ctx->max_file_label_len = 20;
     }
+    if ((file_format & RT_FORMAT_XPORT_5)) {
+        parse_ctx->max_table_name_len = 8;
+    } else if ((file_format & RT_FORMAT_XPORT_8)) {
+        parse_ctx->max_table_name_len = 32;
+    }
     parse_ctx->var_index = -1;
     parse_ctx->obs_index = -1;
     parse_ctx->notes_count = 0;
@@ -106,11 +111,18 @@ void parse_ctx_free(rt_parse_ctx_t *parse_ctx) {
     free(parse_ctx);
 }
 
-static int handle_info(int obs_count, int var_count, void *ctx) {
+static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
 
     rt_ctx->var_index = -1;
     rt_ctx->obs_index = -1;
+
+    int var_count = readstat_get_var_count(metadata);
+    int obs_count = readstat_get_row_count(metadata);
+    const char *file_label = readstat_get_file_label(metadata);
+    const char *table_name = readstat_get_table_name(metadata);
+    time_t timestamp = readstat_get_creation_time(metadata);
+    long format_version = readstat_get_file_format_version(metadata);
 
     push_error_if_doubles_differ(rt_ctx, 
             rt_ctx->file->columns_count, var_count, 
@@ -122,14 +134,12 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
                 "Number of observations");
     }
 
-    return READSTAT_HANDLER_OK;
-}
-
-static int handle_metadata(const char *file_label, const char *encoding, time_t timestamp, long format_version, void *ctx) {
-    rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
-
     push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->label, file_label, 
             rt_ctx->max_file_label_len, "File labels");
+    if (table_name == NULL || strcmp(table_name, "DATASET") != 0) {
+        push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->table_name, table_name, 
+                rt_ctx->max_table_name_len, "Table names");
+    }
     if (rt_ctx->file->timestamp.tm_year) {
         struct tm timestamp_s = rt_ctx->file->timestamp;
         timestamp_s.tm_isdst = -1;
@@ -269,7 +279,6 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     readstat_set_update_handler(parser, rt_update_handler);
     readstat_set_io_ctx(parser, parse_ctx->buffer_ctx);
 
-    readstat_set_info_handler(parser, &handle_info);
     readstat_set_metadata_handler(parser, &handle_metadata);
     readstat_set_note_handler(parser, &handle_note);
     readstat_set_variable_handler(parser, &handle_variable);

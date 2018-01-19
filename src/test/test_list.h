@@ -3,6 +3,37 @@
 
 static rt_test_group_t _test_groups[] = {
     {
+        .label = "Table name",
+        .tests = {
+            {
+                .label = "Legal name",
+                .test_formats = RT_FORMAT_XPORT,
+                .table_name = "hello",
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .label = "Double-precision variable"
+                    }
+                }
+            },
+            {
+                .label = "Illegal name",
+                .test_formats = RT_FORMAT_XPORT,
+                .table_name = "#&(@!",
+                .write_error = READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .label = "Double-precision variable"
+                    }
+                }
+            },
+        }
+    },
+
+    {
         .label = "Notes",
         .tests = {
             {

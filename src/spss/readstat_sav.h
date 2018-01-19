@@ -64,11 +64,7 @@ typedef struct sav_dictionary_termination_record_s {
 #pragma pack(pop)
 
 typedef struct sav_ctx_s {
-    readstat_error_handler          error_handler;
-    readstat_progress_handler       progress_handler;
-    readstat_note_handler           note_handler;
-    readstat_value_handler          value_handler;
-    readstat_value_label_handler    value_label_handler;
+    readstat_callbacks_t    handle;
     size_t                          file_size;
     readstat_io_t                  *io;
     void                           *user_ctx;

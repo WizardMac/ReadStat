@@ -21,7 +21,7 @@ void csv_metadata_cell(void *s, size_t len, void *data)
         c->variables = realloc(c->variables, (c->columns+1) * sizeof(readstat_variable_t));
         c->is_date = realloc(c->is_date, (c->columns+1) * sizeof(int));
         produce_column_header(s, len, data);
-    } else if (c->rows >= 1 && c->parser->value_handler) {
+    } else if (c->rows >= 1 && c->handle.value) {
         produce_csv_column_value(s, len, data);
     }
     if (c->rows >= 1 && c->pass == 1) {
@@ -62,9 +62,9 @@ readstat_error_t readstat_parse_csv(readstat_parser_t *parser, const char *path,
     md->columns = 0;
     md->_rows = md->rows;
     md->rows = 0;
-    md->parser = parser;
     md->user_ctx = user_ctx;
     md->json_md = NULL;
+    md->handle = parser->handlers;
 
     if ((md->json_md = get_json_metadata(jsonpath)) == NULL) {
         fprintf(stderr, "Could not get JSON metadata\n");
@@ -109,8 +109,12 @@ readstat_error_t readstat_parse_csv(readstat_parser_t *parser, const char *path,
     if (!md->open_row) {
         md->rows--;
     }
-    if (parser->info_handler && md->pass == 1) {
-        parser->info_handler(md->rows, md->_columns, user_ctx);
+    if (md->handle.metadata && md->pass == 1) {
+        readstat_metadata_t metadata = {
+            .row_count = md->rows,
+            .var_count = md->_columns
+        };
+        md->handle.metadata(&metadata, user_ctx);
     }
 
 cleanup:

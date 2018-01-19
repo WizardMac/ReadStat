@@ -90,32 +90,24 @@ static void handle_error(const char *msg, void *ctx) {
 
 static int handle_fweight(readstat_variable_t *variable, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    if (rs_ctx->module->handle_fweight) {
-        return rs_ctx->module->handle_fweight(variable, rs_ctx->module_ctx);
+    if (rs_ctx->module->handle.fweight) {
+        return rs_ctx->module->handle.fweight(variable, rs_ctx->module_ctx);
     }
     return READSTAT_HANDLER_OK;
 }
 
-static int handle_info(int obs_count, int var_count, void *ctx) {
+static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    if (rs_ctx->module->handle_info) {
-        return rs_ctx->module->handle_info(obs_count, var_count, rs_ctx->module_ctx);
-    }
-    return READSTAT_HANDLER_OK;
-}
-
-static int handle_metadata(const char *file_label, const char *orig_encoding, time_t timestamp, long format_version, void *ctx) {
-    rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    if (rs_ctx->module->handle_note) {
-        return rs_ctx->module->handle_metadata(file_label, orig_encoding, timestamp, format_version, rs_ctx->module_ctx);
+    if (rs_ctx->module->handle.metadata) {
+        return rs_ctx->module->handle.metadata(metadata, rs_ctx->module_ctx);
     }
     return READSTAT_HANDLER_OK;
 }
 
 static int handle_note(int note_index, const char *note, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    if (rs_ctx->module->handle_note) {
-        return rs_ctx->module->handle_note(note_index, note, rs_ctx->module_ctx);
+    if (rs_ctx->module->handle.note) {
+        return rs_ctx->module->handle.note(note_index, note, rs_ctx->module_ctx);
     }
     return READSTAT_HANDLER_OK;
 }
@@ -123,8 +115,8 @@ static int handle_note(int note_index, const char *note, void *ctx) {
 static int handle_value_label(const char *val_labels, readstat_value_t value,
                               const char *label, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    if (rs_ctx->module->handle_value_label) {
-        return rs_ctx->module->handle_value_label(val_labels, value, label, rs_ctx->module_ctx);
+    if (rs_ctx->module->handle.value_label) {
+        return rs_ctx->module->handle.value_label(val_labels, value, label, rs_ctx->module_ctx);
     }
     return READSTAT_HANDLER_OK;
 }
@@ -132,8 +124,8 @@ static int handle_value_label(const char *val_labels, readstat_value_t value,
 static int handle_variable(int index, readstat_variable_t *variable,
                            const char *val_labels, void *ctx) {
     rs_ctx_t *rs_ctx = (rs_ctx_t *)ctx;
-    if (rs_ctx->module->handle_variable) {
-        return rs_ctx->module->handle_variable(index, variable, val_labels, rs_ctx->module_ctx);
+    if (rs_ctx->module->handle.variable) {
+        return rs_ctx->module->handle.variable(index, variable, val_labels, rs_ctx->module_ctx);
     }
     return READSTAT_HANDLER_OK;
 }
@@ -147,8 +139,8 @@ static int handle_value(int obs_index, readstat_variable_t *variable, readstat_v
     if (obs_index == 0) {
         rs_ctx->var_count++;
     }
-    if (rs_ctx->module->handle_value) {
-        return rs_ctx->module->handle_value(obs_index, variable, value, rs_ctx->module_ctx);
+    if (rs_ctx->module->handle.value) {
+        return rs_ctx->module->handle.value(obs_index, variable, value, rs_ctx->module_ctx);
     }
     return READSTAT_HANDLER_OK;
 }
@@ -257,7 +249,6 @@ static int convert_file(const char *input_filename, const char *catalog_filename
 
     // Pass 1 - Collect fweight and value labels
     readstat_set_error_handler(pass1_parser, &handle_error);
-    readstat_set_info_handler(pass1_parser, &handle_info);
     readstat_set_value_label_handler(pass1_parser, &handle_value_label);
     readstat_set_fweight_handler(pass1_parser, &handle_fweight);
     
@@ -281,7 +272,6 @@ static int convert_file(const char *input_filename, const char *catalog_filename
     
     // Pass 2 - Parse full file
     readstat_set_error_handler(pass2_parser, &handle_error);
-    readstat_set_info_handler(pass2_parser, &handle_info);
     readstat_set_metadata_handler(pass2_parser, &handle_metadata);
     readstat_set_note_handler(pass2_parser, &handle_note);
     readstat_set_variable_handler(pass2_parser, &handle_variable);
@@ -337,13 +327,14 @@ cleanup:
     return 0;
 }
 
-static int dump_info(int obs_count, int var_count, void *ctx) {
-    printf("Columns: %d\n", var_count);
-    printf("Rows: %d\n", obs_count);
-    return 0;
-}
+static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
+    printf("Columns: %d\n", readstat_get_row_count(metadata));
+    printf("Rows: %d\n", readstat_get_var_count(metadata));
+    const char *file_label = readstat_get_file_label(metadata);
+    const char *orig_encoding = readstat_get_file_encoding(metadata);
+    long version = readstat_get_file_format_version(metadata);
+    time_t timestamp = readstat_get_creation_time(metadata);
 
-static int dump_metadata(const char *file_label, const char *orig_encoding, time_t timestamp, long version, void *ctx) {
     if (file_label && file_label[0]) {
         printf("File label: %s\n", file_label);
     }
@@ -369,7 +360,6 @@ static int dump_file(const char *input_filename) {
     printf("Format: %s\n", format_name(input_format));
 
     readstat_set_error_handler(parser, &handle_error);
-    readstat_set_info_handler(parser, &dump_info);
     readstat_set_metadata_handler(parser, &dump_metadata);
 
     error = parse_file(parser, input_filename, input_format, NULL);

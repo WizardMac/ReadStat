@@ -19,7 +19,7 @@ void produce_value_label_double_date_sav(const char* column, struct csv_metadata
         .v = { .double_value = v },
         .type = READSTAT_TYPE_DOUBLE,
     };
-    c->parser->value_label_handler(column, value, label, c->user_ctx);
+    c->handle.value_label(column, value, label, c->user_ctx);
 }
 
 void produce_value_label_string(const char* column, struct csv_metadata *c, const char *code, const char *label) {
@@ -27,7 +27,7 @@ void produce_value_label_string(const char* column, struct csv_metadata *c, cons
         .v = { .string_value = code },
         .type = READSTAT_TYPE_STRING,
     };
-    c->parser->value_label_handler(column, value, label, c->user_ctx);
+    c->handle.value_label(column, value, label, c->user_ctx);
 }
 
 void produce_value_label_double_sav(const char* column, struct csv_metadata *c, const char *code, const char *label) {
@@ -41,7 +41,7 @@ void produce_value_label_double_sav(const char* column, struct csv_metadata *c, 
         .v = { .double_value = v },
         .type = READSTAT_TYPE_DOUBLE,
     };
-    c->parser->value_label_handler(column, value, label, c->user_ctx);
+    c->handle.value_label(column, value, label, c->user_ctx);
 }
 
 void produce_value_label_sav(struct csv_metadata *c, const char* column) {

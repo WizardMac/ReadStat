@@ -34,7 +34,7 @@ void produce_value_label_int32_date_dta(const char* column, struct csv_metadata 
             }
         }
     }
-    c->parser->value_label_handler(column, value, label, c->user_ctx);
+    c->handle.value_label(column, value, label, c->user_ctx);
 }
 
 void produce_value_label_double_dta(const char* column, struct csv_metadata *c, const char *code, const char *label) {
@@ -62,7 +62,7 @@ void produce_value_label_double_dta(const char* column, struct csv_metadata *c, 
             }
         }
     }
-    c->parser->value_label_handler(column, value, label, c->user_ctx);
+    c->handle.value_label(column, value, label, c->user_ctx);
 }
 
 void produce_value_label_dta(struct csv_metadata *c, const char* column) {

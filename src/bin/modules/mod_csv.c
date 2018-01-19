@@ -19,22 +19,20 @@ typedef struct mod_csv_ctx_s {
 static int accept_file(const char *filename);
 static void *ctx_init(const char *filename);
 static void finish_file(void *ctx);
-static int handle_info(int obs_count, int var_count, void *ctx);
+static int handle_metadata(readstat_metadata_t *metadata, void *ctx);
 static int handle_variable(int index, readstat_variable_t *variable,
                            const char *val_labels, void *ctx);
 static int handle_value(int obs_index, readstat_variable_t *variable, readstat_value_t value, void *ctx);
 
 rs_module_t rs_mod_csv = {
-    accept_file, /* accept */
-    ctx_init, /* init */
-    finish_file, /* finish */
-    handle_info, /* info */
-    NULL, /* metadata */
-    NULL, /* note */
-    handle_variable,
-    NULL, /* fweight */
-    handle_value,
-    NULL /* value label */
+    .accept = accept_file,
+    .init = ctx_init,
+    .finish = finish_file,
+    .handle = {
+        .metadata = handle_metadata,
+        .variable = handle_variable,
+        .value = handle_value
+    }
 };
 
 static int accept_file(const char *filename) {
@@ -59,9 +57,9 @@ static void finish_file(void *ctx) {
     }
 }
 
-static int handle_info(int obs_count, int var_count, void *ctx) {
+static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     mod_csv_ctx_t *mod_ctx = (mod_csv_ctx_t *)ctx;
-    mod_ctx->var_count = var_count;
+    mod_ctx->var_count = readstat_get_var_count(metadata);
     return mod_ctx->var_count == 0;
 }
 

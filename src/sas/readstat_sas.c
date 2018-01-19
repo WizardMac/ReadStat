@@ -327,7 +327,7 @@ readstat_error_t sas_write_header(readstat_writer_t *writer, sas_header_info_t *
         goto cleanup;
 
     char release[32];
-    snprintf(release, sizeof(release), "%1ld.%04ldM0", writer->version / 10000, writer->version % 10000);
+    snprintf(release, sizeof(release), "%1ld.%04dM0", writer->version, 101);
     strncpy(header_end.release, release, sizeof(header_end.release));
 
     retval = readstat_write_bytes(writer, &header_end, sizeof(sas_header_end_t));
@@ -370,7 +370,7 @@ readstat_error_t sas_fill_page(readstat_writer_t *writer, sas_header_info_t *hin
     return READSTAT_OK;
 }
 
-static readstat_error_t sas_validate_name(const char *name) {
+readstat_error_t sas_validate_name(const char *name, size_t max_len) {
     int j;
     for (j=0; name[j]; j++) {
         if (name[j] != '_' &&
@@ -392,12 +392,12 @@ static readstat_error_t sas_validate_name(const char *name) {
         return READSTAT_ERROR_NAME_IS_RESERVED_WORD;
     }
 
-    if (strlen(name) > 32)
+    if (strlen(name) > max_len)
         return READSTAT_ERROR_NAME_IS_TOO_LONG;
 
     return READSTAT_OK;
 }
 
 readstat_error_t sas_validate_variable(readstat_variable_t *variable) {
-    return sas_validate_name(readstat_variable_get_name(variable));
+    return sas_validate_name(readstat_variable_get_name(variable), 32);
 }

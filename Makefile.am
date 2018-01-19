@@ -7,6 +7,7 @@ libreadstat_la_SOURCES = \
 	src/readstat_error.c \
 	src/readstat_io_unistd.c \
 	src/readstat_malloc.c \
+	src/readstat_metadata.c \
 	src/readstat_parser.c \
 	src/readstat_value.c \
 	src/readstat_variable.c \

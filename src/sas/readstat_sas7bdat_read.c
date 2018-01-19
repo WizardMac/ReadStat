@@ -26,13 +26,8 @@ typedef struct col_info_s {
 } col_info_t;
 
 typedef struct sas7bdat_ctx_s {
-    readstat_info_handler       info_handler;
-    readstat_metadata_handler   metadata_handler;
-    readstat_variable_handler   variable_handler;
-    readstat_value_handler      value_handler;
-    readstat_error_handler      error_handler;
-    readstat_progress_handler   progress_handler;
-    int64_t                     file_size;
+    readstat_callbacks_t handle;
+    int64_t              file_size;
 
     int            little_endian;
     int            u64;
@@ -77,7 +72,8 @@ typedef struct sas7bdat_ctx_s {
     const char    *output_encoding;
     iconv_t        converter;
 
-    time_t         timestamp;
+    time_t         ctime;
+    time_t         mtime;
     int            version;
     char           file_label[4*64+1];
     char           error_buf[2048];
@@ -116,7 +112,7 @@ static void sas7bdat_ctx_free(sas7bdat_ctx_t *ctx) {
 
 static readstat_error_t sas7bdat_update_progress(sas7bdat_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
-    return io->update(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
+    return io->update(ctx->file_size, ctx->handle.progress, ctx->user_ctx, io->io_ctx);
 }
 
 static readstat_error_t sas7bdat_parse_column_text_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
@@ -371,11 +367,11 @@ static readstat_error_t sas7bdat_handle_data_value(readstat_variable_t *variable
         retval = readstat_convert(ctx->scratch_buffer, ctx->scratch_buffer_len,
                 col_data, col_info->width, ctx->converter);
         if (retval != READSTAT_OK) {
-            if (ctx->error_handler) {
+            if (ctx->handle.error) {
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf),
                         "ReadStat: Error converting string to specified encoding: %.*s",
                         col_info->width, col_data);
-                ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+                ctx->handle.error(ctx->error_buf, ctx->user_ctx);
             }
             goto cleanup;
         }
@@ -411,7 +407,7 @@ static readstat_error_t sas7bdat_handle_data_value(readstat_variable_t *variable
             value.v.double_value = dval;
         }
     }
-    cb_retval = ctx->value_handler(ctx->parsed_row_count, variable, value, ctx->user_ctx);
+    cb_retval = ctx->handle.value(ctx->parsed_row_count, variable, value, ctx->user_ctx);
 
     if (cb_retval != READSTAT_HANDLER_OK)
         retval = READSTAT_ERROR_USER_ABORT;
@@ -426,7 +422,7 @@ static readstat_error_t sas7bdat_parse_single_row(const char *data, sas7bdat_ctx
 
     readstat_error_t retval = READSTAT_OK;
     int j;
-    if (ctx->value_handler) {
+    if (ctx->handle.value) {
         ctx->scratch_buffer_len = 4*ctx->max_col_width+1;
         ctx->scratch_buffer = readstat_realloc(ctx->scratch_buffer, ctx->scratch_buffer_len);
         if (ctx->scratch_buffer == NULL) {
@@ -493,11 +489,11 @@ static readstat_error_t sas7bdat_parse_subheader_rle(const char *subheader, size
 
     if (bytes_decompressed != ctx->row_length) {
         retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
-        if (ctx->error_handler) {
+        if (ctx->handle.error) {
             snprintf(ctx->error_buf, sizeof(ctx->error_buf), 
                     "ReadStat: Row #%d decompressed to %ld bytes (expected %d bytes)",
                     ctx->parsed_row_count, (long)(bytes_decompressed), ctx->row_length);
-            ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+            ctx->handle.error(ctx->error_buf, ctx->user_ctx);
         }
         goto cleanup;
     }
@@ -573,11 +569,11 @@ cleanup:
             *out_retval = retval;
 
         if (retval == READSTAT_ERROR_CONVERT_BAD_STRING) {
-            if (ctx->error_handler) {
+            if (ctx->handle.error) {
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf),
                         "ReadStat: Error converting variable #%d info to specified encoding: %s %s (%s)",
                         i, variable->name, variable->format, variable->label);
-                ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+                ctx->handle.error(ctx->error_buf, ctx->user_ctx);
             }
         }
 
@@ -589,14 +585,18 @@ cleanup:
 
 static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
-    if (ctx->info_handler) {
-        if (ctx->info_handler(ctx->row_limit, ctx->column_count, ctx->user_ctx) != READSTAT_HANDLER_OK) {
-            retval = READSTAT_ERROR_USER_ABORT;
-            goto cleanup;
-        }
-    }
-    if (ctx->metadata_handler) {
-        if (ctx->metadata_handler(ctx->file_label, ctx->input_encoding, ctx->timestamp, ctx->version, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+    if (ctx->handle.metadata) {
+        readstat_metadata_t metadata = {
+            .row_count = ctx->row_limit,
+            .var_count = ctx->column_count,
+            .file_label = ctx->file_label,
+            .file_encoding = ctx->input_encoding, /* orig encoding? */
+            .creation_time = ctx->ctime,
+            .modified_time = ctx->mtime,
+            .file_format_version = ctx->version,
+            .is64bit = ctx->u64
+        };
+        if (ctx->handle.metadata(&metadata, ctx->user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
@@ -614,8 +614,8 @@ static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx) {
             break;
 
         int cb_retval = READSTAT_HANDLER_OK;
-        if (ctx->variable_handler) {
-            cb_retval = ctx->variable_handler(i, ctx->variables[i], ctx->variables[i]->format, ctx->user_ctx);
+        if (ctx->handle.variable) {
+            cb_retval = ctx->handle.variable(i, ctx->variables[i], ctx->variables[i]->format, ctx->user_ctx);
         }
         if (cb_retval == READSTAT_HANDLER_ABORT) {
             retval = READSTAT_ERROR_USER_ABORT;
@@ -816,7 +816,7 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
         if ((retval = sas7bdat_submit_columns_if_needed(ctx)) != READSTAT_OK) {
             goto cleanup;
         }
-        if (ctx->value_handler) {
+        if (ctx->handle.value) {
             retval = sas7bdat_parse_rows(data, page + page_size - data, ctx);
         }
     } 
@@ -834,11 +834,11 @@ static readstat_error_t sas7bdat_parse_meta_pages_pass1(sas7bdat_ctx_t *ctx, int
     for (i=0; i<ctx->page_count; i++) {
         if (io->seek(ctx->header_size + i*ctx->page_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
-            if (ctx->error_handler) {
+            if (ctx->handle.error) {
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf), "ReadStat: Failed to seek to position %" PRId64 
                         " (= %" PRId64 " + %" PRId64 "*%" PRId64 ")",
                         ctx->header_size + i*ctx->page_size, ctx->header_size, i, ctx->page_size);
-                ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+                ctx->handle.error(ctx->error_buf, ctx->user_ctx);
             }
             goto cleanup;
         }
@@ -868,12 +868,12 @@ static readstat_error_t sas7bdat_parse_meta_pages_pass1(sas7bdat_ctx_t *ctx, int
         }
 
         if ((retval = sas7bdat_parse_page_pass1(ctx->page, ctx->page_size, ctx)) != READSTAT_OK) {
-            if (ctx->error_handler && retval != READSTAT_ERROR_USER_ABORT) {
+            if (ctx->handle.error && retval != READSTAT_ERROR_USER_ABORT) {
                 int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf), 
                         "ReadStat: Error parsing page %" PRId64 ", bytes %" PRId64 "-%" PRId64, 
                         i, pos - ctx->page_size, pos-1);
-                ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+                ctx->handle.error(ctx->error_buf, ctx->user_ctx);
             }
             goto cleanup;
         }
@@ -896,11 +896,11 @@ static readstat_error_t sas7bdat_parse_amd_pages_pass1(int64_t last_examined_pag
     for (i=ctx->page_count-1; i>last_examined_page_pass1; i--) {
         if (io->seek(ctx->header_size + i*ctx->page_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
-            if (ctx->error_handler) {
+            if (ctx->handle.error) {
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf), "ReadStat: Failed to seek to position %" PRId64 
                         " (= %" PRId64 " + %" PRId64 "*%" PRId64 ")",
                         ctx->header_size + i*ctx->page_size, ctx->header_size, i, ctx->page_size);
-                ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+                ctx->handle.error(ctx->error_buf, ctx->user_ctx);
             }
             goto cleanup;
         }
@@ -934,12 +934,12 @@ static readstat_error_t sas7bdat_parse_amd_pages_pass1(int64_t last_examined_pag
         }
 
         if ((retval = sas7bdat_parse_page_pass1(ctx->page, ctx->page_size, ctx)) != READSTAT_OK) {
-            if (ctx->error_handler && retval != READSTAT_ERROR_USER_ABORT) {
+            if (ctx->handle.error && retval != READSTAT_ERROR_USER_ABORT) {
                 int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf), 
                         "ReadStat: Error parsing page %" PRId64 ", bytes %" PRId64 "-%" PRId64, 
                         i, pos - ctx->page_size, pos-1);
-                ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+                ctx->handle.error(ctx->error_buf, ctx->user_ctx);
             }
             goto cleanup;
         }
@@ -967,12 +967,12 @@ static readstat_error_t sas7bdat_parse_all_pages_pass2(sas7bdat_ctx_t *ctx) {
         }
 
         if ((retval = sas7bdat_parse_page_pass2(ctx->page, ctx->page_size, ctx)) != READSTAT_OK) {
-            if (ctx->error_handler && retval != READSTAT_ERROR_USER_ABORT) {
+            if (ctx->handle.error && retval != READSTAT_ERROR_USER_ABORT) {
                 int64_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf), 
                         "ReadStat: Error parsing page %" PRId64 ", bytes %" PRId64 "-%" PRId64, 
                         i, pos - ctx->page_size, pos-1);
-                ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+                ctx->handle.error(ctx->error_buf, ctx->user_ctx);
             }
             goto cleanup;
         }
@@ -992,12 +992,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     sas7bdat_ctx_t  *ctx = calloc(1, sizeof(sas7bdat_ctx_t));
     sas_header_info_t  *hinfo = calloc(1, sizeof(sas_header_info_t));
 
-    ctx->info_handler = parser->info_handler;
-    ctx->metadata_handler = parser->metadata_handler;
-    ctx->variable_handler = parser->variable_handler;
-    ctx->value_handler = parser->value_handler;
-    ctx->error_handler = parser->error_handler;
-    ctx->progress_handler = parser->progress_handler;
+    ctx->handle = parser->handlers;
     ctx->input_encoding = parser->input_encoding;
     ctx->output_encoding = parser->output_encoding;
     ctx->user_ctx = user_ctx;
@@ -1011,23 +1006,23 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     if ((ctx->file_size = io->seek(0, READSTAT_SEEK_END, io->io_ctx)) == -1) {
         retval = READSTAT_ERROR_SEEK;
-        if (ctx->error_handler) {
+        if (ctx->handle.error) {
             snprintf(ctx->error_buf, sizeof(ctx->error_buf), "ReadStat: Failed to seek to end of file");
-            ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+            ctx->handle.error(ctx->error_buf, ctx->user_ctx);
         }
         goto cleanup;
     }
 
     if (io->seek(0, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
-        if (ctx->error_handler) {
+        if (ctx->handle.error) {
             snprintf(ctx->error_buf, sizeof(ctx->error_buf), "ReadStat: Failed to seek to beginning of file");
-            ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+            ctx->handle.error(ctx->error_buf, ctx->user_ctx);
         }
         goto cleanup;
     }
 
-    if ((retval = sas_read_header(io, hinfo, ctx->error_handler, user_ctx)) != READSTAT_OK) {
+    if ((retval = sas_read_header(io, hinfo, ctx->handle.error, user_ctx)) != READSTAT_OK) {
         goto cleanup;
     }
 
@@ -1040,8 +1035,9 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->page_size = hinfo->page_size;
     ctx->page_header_size = hinfo->page_header_size;
     ctx->subheader_pointer_size = hinfo->subheader_pointer_size;
-    ctx->timestamp = hinfo->modification_time;
-    ctx->version = 10000 * hinfo->major_version + hinfo->minor_version;
+    ctx->ctime = hinfo->creation_time;
+    ctx->mtime = hinfo->modification_time;
+    ctx->version = hinfo->major_version;
     if (ctx->input_encoding == NULL) {
         ctx->input_encoding = hinfo->encoding;
     }
@@ -1074,10 +1070,10 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     if (io->seek(ctx->header_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
-        if (ctx->error_handler) {
+        if (ctx->handle.error) {
             snprintf(ctx->error_buf, sizeof(ctx->error_buf), "ReadStat: Failed to seek to position %" PRId64, 
                     ctx->header_size);
-            ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+            ctx->handle.error(ctx->error_buf, ctx->user_ctx);
         }
         goto cleanup;
     }
@@ -1090,12 +1086,12 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
 
-    if (ctx->value_handler && ctx->parsed_row_count != ctx->row_limit) {
+    if (ctx->handle.value && ctx->parsed_row_count != ctx->row_limit) {
         retval = READSTAT_ERROR_ROW_COUNT_MISMATCH;
-        if (ctx->error_handler) {
+        if (ctx->handle.error) {
             snprintf(ctx->error_buf, sizeof(ctx->error_buf), "ReadStat: Expected %d rows in file, found %d",
                     ctx->row_limit, ctx->parsed_row_count);
-            ctx->error_handler(ctx->error_buf, ctx->user_ctx);
+            ctx->handle.error(ctx->error_buf, ctx->user_ctx);
         }
         goto cleanup;
     }
@@ -1110,10 +1106,10 @@ cleanup:
     if (retval == READSTAT_ERROR_OPEN ||
             retval == READSTAT_ERROR_READ ||
             retval == READSTAT_ERROR_SEEK) {
-        if (ctx->error_handler) {
+        if (ctx->handle.error) {
             snprintf(ctx->error_buf, sizeof(ctx->error_buf), "ReadStat: %s (retval = %d): %s (errno = %d)", 
                     readstat_error_message(retval), retval, strerror(errno), errno);
-            ctx->error_handler(ctx->error_buf, user_ctx);
+            ctx->handle.error(ctx->error_buf, user_ctx);
         }
     }
 
