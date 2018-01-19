@@ -47,6 +47,7 @@ typedef struct sas7bdat_ctx_s {
     uint64_t        page_count;
     uint64_t        page_size;
     char           *page;
+    char           *row;
 
     uint64_t        page_header_size;
     uint64_t        subheader_pointer_size;
@@ -103,6 +104,9 @@ static void sas7bdat_ctx_free(sas7bdat_ctx_t *ctx) {
 
     if (ctx->page)
         free(ctx->page);
+
+    if (ctx->row)
+        free(ctx->row);
 
     if (ctx->converter)
         iconv_close(ctx->converter);
@@ -213,6 +217,12 @@ static readstat_error_t sas7bdat_parse_row_size_subheader(const char *subheader,
     }
 
     ctx->row_length = row_length;
+    ctx->row = readstat_malloc(ctx->row_length);
+    if (ctx->row == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
+
     ctx->page_row_count = page_row_count;
     if (ctx->row_limit == 0 || total_row_count < ctx->row_limit)
         ctx->row_limit = total_row_count;
@@ -476,16 +486,9 @@ static readstat_error_t sas7bdat_parse_subheader_rle(const char *subheader, size
         return READSTAT_OK;
 
     readstat_error_t retval = READSTAT_OK;
-    char *buffer = NULL;
     ssize_t bytes_decompressed = 0;
 
-    if ((buffer = readstat_malloc(ctx->row_length)) == NULL) {
-        retval = READSTAT_ERROR_MALLOC;
-        goto cleanup;
-    }
-
-    bytes_decompressed = sas_rle_decompress(
-            buffer, ctx->row_length, subheader, len);
+    bytes_decompressed = sas_rle_decompress(ctx->row, ctx->row_length, subheader, len);
 
     if (bytes_decompressed != ctx->row_length) {
         retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
@@ -497,11 +500,9 @@ static readstat_error_t sas7bdat_parse_subheader_rle(const char *subheader, size
         }
         goto cleanup;
     }
-    retval = sas7bdat_parse_single_row(buffer, ctx);
-cleanup:
-    if (buffer)
-        free(buffer);
+    retval = sas7bdat_parse_single_row(ctx->row, ctx);
 
+cleanup:
     return retval;
 }
 
