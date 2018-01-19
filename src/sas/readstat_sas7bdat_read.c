@@ -583,7 +583,7 @@ cleanup:
     return variable;
 }
 
-static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx) {
+static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx, int compressed) {
     readstat_error_t retval = READSTAT_OK;
     if (ctx->handle.metadata) {
         readstat_metadata_t metadata = {
@@ -594,6 +594,7 @@ static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx) {
             .creation_time = ctx->ctime,
             .modified_time = ctx->mtime,
             .file_format_version = ctx->version,
+            .compression = compressed ? READSTAT_COMPRESS_ROWS : READSTAT_COMPRESS_NONE,
             .is64bit = ctx->u64
         };
         if (ctx->handle.metadata(&metadata, ctx->user_ctx) != READSTAT_HANDLER_OK) {
@@ -632,10 +633,10 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t sas7bdat_submit_columns_if_needed(sas7bdat_ctx_t *ctx) {
+static readstat_error_t sas7bdat_submit_columns_if_needed(sas7bdat_ctx_t *ctx, int compressed) {
     readstat_error_t retval = READSTAT_OK;
     if (!ctx->did_submit_columns) {
-        if ((retval = sas7bdat_submit_columns(ctx)) != READSTAT_OK) {
+        if ((retval = sas7bdat_submit_columns(ctx, compressed)) != READSTAT_OK) {
             goto cleanup;
         }
         ctx->did_submit_columns = 1;
@@ -768,7 +769,7 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
                             retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
                             goto cleanup;
                         }
-                        if ((retval = sas7bdat_submit_columns_if_needed(ctx)) != READSTAT_OK) {
+                        if ((retval = sas7bdat_submit_columns_if_needed(ctx, 1)) != READSTAT_OK) {
                             goto cleanup;
                         }
                         if ((retval = sas7bdat_parse_single_row(page + offset, ctx)) != READSTAT_OK) {
@@ -782,7 +783,7 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
                         }
                     }
                 } else if (compression == SAS_COMPRESSION_ROW) {
-                    if ((retval = sas7bdat_submit_columns_if_needed(ctx)) != READSTAT_OK) {
+                    if ((retval = sas7bdat_submit_columns_if_needed(ctx, 1)) != READSTAT_OK) {
                         goto cleanup;
                     }
                     if ((retval = sas7bdat_parse_subheader_rle(page + offset, len, ctx)) != READSTAT_OK) {
@@ -813,7 +814,7 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
         }
     }
     if (data) {
-        if ((retval = sas7bdat_submit_columns_if_needed(ctx)) != READSTAT_OK) {
+        if ((retval = sas7bdat_submit_columns_if_needed(ctx, 0)) != READSTAT_OK) {
             goto cleanup;
         }
         if (ctx->handle.value) {
@@ -1082,7 +1083,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         goto cleanup;
     }
     
-    if ((retval = sas7bdat_submit_columns_if_needed(ctx)) != READSTAT_OK) {
+    if ((retval = sas7bdat_submit_columns_if_needed(ctx, 0)) != READSTAT_OK) {
         goto cleanup;
     }
 

@@ -334,6 +334,7 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
     const char *orig_encoding = readstat_get_file_encoding(metadata);
     long version = readstat_get_file_format_version(metadata);
     time_t timestamp = readstat_get_creation_time(metadata);
+    readstat_compress_t compression = readstat_get_compression(metadata);
 
     if (file_label && file_label[0]) {
         printf("File label: %s\n", file_label);
@@ -343,6 +344,11 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
     }
     if (orig_encoding) {
         printf("Text encoding: %s\n", orig_encoding);
+    }
+    if (compression == READSTAT_COMPRESS_ROWS) {
+        printf("Compression: rows\n");
+    } else if (compression == READSTAT_COMPRESS_BINARY) {
+        printf("Compression: binary\n");
     }
     if (timestamp) {
         char buffer[128];
