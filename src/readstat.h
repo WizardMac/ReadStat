@@ -58,6 +58,11 @@ typedef enum readstat_compress_e {
     READSTAT_COMPRESS_BINARY
 } readstat_compress_t;
 
+typedef enum readstat_endian_e {
+    READSTAT_ENDIAN_LITTLE,
+    READSTAT_ENDIAN_BIG
+} readstat_endian_t;
+
 typedef enum readstat_error_e {
     READSTAT_OK,
     READSTAT_ERROR_OPEN = 1,
@@ -108,6 +113,7 @@ typedef struct readstat_metadata_s {
     time_t      modified_time;
     int64_t     file_format_version;
     readstat_compress_t compression;
+    readstat_endian_t endianness;
     const char *table_name;
     const char *file_label;
     const char *file_encoding;
@@ -121,6 +127,7 @@ time_t readstat_get_modified_time(readstat_metadata_t *metadata);
 int readstat_get_file_format_version(readstat_metadata_t *metadata);
 int readstat_get_file_format_is_64bit(readstat_metadata_t *metadata);
 readstat_compress_t readstat_get_compression(readstat_metadata_t *metadata);
+readstat_endian_t readstat_get_endianness(readstat_metadata_t *metadata);
 const char *readstat_get_table_name(readstat_metadata_t *metadata);
 const char *readstat_get_file_label(readstat_metadata_t *metadata);
 const char *readstat_get_file_encoding(readstat_metadata_t *metadata);

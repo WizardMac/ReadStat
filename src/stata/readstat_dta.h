@@ -104,7 +104,8 @@ typedef struct dta_ctx_s {
     size_t         strls_count;
     size_t         strls_capacity;
 
-    readstat_variable_t     **variables;
+    readstat_variable_t  **variables;
+    readstat_endian_t    endianness;
 
     iconv_t              converter;
     readstat_callbacks_t handle;

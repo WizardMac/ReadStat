@@ -371,6 +371,7 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
             .modified_time = hinfo->modification_time,
             .creation_time = hinfo->creation_time,
             .file_format_version = hinfo->major_version,
+            .endianness = hinfo->little_endian ? READSTAT_ENDIAN_LITTLE : READSTAT_ENDIAN_BIG,
             .is64bit = ctx->u64
         };
         retval = readstat_convert(file_label, sizeof(file_label), 

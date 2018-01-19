@@ -320,10 +320,9 @@ static int dta_compare_strls(const void *elem1, const void *elem2) {
 
 static dta_strl_t dta_interpret_strl_vo_bytes(dta_ctx_t *ctx, const unsigned char *vo_bytes) {
     dta_strl_t strl = {0};
-    int file_is_big_endian = (!machine_is_little_endian() ^ ctx->bswap);
 
     if (ctx->strl_v_len == 2) {
-        if (file_is_big_endian) {
+        if (ctx->endianness == READSTAT_ENDIAN_BIG) {
             strl.v = (vo_bytes[0] << 8) + vo_bytes[1];
             strl.o = (((uint64_t)vo_bytes[2] << 40) 
                     + ((uint64_t)vo_bytes[3] << 32)
@@ -1210,7 +1209,8 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
             .creation_time = ctx->timestamp,
             .modified_time = ctx->timestamp,
             .file_format_version = ctx->ds_format,
-            .is64bit = ctx->ds_format >= 118
+            .is64bit = ctx->ds_format >= 118,
+            .endianness = ctx->endianness
         };
         if (ctx->handle.metadata(&metadata, user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;

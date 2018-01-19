@@ -1423,7 +1423,8 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
             .file_format_version = ctx->format_version,
             .creation_time = ctx->timestamp,
             .modified_time = ctx->timestamp,
-            .compression = ctx->compression
+            .compression = ctx->compression,
+            .endianness = ctx->endianness
         };
         if ((retval = readstat_convert(ctx->file_label, sizeof(ctx->file_label),
                         header.file_label, sizeof(header.file_label), ctx->converter)) != READSTAT_OK)

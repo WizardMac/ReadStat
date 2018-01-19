@@ -40,6 +40,7 @@ readstat_error_t dta_ctx_init(dta_ctx_t *ctx, uint32_t nvar, uint64_t nobs,
 
     ctx->bswap = (byteorder != machine_byteorder);
     ctx->ds_format = ds_format;
+    ctx->endianness = byteorder == DTA_LOHI ? READSTAT_ENDIAN_LITTLE : READSTAT_ENDIAN_BIG;
 
     ctx->nvar = nvar;
     ctx->nobs = nobs;

@@ -27,6 +27,7 @@ sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header, readstat_io_t *io) {
     }
     
     ctx->bswap = !(header->layout_code == 2 || header->layout_code == 3);
+    ctx->endianness = (machine_is_little_endian() ^ ctx->bswap) ? READSTAT_ENDIAN_LITTLE : READSTAT_ENDIAN_BIG;
 
     if (header->compression == 1 || byteswap4(header->compression) == 1) {
         ctx->compression = READSTAT_COMPRESS_ROWS;

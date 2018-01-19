@@ -103,6 +103,7 @@ typedef struct sav_ctx_s {
     int            format_version;
 
     readstat_compress_t  compression;
+    readstat_endian_t   endianness;
     unsigned int   bswap:1;
 } sav_ctx_t;
 
