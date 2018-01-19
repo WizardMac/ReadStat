@@ -547,7 +547,7 @@ static readstat_error_t sas7bdat_emit_header_and_meta_pages(readstat_writer_t *w
     readstat_error_t retval = READSTAT_OK;
 
     if (sas7bdat_row_length(writer) == 0) {
-        retval = READSTAT_ERROR_ROW_IS_EMPTY;
+        retval = READSTAT_ERROR_TOO_FEW_COLUMNS;
         goto cleanup;
     }
 

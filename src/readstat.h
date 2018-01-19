@@ -95,7 +95,8 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_STRING_REFS_NOT_SUPPORTED,
     READSTAT_ERROR_STRING_REF_IS_REQUIRED,
     READSTAT_ERROR_ROW_IS_TOO_WIDE_FOR_PAGE,
-    READSTAT_ERROR_ROW_IS_EMPTY
+    READSTAT_ERROR_TOO_FEW_COLUMNS,
+    READSTAT_ERROR_TOO_MANY_COLUMNS
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);
