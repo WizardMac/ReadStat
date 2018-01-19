@@ -846,25 +846,8 @@ static size_t dta_old_variable_width(readstat_type_t type, size_t user_width) {
     return dta_numeric_variable_width(type, user_width);
 }
 
-static readstat_error_t dta_emit_header(readstat_writer_t *writer, dta_ctx_t *ctx,
-        dta_header_t *header) {
+static readstat_error_t dta_emit_xmlish_header(readstat_writer_t *writer, dta_ctx_t *ctx) {
     readstat_error_t error = READSTAT_OK;
-
-    if (!ctx->file_is_xmlish) {
-        error = readstat_write_bytes(writer, header, sizeof(dta_header_t));
-        if (error != READSTAT_OK)
-            goto cleanup;
-
-        error = dta_emit_header_data_label(writer, ctx);
-        if (error != READSTAT_OK)
-            goto cleanup;
-
-        error = dta_emit_header_time_stamp(writer, ctx);
-        if (error != READSTAT_OK)
-            goto cleanup;
-
-        return READSTAT_OK;
-    }
 
     if ((error = dta_write_tag(writer, ctx, "<stata_dta>")) != READSTAT_OK)
         goto cleanup;
@@ -873,34 +856,36 @@ static readstat_error_t dta_emit_header(readstat_writer_t *writer, dta_ctx_t *ct
         goto cleanup;
 
     char release[128];
-    snprintf(release, sizeof(release), "<release>%d</release>", header->ds_format);
+    snprintf(release, sizeof(release), "<release>%ld</release>", writer->version);
     if ((error = readstat_write_string(writer, release)) != READSTAT_OK)
         goto cleanup;
 
     error = dta_write_chunk(writer, ctx, "<byteorder>",
-            (header->byteorder == DTA_HILO) ? "MSF" : "LSF", sizeof("MSF")-1,
+            machine_is_little_endian() ? "LSF" : "MSF", sizeof("MSF")-1,
             "</byteorder>");
     if (error != READSTAT_OK)
         goto cleanup;
 
-    if (header->ds_format >= 119) {
-        uint32_t nvar = header->nvar;
+    if (writer->version >= 119) {
+        uint32_t nvar = writer->variables_count;
         error = dta_write_chunk(writer, ctx, "<K>", &nvar, sizeof(uint32_t), "</K>");
         if (error != READSTAT_OK)
             goto cleanup;
     } else {
-        error = dta_write_chunk(writer, ctx, "<K>", &header->nvar, sizeof(uint16_t), "</K>");
+        uint16_t nvar = writer->variables_count;
+        error = dta_write_chunk(writer, ctx, "<K>", &nvar, sizeof(uint16_t), "</K>");
         if (error != READSTAT_OK)
             goto cleanup;
     }
 
-    if (header->ds_format >= 118) {
-        uint64_t nobs = header->nobs;
+    if (writer->version >= 118) {
+        uint64_t nobs = writer->row_count;
         error = dta_write_chunk(writer, ctx, "<N>", &nobs, sizeof(uint64_t), "</N>");
         if (error != READSTAT_OK)
             goto cleanup;
     } else {
-        error = dta_write_chunk(writer, ctx, "<N>", &header->nobs, sizeof(uint32_t), "</N>");
+        uint32_t nobs = writer->row_count;
+        error = dta_write_chunk(writer, ctx, "<N>", &nobs, sizeof(uint32_t), "</N>");
         if (error != READSTAT_OK)
             goto cleanup;
     }
@@ -918,6 +903,38 @@ static readstat_error_t dta_emit_header(readstat_writer_t *writer, dta_ctx_t *ct
 
 cleanup:
     return error;
+}
+
+static readstat_error_t dta_emit_header(readstat_writer_t *writer, dta_ctx_t *ctx) {
+    if (ctx->file_is_xmlish) {
+        return dta_emit_xmlish_header(writer, ctx);
+    }
+    readstat_error_t error = READSTAT_OK;
+    dta_header_t header = {0};
+
+    header.ds_format = writer->version;
+    header.byteorder = machine_is_little_endian() ? DTA_LOHI : DTA_HILO;
+    header.filetype  = 0x01;
+    header.unused    = 0x00;
+    header.nvar      = writer->variables_count;
+    header.nobs      = writer->row_count;
+
+    if (writer->variables_count > 32767) {
+        error = READSTAT_ERROR_TOO_MANY_COLUMNS;
+        goto cleanup;
+    }
+
+    if ((error = readstat_write_bytes(writer, &header, sizeof(dta_header_t))) != READSTAT_OK)
+        goto cleanup;
+
+    if ((error = dta_emit_header_data_label(writer, ctx)) != READSTAT_OK)
+        goto cleanup;
+
+    if ((error = dta_emit_header_time_stamp(writer, ctx)) != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    return READSTAT_OK;
 }
 
 static size_t dta_measure_tag(dta_ctx_t *ctx, const char *tag) {
@@ -1071,20 +1088,13 @@ static readstat_error_t dta_begin_data(void *writer_ctx) {
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
     
     dta_ctx_t *ctx = dta_ctx_alloc(NULL);
-    dta_header_t header = {0};
 
-    header.ds_format = writer->version;
-    header.byteorder = machine_is_little_endian() ? DTA_LOHI : DTA_HILO;
-    header.filetype  = 0x01;
-    header.unused    = 0x00;
-    header.nvar      = writer->variables_count;
-    header.nobs      = writer->row_count;
-
-    error = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format, NULL, NULL);
+    error = dta_ctx_init(ctx, writer->variables_count, writer->row_count,
+            machine_is_little_endian() ? DTA_LOHI : DTA_HILO, writer->version, NULL, NULL);
     if (error != READSTAT_OK)
         goto cleanup;
     
-    error = dta_emit_header(writer, ctx, &header);
+    error = dta_emit_header(writer, ctx);
     if (error != READSTAT_OK)
         goto cleanup;
 

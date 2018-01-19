@@ -711,7 +711,24 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t dta_read_xmlish_preamble(dta_ctx_t *ctx, dta_header_t *header) {
+static readstat_error_t dta_read_header(dta_ctx_t *ctx, dta_header_t *header) {
+    readstat_error_t retval = READSTAT_OK;
+    readstat_io_t *io = ctx->io;
+    int bswap = 0;
+
+    if (io->read(header, sizeof(dta_header_t), io->io_ctx) != sizeof(dta_header_t)) {
+        retval = READSTAT_ERROR_READ;
+        goto cleanup;
+    }
+    bswap = (header->byteorder == DTA_LOHI) ^ machine_is_little_endian();
+    header->nvar = bswap ? byteswap2(header->nvar) : header->nvar;
+    header->nobs = bswap ? byteswap4(header->nobs) : header->nobs;
+
+cleanup:
+    return retval;
+}
+
+static readstat_error_t dta_read_xmlish_header(dta_ctx_t *ctx, dta_header64_t *header) {
     readstat_error_t retval = READSTAT_OK;
     
     if ((retval = dta_read_tag(ctx, "<stata_dta>")) != READSTAT_OK) {
@@ -743,36 +760,38 @@ static readstat_error_t dta_read_xmlish_preamble(dta_ctx_t *ctx, dta_header_t *h
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
-    byteswap = DTA_HILO ^ machine_is_little_endian();
+    byteswap = (header->byteorder == DTA_LOHI) ^ machine_is_little_endian();
 
     if (header->ds_format >= 119) {
-        /* Read 32-bit K but store as 16-bit */
         uint32_t nvar;
         if ((retval = dta_read_chunk(ctx, "<K>", &nvar, 
                         sizeof(uint32_t), "</K>")) != READSTAT_OK) {
             goto cleanup;
         }
-        header->nvar = byteswap ? nvar >> 16 : nvar;
+        header->nvar = byteswap ? byteswap4(nvar) : nvar;
     } else {
-        if ((retval = dta_read_chunk(ctx, "<K>", &header->nvar, 
+        uint16_t nvar;
+        if ((retval = dta_read_chunk(ctx, "<K>", &nvar, 
                         sizeof(uint16_t), "</K>")) != READSTAT_OK) {
             goto cleanup;
         }
+        header->nvar = byteswap ? byteswap2(nvar) : nvar;
     }
 
     if (header->ds_format >= 118) {
-        /* Read 64-bit N but store as 32-bit */
         uint64_t nobs;
         if ((retval = dta_read_chunk(ctx, "<N>", &nobs, 
                         sizeof(uint64_t), "</N>")) != READSTAT_OK) {
             goto cleanup;
         }
-        header->nobs = byteswap ? nobs >> 32 : nobs;
+        header->nobs = byteswap ? byteswap8(nobs) : nobs;
     } else {
-        if ((retval = dta_read_chunk(ctx, "<N>", &header->nobs, 
+        uint32_t nobs;
+        if ((retval = dta_read_chunk(ctx, "<N>", &nobs, 
                         sizeof(uint32_t), "</N>")) != READSTAT_OK) {
             goto cleanup;
         }
+        header->nobs = byteswap ? byteswap4(nobs) : nobs;
     }
 
 cleanup:
@@ -1110,7 +1129,6 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = parser->io;
     int i;
-    dta_header_t  header;
     dta_ctx_t    *ctx;
     size_t file_size = 0;
 
@@ -1147,16 +1165,20 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     }
 
     if (strncmp(magic, "<sta", 4) == 0) {
-        retval = dta_read_xmlish_preamble(ctx, &header);
-    } else {
-        if (io->read(&header, sizeof(header), io->io_ctx) != sizeof(header)) {
-            retval = READSTAT_ERROR_READ;
+        dta_header64_t header;
+        if ((retval = dta_read_xmlish_header(ctx, &header)) != READSTAT_OK) {
             goto cleanup;
         }
+        retval = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format,
+                parser->input_encoding, parser->output_encoding);
+    } else {
+        dta_header_t header;
+        if ((retval = dta_read_header(ctx, &header)) != READSTAT_OK) {
+            goto cleanup;
+        }
+        retval = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format,
+                parser->input_encoding, parser->output_encoding);
     }
-
-    retval = dta_ctx_init(ctx, header.nvar, header.nobs, header.byteorder, header.ds_format,
-            parser->input_encoding, parser->output_encoding);
     if (retval != READSTAT_OK) {
         goto cleanup;
     }
@@ -1192,7 +1214,7 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     }
 
     if (parser->metadata_handler) {
-        if (parser->metadata_handler(ctx->data_label, NULL, ctx->timestamp, header.ds_format, user_ctx) != READSTAT_HANDLER_OK) {
+        if (parser->metadata_handler(ctx->data_label, NULL, ctx->timestamp, ctx->ds_format, user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
