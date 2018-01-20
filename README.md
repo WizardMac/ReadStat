@@ -216,10 +216,10 @@ Example: Return the number of records in a DTA file.
 ```c
 #include "readstat.h"
 
-int handle_info(int obs_count, int var_count, void *ctx) {
+int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     int *my_count = (int *)ctx;
 
-    *my_count = obs_count;
+    *my_count = readstat_get_row_count(metadata);
 
     return READSTAT_HANDLER_OK;
 }
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
     int my_count = 0;
     readstat_error_t error = READSTAT_OK;
     readstat_parser_t *parser = readstat_parser_init();
-    readstat_set_info_handler(parser, &handle_info);
+    readstat_set_metadata_handler(parser, &handle_metadata);
 
     error = readstat_parse_dta(parser, argv[1], &my_count);
 
@@ -252,10 +252,10 @@ Example: Convert a DTA to a tab-separated file.
 ```c
 #include "readstat.h"
 
-int handle_info(int obs_count, int var_count, void *ctx) {
+int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     int *my_var_count = (int *)ctx;
     
-    *my_var_count = var_count;
+    *my_var_count = readstat_get_var_count(metadata);
 
     return READSTAT_HANDLER_OK;
 }
@@ -310,7 +310,7 @@ int main(int argc, char *argv[]) {
     int my_var_count = 0;
     readstat_error_t error = READSTAT_OK;
     readstat_parser_t *parser = readstat_parser_init();
-    readstat_set_info_handler(parser, &handle_info);
+    readstat_set_metadata_handler(parser, &handle_metadata);
     readstat_set_variable_handler(parser, &handle_variable);
     readstat_set_value_handler(parser, &handle_value);
 
