@@ -28,6 +28,10 @@ readstat_compress_t readstat_get_compression(readstat_metadata_t *metadata) {
     return metadata->compression;
 }
 
+readstat_endian_t readstat_get_endianness(readstat_metadata_t *metadata) {
+    return metadata->endianness;
+}
+
 const char *readstat_get_file_label(readstat_metadata_t *metadata) {
     return metadata->file_label;
 }
