@@ -335,6 +335,7 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
     long version = readstat_get_file_format_version(metadata);
     time_t timestamp = readstat_get_creation_time(metadata);
     readstat_compress_t compression = readstat_get_compression(metadata);
+    readstat_endian_t endianness = readstat_get_endianness(metadata);
 
     if (file_label && file_label[0]) {
         printf("File label: %s\n", file_label);
@@ -349,6 +350,11 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
         printf("Compression: rows\n");
     } else if (compression == READSTAT_COMPRESS_BINARY) {
         printf("Compression: binary\n");
+    }
+    if (endianness == READSTAT_ENDIAN_LITTLE) {
+        printf("Byte order: little-endian\n");
+    } else if (endianness == READSTAT_ENDIAN_BIG) {
+        printf("Byte order: big-endian\n");
     }
     if (timestamp) {
         char buffer[128];
