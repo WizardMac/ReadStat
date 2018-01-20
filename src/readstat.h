@@ -59,6 +59,7 @@ typedef enum readstat_compress_e {
 } readstat_compress_t;
 
 typedef enum readstat_endian_e {
+    READSTAT_ENDIAN_NONE,
     READSTAT_ENDIAN_LITTLE,
     READSTAT_ENDIAN_BIG
 } readstat_endian_t;
