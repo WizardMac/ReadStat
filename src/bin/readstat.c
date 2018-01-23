@@ -328,8 +328,8 @@ cleanup:
 }
 
 static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
-    printf("Columns: %d\n", readstat_get_row_count(metadata));
-    printf("Rows: %d\n", readstat_get_var_count(metadata));
+    printf("Columns: %d\n", readstat_get_var_count(metadata));
+    printf("Rows: %d\n", readstat_get_row_count(metadata));
     const char *file_label = readstat_get_file_label(metadata);
     const char *orig_encoding = readstat_get_file_encoding(metadata);
     long version = readstat_get_file_format_version(metadata);
