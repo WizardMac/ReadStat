@@ -312,10 +312,17 @@ static sas7bdat_subheader_t *sas7bdat_col_format_subheader_init(readstat_variabl
     return subheader;
 }
 
+static size_t sas7bdat_col_text_subheader_length(sas_header_info_t *hinfo,
+        sas7bdat_column_text_t *column_text) {
+    size_t signature_len = hinfo->u64 ? 8 : 4;
+    size_t text_len = column_text ? column_text->used : 0;
+    return signature_len + 28 + text_len;
+}
+
 static sas7bdat_subheader_t *sas7bdat_col_text_subheader_init(readstat_writer_t *writer,
         sas_header_info_t *hinfo, sas7bdat_column_text_t *column_text) {
     size_t signature_len = hinfo->u64 ? 8 : 4;
-    size_t len = signature_len + 28 + column_text->used;
+    size_t len = sas7bdat_col_text_subheader_length(hinfo, column_text);
     sas7bdat_subheader_t *subheader = sas7bdat_subheader_init(
             SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT, len);
 
@@ -328,21 +335,12 @@ static sas7bdat_subheader_t *sas7bdat_col_text_subheader_init(readstat_writer_t 
 
 static sas7bdat_subheader_array_t *sas7bdat_subheader_array_init(readstat_writer_t *writer,
         sas_header_info_t *hinfo) {
-    sas7bdat_subheader_t *row_size_subheader = NULL;
-    sas7bdat_subheader_t *col_size_subheader = NULL;
-    sas7bdat_subheader_t *col_name_subheader = NULL;
-    sas7bdat_subheader_t *col_attrs_subheader = NULL;
-
     sas7bdat_column_text_array_t *column_text_array = calloc(1, sizeof(sas7bdat_column_text_array_t));
     column_text_array->count = 1;
     column_text_array->column_texts = malloc(sizeof(sas7bdat_column_text_t *));
     column_text_array->column_texts[0] = sas7bdat_column_text_init(0, 
-            hinfo->page_size - hinfo->page_header_size - hinfo->subheader_pointer_size - 36);
-
-    row_size_subheader = sas7bdat_row_size_subheader_init(writer, hinfo);
-    col_size_subheader = sas7bdat_col_size_subheader_init(writer, hinfo);
-    col_name_subheader = sas7bdat_col_name_subheader_init(writer, hinfo, column_text_array);
-    col_attrs_subheader = sas7bdat_col_attrs_subheader_init(writer, hinfo);
+            hinfo->page_size - hinfo->page_header_size - hinfo->subheader_pointer_size - 
+            sas7bdat_col_text_subheader_length(hinfo, NULL));
 
     sas7bdat_subheader_array_t *sarray = calloc(1, sizeof(sas7bdat_subheader_array_t));
     sarray->count = 4+writer->variables_count;
@@ -350,10 +348,10 @@ static sas7bdat_subheader_array_t *sas7bdat_subheader_array_init(readstat_writer
 
     long idx = 0;
 
-    sarray->subheaders[idx++] = row_size_subheader;
-    sarray->subheaders[idx++] = col_size_subheader;
-    sarray->subheaders[idx++] = col_name_subheader;
-    sarray->subheaders[idx++] = col_attrs_subheader;
+    sarray->subheaders[idx++] = sas7bdat_row_size_subheader_init(writer, hinfo);
+    sarray->subheaders[idx++] = sas7bdat_col_size_subheader_init(writer, hinfo);
+    sarray->subheaders[idx++] = sas7bdat_col_name_subheader_init(writer, hinfo, column_text_array);
+    sarray->subheaders[idx++] = sas7bdat_col_attrs_subheader_init(writer, hinfo);
 
     int i;
     for (i=0; i<writer->variables_count; i++) {
