@@ -337,7 +337,7 @@ static sas7bdat_subheader_array_t *sas7bdat_subheader_array_init(readstat_writer
     column_text_array->count = 1;
     column_text_array->column_texts = malloc(sizeof(sas7bdat_column_text_t *));
     column_text_array->column_texts[0] = sas7bdat_column_text_init(0, 
-            hinfo->page_size - hinfo->page_header_size - hinfo->subheader_pointer_size);
+            hinfo->page_size - hinfo->page_header_size - hinfo->subheader_pointer_size - 36);
 
     row_size_subheader = sas7bdat_row_size_subheader_init(writer, hinfo);
     col_size_subheader = sas7bdat_col_size_subheader_init(writer, hinfo);
