@@ -173,26 +173,30 @@ static sas7bdat_subheader_t *sas7bdat_row_size_subheader_init(readstat_writer_t 
         sas_header_info_t *hinfo) {
     sas7bdat_subheader_t *subheader = sas7bdat_subheader_init(
             SAS_SUBHEADER_SIGNATURE_ROW_SIZE,
-            hinfo->u64 ? 128 : 64);
+            hinfo->u64 ? 808 : 480);
 
     if (hinfo->u64) {
         int64_t row_length = sas7bdat_row_length(writer);
         int64_t row_count = writer->row_count;
+        int64_t ncfl1 = writer->variables_count;
         int64_t page_size = hinfo->page_size;
 
         memcpy(&subheader->data[40], &row_length, sizeof(int64_t));
         memcpy(&subheader->data[48], &row_count, sizeof(int64_t));
+        memcpy(&subheader->data[72], &ncfl1, sizeof(int64_t));
         memcpy(&subheader->data[104], &page_size, sizeof(int64_t));
-        // memset(&subheader->data[128], 0xFF, 16);
+        memset(&subheader->data[128], 0xFF, 16);
     } else {
         int32_t row_length = sas7bdat_row_length(writer);
         int32_t row_count = writer->row_count;
+        int32_t ncfl1 = writer->variables_count;
         int32_t page_size = hinfo->page_size;
 
         memcpy(&subheader->data[20], &row_length, sizeof(int32_t));
         memcpy(&subheader->data[24], &row_count, sizeof(int32_t));
+        memcpy(&subheader->data[36], &ncfl1, sizeof(int32_t));
         memcpy(&subheader->data[52], &page_size, sizeof(int32_t));
-        // memset(&subheader->data[64], 0xFF, 8);
+        memset(&subheader->data[64], 0xFF, 8);
     }
 
     return subheader;
@@ -347,16 +351,21 @@ static sas7bdat_subheader_array_t *sas7bdat_subheader_array_init(readstat_writer
     sarray->subheaders = calloc(sarray->count, sizeof(sas7bdat_subheader_t *));
 
     long idx = 0;
+    int i;
+    sas7bdat_subheader_t *col_name_subheader = NULL;
+    sas7bdat_subheader_t *col_attrs_subheader = NULL;
+    sas7bdat_subheader_t **col_format_subheaders = NULL;
+
+    col_name_subheader = sas7bdat_col_name_subheader_init(writer, hinfo, column_text_array);
+    col_attrs_subheader = sas7bdat_col_attrs_subheader_init(writer, hinfo);
 
     sarray->subheaders[idx++] = sas7bdat_row_size_subheader_init(writer, hinfo);
     sarray->subheaders[idx++] = sas7bdat_col_size_subheader_init(writer, hinfo);
-    sarray->subheaders[idx++] = sas7bdat_col_name_subheader_init(writer, hinfo, column_text_array);
-    sarray->subheaders[idx++] = sas7bdat_col_attrs_subheader_init(writer, hinfo);
 
-    int i;
+    col_format_subheaders = calloc(writer->variables_count, sizeof(sas7bdat_subheader_t *));
     for (i=0; i<writer->variables_count; i++) {
         readstat_variable_t *variable = readstat_get_variable(writer, i);
-        sarray->subheaders[idx++] = sas7bdat_col_format_subheader_init(variable, hinfo, column_text_array);
+        col_format_subheaders[i] = sas7bdat_col_format_subheader_init(variable, hinfo, column_text_array);
     }
     sarray->count += column_text_array->count;
     sarray->subheaders = realloc(sarray->subheaders, sarray->count * sizeof(sas7bdat_subheader_t *));
@@ -365,6 +374,14 @@ static sas7bdat_subheader_array_t *sas7bdat_subheader_array_init(readstat_writer
                 column_text_array->column_texts[i]);
     }
     sas7bdat_column_text_array_free(column_text_array);
+
+    sarray->subheaders[idx++] = col_name_subheader;
+    sarray->subheaders[idx++] = col_attrs_subheader;
+
+    for (i=0; i<writer->variables_count; i++) {
+        sarray->subheaders[idx++] = col_format_subheaders[i];
+    }
+    free(col_format_subheaders);
 
     sarray->capacity = sarray->count;
 
