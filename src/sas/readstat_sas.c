@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <limits.h>
 #include <inttypes.h>
 
 #include "readstat_sas.h"
@@ -69,6 +70,17 @@ static readstat_charset_entry_t _charset_table[] = {
     { .code = 140,   .name = "EUC-KR" }
 };
 
+static time_t sas_convert_time(double time, time_t epoch) {
+    time += epoch;
+    if (isnan(time))
+        return 0;
+    if (time > 1.0 * LONG_MAX)
+        return LONG_MAX;
+    if (time < 1.0 * LONG_MIN)
+        return LONG_MIN;
+    return time;
+}
+
 uint64_t sas_read8(const char *data, int bswap) {
     uint64_t tmp;
     memcpy(&tmp, data, 8);
@@ -85,17 +97,6 @@ uint16_t sas_read2(const char *data, int bswap) {
     uint16_t tmp;
     memcpy(&tmp, data, 2);
     return bswap ? byteswap2(tmp) : tmp;
-}
-
-time_t sas_convert_time(double time, time_t epoch) {
-    time += epoch;
-    if (isnan(time))
-        return 0;
-    if (time > 1.0 * INT64_MAX)
-        return INT64_MAX;
-    if (time < 1.0 * INT64_MIN)
-        return INT64_MIN;
-    return time;
 }
 
 readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo, 
