@@ -13,9 +13,9 @@
 #include "../readstat_convert.h"
 #include "../readstat_writer.h"
 
-#define FILE_HEADER_SIZE_32BIT 1024
-#define FILE_HEADER_SIZE_64BIT 8192
-#define PAGE_SIZE         4096
+#define SAS_FILE_HEADER_SIZE_32BIT 1024
+#define SAS_FILE_HEADER_SIZE_64BIT 8192
+#define SAS_DEFAULT_PAGE_SIZE      4096
 
 #define SAS_DEFAULT_STRING_ENCODING "WINDOWS-1252"
 
@@ -348,15 +348,15 @@ sas_header_info_t *sas_header_info_init(readstat_writer_t *writer, int is_64bit)
     sas_header_info_t *hinfo = calloc(1, sizeof(sas_header_info_t));
     hinfo->creation_time = writer->timestamp;
     hinfo->modification_time = writer->timestamp;
-    hinfo->page_size = PAGE_SIZE;
+    hinfo->page_size = SAS_DEFAULT_PAGE_SIZE;
     hinfo->u64 = !!is_64bit;
 
     if (hinfo->u64) {
-        hinfo->header_size = FILE_HEADER_SIZE_64BIT;
+        hinfo->header_size = SAS_FILE_HEADER_SIZE_64BIT;
         hinfo->page_header_size = SAS_PAGE_HEADER_SIZE_64BIT;
         hinfo->subheader_pointer_size = SAS_SUBHEADER_POINTER_SIZE_64BIT;
     } else {
-        hinfo->header_size = FILE_HEADER_SIZE_32BIT;
+        hinfo->header_size = SAS_FILE_HEADER_SIZE_32BIT;
         hinfo->page_header_size = SAS_PAGE_HEADER_SIZE_32BIT;
         hinfo->subheader_pointer_size = SAS_SUBHEADER_POINTER_SIZE_32BIT;
     }
