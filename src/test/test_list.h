@@ -110,6 +110,25 @@ static rt_test_group_t _test_groups[] = {
             },
 
             {
+                .label = "SAV short row compression",
+                .test_formats = RT_FORMAT_SAV_COMP,
+                .rows = 4,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .label = "Double-precision variable",
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } }
+                        }
+                    }
+                }
+            },
+
+            {
                 .label = "SAS7BDAT RLE compression",
                 .test_formats = RT_FORMAT_SAS7BDAT_COMP_ROWS,
                 .rows = 10,
