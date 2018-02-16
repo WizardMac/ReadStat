@@ -124,7 +124,7 @@ static readstat_error_t sas7bdat_parse_column_text_subheader(const char *subhead
     size_t signature_len = ctx->u64 ? 8 : 4;
     uint16_t remainder = sas_read2(&subheader[signature_len], ctx->bswap);
     char *blob = NULL;
-    if (remainder != len - (4+2*signature_len)) {
+    if (remainder != len - signature_len) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }

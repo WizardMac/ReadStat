@@ -330,7 +330,7 @@ static sas7bdat_subheader_t *sas7bdat_col_text_subheader_init(readstat_writer_t 
     sas7bdat_subheader_t *subheader = sas7bdat_subheader_init(
             SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT, len);
 
-    uint16_t used = len - (4+2*signature_len);
+    uint16_t used = len - signature_len;
     memcpy(&subheader->data[signature_len], &used, sizeof(uint16_t));
     memset(&subheader->data[signature_len+12], ' ', 8);
     memcpy(&subheader->data[signature_len+28], column_text->data, column_text->used);
