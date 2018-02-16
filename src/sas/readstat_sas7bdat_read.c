@@ -267,7 +267,7 @@ static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subhead
     const char *cnp = &subheader[signature_len+8];
     uint16_t remainder = sas_read2(&subheader[signature_len], ctx->bswap);
 
-    if (remainder != len - (4+2*signature_len)) {
+    if (remainder != len - signature_len) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -295,7 +295,7 @@ static readstat_error_t sas7bdat_parse_column_attributes_subheader(const char *s
     const char *cap = &subheader[signature_len+8];
     uint16_t remainder = sas_read2(&subheader[signature_len], ctx->bswap);
 
-    if (remainder != len - (4+2*signature_len)) {
+    if (remainder != len - signature_len) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
