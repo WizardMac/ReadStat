@@ -536,29 +536,31 @@ cleanup:
 static readstat_error_t sav_emit_integer_info_record(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
 
-    sav_info_record_t info_header = {0};
+    sav_info_record_t info_header = {
+        .rec_type = SAV_RECORD_TYPE_HAS_DATA,
+        .subtype = SAV_RECORD_SUBTYPE_INTEGER_INFO,
+        .size = 4,
+        .count = 8
+    };
 
-    info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
-    info_header.subtype = SAV_RECORD_SUBTYPE_INTEGER_INFO;
-    info_header.size = 4;
-    info_header.count = 8;
+    sav_machine_integer_info_record_t machine_info = {
+        .version_major = 20,
+        .version_minor = 0,
+        .version_revision = 0,
+        .machine_code = -1,
+        .floating_point_rep = SAV_FLOATING_POINT_REP_IEEE,
+        .compression_code = 1,
+        .endianness = machine_is_little_endian() ? SAV_ENDIANNESS_LITTLE : SAV_ENDIANNESS_BIG,
+        .character_code = 65001 // UTF-8
+    };
 
     retval = readstat_write_bytes(writer, &info_header, sizeof(info_header));
     if (retval != READSTAT_OK)
         goto cleanup;
     
-    sav_machine_integer_info_record_t machine_info = {0};
-
-    machine_info.version_major = 1;
-    machine_info.version_minor = 0;
-    machine_info.version_revision = 0;
-    machine_info.machine_code = -1;
-    machine_info.floating_point_rep = SAV_FLOATING_POINT_REP_IEEE;
-    machine_info.compression_code = 1;
-    machine_info.endianness = machine_is_little_endian() ? SAV_ENDIANNESS_LITTLE : SAV_ENDIANNESS_BIG;
-    machine_info.character_code = 65001; // utf-8
-
     retval = readstat_write_bytes(writer, &machine_info, sizeof(machine_info));
+    if (retval != READSTAT_OK)
+        goto cleanup;
 
 cleanup:
     return retval;
@@ -567,12 +569,12 @@ cleanup:
 static readstat_error_t sav_emit_floating_point_info_record(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
 
-    sav_info_record_t info_header = {0};
-
-    info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
-    info_header.subtype = SAV_RECORD_SUBTYPE_FP_INFO;
-    info_header.size = 8;
-    info_header.count = 3;
+    sav_info_record_t info_header = {
+        .rec_type = SAV_RECORD_TYPE_HAS_DATA,
+        .subtype = SAV_RECORD_SUBTYPE_FP_INFO,
+        .size = 8,
+        .count = 3
+    };
 
     retval = readstat_write_bytes(writer, &info_header, sizeof(info_header));
     if (retval != READSTAT_OK)
@@ -595,7 +597,11 @@ cleanup:
 static readstat_error_t sav_emit_variable_display_record(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
     int i;
-    sav_info_record_t info_header = {0};
+    sav_info_record_t info_header = {
+        .rec_type = SAV_RECORD_TYPE_HAS_DATA,
+        .subtype = SAV_RECORD_SUBTYPE_VAR_DISPLAY,
+        .size = sizeof(int32_t)
+    };
 
     int total_segments = 0;
     for (i=0; i<writer->variables_count; i++) {
@@ -603,9 +609,6 @@ static readstat_error_t sav_emit_variable_display_record(readstat_writer_t *writ
         total_segments += sav_variable_segments(r_variable->type, r_variable->user_width);
     }
 
-    info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
-    info_header.subtype = SAV_RECORD_SUBTYPE_VAR_DISPLAY;
-    info_header.size = sizeof(int32_t);
     info_header.count = 3 * total_segments;
 
     retval = readstat_write_bytes(writer, &info_header, sizeof(info_header));
@@ -649,12 +652,12 @@ cleanup:
 static readstat_error_t sav_emit_long_var_name_record(readstat_writer_t *writer) {
     readstat_error_t retval = READSTAT_OK;
     int i;
-    sav_info_record_t info_header = {0};
-
-    info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
-    info_header.subtype = SAV_RECORD_SUBTYPE_LONG_VAR_NAME;
-    info_header.size = 1;
-    info_header.count = 0;
+    sav_info_record_t info_header = {
+        .rec_type = SAV_RECORD_TYPE_HAS_DATA,
+        .subtype = SAV_RECORD_SUBTYPE_LONG_VAR_NAME,
+        .size = 1,
+        .count = 0
+    };
     
     for (i=0; i<writer->variables_count; i++) {
         readstat_variable_t *r_variable = readstat_get_variable(writer, i);
@@ -734,12 +737,12 @@ static readstat_error_t sav_emit_very_long_string_record(readstat_writer_t *writ
     int i;
     char tuple_separator[2] = { 0x00, 0x09 };
 
-    sav_info_record_t info_header = {0};
-
-    info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
-    info_header.subtype = SAV_RECORD_SUBTYPE_VERY_LONG_STR;
-    info_header.size = 1;
-    info_header.count = 0;
+    sav_info_record_t info_header = {
+        .rec_type = SAV_RECORD_TYPE_HAS_DATA,
+        .subtype = SAV_RECORD_SUBTYPE_VERY_LONG_STR,
+        .size = 1,
+        .count = 0
+    };
 
     for (i=0; i<writer->variables_count; i++) {
         readstat_variable_t *r_variable = readstat_get_variable(writer, i);
@@ -750,7 +753,7 @@ static readstat_error_t sav_emit_very_long_string_record(readstat_writer_t *writ
         sav_format_variable_name(name_data, sizeof(name_data), r_variable->index);
 
         char kv_data[8+1+5+1];
-        snprintf(kv_data, sizeof(kv_data), "%.8s=%05d", 
+        snprintf(kv_data, sizeof(kv_data), "%.8s=%d", 
                 name_data, (unsigned int)r_variable->user_width % 100000);
 
         info_header.count += strlen(kv_data) + sizeof(tuple_separator);
@@ -772,7 +775,7 @@ static readstat_error_t sav_emit_very_long_string_record(readstat_writer_t *writ
         sav_format_variable_name(name_data, sizeof(name_data), r_variable->index);
 
         char kv_data[8+1+5+1];
-        snprintf(kv_data, sizeof(kv_data), "%.8s=%05d", 
+        snprintf(kv_data, sizeof(kv_data), "%.8s=%d", 
                 name_data, (unsigned int)r_variable->user_width % 100000);
 
         retval = readstat_write_string(writer, kv_data);
@@ -793,12 +796,12 @@ static readstat_error_t sav_emit_long_value_labels_records(readstat_writer_t *wr
     int i, j, k;
     char *space_buffer = NULL;
 
-    sav_info_record_t info_header = {0};
-
-    info_header.rec_type = SAV_RECORD_TYPE_HAS_DATA;
-    info_header.subtype = SAV_RECORD_SUBTYPE_LONG_VALUE_LABELS;
-    info_header.size = 1;
-    info_header.count = 0;
+    sav_info_record_t info_header = {
+        .rec_type = SAV_RECORD_TYPE_HAS_DATA,
+        .subtype = SAV_RECORD_SUBTYPE_LONG_VALUE_LABELS,
+        .size = 1,
+        .count = 0
+    };
 
     for (i=0; i<writer->label_sets_count; i++) {
         readstat_label_set_t *r_label_set = readstat_get_label_set(writer, i);
@@ -892,6 +895,32 @@ cleanup:
     if (space_buffer)
         free(space_buffer);
 
+    return retval;
+}
+
+static readstat_error_t sav_emit_number_of_cases_record(readstat_writer_t *writer) {
+    readstat_error_t retval = READSTAT_OK;
+    sav_info_record_t info_header = {
+        .rec_type = SAV_RECORD_TYPE_HAS_DATA,
+        .subtype = SAV_RECORD_SUBTYPE_NUMBER_OF_CASES,
+        .size = 8,
+        .count = 2
+    };
+    uint64_t one = 1, ncases = writer->row_count;
+
+    retval = readstat_write_bytes(writer, &info_header, sizeof(sav_info_record_t));
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = readstat_write_bytes(writer, &one, sizeof(uint64_t));
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = readstat_write_bytes(writer, &ncases, sizeof(uint64_t));
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
     return retval;
 }
 
@@ -1021,6 +1050,10 @@ static readstat_error_t sav_begin_data(void *writer_ctx) {
         goto cleanup;
 
     retval = sav_emit_long_value_labels_records(writer);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = sav_emit_number_of_cases_record(writer);
     if (retval != READSTAT_OK)
         goto cleanup;
 
