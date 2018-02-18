@@ -79,13 +79,13 @@ static readstat_error_t sav_encode_ghost_variable_format(readstat_variable_t *r_
 
 static size_t sav_format_variable_name(char *output, size_t output_len,
         unsigned int index) {
-    snprintf(output, output_len, "VAR%d", index % 100000);
+    snprintf(output, output_len, "V%04d", index % 10000);
     return strlen(output);
 }
 
 static size_t sav_format_ghost_variable_name(char *output, size_t output_len,
         unsigned int index, unsigned int segment) {
-    snprintf(output, output_len, "V%05d%02d", index % 100000, segment % 100);
+    snprintf(output, output_len, "V%04d%d", index % 10000, segment % 1000);
     return strlen(output);
 }
 
