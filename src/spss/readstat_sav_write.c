@@ -79,7 +79,7 @@ static readstat_error_t sav_encode_ghost_variable_format(readstat_variable_t *r_
 
 static size_t sav_format_variable_name(char *output, size_t output_len,
         unsigned int index) {
-    snprintf(output, output_len, "V%04d", index % 10000);
+    snprintf(output, output_len, "V%d_A", index % 10000);
     return strlen(output);
 }
 
@@ -87,6 +87,9 @@ static size_t sav_format_ghost_variable_name(char *output, size_t output_len,
         unsigned int index, unsigned int segment) {
     size_t len = sav_format_variable_name(output, output_len, index);
     int letter = index % 36;
+    if (len > 5) {
+        len = 5;
+    }
     if (letter < 10) {
         output[len++] = '0' + letter;
     } else {
