@@ -85,8 +85,14 @@ static size_t sav_format_variable_name(char *output, size_t output_len,
 
 static size_t sav_format_ghost_variable_name(char *output, size_t output_len,
         unsigned int index, unsigned int segment) {
-    snprintf(output, output_len, "V%04d%d", index % 10000, segment % 1000);
-    return strlen(output);
+    size_t len = sav_format_variable_name(output, output_len, index);
+    int letter = index % 36;
+    if (letter < 10) {
+        output[len++] = '0' + letter;
+    } else {
+        output[len++] = 'A' + (letter - 10);
+    }
+    return len;
 }
 
 static int sav_variable_segments(readstat_type_t type, size_t user_width) {
