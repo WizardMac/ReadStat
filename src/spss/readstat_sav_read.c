@@ -222,8 +222,6 @@ static readstat_error_t sav_read_variable_label(spss_varinfo_t *info, sav_ctx_t 
 
     if (io->read(label_buf, label_capacity, io->io_ctx) < label_capacity) {
         retval = READSTAT_ERROR_READ;
-        free(info->label);
-        info->label = NULL;
         goto cleanup;
     }
 
@@ -234,6 +232,13 @@ static readstat_error_t sav_read_variable_label(spss_varinfo_t *info, sav_ctx_t 
 cleanup:
     if (label_buf)
         free(label_buf);
+
+    if (retval != READSTAT_OK) {
+        if (info->label) {
+            free(info->label);
+            info->label = NULL;
+        }
+    }
 
     return retval;
 }
