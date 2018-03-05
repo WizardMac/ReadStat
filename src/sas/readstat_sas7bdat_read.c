@@ -217,7 +217,7 @@ static readstat_error_t sas7bdat_parse_row_size_subheader(const char *subheader,
     }
 
     ctx->row_length = row_length;
-    ctx->row = readstat_malloc(ctx->row_length);
+    ctx->row = readstat_realloc(ctx->row, ctx->row_length);
     if (ctx->row == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
