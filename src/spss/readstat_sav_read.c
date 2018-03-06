@@ -113,9 +113,10 @@ static readstat_charset_entry_t _charset_table[] = {
 #define SAV_LABEL_NAME_PREFIX         "labels"
 
 typedef struct value_label_s {
-    char          value[8];
-    unsigned char label_len;
-    char          label[256*4+1];
+    char             raw_value[8];
+    char             utf8_string_value[8*4+1];
+    readstat_value_t final_value;
+    char            *label;
 } value_label_t;
 
 static readstat_error_t sav_update_progress(sav_ctx_t *ctx);
@@ -377,13 +378,18 @@ static readstat_error_t sav_skip_value_label_record(sav_ctx_t *ctx) {
         label_count = byteswap4(label_count);
     int i;
     for (i=0; i<label_count; i++) {
-        value_label_t vlabel;
-        if (io->read(&vlabel, 9, io->io_ctx) < 9) {
+        unsigned char unpadded_len = 0;
+        size_t padded_len = 0;
+        if (io->seek(8, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+            retval = READSTAT_ERROR_SEEK;
+            goto cleanup;
+        }
+        if (io->read(&unpadded_len, 1, io->io_ctx) < 1) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
-        size_t label_len = (vlabel.label_len + 8) / 8 * 8 - 1;
-        if (io->seek(label_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+        padded_len = (unpadded_len + 8) / 8 * 8 - 1;
+        if (io->seek(padded_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
@@ -426,24 +432,7 @@ static readstat_error_t sav_submit_value_labels(value_label_t *value_labels, int
 
     for (i=0; i<label_count; i++) {
         value_label_t *vlabel = &value_labels[i];
-        readstat_value_t value = { .type = value_type };
-        double val_d = 0.0;
-        char unpadded_val[8*4+1];
-        if (value_type == READSTAT_TYPE_DOUBLE) {
-            memcpy(&val_d, vlabel->value, 8);
-            if (ctx->bswap)
-                val_d = byteswap_double(val_d);
-
-            value.v.double_value = val_d;
-            sav_tag_missing_double(&value, ctx);
-        } else {
-            retval = readstat_convert(unpadded_val, sizeof(unpadded_val), vlabel->value, 8, ctx->converter);
-            if (retval != READSTAT_OK)
-                break;
-
-            value.v.string_value = unpadded_val;
-        }
-        if (ctx->handle.value_label(label_name_buf, value, vlabel->label, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+        if (ctx->handle.value_label(label_name_buf, vlabel->final_value, vlabel->label, ctx->user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
@@ -470,7 +459,7 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
     if (ctx->bswap)
         label_count = byteswap4(label_count);
     
-    if (label_count && (value_labels = readstat_malloc(label_count * sizeof(value_label_t))) == NULL) {
+    if (label_count && (value_labels = readstat_calloc(label_count, sizeof(value_label_t))) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -478,16 +467,31 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
     int i;
     for (i=0; i<label_count; i++) {
         value_label_t *vlabel = &value_labels[i];
-        if (io->read(vlabel, 9, io->io_ctx) < 9) {
+        unsigned char unpadded_label_len = 0;
+        size_t padded_label_len = 0, utf8_label_len = 0;
+
+        if (io->read(vlabel->raw_value, 8, io->io_ctx) < 8) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
-        size_t label_len = (vlabel->label_len + 8) / 8 * 8 - 1;
-        if (io->read(label_buf, label_len, io->io_ctx) < label_len) {
+        if (io->read(&unpadded_label_len, 1, io->io_ctx) < 1) {
             retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
-        retval = readstat_convert(vlabel->label, sizeof(vlabel->label), label_buf, label_len, ctx->converter);
+
+        padded_label_len = (unpadded_label_len + 8) / 8 * 8 - 1;
+        if (io->read(label_buf, padded_label_len, io->io_ctx) < padded_label_len) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        utf8_label_len = padded_label_len*4+1;
+        if ((vlabel->label = readstat_malloc(utf8_label_len)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+
+        retval = readstat_convert(vlabel->label, utf8_label_len, label_buf, padded_label_len, ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
     }
@@ -532,6 +536,28 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
             value_type = var->type;
         }
     }
+
+    for (i=0; i<label_count; i++) {
+        value_label_t *vlabel = &value_labels[i];
+        double val_d = 0.0;
+        vlabel->final_value.type = value_type;
+        if (value_type == READSTAT_TYPE_DOUBLE) {
+            memcpy(&val_d, vlabel->raw_value, 8);
+            if (ctx->bswap)
+                val_d = byteswap_double(val_d);
+
+            vlabel->final_value.v.double_value = val_d;
+            sav_tag_missing_double(&vlabel->final_value, ctx);
+        } else {
+            retval = readstat_convert(vlabel->utf8_string_value, sizeof(vlabel->utf8_string_value),
+                    vlabel->raw_value, 8, ctx->converter);
+            if (retval != READSTAT_OK)
+                break;
+
+            vlabel->final_value.v.string_value = vlabel->utf8_string_value;
+        }
+    }
+
     if (ctx->handle.value_label) {
         sav_submit_value_labels(value_labels, label_count, value_type, ctx);
     }
@@ -539,8 +565,14 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
 cleanup:
     if (vars)
         free(vars);
-    if (value_labels)
+    if (value_labels) {
+        for (i=0; i<label_count; i++) {
+            value_label_t *vlabel = &value_labels[i];
+            if (vlabel->label)
+                free(vlabel->label);
+        }
         free(value_labels);
+    }
     
     return retval;
 }
