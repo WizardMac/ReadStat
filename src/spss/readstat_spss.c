@@ -65,7 +65,7 @@ int spss_format(char *buffer, size_t len, spss_format_t *format) {
 
 int spss_varinfo_compare(const void *elem1, const void *elem2) {
     int offset = *(int *)elem1;
-    const spss_varinfo_t *v = (const spss_varinfo_t *)elem2;
+    const spss_varinfo_t *v = *(const spss_varinfo_t **)elem2;
     if (offset < v->offset)
         return -1;
     return (offset > v->offset);

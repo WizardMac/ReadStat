@@ -29,7 +29,7 @@ static int count_vars(sav_ctx_t *ctx) {
     spss_varinfo_t *last_info = NULL;
     int var_count = 0;
     for (i=0; i<ctx->var_index; i++) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
+        spss_varinfo_t *info = ctx->varinfo[i];
         if (last_info == NULL || strcmp(info->name, last_info->name) != 0) {
             var_count++;
         }
@@ -44,7 +44,7 @@ static varlookup_t *build_lookup_table(int var_count, sav_ctx_t *ctx) {
     int i;
     spss_varinfo_t *last_info = NULL;
     for (i=0; i<ctx->var_index; i++) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
+        spss_varinfo_t *info = ctx->varinfo[i];
 
         if (last_info == NULL || strcmp(info->name, last_info->name) != 0) {
             varlookup_t *entry = &table[offset++];
@@ -104,8 +104,9 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
         action set_long_name {
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
-                memcpy(ctx->varinfo[found->index].longname, temp_val, str_len);
-                ctx->varinfo[found->index].longname[str_len] = '\0';
+                spss_varinfo_t *info = ctx->varinfo[found->index];
+                memcpy(info->longname, temp_val, str_len);
+                info->longname[str_len] = '\0';
             } else if (ctx->handle.error) {
                 snprintf(error_buf, sizeof(error_buf), "Failed to find %s", temp_key);
                 ctx->handle.error(error_buf, ctx->user_ctx);
@@ -209,7 +210,7 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
         action set_width {
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
-                ctx->varinfo[found->index].string_length = temp_val;
+                ctx->varinfo[found->index]->string_length = temp_val;
             }
         }
 

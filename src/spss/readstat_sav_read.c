@@ -286,10 +286,11 @@ cleanup:
 
 static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
-    sav_variable_record_t variable;
+    sav_variable_record_t variable = { 0 };
+    spss_varinfo_t *info = NULL;
     readstat_error_t retval = READSTAT_OK;
     if (ctx->var_index == ctx->varinfo_capacity) {
-        if ((ctx->varinfo = readstat_realloc(ctx->varinfo, (ctx->varinfo_capacity *= 2) * sizeof(spss_varinfo_t))) == NULL) {
+        if ((ctx->varinfo = readstat_realloc(ctx->varinfo, (ctx->varinfo_capacity *= 2) * sizeof(spss_varinfo_t *))) == NULL) {
             retval = READSTAT_ERROR_MALLOC;
             goto cleanup;
         }
@@ -307,12 +308,14 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
             return READSTAT_ERROR_PARSE;
         }
         ctx->var_offset++;
-        spss_varinfo_t *prev = &ctx->varinfo[ctx->var_index-1];
-        prev->width++;
+        ctx->varinfo[ctx->var_index-1]->width++;
         return 0;
     }
-    spss_varinfo_t *info = &ctx->varinfo[ctx->var_index];
-    memset(info, 0, sizeof(spss_varinfo_t));
+
+    if ((info = readstat_calloc(1, sizeof(spss_varinfo_t))) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
     info->width = 1;
     info->n_segments = 1;
     info->index = ctx->var_index;
@@ -356,11 +359,17 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
         }
     }
     
+    ctx->varinfo[ctx->var_index] = info;
+
     ctx->var_index++;
     ctx->var_offset++;
     
 cleanup:
-    
+    if (retval != READSTAT_OK) {
+        if (info)
+            free(info);
+    }
+
     return retval;
 }
 
@@ -528,12 +537,11 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
             var_offset = byteswap4(var_offset);
 
         var_offset--; // Why subtract 1????
-        spss_varinfo_t *var = bsearch(&var_offset, ctx->varinfo, ctx->var_index, sizeof(spss_varinfo_t),
+        spss_varinfo_t **var = bsearch(&var_offset, ctx->varinfo, ctx->var_index, sizeof(spss_varinfo_t *),
                 &spss_varinfo_compare);
         if (var) {
-            var->labels_index = ctx->value_labels_count;
-
-            value_type = var->type;
+            (*var)->labels_index = ctx->value_labels_count;
+            value_type = (*var)->type;
         }
     }
 
@@ -654,8 +662,8 @@ static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len
     int var_index = 0, col = 0;
 
     while (data_offset < buffer_len && col < ctx->var_index) {
-        spss_varinfo_t *col_info = &ctx->varinfo[col];
-        spss_varinfo_t *var_info = &ctx->varinfo[var_index];
+        spss_varinfo_t *col_info = ctx->varinfo[col];
+        spss_varinfo_t *var_info = ctx->varinfo[var_index];
         readstat_value_t value = { .type = var_info->type };
         if (offset > 31) {
             retval = READSTAT_ERROR_PARSE;
@@ -719,11 +727,12 @@ static readstat_error_t sav_read_data(sav_ctx_t *ctx) {
     int longest_string = 256;
     int i;
 
-    for (i=0; i<ctx->var_count; i++) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
+    for (i=0; i<ctx->var_index;) {
+        spss_varinfo_t *info = ctx->varinfo[i];
         if (info->string_length > longest_string) {
             longest_string = info->string_length;
         }
+        i += info->n_segments;
     }
 
     ctx->raw_string_len = longest_string + sizeof(SAV_EIGHT_SPACES)-2;
@@ -937,7 +946,7 @@ static readstat_error_t sav_parse_variable_display_parameter_record(sav_ctx_t *c
     int has_display_width = ctx->var_count > 0 && (count / ctx->var_count == 3);
     int offset = 0;
     for (i=0; i<ctx->var_index;) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
+        spss_varinfo_t *info = ctx->varinfo[i];
         info->measure = spss_measure_to_readstat_measure(ctx->variable_display_values[offset++]);
         if (has_display_width) {
             info->display_width = ctx->variable_display_values[offset++];
@@ -991,7 +1000,7 @@ static readstat_error_t sav_parse_long_value_labels_record(const void *data, siz
     data_ptr += label_name_len;
 
     for (i=0; i<ctx->var_index;) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
+        spss_varinfo_t *info = ctx->varinfo[i];
         if (strcmp(var_name_buf, info->longname) == 0) {
             info->labels_index = ctx->value_labels_count++;
             snprintf(label_name_buf, sizeof(label_name_buf),
@@ -1298,7 +1307,7 @@ static void sav_set_n_segments_and_var_count(sav_ctx_t *ctx) {
     int i;
     ctx->var_count = 0;
     for (i=0; i<ctx->var_index;) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
+        spss_varinfo_t *info = ctx->varinfo[i];
         if (info->string_length) {
             info->n_segments = (info->string_length + 251) / 252;
         }
@@ -1318,7 +1327,7 @@ static readstat_error_t sav_handle_variables(sav_ctx_t *ctx) {
 
     for (i=0; i<ctx->var_index;) {
         char label_name_buf[256];
-        spss_varinfo_t *info = &ctx->varinfo[i];
+        spss_varinfo_t *info = ctx->varinfo[i];
         ctx->variables[info->index] = spss_init_variable_for_info(info, index_after_skipping);
 
         snprintf(label_name_buf, sizeof(label_name_buf), SAV_LABEL_NAME_PREFIX "%d", info->labels_index);
@@ -1349,7 +1358,7 @@ static readstat_error_t sav_handle_fweight(sav_ctx_t *ctx) {
     int i;
     if (ctx->handle.fweight && ctx->fweight_index >= 0) {
         for (i=0; i<ctx->var_index;) {
-            spss_varinfo_t *info = &ctx->varinfo[i];
+            spss_varinfo_t *info = ctx->varinfo[i];
             if (info->offset == ctx->fweight_index - 1) {
                 if (ctx->handle.fweight(ctx->variables[info->index], ctx->user_ctx) != READSTAT_HANDLER_OK) {
                     retval = READSTAT_ERROR_USER_ABORT;
