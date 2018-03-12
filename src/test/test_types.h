@@ -72,17 +72,17 @@ typedef struct rt_test_group_s {
 
 
 typedef struct rt_error_s {
-    readstat_value_t    received;
-    readstat_value_t    expected;
+    readstat_value_t received;
+    readstat_value_t expected;
 
-    rt_test_file_t     *file;
-    long                file_format;
-    const char         *file_extension;
+    rt_test_file_t  *file;
+    long             file_format;
+    const char      *file_extension;
 
-    readstat_off_t      pos;
-    long                var_index;
-    long                obs_index;
-    char                msg[256];
+    size_t           pos;
+    long             var_index;
+    long             obs_index;
+    char             msg[256];
 } rt_error_t;
 
 typedef struct rt_buffer_s {
@@ -92,8 +92,8 @@ typedef struct rt_buffer_s {
 } rt_buffer_t;
 
 typedef struct rt_buffer_ctx_s {
-    rt_buffer_t     *buffer;
-    readstat_off_t   pos;
+    rt_buffer_t  *buffer;
+    size_t       pos;
 } rt_buffer_ctx_t;
 
 typedef struct rt_parse_ctx_s {
