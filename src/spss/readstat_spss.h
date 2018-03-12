@@ -73,7 +73,7 @@ typedef struct spss_varinfo_s {
     int              index;
     int              offset;
     int              width;
-    int              string_length;
+    unsigned int     string_length;
     spss_format_t    print_format;
     spss_format_t    write_format;
     int              n_segments;

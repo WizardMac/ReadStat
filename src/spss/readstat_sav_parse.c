@@ -968,7 +968,7 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     readstat_error_t retval = READSTAT_OK;
 
     char temp_key[8*4+1];
-    int temp_val = 0;
+    unsigned int temp_val = 0;
     unsigned char *str_start = NULL;
     size_t str_len = 0;
 
