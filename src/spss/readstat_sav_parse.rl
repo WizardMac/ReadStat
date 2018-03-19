@@ -89,6 +89,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
                 (readstat_iconv_inbuf_t)&data, &input_len,
                 (char **)&pe, &output_len);
         if (status == (size_t)-1) {
+            free(table);
             free(output_buffer);
             return READSTAT_ERROR_PARSE;
         }
