@@ -724,7 +724,7 @@ done:
 
 static readstat_error_t sav_read_data(sav_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
-    int longest_string = 256;
+    size_t longest_string = 256;
     int i;
 
     for (i=0; i<ctx->var_index;) {
