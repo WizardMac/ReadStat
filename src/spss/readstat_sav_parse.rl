@@ -198,6 +198,7 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
                 (char **)&pe, &output_len);
         if (status == (size_t)-1) {
             free(output_buffer);
+            free(error_buf);
             return READSTAT_ERROR_PARSE;
         }
     } else {

@@ -993,6 +993,7 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
                 (char **)&pe, &output_len);
         if (status == (size_t)-1) {
             free(output_buffer);
+            free(error_buf);
             return READSTAT_ERROR_PARSE;
         }
     } else {
@@ -1003,12 +1004,12 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     int cs;
     
     
-#line 1007 "src/spss/readstat_sav_parse.c"
+#line 1008 "src/spss/readstat_sav_parse.c"
 	{
 	cs = sav_very_long_string_parse_start;
 	}
 
-#line 1012 "src/spss/readstat_sav_parse.c"
+#line 1013 "src/spss/readstat_sav_parse.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -1083,7 +1084,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 211 "src/spss/readstat_sav_parse.rl"
+#line 212 "src/spss/readstat_sav_parse.rl"
 	{
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
@@ -1092,14 +1093,14 @@ _match:
         }
 	break;
 	case 1:
-#line 218 "src/spss/readstat_sav_parse.rl"
+#line 219 "src/spss/readstat_sav_parse.rl"
 	{
             memcpy(temp_key, str_start, str_len);
             temp_key[str_len] = '\0';
         }
 	break;
 	case 2:
-#line 223 "src/spss/readstat_sav_parse.rl"
+#line 224 "src/spss/readstat_sav_parse.rl"
 	{
             if ((*p) != '\0') { 
                 temp_val = 10 * temp_val + ((*p) - '0'); 
@@ -1107,18 +1108,18 @@ _match:
         }
 	break;
 	case 3:
-#line 235 "src/spss/readstat_sav_parse.rl"
+#line 236 "src/spss/readstat_sav_parse.rl"
 	{ str_start = p; }
 	break;
 	case 4:
-#line 235 "src/spss/readstat_sav_parse.rl"
+#line 236 "src/spss/readstat_sav_parse.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 5:
-#line 237 "src/spss/readstat_sav_parse.rl"
+#line 238 "src/spss/readstat_sav_parse.rl"
 	{ temp_val = 0; }
 	break;
-#line 1122 "src/spss/readstat_sav_parse.c"
+#line 1123 "src/spss/readstat_sav_parse.c"
 		}
 	}
 
@@ -1131,7 +1132,7 @@ _again:
 	_out: {}
 	}
 
-#line 245 "src/spss/readstat_sav_parse.rl"
+#line 246 "src/spss/readstat_sav_parse.rl"
 
     
     if (cs < 36 || p != pe) {
