@@ -1253,6 +1253,33 @@ static rt_test_group_t _test_groups[] = {
             },
 
             {
+                .label = "DTA negative value labels",
+                .test_formats = RT_FORMAT_DTA_105_AND_NEWER,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "somelbl",
+                        .type = READSTAT_TYPE_INT32,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            { .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = -1 } },
+                              .label = "Negative One" },
+
+                            { .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 1 } },
+                              .label = "Positive One" }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .label_set = "somelbl"
+                    }
+                }
+            },
+
+            {
                 .label = "DTA tagged value labels",
                 .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
                 .label_sets_count = 1,
