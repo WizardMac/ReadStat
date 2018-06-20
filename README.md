@@ -96,9 +96,15 @@ The `<output file>` should end with `.dta`, `.sav`, or `.csv`.
 
 The `<input file.csv>` is a regular CSV file.
 
-The `<input metadata.json>` is a JSON file describing column types, value labels and missing values.
-The schema of this JSON file is fully described in [variablemetadata_schema.json](variablemetadata_schema.json)
-using [JSON Schema](http://json-schema.org/).
+The `<input metadata.json>` is a JSON file describing column types, value
+labels and missing values. The easiest way to create such a metadata file is to
+use the provided `extract_metadata` program on an existing file:
+
+    $ extract_metadata <input file.(dta|sav|sas7bcat)>
+
+The schema of this JSON file is fully described in
+[variablemetadata_schema.json](variablemetadata_schema.json) using [JSON
+Schema](http://json-schema.org/).
 
 The following is an example of a valid metadata file:
 
