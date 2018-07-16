@@ -17,7 +17,7 @@ AC_SUBST([SANITIZERS])
 AC_CANONICAL_HOST
 AS_CASE([$host],
 	[*darwin*], [EXTRA_LIBS="-liconv"],
-	[*linux*], [EXTRA_LIBS="-lm"],
+	[*linux*|*bsd*], [EXTRA_LIBS="-lm"],
 	[*mingw*|*cygwin*], [AS_IF([test "x$static_iconv" = "xyes"],
                                [EXTRA_LIBS="-lm"],
                                [EXTRA_LIBS="-liconv -lm"])],
