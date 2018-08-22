@@ -33,6 +33,7 @@ Language Bindings
 ==
 
 * Julia: [ReadStat.jl](https://github.com/WizardMac/ReadStat.jl)
+* Python: [pyreadstat](https://github.com/Roche/pyreadstat)
 * R: [haven](https://github.com/hadley/haven)
 
 
