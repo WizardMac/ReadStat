@@ -86,12 +86,10 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
         }
-        size_t label_len = sas_read2(&lbp2[8], ctx->bswap);
-        size_t value_entry_len = 6 + lbp1[2];
-        const char *label = &lbp2[10];
-        char string_val[4*16+1];
         readstat_value_t value = { .type = is_string ? READSTAT_TYPE_STRING : READSTAT_TYPE_DOUBLE };
         if (is_string) {
+            size_t value_entry_len = 6 + lbp1[2];
+            char string_val[4*16+1];
             retval = readstat_convert(string_val, sizeof(string_val),
                     &lbp1[value_entry_len-16], 16, ctx->converter);
             if (retval != READSTAT_OK)
@@ -115,7 +113,14 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
 
             value.v.double_value = dval;
         }
+        size_t label_len = sas_read2(&lbp2[8], ctx->bswap);
         if (ctx->value_label_handler) {
+            char label[4*label_len+1];
+            retval = readstat_convert(label, sizeof(label),
+                    &lbp2[10], label_len, ctx->converter);
+            if (retval != READSTAT_OK)
+                goto cleanup;
+
             if (ctx->value_label_handler(name, value, label, ctx->user_ctx) != READSTAT_HANDLER_OK) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
