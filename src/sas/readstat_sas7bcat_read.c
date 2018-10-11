@@ -373,7 +373,7 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
     if (ctx->metadata_handler) {
         char file_label[4*64+1];
         readstat_metadata_t metadata = { 
-            .file_encoding = hinfo->encoding, 
+            .file_encoding = ctx->input_encoding, /* orig encoding? */
             .modified_time = hinfo->modification_time,
             .creation_time = hinfo->creation_time,
             .file_format_version = hinfo->major_version,
