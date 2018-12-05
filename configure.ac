@@ -26,6 +26,7 @@ AC_SUBST([EXTRA_LIBS])
 
 AS_CASE([$host],
 	[*mingw*], [EXTRA_WARNINGS="-Wno-pedantic-ms-format -Wno-stringop-truncation"],
+    [*cygwin*], [EXTRA_WARNINGS="-Wno-unused-const-variable"],
     [EXTRA_WARNINGS=""])
 AC_SUBST([EXTRA_WARNINGS])
 
