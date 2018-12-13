@@ -45,3 +45,6 @@ test_double_decimals
 *.csv
 *.json
 *.py
+**/*.vcxproj.user
+Debug/
+Release/

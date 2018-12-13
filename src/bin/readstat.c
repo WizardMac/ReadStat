@@ -1,10 +1,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
+#if !defined _MSC_VER
+#   include <unistd.h>
+#endif
 #include <errno.h>
 #include <time.h>
-#include <sys/time.h>
+#if !defined _MSC_VER
+#   include <sys/time.h>
+#else
+#   define READSTAT_VERSION "0.2.0"
+#   include <sys/timeb.h>
+#   include <sys/types.h>
+#   include <winsock2.h>
+
+#   define __need_clock_t
+#   include <time.h>
+
+int gettimeofday(struct timeval* t, void* timezone)
+{
+    struct _timeb timebuffer;
+    _ftime_s(&timebuffer);
+    t->tv_sec = timebuffer.time;
+    t->tv_usec = 1000 * timebuffer.millitm;
+    return 0;
+}
+#endif
 #include <sys/stat.h>
 
 #include "../readstat.h"
@@ -319,7 +340,11 @@ cleanup:
             fprintf(stderr, "Error opening %s: File exists (Use -f to overwrite)\n", output_filename);
         } else {
             fprintf(stderr, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
+#if !defined _MSC_VER
             unlink(output_filename);
+#else
+            _unlink(output_filename);
+#endif
         }
         return 1;
     }
@@ -358,7 +383,13 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
     }
     if (timestamp) {
         char buffer[128];
+#if !defined _MSC_VER
         strftime(buffer, sizeof(buffer), "%d %b %Y %H:%M", localtime(&timestamp));
+#else
+        struct tm ltm;
+        localtime_s(&ltm, &timestamp);
+        strftime(buffer, sizeof(buffer), "%d %b %Y %H:%M", &ltm);
+#endif
         printf("Timestamp: %s\n", buffer);
     }
     return 0;
