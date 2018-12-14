@@ -4,7 +4,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
-#include <unistd.h>
+#if !defined(_MSC_VER)
+#   include <unistd.h>
+#endif
 #include <time.h>
 
 #include "../readstat.h"
@@ -495,7 +497,11 @@ cleanup:
 static readstat_error_t dta_emit_characteristics(readstat_writer_t *writer, dta_ctx_t *ctx) {
     readstat_error_t error = READSTAT_OK;
     int i;
+#if !defined _MSC_VER
     char buffer[ctx->ch_metadata_len];
+#else
+    char * buffer = malloc((sizeof(char))*(ctx->ch_metadata_len + 1));
+#endif
 
     if (ctx->expansion_len_len == 0)
         return READSTAT_OK;
@@ -553,6 +559,9 @@ static readstat_error_t dta_emit_characteristics(readstat_writer_t *writer, dta_
         goto cleanup;
 
 cleanup:
+#if defined _MSC_VER
+    free(buffer);
+#endif
     return error;
 }
 

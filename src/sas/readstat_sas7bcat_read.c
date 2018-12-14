@@ -115,16 +115,32 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
             value.v.double_value = dval;
         }
         if (ctx->value_label_handler) {
+#if !defined _MSC_VER
             char label[4*label_len+1];
             retval = readstat_convert(label, sizeof(label),
                     &lbp2[10], label_len, ctx->converter);
-            if (retval != READSTAT_OK)
+#else
+            char * label = malloc((sizeof(char))*(4 * label_len + 1 + 1));
+            retval = readstat_convert(label, (4 * label_len + 1),
+                &lbp2[10], label_len, ctx->converter);
+#endif
+            if (retval != READSTAT_OK) {
+#if defined _MSC_VER
+                free(label);
+#endif
                 goto cleanup;
+            }
 
             if (ctx->value_label_handler(name, value, label, ctx->user_ctx) != READSTAT_HANDLER_OK) {
                 retval = READSTAT_ERROR_USER_ABORT;
+#if defined _MSC_VER
+                free(label);
+#endif
                 goto cleanup;
             }
+#if defined _MSC_VER
+            free(label);
+#endif
         }
 
         lbp2 += 8 + 2 + label_len + 1;

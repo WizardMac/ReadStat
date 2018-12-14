@@ -2,9 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
+#if !defined(_MSC_VER)
+#   include <unistd.h>
+#endif
 #include <errno.h>
-#include <sys/time.h>
+#if !defined(_MSC_VER)
+#   include <sys/time.h>
+#endif
 
 #include "../readstat.h"
 #include "../readstat_iconv.h"
@@ -21,8 +25,11 @@
 
 static void dump_buffer(rt_buffer_t *buffer, long format) {
     char filename[128];
-    snprintf(filename, sizeof(filename), "/tmp/test_readstat.%s", 
-            file_extension(format));
+#if !defined _MSC_VER
+    snprintf(filename, sizeof(filename), "/tmp/test_readstat.%s", file_extension(format));
+#else
+    snprintf(filename, sizeof(filename), "test_readstat.%s", file_extension(format));
+#endif
 #if DEBUG
     printf("Writing file buffer to %s\n", filename);
     int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);

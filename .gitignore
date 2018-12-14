@@ -46,3 +46,6 @@ generate_corpus
 *.csv
 *.json
 *.py
+**/*.vcxproj.user
+Debug/
+Release/
