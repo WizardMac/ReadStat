@@ -114,7 +114,9 @@ readstat_error_t readstat_parse_csv(readstat_parser_t *parser, const char *path,
             .row_count = md->rows,
             .var_count = md->_columns
         };
-        md->handle.metadata(&metadata, user_ctx);
+        if (md->handle.metadata(&metadata, user_ctx) == READSTAT_HANDLER_ABORT) {
+            retval = READSTAT_ERROR_TOO_FEW_COLUMNS;
+        }
     }
 
 cleanup:

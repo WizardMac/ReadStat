@@ -236,11 +236,9 @@ static int handle_value(int obs_index, readstat_variable_t *old_variable, readst
             if (error != READSTAT_OK)
                 goto cleanup;
         }
-        if (var_index == 0) {
-            error = readstat_begin_row(writer);
-            if (error != READSTAT_OK)
-                goto cleanup;
-        }
+        error = readstat_begin_row(writer);
+        if (error != READSTAT_OK)
+            goto cleanup;
     }
 
     if (readstat_value_is_system_missing(value)) {

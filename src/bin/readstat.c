@@ -257,6 +257,7 @@ static int convert_file(const char *input_filename, const char *catalog_filename
         error_filename = catalog_filename;
     } else if (catalog_filename && input_format == RS_FORMAT_CSV) {
         #if HAVE_CSVREADER
+            readstat_set_metadata_handler(pass1_parser, &handle_metadata);
             error = readstat_parse_csv(pass1_parser, input_filename, catalog_filename, &csv_meta, rs_ctx);
             error_filename = input_filename;
         #else
