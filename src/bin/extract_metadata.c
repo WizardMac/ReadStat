@@ -75,11 +75,11 @@ int handle_variable_sav(int index, readstat_variable_t *variable, const char *va
     int sav_date = format && (strcmp(format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
     int decimals = -1;
 
-    if (variable->type == READSTAT_TYPE_STRING) {
+    if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_STRING) {
         type = "STRING";
     } else if (sav_date) {
         type = "DATE";
-    } else if (variable->type == READSTAT_TYPE_DOUBLE) {
+    } else if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_NUMERIC) {
         type = "NUMERIC";
         decimals = extract_decimals(format, 'F');
     } else {
@@ -118,11 +118,11 @@ int handle_variable_dta(int index, readstat_variable_t *variable, const char *va
     int dta_date = format && (strcmp(format, "%td") == 0) && variable->type == READSTAT_TYPE_INT32;
     int decimals = -1;
 
-    if (variable->type == READSTAT_TYPE_STRING) {
+    if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_STRING) {
         type = "STRING";
     } else if (dta_date) {
         type = "DATE";
-    } else if (variable->type == READSTAT_TYPE_DOUBLE) {
+    } else if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_NUMERIC) {
         type = "NUMERIC";
         decimals = extract_decimals(format, '%');
     } else {
