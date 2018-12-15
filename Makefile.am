@@ -266,7 +266,42 @@ noinst_PROGRAMS += \
 	fuzz_format_sav \
 	fuzz_format_sas7bcat \
 	fuzz_format_sas7bdat \
-	fuzz_format_xport
+	fuzz_format_xport \
+	fuzz_grammar_dta_timestamp \
+	fuzz_grammar_por_double \
+	fuzz_grammar_sav_date \
+	fuzz_grammar_sav_time \
+	fuzz_grammar_spss_format
+
+fuzz_grammar_dta_timestamp_SOURCES = \
+	src/fuzz/fuzz_grammar_dta_timestamp.c
+
+fuzz_grammar_dta_timestamp_LDADD = libreadstat.la
+fuzz_grammar_dta_timestamp_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_grammar_por_double_SOURCES = \
+	src/fuzz/fuzz_grammar_por_double.c
+
+fuzz_grammar_por_double_LDADD = libreadstat.la
+fuzz_grammar_por_double_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_grammar_sav_date_SOURCES = \
+	src/fuzz/fuzz_grammar_sav_date.c
+
+fuzz_grammar_sav_date_LDADD = libreadstat.la
+fuzz_grammar_sav_date_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_grammar_sav_time_SOURCES = \
+	src/fuzz/fuzz_grammar_sav_time.c
+
+fuzz_grammar_sav_time_LDADD = libreadstat.la
+fuzz_grammar_sav_time_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_grammar_spss_format_SOURCES = \
+	src/fuzz/fuzz_grammar_spss_format.c
+
+fuzz_grammar_spss_format_LDADD = libreadstat.la
+fuzz_grammar_spss_format_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_dta_SOURCES = \
 	src/fuzz/fuzz_format.c \
