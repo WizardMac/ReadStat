@@ -105,9 +105,10 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
             double dval = NAN;
             if ((val | 0xFF0000000000) == 0xFFFFFFFFFFFF) {
                 value.tag = (val >> 40);
-                if (value.tag) {
+                if (sas_validate_tag(value.tag) == READSTAT_OK) {
                     value.is_tagged_missing = 1;
                 } else {
+                    value.tag = 0;
                     value.is_system_missing = 1;
                 }
             } else {
