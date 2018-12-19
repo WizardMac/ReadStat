@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include "../../readstat.h"
-#include "../format.h"
+#include "../util/file_format.h"
 
 #include "produce_csv_column_header.h"
 #include "produce_value_label.h"

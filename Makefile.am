@@ -51,7 +51,7 @@ if HAVE_RAGEL
 	$(AM_V_GEN)$(RAGEL) $(RAGELFLAGS) -C $< -o $@
 endif
 
-libreadstat_la_CFLAGS = -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
+libreadstat_la_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
 libreadstat_la_LIBADD = @EXTRA_LIBS@
 libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@
 
@@ -98,31 +98,31 @@ noinst_HEADERS = \
        src/spss/readstat_zsav_write.h \
        src/stata/readstat_dta.h \
        src/stata/readstat_dta_parse_timestamp.h \
-       src/bin/module.h \
-       src/bin/format.h \
        src/bin/extract_metadata.h \
-       src/bin/extract_label_set.h \
-       src/bin/write_missing_values.h \
-       src/bin/write_value_labels.h \
-       src/bin/module_util.h \
-       src/bin/modules/double_decimals.h \
-       src/bin/modules/mod_csv.h \
-       src/bin/modules/jsmn.h \
-       src/bin/modules/json_metadata.h \
-       src/bin/modules/produce_csv_value_dta.h \
-       src/bin/modules/produce_csv_value_sav.h \
-       src/bin/modules/produce_csv_value_csv.h \
-       src/bin/modules/produce_csv_value.h \
-       src/bin/modules/produce_csv_column_header.h \
-       src/bin/modules/produce_value_label.h \
-       src/bin/modules/produce_value_label_dta.h \
-       src/bin/modules/produce_value_label_sav.h \
-       src/bin/modules/produce_missingness.h \
-       src/bin/modules/produce_missingness_dta.h \
-       src/bin/modules/produce_missingness_sav.h \
-       src/bin/modules/mod_csv_reader.h \
-       src/bin/modules/mod_readstat.h \
-       src/bin/modules/mod_xlsx.h \
+       src/bin/read/jsmn.h \
+       src/bin/read/json_metadata.h \
+       src/bin/read/mod_csv_reader.h \
+       src/bin/read/produce_csv_column_header.h \
+       src/bin/read/produce_csv_value.h \
+       src/bin/read/produce_csv_value_csv.h \
+       src/bin/read/produce_csv_value_dta.h \
+       src/bin/read/produce_csv_value_sav.h \
+       src/bin/read/produce_missingness.h \
+       src/bin/read/produce_missingness_dta.h \
+       src/bin/read/produce_missingness_sav.h \
+       src/bin/read/produce_value_label.h \
+       src/bin/read/produce_value_label_dta.h \
+       src/bin/read/produce_value_label_sav.h \
+       src/bin/write/double_decimals.h \
+       src/bin/write/json/write_missing_values.h \
+       src/bin/write/json/write_value_labels.h \
+       src/bin/write/mod_csv.h \
+       src/bin/write/mod_readstat.h \
+       src/bin/write/mod_xlsx.h \
+       src/bin/write/module.h \
+       src/bin/write/module_util.h \
+       src/bin/util/file_format.h \
+       src/bin/util/quote_and_escape.h \
        src/bin/util/readstat_dta_days.h \
        src/bin/util/readstat_sav_date.h \
        src/test/test_buffer.h \
@@ -146,24 +146,25 @@ noinst_PROGRAMS = \
 
 readstat_SOURCES = \
 	src/bin/readstat.c \
-	src/bin/format.c \
-	src/bin/module_util.c \
-	src/bin/modules/double_decimals.c \
-	src/bin/modules/jsmn.c \
-	src/bin/modules/json_metadata.c \
-	src/bin/modules/produce_csv_value_dta.c \
-	src/bin/modules/produce_csv_value_sav.c \
-	src/bin/modules/produce_csv_value_csv.c \
-	src/bin/modules/produce_csv_value.c \
-	src/bin/modules/produce_value_label.c \
-	src/bin/modules/produce_value_label_dta.c \
-	src/bin/modules/produce_value_label_sav.c \
-	src/bin/modules/produce_missingness.c \
-	src/bin/modules/produce_missingness_dta.c \
-	src/bin/modules/produce_missingness_sav.c \
-	src/bin/modules/produce_csv_column_header.c \
-	src/bin/modules/mod_csv.c \
-	src/bin/modules/mod_readstat.c \
+	src/bin/read/jsmn.c \
+	src/bin/read/json_metadata.c \
+	src/bin/read/produce_csv_column_header.c \
+	src/bin/read/produce_csv_value.c \
+	src/bin/read/produce_csv_value_csv.c \
+	src/bin/read/produce_csv_value_dta.c \
+	src/bin/read/produce_csv_value_sav.c \
+	src/bin/read/produce_missingness.c \
+	src/bin/read/produce_missingness_dta.c \
+	src/bin/read/produce_missingness_sav.c \
+	src/bin/read/produce_value_label.c \
+	src/bin/read/produce_value_label_dta.c \
+	src/bin/read/produce_value_label_sav.c \
+	src/bin/write/double_decimals.c \
+	src/bin/write/mod_csv.c \
+	src/bin/write/mod_readstat.c \
+	src/bin/write/module_util.c \
+	src/bin/util/file_format.c \
+	src/bin/util/quote_and_escape.c \
 	src/bin/util/readstat_dta_days.c \
 	src/bin/util/readstat_sav_date.c
 
@@ -174,11 +175,11 @@ readstat_CFLAGS += -DHAVE_ZLIB=1
 endif
 
 extract_metadata_SOURCES = \
-	src/bin/format.c \
-	src/bin/extract_label_set.c \
-	src/bin/write_missing_values.c \
-	src/bin/write_value_labels.c \
 	src/bin/extract_metadata.c \
+	src/bin/write/json/write_missing_values.c \
+	src/bin/write/json/write_value_labels.c \
+	src/bin/util/file_format.c \
+	src/bin/util/quote_and_escape.c \
 	src/bin/util/readstat_dta_days.c \
 	src/bin/util/readstat_sav_date.c
 
@@ -186,13 +187,13 @@ extract_metadata_LDADD = libreadstat.la
 extract_metadata_CFLAGS = -Wall -Werror -pedantic-errors -std=c99
 
 if HAVE_XLSXWRITER
-readstat_SOURCES += src/bin/modules/mod_xlsx.c
+readstat_SOURCES += src/bin/write/mod_xlsx.c
 readstat_LDADD += -lxlsxwriter
 readstat_CFLAGS += -DHAVE_XLSXWRITER=1
 endif
 
 if HAVE_CSVREADER
-readstat_SOURCES += src/bin/modules/mod_csv_reader.c
+readstat_SOURCES += src/bin/read/mod_csv_reader.c
 readstat_LDADD += -lcsv
 readstat_CFLAGS += -DHAVE_CSVREADER=1
 endif
@@ -215,7 +216,7 @@ test_readstat_SOURCES = \
 	src/test/test_write.c
 
 test_readstat_LDADD = libreadstat.la
-test_readstat_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 -DDEBUG=1
+test_readstat_CFLAGS = -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 -DDEBUG=1
 
 test_dta_days_SOURCES = \
 	src/bin/util/readstat_dta_days.c \
@@ -232,7 +233,7 @@ test_sav_date_LDADD = libreadstat.la
 test_sav_date_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
 
 test_double_decimals_SOURCES = \
-	src/bin/modules/double_decimals.c \
+	src/bin/write/double_decimals.c \
 	src/test/test_double_decimals.c
 
 test_double_decimals_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99

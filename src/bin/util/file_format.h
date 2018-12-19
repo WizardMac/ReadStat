@@ -14,10 +14,10 @@ enum {
     RS_FORMAT_JSON
 };
 
-int format(const char *filename);
-
-#include "../readstat.h"
-
-const char* readstat_type_str(readstat_type_t type);
+int readstat_format(const char *filename);
+const char *readstat_format_name(int format);
+int is_catalog(const char *filename);
+int is_json(const char *filename);
+int can_read(const char *filename);
 
 #endif

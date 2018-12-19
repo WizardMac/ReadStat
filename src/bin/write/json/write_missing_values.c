@@ -1,4 +1,3 @@
-#include "../readstat.h"
 #include <stdio.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -6,13 +5,14 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "util/readstat_sav_date.h"
-#include "util/readstat_dta_days.h"
+#include "../../../readstat.h"
+#include "../../util/readstat_sav_date.h"
+#include "../../util/readstat_dta_days.h"
 
-#include "extract_metadata.h"
+#include "../../extract_metadata.h"
 #include "write_missing_values.h"
 
-void handle_missing_discrete(struct context *ctx, readstat_variable_t *variable) {
+static void handle_missing_discrete(struct context *ctx, readstat_variable_t *variable) {
     const char *format = readstat_variable_get_format(variable);
     int spss_date = format && (strcmp(format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
@@ -50,7 +50,7 @@ void handle_missing_discrete(struct context *ctx, readstat_variable_t *variable)
     fprintf(ctx->fp, "]} ");
 }
 
-void handle_missing_range(struct context *ctx, readstat_variable_t *variable) {
+static void handle_missing_range(struct context *ctx, readstat_variable_t *variable) {
     const char *format = readstat_variable_get_format(variable);
     int spss_date = format && (strcmp(format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);

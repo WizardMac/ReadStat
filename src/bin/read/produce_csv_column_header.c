@@ -2,14 +2,14 @@
 #include <stdlib.h>
 
 #include "../../readstat.h"
-#include "../format.h"
+#include "../util/file_format.h"
 #include "json_metadata.h"
 
 #include "produce_value_label.h"
 #include "produce_missingness.h"
 #include "produce_csv_column_header.h"
 
-void produce_column_header_csv(char *column, readstat_variable_t* var, struct csv_metadata *c) {
+static void produce_column_header_csv(char *column, readstat_variable_t* var, struct csv_metadata *c) {
     metadata_column_type_t coltype = column_type(c->json_md, column, c->output_format);
     if (coltype == METADATA_COLUMN_TYPE_DATE) {
         var->type = READSTAT_TYPE_STRING;
@@ -20,7 +20,7 @@ void produce_column_header_csv(char *column, readstat_variable_t* var, struct cs
     }
 }
 
-void produce_column_header_dta(char *column, readstat_variable_t* var, struct csv_metadata *c) {
+static void produce_column_header_dta(char *column, readstat_variable_t* var, struct csv_metadata *c) {
     metadata_column_type_t coltype = column_type(c->json_md, column, c->output_format);
     if (coltype == METADATA_COLUMN_TYPE_DATE) {
         snprintf(var->format, sizeof(var->format), "%s", "%td");
@@ -33,7 +33,7 @@ void produce_column_header_dta(char *column, readstat_variable_t* var, struct cs
     }
 }
 
-void produce_column_header_sav(char *column, readstat_variable_t* var, struct csv_metadata *c) {
+static void produce_column_header_sav(char *column, readstat_variable_t* var, struct csv_metadata *c) {
     metadata_column_type_t coltype = column_type(c->json_md, column, c->output_format);
     if (coltype == METADATA_COLUMN_TYPE_DATE) {
         var->type = READSTAT_TYPE_DOUBLE;

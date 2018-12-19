@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "../../readstat.h"
-#include "../format.h"
 #include "json_metadata.h"
 
 #include "../util/readstat_dta_days.h"

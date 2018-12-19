@@ -7,7 +7,7 @@
 #include "produce_csv_value_dta.h"
 #include "produce_csv_column_header.h"
 
-readstat_value_t value_int32_date_dta(const char *s, size_t len, struct csv_metadata *c) {
+static readstat_value_t value_int32_date_dta(const char *s, size_t len, struct csv_metadata *c) {
     readstat_variable_t *var = &c->variables[c->columns];
     char* dest;
     int val = readstat_dta_num_days(s, &dest);
@@ -44,7 +44,7 @@ readstat_value_t value_int32_date_dta(const char *s, size_t len, struct csv_meta
     return value;
 }
 
-readstat_value_t value_double_dta(const char *s, size_t len, struct csv_metadata *c) {
+static readstat_value_t value_double_dta(const char *s, size_t len, struct csv_metadata *c) {
     char *dest;
     readstat_variable_t *var = &c->variables[c->columns];
     double val = strtod(s, &dest);

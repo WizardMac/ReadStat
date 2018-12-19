@@ -1,41 +1,9 @@
 #include <string.h>
 
-#include "format.h"
-#include "../readstat.h"
+#include "file_format.h"
+#include "../../readstat.h"
 
-const char* readstat_type_str(readstat_type_t type) {
-    if (type == READSTAT_TYPE_STRING) {
-        return "READSTAT_TYPE_STRING";
-    }
-    
-    if (type == READSTAT_TYPE_INT8) {
-        return "READSTAT_TYPE_INT8";
-    }
-
-    if (type == READSTAT_TYPE_INT16) {
-        return "READSTAT_TYPE_INT16";
-    }
-
-    if (type == READSTAT_TYPE_INT32) {
-        return "READSTAT_TYPE_INT32";
-    }
-
-    if (type == READSTAT_TYPE_FLOAT) {
-        return "READSTAT_TYPE_FLOAT";
-    }
-
-    if (type == READSTAT_TYPE_DOUBLE) {
-        return "READSTAT_TYPE_DOUBLE";
-    }
-
-    if (type == READSTAT_TYPE_STRING_REF) {
-        return "READSTAT_TYPE_STRING_REF";
-    }
-
-    return "UNKNOWN TYPE";
-} 
-
-int format(const char *filename) {
+int readstat_format(const char *filename) {
     size_t len = strlen(filename);
     if (len < sizeof(".dta")-1)
         return RS_FORMAT_UNKNOWN;
@@ -77,3 +45,44 @@ int format(const char *filename) {
 
     return RS_FORMAT_UNKNOWN;
 }
+
+const char *readstat_format_name(int format) {
+    if (format == RS_FORMAT_DTA)
+        return "Stata binary file (DTA)";
+
+    if (format == RS_FORMAT_SAV)
+        return "SPSS binary file (SAV)";
+
+    if (format == RS_FORMAT_ZSAV)
+        return "SPSS compressed binary file (ZSAV)";
+
+    if (format == RS_FORMAT_POR)
+        return "SPSS portable file (POR)";
+
+    if (format == RS_FORMAT_SAS_DATA)
+        return "SAS data file (SAS7BDAT)";
+
+    if (format == RS_FORMAT_SAS_CATALOG)
+        return "SAS catalog file (SAS7BCAT)";
+    
+    if (format == RS_FORMAT_CSV)
+        return "CSV";
+
+    if (format == RS_FORMAT_XPORT)
+        return "SAS transport file (XPORT)";
+
+    return "Unknown";
+}
+
+int is_catalog(const char *filename) {
+    return (readstat_format(filename) == RS_FORMAT_SAS_CATALOG);
+}
+
+int is_json(const char *filename) {
+    return (readstat_format(filename) == RS_FORMAT_JSON);
+}
+
+int can_read(const char *filename) {
+    return (readstat_format(filename) != RS_FORMAT_UNKNOWN);
+}
+

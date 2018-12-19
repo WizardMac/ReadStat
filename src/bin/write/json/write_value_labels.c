@@ -1,4 +1,3 @@
-#include "../readstat.h"
 #include <stdio.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -6,15 +5,27 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "util/readstat_sav_date.h"
-#include "util/readstat_dta_days.h"
-#include "../readstat_iconv.h"
-#include "../stata/readstat_dta.h"
+#include "../../../readstat.h"
+#include "../../../readstat_iconv.h"
+#include "../../../stata/readstat_dta.h"
 
-#include "format.h"
-#include "extract_label_set.h"
-#include "extract_metadata.h"
+#include "../../util/readstat_sav_date.h"
+#include "../../util/readstat_dta_days.h"
+#include "../../util/quote_and_escape.h"
+#include "../../util/file_format.h"
+
+#include "../../extract_metadata.h"
 #include "write_value_labels.h"
+
+static readstat_label_set_t * get_label_set(const char *val_labels, struct context *ctx) {
+    for (int i=0; i<ctx->variable_count; i++) {
+        readstat_label_set_t * lbl = &ctx->label_set[i];
+        if (0 == strcmp(lbl->name, val_labels)) {
+            return lbl;
+        }
+    }
+    return NULL;
+}
 
 void add_val_labels(struct context *ctx, readstat_variable_t *variable, const char *val_labels) {
     if (!val_labels) {
@@ -25,7 +36,7 @@ void add_val_labels(struct context *ctx, readstat_variable_t *variable, const ch
     const char *format = readstat_variable_get_format(variable);
     int sav_date = format && (strcmp(variable->format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
     int dta_date = format && (strcmp(variable->format, "%td") == 0) && variable->type == READSTAT_TYPE_INT32;
-    readstat_label_set_t * label_set = get_label_set(val_labels, ctx, 0);
+    readstat_label_set_t * label_set = get_label_set(val_labels, ctx);
     if (!label_set) {
         fprintf(stderr, "Could not find label set %s!\n", val_labels);
         exit(EXIT_FAILURE);

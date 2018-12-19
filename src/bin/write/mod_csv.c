@@ -5,8 +5,8 @@
 #include <errno.h>
 
 #include "../../readstat.h"
-#include "../module_util.h"
-#include "../module.h"
+#include "module_util.h"
+#include "module.h"
 #include "../util/readstat_dta_days.h"
 #include "../util/readstat_sav_date.h"
 #include "double_decimals.h"
@@ -36,12 +36,16 @@ rs_module_t rs_mod_csv = {
 };
 
 static int accept_file(const char *filename) {
-    return rs_ends_with(filename, ".csv");
+    return strcmp(filename, "-") == 0 || rs_ends_with(filename, ".csv");
 }
 
 static void *ctx_init(const char *filename) {
     mod_csv_ctx_t *mod_ctx = malloc(sizeof(mod_csv_ctx_t));
-    mod_ctx->out_file = fopen(filename, "w");
+    if (strcmp(filename, "-") == 0) {
+        mod_ctx->out_file = stdout;
+    } else {
+        mod_ctx->out_file = fopen(filename, "w");
+    }
     if (mod_ctx->out_file == NULL) {
         fprintf(stderr, "Error opening %s for writing: %s\n", filename, strerror(errno));
         return NULL;
@@ -52,8 +56,11 @@ static void *ctx_init(const char *filename) {
 static void finish_file(void *ctx) {
     mod_csv_ctx_t *mod_ctx = (mod_csv_ctx_t *)ctx;
     if (mod_ctx) {
-        if (mod_ctx->out_file != NULL)
+        if (mod_ctx->out_file == stdout) {
+            fflush(mod_ctx->out_file);
+        } else if (mod_ctx->out_file != NULL) {
             fclose(mod_ctx->out_file);
+        }
     }
 }
 

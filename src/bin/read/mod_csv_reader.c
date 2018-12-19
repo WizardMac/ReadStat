@@ -14,7 +14,7 @@
 
 #define UNUSED(x) (void)(x)
 
-void csv_metadata_cell(void *s, size_t len, void *data)
+static void csv_metadata_cell(void *s, size_t len, void *data)
 {
     struct csv_metadata *c = (struct csv_metadata *)data;
     if (c->rows == 0) {
@@ -32,7 +32,7 @@ void csv_metadata_cell(void *s, size_t len, void *data)
     c->columns++;
 }
 
-void csv_metadata_row(int cc, void *data)
+static void csv_metadata_row(int cc, void *data)
 {
     UNUSED(cc);
     struct csv_metadata *c = (struct csv_metadata *)data;
