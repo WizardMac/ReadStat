@@ -1,6 +1,10 @@
 language: c
 sudo: required
 
+os:
+  - linux
+  - osx
+
 compiler:
   - clang
   - gcc
@@ -14,6 +18,13 @@ addons:
     packages:
     - gcc-7
     - gcc-8
+
+matrix:
+  exclude:
+  - compiler: gcc-7
+    os: osx
+  - compiler: gcc-8
+    os: osx
 
 before_script:
   - ./autogen.sh
