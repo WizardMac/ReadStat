@@ -130,22 +130,23 @@ static void print_version() {
     fprintf(stdout, "ReadStat version " READSTAT_VERSION "\n");
 }
 
+#if HAVE_ZLIB
+#define INPUT_FORMATS "dta|por|sav|sas7bdat|xpt|zsav"
+#else
+#define INPUT_FORMATS "dta|por|sav|sas7bdat|xpt"
+#endif
+
 static void print_usage(const char *cmd) {
     print_version();
 
     fprintf(stdout, "\n  View a file's metadata:\n");
-    fprintf(stdout, "\n     %s input.(dta|por|sav|sas7bdat|xpt"
-#if HAVE_ZLIB
-            "|zsav"
-#endif
-            ")\n", cmd);
+    fprintf(stdout, "\n     %s input.(" INPUT_FORMATS ")\n", cmd);
+
+    fprintf(stdout, "\n  Read a file, and write CSV to standard out:\n");
+    fprintf(stdout, "\n     %s input.(" INPUT_FORMATS ") -\n", cmd);
 
     fprintf(stdout, "\n  Convert a file:\n");
-    fprintf(stdout, "\n     %s input.(dta|por|sav|sas7bdat|xpt"
-#if HAVE_ZLIB
-            "|zsav"
-#endif
-            ") output.(dta|por|sav|sas7bdat|xpt"
+    fprintf(stdout, "\n     %s input.(" INPUT_FORMATS ") output.(dta|por|sav|sas7bdat|xpt"
 #if HAVE_ZLIB
             "|zsav"
 #endif
@@ -154,7 +155,11 @@ static void print_usage(const char *cmd) {
             "|xlsx"
 #endif
             ")\n", cmd);
-    fprintf(stdout, "\n  Convert a file if your value labels are stored in a separate SAS catalog file:\n");
+
+    fprintf(stdout, "\n  Convert a CSV file with column metadata stored in a separate JSON file (see extract_metadata):\n");
+    fprintf(stdout, "\n     %s input.csv metadata.json output.(dta|sav|csv)\n", cmd);
+
+    fprintf(stdout, "\n  Convert a SAS7BDAT file with value labels stored in a separate SAS catalog file:\n");
     fprintf(stdout, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|por|sav|xpt"
 #if HAVE_ZLIB
             "|zsav"
@@ -248,7 +253,7 @@ static int convert_file(const char *input_filename, const char *catalog_filename
 
     gettimeofday(&end_time, NULL);
 
-    fprintf(stdout, "Converted %ld variables and %ld rows in %.2lf seconds\n",
+    fprintf(stderr, "Converted %ld variables and %ld rows in %.2lf seconds\n",
             rs_ctx->var_count, rs_ctx->row_count, 
             (end_time.tv_sec + 1e-6 * end_time.tv_usec) -
             (start_time.tv_sec + 1e-6 * start_time.tv_usec));
