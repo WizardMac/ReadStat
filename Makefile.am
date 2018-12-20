@@ -99,20 +99,14 @@ noinst_HEADERS = \
        src/stata/readstat_dta.h \
        src/stata/readstat_dta_parse_timestamp.h \
        src/bin/extract_metadata.h \
-       src/bin/read/jsmn.h \
-       src/bin/read/json_metadata.h \
-       src/bin/read/mod_csv_reader.h \
-       src/bin/read/produce_csv_column_header.h \
-       src/bin/read/produce_csv_value.h \
-       src/bin/read/produce_csv_value_csv.h \
-       src/bin/read/produce_csv_value_dta.h \
-       src/bin/read/produce_csv_value_sav.h \
-       src/bin/read/produce_missingness.h \
-       src/bin/read/produce_missingness_dta.h \
-       src/bin/read/produce_missingness_sav.h \
-       src/bin/read/produce_value_label.h \
-       src/bin/read/produce_value_label_dta.h \
-       src/bin/read/produce_value_label_sav.h \
+       src/bin/read_csv/jsmn.h \
+       src/bin/read_csv/json_metadata.h \
+       src/bin/read_csv/mod_csv.h \
+       src/bin/read_csv/mod_dta.h \
+       src/bin/read_csv/mod_sav.h \
+       src/bin/read_csv/read_csv.h \
+       src/bin/read_csv/read_module.h \
+       src/bin/read_csv/value.h \
        src/bin/write/double_decimals.h \
        src/bin/write/json/write_missing_values.h \
        src/bin/write/json/write_value_labels.h \
@@ -146,19 +140,12 @@ noinst_PROGRAMS = \
 
 readstat_SOURCES = \
 	src/bin/readstat.c \
-	src/bin/read/jsmn.c \
-	src/bin/read/json_metadata.c \
-	src/bin/read/produce_csv_column_header.c \
-	src/bin/read/produce_csv_value.c \
-	src/bin/read/produce_csv_value_csv.c \
-	src/bin/read/produce_csv_value_dta.c \
-	src/bin/read/produce_csv_value_sav.c \
-	src/bin/read/produce_missingness.c \
-	src/bin/read/produce_missingness_dta.c \
-	src/bin/read/produce_missingness_sav.c \
-	src/bin/read/produce_value_label.c \
-	src/bin/read/produce_value_label_dta.c \
-	src/bin/read/produce_value_label_sav.c \
+	src/bin/read_csv/jsmn.c \
+	src/bin/read_csv/json_metadata.c \
+	src/bin/read_csv/mod_csv.c \
+	src/bin/read_csv/mod_dta.c \
+	src/bin/read_csv/mod_sav.c \
+	src/bin/read_csv/value.c \
 	src/bin/write/double_decimals.c \
 	src/bin/write/mod_csv.c \
 	src/bin/write/mod_readstat.c \
@@ -193,7 +180,7 @@ readstat_CFLAGS += -DHAVE_XLSXWRITER=1
 endif
 
 if HAVE_CSVREADER
-readstat_SOURCES += src/bin/read/mod_csv_reader.c
+readstat_SOURCES += src/bin/read_csv/read_csv.c
 readstat_LDADD += -lcsv
 readstat_CFLAGS += -DHAVE_CSVREADER=1
 endif

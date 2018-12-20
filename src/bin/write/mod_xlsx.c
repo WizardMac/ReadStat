@@ -6,8 +6,8 @@
 #include <xlsxwriter.h>
 
 #include "../../readstat.h"
-#include "../module_util.h"
-#include "../module.h"
+#include "module_util.h"
+#include "module.h"
 
 #define MIN_ROWS_TO_SPLIT 35
 

@@ -1,18 +1,70 @@
-#include <csv.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
 
+#include <csv.h>
+
 #include "../../readstat.h"
 
-#include "produce_csv_value.h"
-#include "produce_csv_column_header.h"
 #include "../util/readstat_dta_days.h"
 #include "json_metadata.h"
+#include "read_module.h"
+#include "csv_metadata.h"
+
+#include "mod_csv.h"
+#include "mod_dta.h"
+#include "mod_sav.h"
 
 #define UNUSED(x) (void)(x)
+
+rs_read_module_t *rs_read_module_for_filename(rs_read_module_t *modules, long module_count, int output_format) {
+    int i;
+    for (i=0; i<module_count; i++) {
+        if (modules[i].format == output_format)
+            return &modules[i];
+    }
+    return NULL;
+}
+
+static void produce_column_header(struct csv_metadata *c, void *s, size_t len) {
+    char* column = (char*)s;
+    readstat_variable_t* var = &c->variables[c->columns];
+    memset(var, 0, sizeof(readstat_variable_t));
+    metadata_column_type_t coltype = column_type(c->json_md, column, c->output_format);
+    c->is_date[c->columns] = coltype == METADATA_COLUMN_TYPE_DATE;
+
+    
+    if (coltype == METADATA_COLUMN_TYPE_STRING) {
+        var->alignment = READSTAT_ALIGNMENT_LEFT;
+    } else if (coltype == METADATA_COLUMN_TYPE_NUMERIC || coltype == METADATA_COLUMN_TYPE_DATE) {
+        var->alignment = READSTAT_ALIGNMENT_RIGHT;
+    }
+
+    if (c->output_module->header) {
+        c->output_module->header(c, column, var);
+    }
+
+    if (c->pass == 2 && coltype == METADATA_COLUMN_TYPE_STRING) {
+        var->storage_width = c->column_width[c->columns];
+    }
+    
+    var->index = c->columns;
+    copy_variable_property(c->json_md, column, "label", var->label, sizeof(var->label));
+    snprintf(var->name, sizeof(var->name), "%.*s", (int)len, column);
+
+    if (c->output_module->missingness) {
+        c->output_module->missingness(c, column);
+    }
+    if (c->output_module->value_label && c->handle.value_label) {
+        c->output_module->value_label(c, column);
+    }
+
+    if (c->handle.variable && c->pass == 2) {
+        c->handle.variable(c->columns, var, column, c->user_ctx);
+    }
+}
 
 static void csv_metadata_cell(void *s, size_t len, void *data)
 {
@@ -20,9 +72,9 @@ static void csv_metadata_cell(void *s, size_t len, void *data)
     if (c->rows == 0) {
         c->variables = realloc(c->variables, (c->columns+1) * sizeof(readstat_variable_t));
         c->is_date = realloc(c->is_date, (c->columns+1) * sizeof(int));
-        produce_column_header(s, len, data);
-    } else if (c->rows >= 1 && c->handle.value) {
-        produce_csv_column_value(s, len, data);
+        produce_column_header(c, s, len);
+    } else if (c->rows >= 1 && c->handle.value && c->output_module->csv_value) {
+        c->output_module->csv_value(c, s, len);
     }
     if (c->rows >= 1 && c->pass == 1) {
         size_t w = c->column_width[c->columns];
@@ -65,6 +117,13 @@ readstat_error_t readstat_parse_csv(readstat_parser_t *parser, const char *path,
     md->user_ctx = user_ctx;
     md->json_md = NULL;
     md->handle = parser->handlers;
+
+    rs_read_module_t modules[3] = { rs_read_mod_csv, rs_read_mod_dta, rs_read_mod_sav };
+    if ((md->output_module = rs_read_module_for_filename(modules, 3, md->output_format)) == NULL) {
+        fprintf(stderr, "Unsupported file format\n");
+        retval = READSTAT_ERROR_WRITE;
+        goto cleanup;
+    }
 
     if ((md->json_md = get_json_metadata(jsonpath)) == NULL) {
         fprintf(stderr, "Could not get JSON metadata\n");

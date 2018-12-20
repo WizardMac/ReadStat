@@ -1,9 +1,3 @@
-#ifndef __PRODUCE_CSV_COLUMN_HEADER_H
-#define __PRODUCE_CSV_COLUMN_HEADER_H
-
-#include "../../readstat.h"
-
-void produce_column_header(void *s, size_t len, void *data);
 
 typedef struct csv_metadata {
     int pass;
@@ -16,9 +10,8 @@ typedef struct csv_metadata {
     int open_row;
     readstat_callbacks_t handle;
     void *user_ctx;
-    readstat_variable_t* variables;
+    readstat_variable_t *variables;
     int* is_date;
-    struct json_metadata* json_md;
+    struct json_metadata *json_md;
+    rs_read_module_t *output_module;
 } csv_metadata;
-
-#endif

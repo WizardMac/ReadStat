@@ -2,27 +2,8 @@
 #include <stdlib.h>
 
 #include "../../readstat.h"
-#include "../util/file_format.h"
-#include "produce_csv_column_header.h"
-#include "produce_csv_value.h"
-#include "produce_csv_value_csv.h"
-#include "produce_csv_value_dta.h"
-#include "produce_csv_value_sav.h"
-
-void produce_csv_column_value(void *s, size_t len, void *data) {
-    struct csv_metadata *c = (struct csv_metadata *)data;
-    const char *ss = (const char*) s;
-    if (c->output_format == RS_FORMAT_CSV) {
-        produce_csv_value_csv(ss, len, c);
-    } else if (c->output_format == RS_FORMAT_DTA) {
-        produce_csv_value_dta(ss, len, c);
-    } else if (c->output_format == RS_FORMAT_SAV) {
-        produce_csv_value_sav(ss, len, c);
-    } else {
-        fprintf(stderr, "%s:%d unsupported output format %d\n", __FILE__, __LINE__, c->output_format);
-        exit(EXIT_FAILURE);
-    }
-}
+#include "read_module.h"
+#include "csv_metadata.h"
 
 readstat_value_t value_sysmiss(const char *s, size_t len, struct csv_metadata *c) {
     readstat_variable_t *var = &c->variables[c->columns];
