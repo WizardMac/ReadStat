@@ -37,7 +37,10 @@ libreadstat_la_SOURCES = \
 	src/stata/readstat_dta.c \
 	src/stata/readstat_dta_parse_timestamp.c \
 	src/stata/readstat_dta_read.c \
-	src/stata/readstat_dta_write.c
+	src/stata/readstat_dta_write.c \
+	src/txt/readstat_dct_read.c \
+	src/txt/readstat_schema.c \
+	src/txt/readstat_txt_read.c
 
 if HAVE_ZLIB
 libreadstat_la_SOURCES += \
