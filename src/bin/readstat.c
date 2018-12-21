@@ -12,13 +12,14 @@
 #include "write/mod_readstat.h"
 #include "write/mod_csv.h"
 
-#if HAVE_XLSXWRITER
-#include "write/mod_xlsx.h"
+#if HAVE_CSVREADER
+#include "read_csv/read_module.h"
+#include "read_csv/csv_metadata.h"
+#include "read_csv/read_csv.h"
 #endif
 
-#if HAVE_CSVREADER
-#include "modules/produce_csv_column_header.h"
-#include "modules/mod_csv_reader.h"
+#if HAVE_XLSXWRITER
+#include "write/mod_xlsx.h"
 #endif
 
 #include "util/file_format.h"
