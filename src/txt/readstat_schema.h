@@ -1,13 +1,11 @@
 
 typedef struct ds_stata_dct_entry_s {
-    int                     row;
-    int                     col;
-    int                     len;
-    readstat_type_t         type;
-    char                    varname[33];
-    char                    varformat[33];
-    char                    varlabel[81];
-    char                    decimal_separator;
+    int                 row;
+    int                 col;
+    int                 len;
+    int                 skip;
+    readstat_variable_t variable;
+    char                decimal_separator;
 } readstat_schema_entry_t;
 
 typedef struct readstat_schema_s {

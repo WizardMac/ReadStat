@@ -38,8 +38,8 @@ libreadstat_la_SOURCES = \
 	src/stata/readstat_dta_parse_timestamp.c \
 	src/stata/readstat_dta_read.c \
 	src/stata/readstat_dta_write.c \
-	src/txt/readstat_dct_read.c \
 	src/txt/readstat_schema.c \
+	src/txt/readstat_stata_dictionary_read.c \
 	src/txt/readstat_txt_read.c
 
 if HAVE_ZLIB
@@ -101,6 +101,9 @@ noinst_HEADERS = \
        src/spss/readstat_zsav_write.h \
        src/stata/readstat_dta.h \
        src/stata/readstat_dta_parse_timestamp.h \
+       src/txt/readstat_schema.h \
+       src/txt/readstat_stata_dictionary_read.h \
+       src/txt/readstat_txt_read.h \
        src/bin/extract_metadata.h \
        src/bin/read_csv/jsmn.h \
        src/bin/read_csv/json_metadata.h \

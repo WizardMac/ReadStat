@@ -2,7 +2,7 @@
 
 #include "../readstat.h"
 #include "readstat_schema.h"
-#include "readstat_dct_read.h"
+#include "readstat_stata_dictionary_read.h"
 
 %%{
     machine stata_dictionary;
@@ -10,7 +10,29 @@
 }%%
 
 readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
-    const u_char *bytes, size_t len, int *error_line_number) {
+    const char *filepath, void *user_ctx, readstat_error_t *outError) {
+    if (parser->io->open(filepath, parser->io->io_ctx) == -1) {
+        if (outError)
+            *outError = READSTAT_ERROR_OPEN;
+        return NULL;
+    }
+    readstat_schema_t *schema = NULL;
+    u_char *bytes = NULL;
+    int cb_return_value = READSTAT_HANDLER_OK;
+    int total_entry_count = 0;
+    int partial_entry_count = 0;
+    readstat_error_t error = READSTAT_OK;
+    ssize_t len = parser->io->seek(0, READSTAT_SEEK_END, parser->io->io_ctx);
+    if (len == -1) {
+        error = READSTAT_ERROR_SEEK;
+        goto cleanup;
+    }
+    parser->io->seek(0, READSTAT_SEEK_SET, parser->io->io_ctx);
+
+    bytes = malloc(len);
+
+    parser->io->read(bytes, len, parser->io->io_ctx);
+
     u_char *p = (u_char *)bytes;
     u_char *pe = (u_char *)bytes + len;
 
@@ -29,9 +51,9 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
 
     readstat_schema_entry_t current_entry;
     
-    readstat_schema_t *schema = NULL;
     if ((schema = malloc(sizeof(readstat_schema_t))) == NULL) {
-        return NULL;
+        error = READSTAT_ERROR_MALLOC;
+        goto cleanup;
     }
 
     schema->filename[0] = '\0';
@@ -53,15 +75,31 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
         action start_entry {
             memset(&current_entry, 0, sizeof(readstat_schema_entry_t));
             current_entry.decimal_separator = '.';
-            current_entry.type = READSTAT_TYPE_DOUBLE;
+            current_entry.variable.type = READSTAT_TYPE_DOUBLE;
+            current_entry.variable.index = total_entry_count;
         }
 
         action end_entry {
             current_entry.row = current_row;
             current_entry.col = current_col;
             current_col += current_entry.len;
+            cb_return_value = READSTAT_HANDLER_OK;
+            if (parser->handlers.variable) {
+                current_entry.variable.index_after_skipping = partial_entry_count;
+                cb_return_value = parser->handlers.variable(total_entry_count, &current_entry.variable, NULL, user_ctx);
+                if (cb_return_value == READSTAT_HANDLER_ABORT) {
+                    error = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
+                }
+            }
+            if (cb_return_value == READSTAT_HANDLER_SKIP_VARIABLE) {
+                current_entry.skip = 1;
+            } else {
+                partial_entry_count++;
+            } 
             schema->entries = realloc(schema->entries, sizeof(readstat_schema_entry_t) * (schema->entry_count+1));
             memcpy(&schema->entries[schema->entry_count++], &current_entry, sizeof(readstat_schema_entry_t));
+            total_entry_count++;
         }
 
         action copy_filename {
@@ -72,16 +110,16 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
         }
 
         action copy_varname {
-            if (str_len < sizeof(current_entry.varname)) {
-                memcpy(current_entry.varname, str_start, str_len);
-                current_entry.varname[str_len] = '\0';
+            if (str_len < sizeof(current_entry.variable.name)) {
+                memcpy(current_entry.variable.name, str_start, str_len);
+                current_entry.variable.name[str_len] = '\0';
             }
         }
 
         action copy_varlabel {
-            if (str_len < sizeof(current_entry.varlabel)) {
-                memcpy(current_entry.varlabel, str_start, str_len);
-                current_entry.varlabel[str_len] = '\0';
+            if (str_len < sizeof(current_entry.variable.label)) {
+                memcpy(current_entry.variable.label, str_start, str_len);
+                current_entry.variable.label[str_len] = '\0';
             }
         }
 
@@ -117,12 +155,12 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
 
         marker = lrecl_marker | firstlineoffile_marker | lines_marker | line_marker | column_marker | newline_marker;
 
-        type = "byte" %{ current_entry.type = READSTAT_TYPE_INT8; }
-            | "int" %{ current_entry.type = READSTAT_TYPE_INT16; }
-            | "long" %{ current_entry.type = READSTAT_TYPE_INT32; }
-            | "float" %{ current_entry.type = READSTAT_TYPE_FLOAT; }
-            | "double" %{ current_entry.type = READSTAT_TYPE_DOUBLE; }
-            | "str" integer %{ current_entry.type = READSTAT_TYPE_STRING; };
+        type = "byte" %{ current_entry.variable.type = READSTAT_TYPE_INT8; }
+            | "int" %{ current_entry.variable.type = READSTAT_TYPE_INT16; }
+            | "long" %{ current_entry.variable.type = READSTAT_TYPE_INT32; }
+            | "float" %{ current_entry.variable.type = READSTAT_TYPE_FLOAT; }
+            | "double" %{ current_entry.variable.type = READSTAT_TYPE_DOUBLE; }
+            | "str" integer %{ current_entry.variable.type = READSTAT_TYPE_STRING; };
 
         varname = identifier %copy_varname;
 
@@ -153,13 +191,21 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
         snprintf(error_buf, sizeof(error_buf), "Error parsing .dct file around line #%d, col #%ld (%c)",
             line_no + 1, (long)(p - line_start + 1), *p);
         if (parser->handlers.error) {
-            parser->handlers.error(error_buf, NULL);
+            parser->handlers.error(error_buf, user_ctx);
         }
         readstat_schema_free(schema);
-        if (error_line_number)
-            *error_line_number = line_no + 1;
-        
-        return NULL;
+        error = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
+cleanup:
+    parser->io->close(parser->io->io_ctx);
+    free(bytes);
+    if (error != READSTAT_OK) {
+        if (outError)
+            *outError = error;
+        readstat_schema_free(schema);
+        schema = NULL;
     }
 
     return schema;

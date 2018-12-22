@@ -6,30 +6,59 @@
 #include <stdio.h>
 
 #include "../readstat.h"
+#include "../readstat_iconv.h"
+#include "../readstat_convert.h"
 #include "readstat_schema.h"
 #include "readstat_txt_read.h"
 
-static int handle_value(int obs_index, int var_index, char *value, size_t len, void *ctx) {
-    return 0;
+static readstat_error_t handle_value(readstat_parser_t *parser, iconv_t converter,
+        int obs_index, readstat_schema_entry_t *entry, char *bytes, size_t len, void *ctx) {
+    readstat_error_t error = READSTAT_OK;
+    char converted_value[4*len+1];
+    readstat_variable_t *variable = &entry->variable;
+    readstat_value_t value = { .type = variable->type };
+    if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_STRING) {
+        error = readstat_convert(converted_value, sizeof(converted_value), bytes, len, converter);
+        if (error != READSTAT_OK)
+            goto cleanup;
+        value.v.string_value = converted_value;
+    } else if (variable->type == READSTAT_TYPE_DOUBLE) { 
+        value.v.double_value = strtod(bytes, NULL);
+    } else if (variable->type == READSTAT_TYPE_FLOAT) {
+        value.v.float_value = strtof(bytes, NULL);
+    } else {
+        value.v.i32_value = strtol(bytes, NULL, 10);
+        value.type = READSTAT_TYPE_INT32;
+    }
+    if (parser->handlers.value(obs_index, variable, value, ctx) == READSTAT_HANDLER_ABORT) {
+        error = READSTAT_ERROR_USER_ABORT;
+    }
+cleanup:
+    return error;
 }
 
-static size_t txt_getdelim(char ** restrict linep, size_t * restrict linecapp,
+static ssize_t txt_getdelim(char ** restrict linep, size_t * restrict linecapp,
         int delimiter, readstat_io_t *io) {
     char *value_buffer = *linep;
     size_t value_buffer_len = *linecapp;
-    size_t i = 0;
-    while (io->read(&value_buffer[i], 1, io->io_ctx) == 1 && value_buffer[i++] != delimiter) {
+    ssize_t i = 0;
+    ssize_t bytes_read = 0;
+    while ((bytes_read = io->read(&value_buffer[i], 1, io->io_ctx)) == 1 && value_buffer[i++] != delimiter) {
         if (i == value_buffer_len) {
             value_buffer = realloc(value_buffer, value_buffer_len *= 2);
         }
     }
     *linep = value_buffer;
     *linecapp = value_buffer_len;
+
+    if (bytes_read == -1)
+        return -1;
+
     return i;
 }
 
 static readstat_error_t txt_parse_delimited(readstat_parser_t *parser,
-        readstat_schema_t *schema, void *user_ctx) {
+        iconv_t converter, readstat_schema_t *schema, void *user_ctx) {
     size_t value_buffer_len = 4096;
     char *value_buffer = malloc(value_buffer_len);
     readstat_error_t retval = READSTAT_OK;
@@ -39,20 +68,23 @@ static readstat_error_t txt_parse_delimited(readstat_parser_t *parser,
     while (1) {
         int done = 0;
         for (int j=0; j<schema->entry_count; j++) {
+            readstat_schema_entry_t *entry = &schema->entries[j];
             int delimiter = (j == schema->entry_count-1) ? '\n' : schema->field_delimiter;
-            size_t chars_read = txt_getdelim(&value_buffer, &value_buffer_len, delimiter, io);
+            ssize_t chars_read = txt_getdelim(&value_buffer, &value_buffer_len, delimiter, io);
             if (chars_read == -1) {
-                done = 1;
-                break;
-            }
-            chars_read--; // delimiter
-            if (chars_read > 0 && value_buffer[chars_read-1] == '\r') {
-                chars_read--; // CRLF
-            }
-            value_buffer[chars_read] = '\0';
-            if (handle_value(k, j, value_buffer, chars_read, user_ctx)) {
-                retval = READSTAT_ERROR_USER_ABORT;
+                retval = READSTAT_ERROR_READ;
                 goto cleanup;
+            }
+            if (parser->handlers.value && !entry->skip) {
+                chars_read--; // delimiter
+                if (chars_read > 0 && value_buffer[chars_read-1] == '\r') {
+                    chars_read--; // CRLF
+                }
+                value_buffer[chars_read] = '\0';
+
+                retval = handle_value(parser, converter, k, entry, value_buffer, chars_read, user_ctx);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
             }
         }
         k++;
@@ -68,8 +100,8 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser,
-        readstat_schema_t *schema, void *user_ctx, const size_t *line_lens, char *line_buffer) {
+static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser, readstat_schema_t *schema,
+        iconv_t converter, void *user_ctx, const size_t *line_lens, char *line_buffer) {
     char   value_buffer[4096];
     
     readstat_io_t *io = parser->io;
@@ -78,7 +110,7 @@ static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser,
     while (1) {
         int j=0;
         for (int i=0; i<schema->rows_per_observation; i++) {
-            size_t bytes_read = io->read(line_buffer, line_lens[i], io->io_ctx);
+            ssize_t bytes_read = io->read(line_buffer, line_lens[i], io->io_ctx);
             if (bytes_read == 0)
                 goto cleanup;
             
@@ -87,13 +119,14 @@ static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser,
                 goto cleanup;
             }
             for (; j<schema->entry_count && schema->entries[j].row == i; j++) {
+                readstat_schema_entry_t *entry = &schema->entries[j];
                 size_t field_len = schema->entries[j].len;
                 size_t field_offset = schema->entries[j].col;
-                if (field_len < sizeof(value_buffer)) {
+                if (field_len < sizeof(value_buffer) && parser->handlers.value && !entry->skip) {
                     memcpy(value_buffer, &line_buffer[field_offset], field_len);
                     value_buffer[field_len] = '\0';
-                    if (handle_value(k, j, value_buffer, field_len, user_ctx)) {
-                        retval = READSTAT_ERROR_USER_ABORT;
+                    retval = handle_value(parser, converter, k, entry, value_buffer, field_len, user_ctx);
+                    if (retval != READSTAT_OK) {
                         goto cleanup;
                     }
                 }
@@ -121,6 +154,16 @@ readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filen
     
     size_t line_buffer_len = 0;
     char  *line_buffer = NULL;
+    iconv_t converter = NULL;
+
+    if (parser->output_encoding && parser->input_encoding) {
+        converter = iconv_open(parser->output_encoding, parser->input_encoding);
+        if (converter == (iconv_t)-1) {
+            converter = NULL;
+            retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
+            goto cleanup;
+        }
+    }
     
     if (io->open(filename, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_OPEN;
@@ -164,9 +207,9 @@ readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filen
     }
     
     if (schema->field_delimiter) {
-        retval = txt_parse_delimited(parser, schema, user_ctx);
+        retval = txt_parse_delimited(parser, schema, converter, user_ctx);
     } else {
-        retval = txt_parse_fixed_width(parser, schema, user_ctx, line_lens, line_buffer);
+        retval = txt_parse_fixed_width(parser, schema, converter, user_ctx, line_lens, line_buffer);
     }
     
 cleanup:
@@ -176,6 +219,8 @@ cleanup:
         free(line_buffer);
     if (line_lens)
         free(line_lens);
+    if (converter)
+        iconv_close(converter);
     
     return retval;
 }

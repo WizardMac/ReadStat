@@ -1,13 +1,13 @@
 
-#line 1 "src/txt/readstat_dct_read.rl"
+#line 1 "src/txt/readstat_stata_dictionary_read.rl"
 #include <stdlib.h>
 
 #include "../readstat.h"
 #include "readstat_schema.h"
-#include "readstat_dct_read.h"
+#include "readstat_stata_dictionary_read.h"
 
 
-#line 11 "src/txt/readstat_dct_read.c"
+#line 11 "src/txt/readstat_stata_dictionary_read.c"
 static const char _stata_dictionary_actions[] = {
 	0, 1, 1, 1, 4, 1, 6, 1, 
 	7, 1, 8, 1, 9, 1, 11, 1, 
@@ -450,11 +450,33 @@ static const int stata_dictionary_start = 1;
 static const int stata_dictionary_en_main = 1;
 
 
-#line 10 "src/txt/readstat_dct_read.rl"
+#line 10 "src/txt/readstat_stata_dictionary_read.rl"
 
 
 readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
-    const u_char *bytes, size_t len, int *error_line_number) {
+    const char *filepath, void *user_ctx, readstat_error_t *outError) {
+    if (parser->io->open(filepath, parser->io->io_ctx) == -1) {
+        if (outError)
+            *outError = READSTAT_ERROR_OPEN;
+        return NULL;
+    }
+    readstat_schema_t *schema = NULL;
+    u_char *bytes = NULL;
+    int cb_return_value = READSTAT_HANDLER_OK;
+    int total_entry_count = 0;
+    int partial_entry_count = 0;
+    readstat_error_t error = READSTAT_OK;
+    ssize_t len = parser->io->seek(0, READSTAT_SEEK_END, parser->io->io_ctx);
+    if (len == -1) {
+        error = READSTAT_ERROR_SEEK;
+        goto cleanup;
+    }
+    parser->io->seek(0, READSTAT_SEEK_SET, parser->io->io_ctx);
+
+    bytes = malloc(len);
+
+    parser->io->read(bytes, len, parser->io->io_ctx);
+
     u_char *p = (u_char *)bytes;
     u_char *pe = (u_char *)bytes + len;
 
@@ -473,9 +495,9 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
 
     readstat_schema_entry_t current_entry;
     
-    readstat_schema_t *schema = NULL;
     if ((schema = malloc(sizeof(readstat_schema_t))) == NULL) {
-        return NULL;
+        error = READSTAT_ERROR_MALLOC;
+        goto cleanup;
     }
 
     schema->filename[0] = '\0';
@@ -486,12 +508,12 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
     schema->entry_count = 0;
     
     
-#line 490 "src/txt/readstat_dct_read.c"
+#line 512 "src/txt/readstat_stata_dictionary_read.c"
 	{
 	cs = stata_dictionary_start;
 	}
 
-#line 495 "src/txt/readstat_dct_read.c"
+#line 517 "src/txt/readstat_stata_dictionary_read.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -565,37 +587,53 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 45 "src/txt/readstat_dct_read.rl"
+#line 67 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             integer = 0;
         }
 	break;
 	case 1:
-#line 49 "src/txt/readstat_dct_read.rl"
+#line 71 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             integer = 10 * integer + ((*p) - '0');
         }
 	break;
 	case 2:
-#line 53 "src/txt/readstat_dct_read.rl"
+#line 75 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             memset(&current_entry, 0, sizeof(readstat_schema_entry_t));
             current_entry.decimal_separator = '.';
-            current_entry.type = READSTAT_TYPE_DOUBLE;
+            current_entry.variable.type = READSTAT_TYPE_DOUBLE;
+            current_entry.variable.index = total_entry_count;
         }
 	break;
 	case 3:
-#line 59 "src/txt/readstat_dct_read.rl"
+#line 82 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             current_entry.row = current_row;
             current_entry.col = current_col;
             current_col += current_entry.len;
+            cb_return_value = READSTAT_HANDLER_OK;
+            if (parser->handlers.variable) {
+                current_entry.variable.index_after_skipping = partial_entry_count;
+                cb_return_value = parser->handlers.variable(total_entry_count, &current_entry.variable, NULL, user_ctx);
+                if (cb_return_value == READSTAT_HANDLER_ABORT) {
+                    error = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
+                }
+            }
+            if (cb_return_value == READSTAT_HANDLER_SKIP_VARIABLE) {
+                current_entry.skip = 1;
+            } else {
+                partial_entry_count++;
+            } 
             schema->entries = realloc(schema->entries, sizeof(readstat_schema_entry_t) * (schema->entry_count+1));
             memcpy(&schema->entries[schema->entry_count++], &current_entry, sizeof(readstat_schema_entry_t));
+            total_entry_count++;
         }
 	break;
 	case 4:
-#line 67 "src/txt/readstat_dct_read.rl"
+#line 105 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             if (str_len < sizeof(schema->filename)) {
                 memcpy(schema->filename, str_start, str_len);
@@ -604,112 +642,112 @@ _match:
         }
 	break;
 	case 5:
-#line 74 "src/txt/readstat_dct_read.rl"
+#line 112 "src/txt/readstat_stata_dictionary_read.rl"
 	{
-            if (str_len < sizeof(current_entry.varname)) {
-                memcpy(current_entry.varname, str_start, str_len);
-                current_entry.varname[str_len] = '\0';
+            if (str_len < sizeof(current_entry.variable.name)) {
+                memcpy(current_entry.variable.name, str_start, str_len);
+                current_entry.variable.name[str_len] = '\0';
             }
         }
 	break;
 	case 6:
-#line 81 "src/txt/readstat_dct_read.rl"
+#line 119 "src/txt/readstat_stata_dictionary_read.rl"
 	{
-            if (str_len < sizeof(current_entry.varlabel)) {
-                memcpy(current_entry.varlabel, str_start, str_len);
-                current_entry.varlabel[str_len] = '\0';
+            if (str_len < sizeof(current_entry.variable.label)) {
+                memcpy(current_entry.variable.label, str_start, str_len);
+                current_entry.variable.label[str_len] = '\0';
             }
         }
 	break;
 	case 7:
-#line 88 "src/txt/readstat_dct_read.rl"
+#line 126 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_start = p; }
 	break;
 	case 8:
-#line 88 "src/txt/readstat_dct_read.rl"
+#line 126 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 9:
-#line 90 "src/txt/readstat_dct_read.rl"
+#line 128 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_start = p; }
 	break;
 	case 10:
-#line 90 "src/txt/readstat_dct_read.rl"
+#line 128 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 11:
-#line 92 "src/txt/readstat_dct_read.rl"
+#line 130 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_start = p; }
 	break;
 	case 12:
-#line 92 "src/txt/readstat_dct_read.rl"
+#line 130 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 13:
-#line 94 "src/txt/readstat_dct_read.rl"
+#line 132 "src/txt/readstat_stata_dictionary_read.rl"
 	{ line_no++; line_start = p; }
 	break;
 	case 14:
-#line 104 "src/txt/readstat_dct_read.rl"
+#line 142 "src/txt/readstat_stata_dictionary_read.rl"
 	{ schema->rows_per_observation = integer; }
 	break;
 	case 15:
-#line 106 "src/txt/readstat_dct_read.rl"
+#line 144 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_row = integer - 1; }
 	break;
 	case 16:
-#line 108 "src/txt/readstat_dct_read.rl"
+#line 146 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_col = integer - 1; }
 	break;
 	case 17:
-#line 110 "src/txt/readstat_dct_read.rl"
+#line 148 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_row++; }
 	break;
 	case 18:
-#line 110 "src/txt/readstat_dct_read.rl"
+#line 148 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_row += (integer - 1); }
 	break;
 	case 19:
-#line 114 "src/txt/readstat_dct_read.rl"
+#line 152 "src/txt/readstat_stata_dictionary_read.rl"
 	{ schema->cols_per_observation = integer; }
 	break;
 	case 20:
-#line 116 "src/txt/readstat_dct_read.rl"
+#line 154 "src/txt/readstat_stata_dictionary_read.rl"
 	{ schema->first_line = integer - 1; }
 	break;
 	case 21:
-#line 120 "src/txt/readstat_dct_read.rl"
-	{ current_entry.type = READSTAT_TYPE_INT8; }
+#line 158 "src/txt/readstat_stata_dictionary_read.rl"
+	{ current_entry.variable.type = READSTAT_TYPE_INT8; }
 	break;
 	case 22:
-#line 121 "src/txt/readstat_dct_read.rl"
-	{ current_entry.type = READSTAT_TYPE_INT16; }
+#line 159 "src/txt/readstat_stata_dictionary_read.rl"
+	{ current_entry.variable.type = READSTAT_TYPE_INT16; }
 	break;
 	case 23:
-#line 122 "src/txt/readstat_dct_read.rl"
-	{ current_entry.type = READSTAT_TYPE_INT32; }
+#line 160 "src/txt/readstat_stata_dictionary_read.rl"
+	{ current_entry.variable.type = READSTAT_TYPE_INT32; }
 	break;
 	case 24:
-#line 123 "src/txt/readstat_dct_read.rl"
-	{ current_entry.type = READSTAT_TYPE_FLOAT; }
+#line 161 "src/txt/readstat_stata_dictionary_read.rl"
+	{ current_entry.variable.type = READSTAT_TYPE_FLOAT; }
 	break;
 	case 25:
-#line 124 "src/txt/readstat_dct_read.rl"
-	{ current_entry.type = READSTAT_TYPE_DOUBLE; }
+#line 162 "src/txt/readstat_stata_dictionary_read.rl"
+	{ current_entry.variable.type = READSTAT_TYPE_DOUBLE; }
 	break;
 	case 26:
-#line 125 "src/txt/readstat_dct_read.rl"
-	{ current_entry.type = READSTAT_TYPE_STRING; }
+#line 163 "src/txt/readstat_stata_dictionary_read.rl"
+	{ current_entry.variable.type = READSTAT_TYPE_STRING; }
 	break;
 	case 27:
-#line 131 "src/txt/readstat_dct_read.rl"
+#line 169 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.len = integer; }
 	break;
 	case 28:
-#line 132 "src/txt/readstat_dct_read.rl"
+#line 170 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.decimal_separator = ','; }
 	break;
-#line 713 "src/txt/readstat_dct_read.c"
+#line 751 "src/txt/readstat_stata_dictionary_read.c"
 		}
 	}
 
@@ -722,7 +760,7 @@ _again:
 	_out: {}
 	}
 
-#line 146 "src/txt/readstat_dct_read.rl"
+#line 184 "src/txt/readstat_stata_dictionary_read.rl"
 
 
     /* suppress warnings */
@@ -733,13 +771,21 @@ _again:
         snprintf(error_buf, sizeof(error_buf), "Error parsing .dct file around line #%d, col #%ld (%c)",
             line_no + 1, (long)(p - line_start + 1), *p);
         if (parser->handlers.error) {
-            parser->handlers.error(error_buf, NULL);
+            parser->handlers.error(error_buf, user_ctx);
         }
         readstat_schema_free(schema);
-        if (error_line_number)
-            *error_line_number = line_no + 1;
-        
-        return NULL;
+        error = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
+cleanup:
+    parser->io->close(parser->io->io_ctx);
+    free(bytes);
+    if (error != READSTAT_OK) {
+        if (outError)
+            *outError = error;
+        readstat_schema_free(schema);
+        schema = NULL;
     }
 
     return schema;
