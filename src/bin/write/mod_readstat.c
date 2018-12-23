@@ -233,12 +233,16 @@ static int handle_value(int obs_index, readstat_variable_t *old_variable, readst
             } else if (mod_ctx->is_xport) {
                 error = readstat_begin_writing_xport(writer, mod_ctx, mod_ctx->row_count);
             }
-            if (error != READSTAT_OK)
+            if (error != READSTAT_OK) {
+                fprintf(stderr, "Error beginning file: %s\n", readstat_error_message(error));
                 goto cleanup;
+            }
         }
         error = readstat_begin_row(writer);
-        if (error != READSTAT_OK)
+        if (error != READSTAT_OK) {
+            fprintf(stderr, "Error beginning row: %s\n", readstat_error_message(error));
             goto cleanup;
+        }
     }
 
     if (readstat_value_is_system_missing(value)) {
@@ -258,24 +262,29 @@ static int handle_value(int obs_index, readstat_variable_t *old_variable, readst
     } else if (type == READSTAT_TYPE_DOUBLE) {
         error = readstat_insert_double_value(writer, variable, readstat_double_value(value));
     }
-    if (error != READSTAT_OK)
+    if (error != READSTAT_OK) {
+        fprintf(stderr, "Error inserting value: %s\n", readstat_error_message(error));
         goto cleanup;
+    }
 
     if (var_index == mod_ctx->var_count - 1) {
         error = readstat_end_row(writer);
-        if (error != READSTAT_OK)
+        if (error != READSTAT_OK) {
+            fprintf(stderr, "Error ending row: %s\n", readstat_error_message(error));
             goto cleanup;
+        }
 
         if (obs_index == mod_ctx->row_count - 1) {
             error = readstat_end_writing(writer);
-            if (error != READSTAT_OK)
+            if (error != READSTAT_OK) {
+                fprintf(stderr, "Error ending file: %s\n", readstat_error_message(error));
                 goto cleanup;
+            }
         }
     }
 
 cleanup:
     if (error != READSTAT_OK) {
-        fprintf(stderr, "Error writing: %s\n", readstat_error_message(error));
         return READSTAT_HANDLER_ABORT;
     }
 
