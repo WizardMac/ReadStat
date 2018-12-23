@@ -17,7 +17,7 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
         return NULL;
     }
     readstat_schema_t *schema = NULL;
-    u_char *bytes = NULL;
+    unsigned char *bytes = NULL;
     int cb_return_value = READSTAT_HANDLER_OK;
     int total_entry_count = 0;
     int partial_entry_count = 0;
@@ -33,10 +33,10 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
 
     parser->io->read(bytes, len, parser->io->io_ctx);
 
-    u_char *p = (u_char *)bytes;
-    u_char *pe = (u_char *)bytes + len;
+    unsigned char *p = bytes;
+    unsigned char *pe = bytes + len;
 
-    u_char *str_start = NULL;
+    unsigned char *str_start = NULL;
 
     size_t str_len = 0;
 
@@ -47,7 +47,7 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
     int current_row = 0;
     int current_col = 0;
     int line_no = 0;
-    u_char *line_start = p;
+    unsigned char *line_start = p;
 
     readstat_schema_entry_t current_entry;
     
