@@ -264,7 +264,7 @@ cleanup:
     if (schema)
         readstat_schema_free(schema);
     if (dct_parser)
-        readstat_parser_free(pass1_parser);
+        readstat_parser_free(dct_parser);
     if (pass1_parser)
         readstat_parser_free(pass1_parser);
     if (pass2_parser)
