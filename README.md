@@ -7,14 +7,22 @@ ReadStat: Read (and write) data sets from SAS, Stata, and SPSS
 
 Originally developed for [Wizard](http://www.wizardmac.com/), ReadStat is a
 command-line tool and MIT-licensed C library for reading files from popular
-stats packages. Supported formats include:
+stats packages. Supported data formats include:
 
-* SAS: SAS7BDAT, SAS7BCAT, and XPORT
-* Stata: DTA 104-119
-* SPSS: POR, SAV, and ZSAV
+* SAS: SAS7BDAT (binary file) and XPORT (transport file)
+* Stata: DTA (binary file) versions 104-119
+* SPSS: POR (portable file), SAV (binary file), and ZSAV (compressed binary)
 
-There is also write support for all formats except SAS7BCAT. For reading in R
-data files, please see the related
+Supported metadata formats include:
+
+* SAS: SAS7BCAT (catalog file)
+* Stata: DCT (dictionary file)
+
+There is also write support for all the data formats, but not the metadata
+formats. *The produced SAS7BDAT files still cannot be read by SAS*, but feel
+free to contribute your binary-format expertise here.
+
+For reading in R data files, please see the related
 [librdata](https://github.com/WizardMac/librdata) project.
 
 Installation
@@ -64,12 +72,23 @@ and written as well.
 
 Use the `-f` option to overwrite an existing output file.
 
-If you have a SAS catalog file containing the data set's value labels, a second
+If you have a plain-text file described by a Stata dictionary file, a second
 invocation style is supported:
+
+    readstat <input file> <dictionary file> <output file>
+
+Where:
+
+* `<input file>` can be anything
+* `<catalog file>` ends with `.dct`
+* `<output file>` ends with `.dta`, `.por`, `.sav`, `.xpt`, or `.csv`
+
+If you have a SAS catalog file containing the data set's value labels, you
+can use the same invocation:
 
     readstat <input file> <catalog file> <output file>
 
-Where:
+Except where:
 
 * `<input file>` ends with `.sas7bdat`
 * `<catalog file>` ends with `.sas7bcat`
@@ -410,17 +429,30 @@ Finally, start a MINGW command line (not the msys2 prompt!) and follow the gener
 Fuzz Testing
 ==
 
-To assist in fuzz testing, ReadStat ships with target files designed to work with [libFuzzer](http://llvm.org/docs/LibFuzzer.html).
+To assist in fuzz testing, ReadStat ships with target files designed to work
+with [libFuzzer](http://llvm.org/docs/LibFuzzer.html). Clang 6 or later is
+required.
 
-1. `./configure --enable-sanitizers` turns on useful sanitizer and sanitizer-coverage flags
-1. `make` will create a new binary called `generate_corpus`. Running this program will use the ReadStat test suite to create a corpus of test files in `corpus/`. There is a subdirectory for each sub-format (`dta104`, `dta105`, etc.). Currently a total of 468 files are created.
-1. If libFuzzer is found on the system, `make` will also create eight fuzzer targets, one for each of six file formats, and two fuzzers for testing the compression routines.
+1. `./configure --enable-fuzz-testing` turns on useful sanitizer and sanitizer-coverage flags
+1. `make` will create a new binary called `generate_corpus`. Running this
+   program will use the ReadStat test suite to create a corpus of test files in
+   `corpus/`. There is a subdirectory for each sub-format (`dta104`, `dta105`,
+   etc.). Currently a total of 468 files are created.
+1. If fuzz-testing has been enabled, `make` will also create fourteen fuzzer
+   targets, one for each of seven file formats, five for internally used
+   grammars, and two fuzzers for testing the compression routines.
    * `fuzz_format_dta`
    * `fuzz_format_por`
    * `fuzz_format_sas7bcat`
    * `fuzz_format_sas7bdat`
    * `fuzz_format_sav`
    * `fuzz_format_xport`
+   * `fuzz_format_stata_dictionary`
+   * `fuzz_grammar_dta_timestamp`
+   * `fuzz_grammar_por_double`
+   * `fuzz_grammar_sav_date`
+   * `fuzz_grammar_sav_time`
+   * `fuzz_grammar_spss_format`
    * `fuzz_compression_sas_rle`
    * `fuzz_compression_sav`
 
