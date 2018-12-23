@@ -235,40 +235,39 @@ static readstat_error_t parse_text_plus_dct(const char *input_filename,
         const char *dct_filename, rs_ctx_t *rs_ctx) {
     readstat_error_t error = READSTAT_OK;
     readstat_schema_t *schema = NULL;
-    readstat_parser_t *dct_parser = readstat_parser_init();
-    readstat_parser_t *pass1_parser = readstat_parser_init();
-    readstat_parser_t *pass2_parser = readstat_parser_init();
+    readstat_parser_t *parser = NULL;
 
-    readstat_set_error_handler(dct_parser, &handle_error);
-    readstat_set_variable_handler(dct_parser, &handle_variable);
-    schema = readstat_parse_stata_dictionary(pass1_parser, dct_filename, rs_ctx, &error);
+    parser = readstat_parser_init();
+    readstat_set_error_handler(parser, &handle_error);
+    readstat_set_variable_handler(parser, &handle_variable);
+    schema = readstat_parse_stata_dictionary(parser, dct_filename, rs_ctx, &error);
     rs_ctx->error_filename = dct_filename;
+    readstat_parser_free(parser);
+
     if (schema == NULL)
         goto cleanup;
 
     rs_ctx->error_filename = input_filename;
 
-    readstat_set_error_handler(pass1_parser, &handle_error);
-    readstat_set_metadata_handler(pass1_parser, &handle_metadata);
-    error = readstat_parse_txt(pass1_parser, input_filename, schema, rs_ctx);
+    parser = readstat_parser_init();
+    readstat_set_error_handler(parser, &handle_error);
+    readstat_set_metadata_handler(parser, &handle_metadata);
+    error = readstat_parse_txt(parser, input_filename, schema, rs_ctx);
+    readstat_parser_free(parser);
     if (error != READSTAT_OK)
         goto cleanup;
 
-    readstat_set_error_handler(pass2_parser, &handle_error);
-    readstat_set_value_handler(pass2_parser, &handle_value);
-    error = readstat_parse_txt(pass2_parser, input_filename, schema, rs_ctx);
+    parser = readstat_parser_init();
+    readstat_set_error_handler(parser, &handle_error);
+    readstat_set_value_handler(parser, &handle_value);
+    error = readstat_parse_txt(parser, input_filename, schema, rs_ctx);
+    readstat_parser_free(parser);
     if (error != READSTAT_OK)
         goto cleanup;
 
 cleanup:
     if (schema)
         readstat_schema_free(schema);
-    if (dct_parser)
-        readstat_parser_free(dct_parser);
-    if (pass1_parser)
-        readstat_parser_free(pass1_parser);
-    if (pass2_parser)
-        readstat_parser_free(pass2_parser);
 
     return error;
 }
@@ -319,7 +318,6 @@ cleanup:
 static int convert_file(const char *input_filename, const char *catalog_filename, const char *output_filename,
         rs_module_t *modules, int modules_count, int force) {
     readstat_error_t error = READSTAT_OK;
-    const char *error_filename = NULL;
     struct timeval start_time, end_time;
     int catalog_format = readstat_format(catalog_filename);
     rs_module_t *module = rs_module_for_filename(modules, modules_count, output_filename);
@@ -340,7 +338,7 @@ static int convert_file(const char *input_filename, const char *catalog_filename
 
     if (module_ctx == NULL) {
         error = READSTAT_ERROR_OPEN;
-        error_filename = output_filename;
+        rs_ctx->error_filename = output_filename;
         goto cleanup;
     }
 
@@ -375,7 +373,7 @@ cleanup:
         if (file_exists) {
             fprintf(stderr, "Error opening %s: File exists (Use -f to overwrite)\n", output_filename);
         } else {
-            fprintf(stderr, "Error processing %s: %s\n", error_filename, readstat_error_message(error));
+            fprintf(stderr, "Error processing %s: %s\n", rs_ctx->error_filename, readstat_error_message(error));
             unlink(output_filename);
         }
         return 1;

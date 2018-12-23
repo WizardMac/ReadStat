@@ -138,7 +138,7 @@ static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser,
                     }
                 }
             }
-            
+
             if (schema->cols_per_observation == 0) {
                 char throwaway = '\0';
                 while (io->read(&throwaway, 1, io->io_ctx) == 1 && throwaway != '\n');
@@ -147,9 +147,9 @@ static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser,
         
         k++;
     }
-    ctx->rows = k;
 
 cleanup:
+    ctx->rows = k;
     return retval;
 }
 

@@ -51,17 +51,12 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
 
     readstat_schema_entry_t current_entry;
     
-    if ((schema = malloc(sizeof(readstat_schema_t))) == NULL) {
+    if ((schema = calloc(1, sizeof(readstat_schema_t))) == NULL) {
         error = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
 
-    schema->filename[0] = '\0';
     schema->rows_per_observation = 1;
-    schema->cols_per_observation = 0;
-    schema->first_line = 0;
-    schema->entries = NULL;
-    schema->entry_count = 0;
     
     %%{
         action start_integer {
@@ -194,7 +189,6 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
         if (parser->handlers.error) {
             parser->handlers.error(error_buf, user_ctx);
         }
-        readstat_schema_free(schema);
         error = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
