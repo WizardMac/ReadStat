@@ -11,6 +11,12 @@
 #include "readstat_schema.h"
 #include "readstat_txt_read.h"
 
+typedef struct txt_ctx_s {
+    int                rows;
+    iconv_t            converter;
+    readstat_schema_t *schema;
+} txt_ctx_t;
+
 static readstat_error_t handle_value(readstat_parser_t *parser, iconv_t converter,
         int obs_index, readstat_schema_entry_t *entry, char *bytes, size_t len, void *ctx) {
     readstat_error_t error = READSTAT_OK;
@@ -58,9 +64,10 @@ static ssize_t txt_getdelim(char ** restrict linep, size_t * restrict linecapp,
 }
 
 static readstat_error_t txt_parse_delimited(readstat_parser_t *parser,
-        iconv_t converter, readstat_schema_t *schema, void *user_ctx) {
+        txt_ctx_t *ctx, void *user_ctx) {
     size_t value_buffer_len = 4096;
     char *value_buffer = malloc(value_buffer_len);
+    readstat_schema_t *schema = ctx->schema;
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = parser->io;
     int k=0;
@@ -82,7 +89,7 @@ static readstat_error_t txt_parse_delimited(readstat_parser_t *parser,
                 }
                 value_buffer[chars_read] = '\0';
 
-                retval = handle_value(parser, converter, k, entry, value_buffer, chars_read, user_ctx);
+                retval = handle_value(parser, ctx->converter, k, entry, value_buffer, chars_read, user_ctx);
                 if (retval != READSTAT_OK)
                     goto cleanup;
             }
@@ -91,19 +98,19 @@ static readstat_error_t txt_parse_delimited(readstat_parser_t *parser,
         if (done)
             break;
     }
-    
+    ctx->rows = k;
+
 cleanup:
-    
     if (value_buffer)
         free(value_buffer);
     
     return retval;
 }
 
-static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser, readstat_schema_t *schema,
-        iconv_t converter, void *user_ctx, const size_t *line_lens, char *line_buffer) {
+static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser,
+        txt_ctx_t *ctx, void *user_ctx, const size_t *line_lens, char *line_buffer) {
     char   value_buffer[4096];
-    
+    readstat_schema_t *schema = ctx->schema;
     readstat_io_t *io = parser->io;
     readstat_error_t retval = READSTAT_OK;
     int k=0;
@@ -125,7 +132,7 @@ static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser, readsta
                 if (field_len < sizeof(value_buffer) && parser->handlers.value && !entry->skip) {
                     memcpy(value_buffer, &line_buffer[field_offset], field_len);
                     value_buffer[field_len] = '\0';
-                    retval = handle_value(parser, converter, k, entry, value_buffer, field_len, user_ctx);
+                    retval = handle_value(parser, ctx->converter, k, entry, value_buffer, field_len, user_ctx);
                     if (retval != READSTAT_OK) {
                         goto cleanup;
                     }
@@ -140,6 +147,8 @@ static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser, readsta
         
         k++;
     }
+    ctx->rows = k;
+
 cleanup:
     return retval;
 }
@@ -154,12 +163,12 @@ readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filen
     
     size_t line_buffer_len = 0;
     char  *line_buffer = NULL;
-    iconv_t converter = NULL;
+    txt_ctx_t ctx = { .schema = schema };
 
     if (parser->output_encoding && parser->input_encoding) {
-        converter = iconv_open(parser->output_encoding, parser->input_encoding);
-        if (converter == (iconv_t)-1) {
-            converter = NULL;
+        ctx.converter = iconv_open(parser->output_encoding, parser->input_encoding);
+        if (ctx.converter == (iconv_t)-1) {
+            ctx.converter = NULL;
             retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
             goto cleanup;
         }
@@ -207,11 +216,24 @@ readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filen
     }
     
     if (schema->field_delimiter) {
-        retval = txt_parse_delimited(parser, schema, converter, user_ctx);
+        retval = txt_parse_delimited(parser, &ctx, user_ctx);
     } else {
-        retval = txt_parse_fixed_width(parser, schema, converter, user_ctx, line_lens, line_buffer);
+        retval = txt_parse_fixed_width(parser, &ctx, user_ctx, line_lens, line_buffer);
     }
-    
+
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    if (parser->handlers.metadata) {
+        readstat_metadata_t metadata = {
+            .row_count = ctx.rows,
+            .var_count = schema->entry_count
+        };
+        int cb_retval = parser->handlers.metadata(&metadata, user_ctx);
+        if (cb_retval == READSTAT_HANDLER_ABORT)
+            retval = READSTAT_ERROR_USER_ABORT;
+    }
+
 cleanup:
     
     io->close(io->io_ctx);
@@ -219,8 +241,8 @@ cleanup:
         free(line_buffer);
     if (line_lens)
         free(line_lens);
-    if (converter)
-        iconv_close(converter);
+    if (ctx.converter)
+        iconv_close(ctx.converter);
     
     return retval;
 }

@@ -261,6 +261,7 @@ noinst_PROGRAMS += \
 	fuzz_format_sas7bcat \
 	fuzz_format_sas7bdat \
 	fuzz_format_xport \
+	fuzz_format_stata_dictionary \
 	fuzz_grammar_dta_timestamp \
 	fuzz_grammar_por_double \
 	fuzz_grammar_sav_date \
@@ -345,6 +346,14 @@ fuzz_format_xport_SOURCES = \
 fuzz_format_xport_LDADD = libreadstat.la
 fuzz_format_xport_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
+fuzz_format_stata_dictionary_SOURCES = \
+	src/fuzz/fuzz_format.c \
+	src/fuzz/fuzz_format_stata_dictionary.c \
+	src/test/test_buffer_io.c
+
+fuzz_format_stata_dictionary_LDADD = libreadstat.la
+fuzz_format_stata_dictionary_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
 fuzz_compression_sas_rle_SOURCES = \
 	src/fuzz/fuzz_compression_sas_rle.c
 
@@ -356,4 +365,5 @@ fuzz_compression_sav_SOURCES = \
 
 fuzz_compression_sav_LDADD = libreadstat.la
 fuzz_compression_sav_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
 endif

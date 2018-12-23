@@ -160,7 +160,8 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
             | "long" %{ current_entry.variable.type = READSTAT_TYPE_INT32; }
             | "float" %{ current_entry.variable.type = READSTAT_TYPE_FLOAT; }
             | "double" %{ current_entry.variable.type = READSTAT_TYPE_DOUBLE; }
-            | "str" integer %{ current_entry.variable.type = READSTAT_TYPE_STRING; };
+            | "str" integer %{ current_entry.variable.type = READSTAT_TYPE_STRING;
+                               current_entry.variable.storage_width = integer; };
 
         varname = identifier %copy_varname;
 

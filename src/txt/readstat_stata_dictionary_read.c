@@ -737,17 +737,18 @@ _match:
 	break;
 	case 26:
 #line 163 "src/txt/readstat_stata_dictionary_read.rl"
-	{ current_entry.variable.type = READSTAT_TYPE_STRING; }
+	{ current_entry.variable.type = READSTAT_TYPE_STRING;
+                               current_entry.variable.storage_width = integer; }
 	break;
 	case 27:
-#line 169 "src/txt/readstat_stata_dictionary_read.rl"
+#line 170 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.len = integer; }
 	break;
 	case 28:
-#line 170 "src/txt/readstat_stata_dictionary_read.rl"
+#line 171 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.decimal_separator = ','; }
 	break;
-#line 751 "src/txt/readstat_stata_dictionary_read.c"
+#line 752 "src/txt/readstat_stata_dictionary_read.c"
 		}
 	}
 
@@ -760,7 +761,7 @@ _again:
 	_out: {}
 	}
 
-#line 184 "src/txt/readstat_stata_dictionary_read.rl"
+#line 185 "src/txt/readstat_stata_dictionary_read.rl"
 
 
     /* suppress warnings */

@@ -1,5 +1,5 @@
 
-typedef struct ds_stata_dct_entry_s {
+typedef struct ds_schema_entry_s {
     int                 row;
     int                 col;
     int                 len;

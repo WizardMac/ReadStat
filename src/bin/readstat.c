@@ -8,11 +8,16 @@
 #include <sys/stat.h>
 
 #include "../readstat.h"
+#include "../txt/readstat_schema.h"
+#include "../txt/readstat_stata_dictionary_read.h"
+#include "../txt/readstat_txt_read.h"
+
 #include "write/module.h"
 #include "write/mod_readstat.h"
 #include "write/mod_csv.h"
 
 #if HAVE_CSVREADER
+#include "read_csv/json_metadata.h"
 #include "read_csv/read_module.h"
 #include "read_csv/csv_metadata.h"
 #include "read_csv/read_csv.h"
@@ -27,6 +32,7 @@
 typedef struct rs_ctx_s {
     rs_module_t *module;
     void        *module_ctx;
+    const char  *error_filename;
     long         row_count;
     long         var_count;
 } rs_ctx_t;
@@ -137,6 +143,12 @@ static void print_version() {
 #define INPUT_FORMATS "dta|por|sav|sas7bdat|xpt"
 #endif
 
+#if HAVE_XLSXWRITER
+#define OUTPUT_FORMATS INPUT_FORMATS "|csv|xlsx"
+#else
+#define OUTPUT_FORMATS INPUT_FORMATS "|csv"
+#endif
+
 static void print_usage(const char *cmd) {
     print_version();
 
@@ -147,18 +159,13 @@ static void print_usage(const char *cmd) {
     fprintf(stdout, "\n     %s input.(" INPUT_FORMATS ") -\n", cmd);
 
     fprintf(stdout, "\n  Convert a file:\n");
-    fprintf(stdout, "\n     %s input.(" INPUT_FORMATS ") output.(dta|por|sav|sas7bdat|xpt"
-#if HAVE_ZLIB
-            "|zsav"
-#endif
-            "|csv"
-#if HAVE_XLSXWRITER
-            "|xlsx"
-#endif
-            ")\n", cmd);
+    fprintf(stdout, "\n     %s input.(" INPUT_FORMATS ") output.(" OUTPUT_FORMATS ")\n", cmd);
 
     fprintf(stdout, "\n  Convert a CSV file with column metadata stored in a separate JSON file (see extract_metadata):\n");
     fprintf(stdout, "\n     %s input.csv metadata.json output.(dta|sav|csv)\n", cmd);
+
+    fprintf(stdout, "\n  Convert a text file with column metadata stored in a Stata dictionary file:\n");
+    fprintf(stdout, "\n     %s input.xxx metadata.dct output.(dta|sav|csv)\n", cmd);
 
     fprintf(stdout, "\n  Convert a SAS7BDAT file with value labels stored in a separate SAS catalog file:\n");
     fprintf(stdout, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|por|sav|xpt"
@@ -172,30 +179,157 @@ static void print_usage(const char *cmd) {
             ")\n\n", cmd);
 }
 
+#if HAVE_CSVREADER
+static readstat_error_t parse_csv_plus_json(const char *input_filename,
+        const char *json_filename, int output_format, rs_ctx_t *rs_ctx) {
+    readstat_error_t error = READSTAT_OK;
+    struct csv_metadata csv_meta = { .output_format = output_format };
+    struct json_metadata *json_md = NULL;
+    readstat_parser_t *pass1_parser = NULL;
+    readstat_parser_t *pass2_parser = NULL;
+
+    json_md = get_json_metadata(json_filename);
+    if (json_md == NULL) {
+        rs_ctx->error_filename = json_filename;
+        error = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
+
+    csv_meta.json_md = json_md;
+
+    rs_ctx->error_filename = input_filename;
+
+    // The two passes are necessary because we need to set the variable storage
+    // width and # rows before passing the actual values to the write API
+    pass1_parser = readstat_parser_init();
+    readstat_set_error_handler(pass1_parser, &handle_error);
+    readstat_set_value_label_handler(pass1_parser, &handle_value_label);
+    readstat_set_metadata_handler(pass1_parser, &handle_metadata);
+    error = readstat_parse_csv(pass1_parser, input_filename, &csv_meta, rs_ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+    pass2_parser = readstat_parser_init();
+    readstat_set_error_handler(pass2_parser, &handle_error);
+    readstat_set_variable_handler(pass2_parser, &handle_variable);
+    readstat_set_value_handler(pass2_parser, &handle_value);
+    error = readstat_parse_csv(pass2_parser, input_filename, &csv_meta, rs_ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    if (json_md)
+        free_json_metadata(json_md);
+    if (pass1_parser)
+        readstat_parser_free(pass1_parser);
+    if (pass2_parser)
+        readstat_parser_free(pass2_parser);
+    if (csv_meta.column_width)
+        free(csv_meta.column_width);
+
+    return error;
+}
+#endif
+
+static readstat_error_t parse_text_plus_dct(const char *input_filename,
+        const char *dct_filename, rs_ctx_t *rs_ctx) {
+    readstat_error_t error = READSTAT_OK;
+    readstat_schema_t *schema = NULL;
+    readstat_parser_t *dct_parser = readstat_parser_init();
+    readstat_parser_t *pass1_parser = readstat_parser_init();
+    readstat_parser_t *pass2_parser = readstat_parser_init();
+
+    readstat_set_error_handler(dct_parser, &handle_error);
+    readstat_set_variable_handler(dct_parser, &handle_variable);
+    schema = readstat_parse_stata_dictionary(pass1_parser, dct_filename, rs_ctx, &error);
+    rs_ctx->error_filename = dct_filename;
+    if (schema == NULL)
+        goto cleanup;
+
+    rs_ctx->error_filename = input_filename;
+
+    readstat_set_error_handler(pass1_parser, &handle_error);
+    readstat_set_metadata_handler(pass1_parser, &handle_metadata);
+    error = readstat_parse_txt(pass1_parser, input_filename, schema, rs_ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+    readstat_set_error_handler(pass2_parser, &handle_error);
+    readstat_set_value_handler(pass2_parser, &handle_value);
+    error = readstat_parse_txt(pass2_parser, input_filename, schema, rs_ctx);
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    if (schema)
+        readstat_schema_free(schema);
+    if (dct_parser)
+        readstat_parser_free(pass1_parser);
+    if (pass1_parser)
+        readstat_parser_free(pass1_parser);
+    if (pass2_parser)
+        readstat_parser_free(pass2_parser);
+
+    return error;
+}
+
+static readstat_error_t parse_binary_file(const char *input_filename,
+        const char *catalog_filename, rs_ctx_t *rs_ctx) {
+    readstat_error_t error = READSTAT_OK;
+    int input_format = readstat_format(input_filename);
+    readstat_parser_t *pass1_parser = readstat_parser_init();
+    readstat_parser_t *pass2_parser = readstat_parser_init();
+
+    // Pass 1 - Collect fweight and value labels
+    readstat_set_error_handler(pass1_parser, &handle_error);
+    readstat_set_value_label_handler(pass1_parser, &handle_value_label);
+    readstat_set_fweight_handler(pass1_parser, &handle_fweight);
+
+    if (catalog_filename) {
+        error = parse_file(pass1_parser, catalog_filename, RS_FORMAT_SAS_CATALOG, rs_ctx);
+        rs_ctx->error_filename = catalog_filename;
+    } else {
+        error = parse_file(pass1_parser, input_filename, input_format, rs_ctx);
+        rs_ctx->error_filename = input_filename;
+    }
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+    // Pass 2 - Parse full file
+    readstat_set_error_handler(pass2_parser, &handle_error);
+    readstat_set_metadata_handler(pass2_parser, &handle_metadata);
+    readstat_set_note_handler(pass2_parser, &handle_note);
+    readstat_set_variable_handler(pass2_parser, &handle_variable);
+    readstat_set_value_handler(pass2_parser, &handle_value);
+
+    error = parse_file(pass2_parser, input_filename, input_format, rs_ctx);
+    rs_ctx->error_filename = input_filename;
+    if (error != READSTAT_OK)
+        goto cleanup;
+
+cleanup:
+    if (pass1_parser)
+        readstat_parser_free(pass1_parser);
+    if (pass2_parser)
+        readstat_parser_free(pass2_parser);
+
+    return error;
+}
+
 static int convert_file(const char *input_filename, const char *catalog_filename, const char *output_filename,
         rs_module_t *modules, int modules_count, int force) {
     readstat_error_t error = READSTAT_OK;
     const char *error_filename = NULL;
     struct timeval start_time, end_time;
-    int input_format = readstat_format(input_filename);
+    int catalog_format = readstat_format(catalog_filename);
     rs_module_t *module = rs_module_for_filename(modules, modules_count, output_filename);
-    #if HAVE_CSVREADER
-    struct csv_metadata csv_meta;
-    memset(&csv_meta, 0, sizeof(csv_metadata));
-    csv_meta.output_format = readstat_format(output_filename);
-    #endif
+    rs_ctx_t *rs_ctx = calloc(1, sizeof(rs_ctx_t));
+    void *module_ctx = NULL;
+    int file_exists = 0;
+    struct stat filestat;
 
     gettimeofday(&start_time, NULL);
 
-    readstat_parser_t *pass1_parser = readstat_parser_init();
-    readstat_parser_t *pass2_parser = readstat_parser_init();
-
-    rs_ctx_t *rs_ctx = calloc(1, sizeof(rs_ctx_t));
-
-    void *module_ctx = NULL;
-    
-    int file_exists = 0;
-    struct stat filestat;
     if (!force && stat(output_filename, &filestat) == 0) {
         error = READSTAT_ERROR_OPEN;
         file_exists = 1;
@@ -213,44 +347,15 @@ static int convert_file(const char *input_filename, const char *catalog_filename
     rs_ctx->module = module;
     rs_ctx->module_ctx = module_ctx;
 
-    // Pass 1 - Collect fweight and value labels
-    readstat_set_error_handler(pass1_parser, &handle_error);
-    readstat_set_value_label_handler(pass1_parser, &handle_value_label);
-    readstat_set_fweight_handler(pass1_parser, &handle_fweight);
-    
-    if (catalog_filename && input_format != RS_FORMAT_CSV) {
-        error = parse_file(pass1_parser, catalog_filename, RS_FORMAT_SAS_CATALOG, rs_ctx);
-        error_filename = catalog_filename;
-    } else if (catalog_filename && input_format == RS_FORMAT_CSV) {
+    if (catalog_format == RS_FORMAT_JSON) {
 #if HAVE_CSVREADER
-        readstat_set_metadata_handler(pass1_parser, &handle_metadata);
-        error = readstat_parse_csv(pass1_parser, input_filename, catalog_filename, &csv_meta, rs_ctx);
-        error_filename = input_filename;
+        error = parse_csv_plus_json(input_filename, catalog_filename, readstat_format(output_filename), rs_ctx);
 #endif
+    } else if (catalog_format == RS_FORMAT_DCT) {
+        error = parse_text_plus_dct(input_filename, catalog_filename, rs_ctx);
     } else {
-        error = parse_file(pass1_parser, input_filename, input_format, rs_ctx);
-        error_filename = input_filename;
+        error = parse_binary_file(input_filename, catalog_filename, rs_ctx);
     }
-    if (error != READSTAT_OK)
-        goto cleanup;
-    
-    // Pass 2 - Parse full file
-    readstat_set_error_handler(pass2_parser, &handle_error);
-    readstat_set_metadata_handler(pass2_parser, &handle_metadata);
-    readstat_set_note_handler(pass2_parser, &handle_note);
-    readstat_set_variable_handler(pass2_parser, &handle_variable);
-    readstat_set_value_handler(pass2_parser, &handle_value);
-
-    if (catalog_filename && input_format == RS_FORMAT_CSV) {
-#if HAVE_CSVREADER
-        error = readstat_parse_csv(pass2_parser, input_filename, catalog_filename, &csv_meta, rs_ctx);
-#endif
-    } else {
-        error = parse_file(pass2_parser, input_filename, input_format, rs_ctx);
-    }
-    error_filename = input_filename;
-    if (error != READSTAT_OK)
-        goto cleanup;
 
     gettimeofday(&end_time, NULL);
 
@@ -260,15 +365,6 @@ static int convert_file(const char *input_filename, const char *catalog_filename
             (start_time.tv_sec + 1e-6 * start_time.tv_usec));
 
 cleanup:
-    #if HAVE_CSVREADER
-    if (csv_meta.column_width) {
-        free(csv_meta.column_width);
-        csv_meta.column_width = NULL;
-    }
-    #endif
-    readstat_parser_free(pass1_parser);
-    readstat_parser_free(pass2_parser);
-
     if (module->finish) {
         module->finish(rs_ctx->module_ctx);
     }
@@ -394,8 +490,10 @@ int main(int argc, char** argv) {
                 output_filename = argv[argpos+1];
             }
         } else if (argpos + 3 == argc) {
-            if (can_read(argv[argpos]) && (is_json(argv[argpos+1]) || is_catalog(argv[argpos+1]))
-                    && can_write(modules, modules_count, argv[argpos+2])) {
+            if (can_write(modules, modules_count, argv[argpos+2]) &&
+                    (is_dictionary(argv[argpos+1]) ||
+                     (can_read(argv[argpos]) && 
+                      (is_json(argv[argpos+1]) || is_catalog(argv[argpos+1]))))) {
                 input_filename = argv[argpos];
                 catalog_filename = argv[argpos+1];
                 output_filename = argv[argpos+2];

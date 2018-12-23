@@ -35,7 +35,6 @@ static void produce_column_header(struct csv_metadata *c, void *s, size_t len) {
     metadata_column_type_t coltype = column_type(c->json_md, column, c->output_format);
     c->is_date[c->columns] = coltype == METADATA_COLUMN_TYPE_DATE;
 
-    
     if (coltype == METADATA_COLUMN_TYPE_STRING) {
         var->alignment = READSTAT_ALIGNMENT_LEFT;
     } else if (coltype == METADATA_COLUMN_TYPE_NUMERIC || coltype == METADATA_COLUMN_TYPE_DATE) {
@@ -61,7 +60,7 @@ static void produce_column_header(struct csv_metadata *c, void *s, size_t len) {
         c->output_module->value_label(c, column);
     }
 
-    if (c->handle.variable && c->pass == 2) {
+    if (c->handle.variable) {
         c->handle.variable(c->columns, var, column, c->user_ctx);
     }
 }
@@ -100,7 +99,8 @@ static void csv_metadata_row(int cc, void *data)
     c->open_row = 0;
 }
 
-readstat_error_t readstat_parse_csv(readstat_parser_t *parser, const char *path, const char *jsonpath, struct csv_metadata* md, void *user_ctx) {
+readstat_error_t readstat_parse_csv(readstat_parser_t *parser, 
+        const char *path, struct csv_metadata* md, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = parser->io;
     size_t file_size = 0;
@@ -115,19 +115,12 @@ readstat_error_t readstat_parse_csv(readstat_parser_t *parser, const char *path,
     md->_rows = md->rows;
     md->rows = 0;
     md->user_ctx = user_ctx;
-    md->json_md = NULL;
     md->handle = parser->handlers;
 
     rs_read_module_t modules[3] = { rs_read_mod_csv, rs_read_mod_dta, rs_read_mod_sav };
     if ((md->output_module = rs_read_module_for_filename(modules, 3, md->output_format)) == NULL) {
         fprintf(stderr, "Unsupported file format\n");
         retval = READSTAT_ERROR_WRITE;
-        goto cleanup;
-    }
-
-    if ((md->json_md = get_json_metadata(jsonpath)) == NULL) {
-        fprintf(stderr, "Could not get JSON metadata\n");
-        retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
 
@@ -186,10 +179,6 @@ cleanup:
     if (md->is_date) {
         free(md->is_date);
         md->is_date = NULL;
-    }
-    if (md->json_md) {
-        free_json_metadata(md->json_md);
-        md->json_md = NULL;
     }
     csv_free(p);
     io->close(io->io_ctx);

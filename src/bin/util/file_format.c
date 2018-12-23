@@ -4,9 +4,15 @@
 #include "../../readstat.h"
 
 int readstat_format(const char *filename) {
+    if (filename == NULL)
+        return RS_FORMAT_UNKNOWN;
+
     size_t len = strlen(filename);
     if (len < sizeof(".dta")-1)
         return RS_FORMAT_UNKNOWN;
+
+    if (strncmp(filename + len - 4, ".dct", 4) == 0)
+        return RS_FORMAT_DCT;
 
     if (strncmp(filename + len - 4, ".dta", 4) == 0)
         return RS_FORMAT_DTA;
@@ -17,10 +23,10 @@ int readstat_format(const char *filename) {
     if (strncmp(filename + len - 4, ".por", 4) == 0)
         return RS_FORMAT_POR;
 
-    #if HAVE_CSVREADER
+#if HAVE_CSVREADER
     if (strncmp(filename + len - 4, ".csv", 4) == 0)
         return RS_FORMAT_CSV;
-    #endif
+#endif
 
     if (strncmp(filename + len - 4, ".xpt", 4) == 0)
         return RS_FORMAT_XPORT;
@@ -80,6 +86,10 @@ int is_catalog(const char *filename) {
 
 int is_json(const char *filename) {
     return (readstat_format(filename) == RS_FORMAT_JSON);
+}
+
+int is_dictionary(const char *filename) {
+    return (readstat_format(filename) == RS_FORMAT_DCT);
 }
 
 int can_read(const char *filename) {

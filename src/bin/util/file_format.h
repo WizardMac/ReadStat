@@ -4,6 +4,7 @@
 enum {
     RS_FORMAT_UNKNOWN,
     RS_FORMAT_DTA,
+    RS_FORMAT_DCT,
     RS_FORMAT_SAV,
     RS_FORMAT_ZSAV,
     RS_FORMAT_POR,
@@ -18,6 +19,7 @@ int readstat_format(const char *filename);
 const char *readstat_format_name(int format);
 int is_catalog(const char *filename);
 int is_json(const char *filename);
+int is_dictionary(const char *filename);
 int can_read(const char *filename);
 
 #endif
