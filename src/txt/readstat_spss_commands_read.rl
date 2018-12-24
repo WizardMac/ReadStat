@@ -304,8 +304,12 @@ readstat_schema_t *readstat_parse_spss_commands(readstat_parser_t *parser,
                                        
     if (cs < %%{ write first_final; }%%) {
         char error_buf[1024];
-        snprintf(error_buf, sizeof(error_buf), "Error parsing SPSS command file around line #%d, col #%ld (%c)",
-            line_no + 1, (long)(p - line_start + 1), *p);
+        if (p == pe) {
+            snprintf(error_buf, sizeof(error_buf), "Error parsing SPSS command file (end-of-file unexpectedly reached)");
+        } else {
+            snprintf(error_buf, sizeof(error_buf), "Error parsing SPSS command file around line #%d, col #%ld (%c)",
+                    line_no + 1, (long)(p - line_start + 1), *p);
+        }
         if (parser->handlers.error) {
             parser->handlers.error(error_buf, user_ctx);
         }
