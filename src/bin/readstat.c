@@ -11,6 +11,7 @@
 #include "../txt/readstat_schema.h"
 #include "../txt/readstat_sas_commands_read.h"
 #include "../txt/readstat_stata_dictionary_read.h"
+#include "../txt/readstat_spss_commands_read.h"
 #include "../txt/readstat_txt_read.h"
 
 #include "write/module.h"
@@ -165,8 +166,8 @@ static void print_usage(const char *cmd) {
     fprintf(stdout, "\n  Convert a CSV file with column metadata stored in a separate JSON file (see extract_metadata):\n");
     fprintf(stdout, "\n     %s input.csv metadata.json output.(" OUTPUT_FORMATS ")\n", cmd);
 
-    fprintf(stdout, "\n  Convert a text file with column metadata stored in a Stata dictionary or SAS commands file:\n");
-    fprintf(stdout, "\n     %s input.xxx metadata.(dct|sas) output.(" OUTPUT_FORMATS ")\n", cmd);
+    fprintf(stdout, "\n  Convert a text file with column metadata stored in a SAS command files, SPSS command file, or Stata dictionary file:\n");
+    fprintf(stdout, "\n     %s input.xxx metadata.(dct|sas|sps) output.(" OUTPUT_FORMATS ")\n", cmd);
 
     fprintf(stdout, "\n  Convert a SAS7BDAT file with value labels stored in a separate SAS catalog file:\n");
     fprintf(stdout, "\n     %s input.sas7bdat catalog.sas7bcat output.(dta|por|sav|xpt"
@@ -247,6 +248,8 @@ static readstat_error_t parse_text_plus_dct(const char *input_filename,
         schema = readstat_parse_stata_dictionary(parser, dct_filename, rs_ctx, &error);
     } else if (dct_format == RS_FORMAT_SAS_COMMANDS) {
         schema = readstat_parse_sas_commands(parser, dct_filename, rs_ctx, &error);
+    } else if (dct_format == RS_FORMAT_SPSS_COMMANDS) {
+        schema = readstat_parse_spss_commands(parser, dct_filename, rs_ctx, &error);
     }
     rs_ctx->error_filename = dct_filename;
     readstat_parser_free(parser);

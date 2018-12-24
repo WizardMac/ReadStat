@@ -100,17 +100,17 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
         }
 
         action copy_filename {
-            readstat_copy(schema->filename, sizeof(schema->filename), str_start, str_len);
+            readstat_copy(schema->filename, sizeof(schema->filename), (char *)str_start, str_len);
         }
 
         action copy_varname {
             readstat_copy(current_entry.variable.name, sizeof(current_entry.variable.name),
-                 str_start, str_len);
+                 (char *)str_start, str_len);
         }
 
         action copy_varlabel {
             readstat_copy(current_entry.variable.label, sizeof(current_entry.variable.label),
-                 str_start, str_len);
+                 (char *)str_start, str_len);
         }
 
         quoted_string = "\"" ( [^"]* ) >{ str_start = fpc; } %{ str_len = fpc - str_start; } "\"";

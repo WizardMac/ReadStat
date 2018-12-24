@@ -38,8 +38,10 @@ libreadstat_la_SOURCES = \
 	src/stata/readstat_dta_parse_timestamp.c \
 	src/stata/readstat_dta_read.c \
 	src/stata/readstat_dta_write.c \
+	src/txt/commands_util.c \
 	src/txt/readstat_copy.c \
 	src/txt/readstat_sas_commands_read.c \
+	src/txt/readstat_spss_commands_read.c \
 	src/txt/readstat_schema.c \
 	src/txt/readstat_stata_dictionary_read.c \
 	src/txt/readstat_txt_read.c
@@ -264,6 +266,7 @@ noinst_PROGRAMS += \
 	fuzz_format_sas7bdat \
 	fuzz_format_xport \
 	fuzz_format_sas_commands \
+	fuzz_format_spss_commands \
 	fuzz_format_stata_dictionary \
 	fuzz_grammar_dta_timestamp \
 	fuzz_grammar_por_double \
@@ -356,6 +359,14 @@ fuzz_format_sas_commands_SOURCES = \
 
 fuzz_format_sas_commands_LDADD = libreadstat.la
 fuzz_format_sas_commands_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_format_spss_commands_SOURCES = \
+	src/fuzz/fuzz_format.c \
+	src/fuzz/fuzz_format_spss_commands.c \
+	src/test/test_buffer_io.c
+
+fuzz_format_spss_commands_LDADD = libreadstat.la
+fuzz_format_spss_commands_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_stata_dictionary_SOURCES = \
 	src/fuzz/fuzz_format.c \

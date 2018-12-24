@@ -6,59 +6,7 @@
 #include "readstat_sas_commands_read.h"
 
 #include "readstat_copy.h"
-
-enum {
-    LABEL_TYPE_NAN = -1,
-    LABEL_TYPE_DOUBLE,
-    LABEL_TYPE_STRING,
-    LABEL_TYPE_RANGE
-};
-
-static readstat_error_t submit_columns(readstat_parser_t *parser, readstat_schema_t *dct, void *user_ctx) {
-    if (!parser->handlers.variable)
-        return READSTAT_OK;
-    int i;
-    int partial_entry_count = 0;
-    for (i=0; i<dct->entry_count; i++) {
-        readstat_schema_entry_t *entry = &dct->entries[i];
-        entry->variable.index = i;
-        entry->variable.index_after_skipping = partial_entry_count;
-        int cb_retval = parser->handlers.variable(i, &entry->variable,
-            entry->labelset[0] ? entry->labelset : NULL, user_ctx);
-        if (cb_retval == READSTAT_HANDLER_SKIP_VARIABLE) {
-            entry->skip = 1;
-        } else if (cb_retval == READSTAT_HANDLER_ABORT) {
-            return READSTAT_ERROR_USER_ABORT;
-        } else {
-            partial_entry_count++;
-        }
-    }
-    return READSTAT_OK;
-}
-
-static readstat_schema_entry_t *find_or_create_entry(readstat_schema_t *dct, const char *var_name) {
-    readstat_schema_entry_t *entry = NULL;
-    int i;
-    /* linear search. this is shitty, but whatever */
-    for (i=0; i<dct->entry_count; i++) {
-        if (strcmp(dct->entries[i].variable.name, var_name) == 0) {
-            entry = &dct->entries[i];
-            break;
-        }
-    }
-    if (!entry) {
-        dct->entries = realloc(dct->entries, sizeof(readstat_schema_entry_t) * (dct->entry_count + 1));
-        entry = &dct->entries[dct->entry_count];
-        memset(entry, 0, sizeof(readstat_schema_entry_t));
-        
-        readstat_copy(entry->variable.name, sizeof(entry->variable.name),
-            (unsigned char *)var_name, strlen(var_name));
-        entry->decimal_separator = '.';
-        
-        dct->entry_count++;
-    }
-    return entry;
-}
+#include "commands_util.h"
 
 %%{
     machine sas_commands;
@@ -67,9 +15,6 @@ static readstat_schema_entry_t *find_or_create_entry(readstat_schema_t *dct, con
 
 readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
     const char *filepath, void *user_ctx, readstat_error_t *outError) {
-    /* TODO use the schema_entry data structure, and access it
-     * with a hash table (or linear search if we're lazy)
-     */
     readstat_schema_t *schema = NULL;
     unsigned char *bytes = NULL;
     readstat_error_t error = READSTAT_OK;
@@ -107,7 +52,7 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
     char buf[1024];
 
     readstat_type_t var_type = READSTAT_TYPE_DOUBLE;
-    int label_type = 0;
+    label_type_t label_type = LABEL_TYPE_DOUBLE;
     int var_row = 0, var_col = 0;
     int var_len = 0;
 
@@ -157,23 +102,23 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
         }
 
         action copy_buf {
-            readstat_copy(buf, sizeof(buf), str_start, str_len);
+            readstat_copy(buf, sizeof(buf), (char *)str_start, str_len);
         }
 
         action copy_labelset {
-            readstat_copy(labelset, sizeof(labelset), str_start, str_len);
+            readstat_copy(labelset, sizeof(labelset), (char *)str_start, str_len);
         }
 
         action copy_string {
-            readstat_copy(string_value, sizeof(string_value), str_start, str_len);
+            readstat_copy(string_value, sizeof(string_value), (char *)str_start, str_len);
         }
 
         action copy_argname {
-            readstat_copy(argname, sizeof(argname), str_start, str_len);
+            readstat_copy(argname, sizeof(argname), (char *)str_start, str_len);
         }
 
         action copy_varname {
-            readstat_copy_lower(varname, sizeof(varname), str_start, str_len);
+            readstat_copy_lower(varname, sizeof(varname), (char *)str_start, str_len);
         }
 
         action handle_arg {
@@ -186,7 +131,7 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
         }
 
         action handle_var {
-            readstat_schema_entry_t *entry = find_or_create_entry(schema, varname);
+            readstat_schema_entry_t *entry = readstat_schema_find_or_create_entry(schema, varname);
             entry->variable.type = var_type;
             entry->row = var_row;
             entry->col = var_col;
@@ -194,48 +139,25 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
         }
 
         action handle_var_len {
-            readstat_schema_entry_t *entry = find_or_create_entry(schema, varname);
+            readstat_schema_entry_t *entry = readstat_schema_find_or_create_entry(schema, varname);
             entry->len = var_len;
         }
 
         action handle_var_label {
-            readstat_schema_entry_t *entry = find_or_create_entry(schema, varname);
-            readstat_copy(entry->variable.label, sizeof(entry->variable.label),
-                (unsigned char *)buf, sizeof(buf));
+            readstat_schema_entry_t *entry = readstat_schema_find_or_create_entry(schema, varname);
+            readstat_copy(entry->variable.label, sizeof(entry->variable.label), buf, sizeof(buf));
         }
 
         action handle_var_labelset {
-            readstat_schema_entry_t *entry = find_or_create_entry(schema, varname);
-            readstat_copy(entry->labelset, sizeof(entry->labelset),
-                (unsigned char *)labelset, sizeof(labelset));
+            readstat_schema_entry_t *entry = readstat_schema_find_or_create_entry(schema, varname);
+            readstat_copy(entry->labelset, sizeof(entry->labelset), labelset, sizeof(labelset));
         }
 
         action handle_value_label {
-            if (parser->handlers.value_label) {
-                if (label_type == LABEL_TYPE_RANGE) {
-                    int i;
-                    for (i=first_integer; i<=integer; i++) {
-                        readstat_value_t value = { 
-                            .type = READSTAT_TYPE_DOUBLE,
-                            .v = { .double_value = i } };
-                        parser->handlers.value_label(labelset, value, buf, user_ctx);
-                    }
-                } else {
-                    readstat_value_t value = { { 0 } };
-                    if (label_type == LABEL_TYPE_DOUBLE) {
-                        value.type = READSTAT_TYPE_DOUBLE;
-                        value.v.double_value = integer;
-                    } else if (label_type == LABEL_TYPE_STRING) {
-                        value.type = READSTAT_TYPE_STRING;
-                        value.v.string_value = string_value;
-                    } else if (label_type == LABEL_TYPE_NAN) {
-                        value.type = READSTAT_TYPE_DOUBLE;
-                        value.v.double_value = NAN;
-                    }
-
-                    parser->handlers.value_label(labelset, value, buf, user_ctx);
-                }
-            }
+            error = submit_value_label(parser, labelset, label_type,
+                first_integer, integer, string_value, buf, user_ctx); 
+            if (error != READSTAT_OK)
+                goto cleanup;
         }
         
         single_quoted_string = "'" ( [^']* ) >{ str_start = fpc; } %{ str_len = fpc - str_start; } "'";
@@ -454,7 +376,7 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
 
     if (cs < %%{ write first_final; }%%) {
         char error_buf[1024];
-        snprintf(error_buf, sizeof(error_buf), "Error parsing .sas file around line #%d, col #%ld (%c)",
+        snprintf(error_buf, sizeof(error_buf), "Error parsing SAS command file around line #%d, col #%ld (%c)",
             line_no + 1, (long)(p - line_start + 1), *p);
         if (parser->handlers.error) {
             parser->handlers.error(error_buf, user_ctx);
@@ -463,8 +385,6 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
         goto cleanup;
     }
     
-    schema->rows_per_observation = var_row + 1;
-
     error = submit_columns(parser, schema, user_ctx);
 
 cleanup:

@@ -23,6 +23,9 @@ int readstat_format(const char *filename) {
     if (strncmp(filename + len - 4, ".sas", 4) == 0)
         return RS_FORMAT_SAS_COMMANDS;
 
+    if (strncmp(filename + len - 4, ".sps", 4) == 0)
+        return RS_FORMAT_SPSS_COMMANDS;
+
     if (strncmp(filename + len - 4, ".sav", 4) == 0)
         return RS_FORMAT_SAV;
 
@@ -71,6 +74,9 @@ const char *readstat_format_name(int format) {
     if (format == RS_FORMAT_POR)
         return "SPSS portable file (POR)";
 
+    if (format == RS_FORMAT_SPSS_COMMANDS)
+        return "SPSS command file";
+
     if (format == RS_FORMAT_SAS_DATA)
         return "SAS data file (SAS7BDAT)";
 
@@ -99,10 +105,10 @@ int is_json(const char *filename) {
 
 int is_dictionary(const char *filename) {
     return (readstat_format(filename) == RS_FORMAT_STATA_DICTIONARY ||
-            readstat_format(filename) == RS_FORMAT_SAS_COMMANDS);
+            readstat_format(filename) == RS_FORMAT_SAS_COMMANDS ||
+            readstat_format(filename) == RS_FORMAT_SPSS_COMMANDS);
 }
 
 int can_read(const char *filename) {
     return (readstat_format(filename) != RS_FORMAT_UNKNOWN);
 }
-

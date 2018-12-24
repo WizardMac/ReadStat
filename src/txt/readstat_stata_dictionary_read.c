@@ -632,21 +632,21 @@ _match:
 	case 4:
 #line 102 "src/txt/readstat_stata_dictionary_read.rl"
 	{
-            readstat_copy(schema->filename, sizeof(schema->filename), str_start, str_len);
+            readstat_copy(schema->filename, sizeof(schema->filename), (char *)str_start, str_len);
         }
 	break;
 	case 5:
 #line 106 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             readstat_copy(current_entry.variable.name, sizeof(current_entry.variable.name),
-                 str_start, str_len);
+                 (char *)str_start, str_len);
         }
 	break;
 	case 6:
 #line 111 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             readstat_copy(current_entry.variable.label, sizeof(current_entry.variable.label),
-                 str_start, str_len);
+                 (char *)str_start, str_len);
         }
 	break;
 	case 7:
