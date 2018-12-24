@@ -6,8 +6,10 @@
 #include "readstat_schema.h"
 #include "readstat_stata_dictionary_read.h"
 
+#include "readstat_copy.h"
 
-#line 11 "src/txt/readstat_stata_dictionary_read.c"
+
+#line 13 "src/txt/readstat_stata_dictionary_read.c"
 static const char _stata_dictionary_actions[] = {
 	0, 1, 1, 1, 4, 1, 6, 1, 
 	7, 1, 8, 1, 9, 1, 11, 1, 
@@ -450,7 +452,7 @@ static const int stata_dictionary_start = 1;
 static const int stata_dictionary_en_main = 1;
 
 
-#line 10 "src/txt/readstat_stata_dictionary_read.rl"
+#line 12 "src/txt/readstat_stata_dictionary_read.rl"
 
 
 readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
@@ -503,12 +505,12 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
     schema->rows_per_observation = 1;
     
     
-#line 507 "src/txt/readstat_stata_dictionary_read.c"
+#line 509 "src/txt/readstat_stata_dictionary_read.c"
 	{
 	cs = stata_dictionary_start;
 	}
 
-#line 512 "src/txt/readstat_stata_dictionary_read.c"
+#line 514 "src/txt/readstat_stata_dictionary_read.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -582,19 +584,19 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 62 "src/txt/readstat_stata_dictionary_read.rl"
+#line 64 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             integer = 0;
         }
 	break;
 	case 1:
-#line 66 "src/txt/readstat_stata_dictionary_read.rl"
+#line 68 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             integer = 10 * integer + ((*p) - '0');
         }
 	break;
 	case 2:
-#line 70 "src/txt/readstat_stata_dictionary_read.rl"
+#line 72 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             memset(&current_entry, 0, sizeof(readstat_schema_entry_t));
             current_entry.decimal_separator = '.';
@@ -603,7 +605,7 @@ _match:
         }
 	break;
 	case 3:
-#line 77 "src/txt/readstat_stata_dictionary_read.rl"
+#line 79 "src/txt/readstat_stata_dictionary_read.rl"
 	{
             current_entry.row = current_row;
             current_entry.col = current_col;
@@ -628,122 +630,115 @@ _match:
         }
 	break;
 	case 4:
-#line 100 "src/txt/readstat_stata_dictionary_read.rl"
+#line 102 "src/txt/readstat_stata_dictionary_read.rl"
 	{
-            if (str_len < sizeof(schema->filename)) {
-                memcpy(schema->filename, str_start, str_len);
-                schema->filename[str_len] = '\0';
-            }
+            readstat_copy(schema->filename, sizeof(schema->filename), str_start, str_len);
         }
 	break;
 	case 5:
-#line 107 "src/txt/readstat_stata_dictionary_read.rl"
+#line 106 "src/txt/readstat_stata_dictionary_read.rl"
 	{
-            if (str_len < sizeof(current_entry.variable.name)) {
-                memcpy(current_entry.variable.name, str_start, str_len);
-                current_entry.variable.name[str_len] = '\0';
-            }
+            readstat_copy(current_entry.variable.name, sizeof(current_entry.variable.name),
+                 str_start, str_len);
         }
 	break;
 	case 6:
-#line 114 "src/txt/readstat_stata_dictionary_read.rl"
+#line 111 "src/txt/readstat_stata_dictionary_read.rl"
 	{
-            if (str_len < sizeof(current_entry.variable.label)) {
-                memcpy(current_entry.variable.label, str_start, str_len);
-                current_entry.variable.label[str_len] = '\0';
-            }
+            readstat_copy(current_entry.variable.label, sizeof(current_entry.variable.label),
+                 str_start, str_len);
         }
 	break;
 	case 7:
-#line 121 "src/txt/readstat_stata_dictionary_read.rl"
+#line 116 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_start = p; }
 	break;
 	case 8:
-#line 121 "src/txt/readstat_stata_dictionary_read.rl"
+#line 116 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 9:
-#line 123 "src/txt/readstat_stata_dictionary_read.rl"
+#line 118 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_start = p; }
 	break;
 	case 10:
-#line 123 "src/txt/readstat_stata_dictionary_read.rl"
+#line 118 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 11:
-#line 125 "src/txt/readstat_stata_dictionary_read.rl"
+#line 120 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_start = p; }
 	break;
 	case 12:
-#line 125 "src/txt/readstat_stata_dictionary_read.rl"
+#line 120 "src/txt/readstat_stata_dictionary_read.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 13:
-#line 127 "src/txt/readstat_stata_dictionary_read.rl"
+#line 122 "src/txt/readstat_stata_dictionary_read.rl"
 	{ line_no++; line_start = p; }
 	break;
 	case 14:
-#line 137 "src/txt/readstat_stata_dictionary_read.rl"
+#line 132 "src/txt/readstat_stata_dictionary_read.rl"
 	{ schema->rows_per_observation = integer; }
 	break;
 	case 15:
-#line 139 "src/txt/readstat_stata_dictionary_read.rl"
+#line 134 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_row = integer - 1; }
 	break;
 	case 16:
-#line 141 "src/txt/readstat_stata_dictionary_read.rl"
+#line 136 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_col = integer - 1; }
 	break;
 	case 17:
-#line 143 "src/txt/readstat_stata_dictionary_read.rl"
+#line 138 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_row++; }
 	break;
 	case 18:
-#line 143 "src/txt/readstat_stata_dictionary_read.rl"
+#line 138 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_row += (integer - 1); }
 	break;
 	case 19:
-#line 147 "src/txt/readstat_stata_dictionary_read.rl"
+#line 142 "src/txt/readstat_stata_dictionary_read.rl"
 	{ schema->cols_per_observation = integer; }
 	break;
 	case 20:
-#line 149 "src/txt/readstat_stata_dictionary_read.rl"
+#line 144 "src/txt/readstat_stata_dictionary_read.rl"
 	{ schema->first_line = integer - 1; }
 	break;
 	case 21:
-#line 153 "src/txt/readstat_stata_dictionary_read.rl"
+#line 148 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.variable.type = READSTAT_TYPE_INT8; }
 	break;
 	case 22:
-#line 154 "src/txt/readstat_stata_dictionary_read.rl"
+#line 149 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.variable.type = READSTAT_TYPE_INT16; }
 	break;
 	case 23:
-#line 155 "src/txt/readstat_stata_dictionary_read.rl"
+#line 150 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.variable.type = READSTAT_TYPE_INT32; }
 	break;
 	case 24:
-#line 156 "src/txt/readstat_stata_dictionary_read.rl"
+#line 151 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.variable.type = READSTAT_TYPE_FLOAT; }
 	break;
 	case 25:
-#line 157 "src/txt/readstat_stata_dictionary_read.rl"
+#line 152 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.variable.type = READSTAT_TYPE_DOUBLE; }
 	break;
 	case 26:
-#line 158 "src/txt/readstat_stata_dictionary_read.rl"
+#line 153 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.variable.type = READSTAT_TYPE_STRING;
                                current_entry.variable.storage_width = integer; }
 	break;
 	case 27:
-#line 165 "src/txt/readstat_stata_dictionary_read.rl"
+#line 160 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.len = integer; }
 	break;
 	case 28:
-#line 166 "src/txt/readstat_stata_dictionary_read.rl"
+#line 161 "src/txt/readstat_stata_dictionary_read.rl"
 	{ current_entry.decimal_separator = ','; }
 	break;
-#line 747 "src/txt/readstat_stata_dictionary_read.c"
+#line 742 "src/txt/readstat_stata_dictionary_read.c"
 		}
 	}
 
@@ -756,7 +751,7 @@ _again:
 	_out: {}
 	}
 
-#line 180 "src/txt/readstat_stata_dictionary_read.rl"
+#line 175 "src/txt/readstat_stata_dictionary_read.rl"
 
 
     /* suppress warnings */

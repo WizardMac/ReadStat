@@ -4,6 +4,8 @@
 #include "readstat_schema.h"
 #include "readstat_stata_dictionary_read.h"
 
+#include "readstat_copy.h"
+
 %%{
     machine stata_dictionary;
     write data noerror nofinal;
@@ -98,24 +100,17 @@ readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
         }
 
         action copy_filename {
-            if (str_len < sizeof(schema->filename)) {
-                memcpy(schema->filename, str_start, str_len);
-                schema->filename[str_len] = '\0';
-            }
+            readstat_copy(schema->filename, sizeof(schema->filename), str_start, str_len);
         }
 
         action copy_varname {
-            if (str_len < sizeof(current_entry.variable.name)) {
-                memcpy(current_entry.variable.name, str_start, str_len);
-                current_entry.variable.name[str_len] = '\0';
-            }
+            readstat_copy(current_entry.variable.name, sizeof(current_entry.variable.name),
+                 str_start, str_len);
         }
 
         action copy_varlabel {
-            if (str_len < sizeof(current_entry.variable.label)) {
-                memcpy(current_entry.variable.label, str_start, str_len);
-                current_entry.variable.label[str_len] = '\0';
-            }
+            readstat_copy(current_entry.variable.label, sizeof(current_entry.variable.label),
+                 str_start, str_len);
         }
 
         quoted_string = "\"" ( [^"]* ) >{ str_start = fpc; } %{ str_len = fpc - str_start; } "\"";

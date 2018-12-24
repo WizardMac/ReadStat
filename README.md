@@ -15,7 +15,7 @@ stats packages. Supported data formats include:
 
 Supported metadata formats include:
 
-* SAS: SAS7BCAT (catalog file)
+* SAS: SAS7BCAT (catalog file) and .sas (command file)
 * Stata: DCT (dictionary file)
 
 There is also write support for all the data formats, but not the metadata
@@ -72,15 +72,15 @@ and written as well.
 
 Use the `-f` option to overwrite an existing output file.
 
-If you have a plain-text file described by a Stata dictionary file, a second
-invocation style is supported:
+If you have a plain-text file described by a Stata dictionary file or a SAS
+command file, a second invocation style is supported:
 
     readstat <input file> <dictionary file> <output file>
 
 Where:
 
 * `<input file>` can be anything
-* `<catalog file>` ends with `.dct`
+* `<dictionary file>` ends with `.dct` or `.sas`
 * `<output file>` ends with `.dta`, `.por`, `.sav`, `.xpt`, or `.csv`
 
 If you have a SAS catalog file containing the data set's value labels, you

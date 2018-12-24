@@ -5,6 +5,7 @@ typedef struct ds_schema_entry_s {
     int                 len;
     int                 skip;
     readstat_variable_t variable;
+    char                labelset[32];
     char                decimal_separator;
 } readstat_schema_entry_t;
 

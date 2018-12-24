@@ -11,17 +11,20 @@ int readstat_format(const char *filename) {
     if (len < sizeof(".dta")-1)
         return RS_FORMAT_UNKNOWN;
 
-    if (strncmp(filename + len - 4, ".dct", 4) == 0)
-        return RS_FORMAT_DCT;
-
     if (strncmp(filename + len - 4, ".dta", 4) == 0)
         return RS_FORMAT_DTA;
 
-    if (strncmp(filename + len - 4, ".sav", 4) == 0)
-        return RS_FORMAT_SAV;
+    if (strncmp(filename + len - 4, ".dct", 4) == 0)
+        return RS_FORMAT_STATA_DICTIONARY;
 
     if (strncmp(filename + len - 4, ".por", 4) == 0)
         return RS_FORMAT_POR;
+
+    if (strncmp(filename + len - 4, ".sas", 4) == 0)
+        return RS_FORMAT_SAS_COMMANDS;
+
+    if (strncmp(filename + len - 4, ".sav", 4) == 0)
+        return RS_FORMAT_SAV;
 
 #if HAVE_CSVREADER
     if (strncmp(filename + len - 4, ".csv", 4) == 0)
@@ -56,6 +59,9 @@ const char *readstat_format_name(int format) {
     if (format == RS_FORMAT_DTA)
         return "Stata binary file (DTA)";
 
+    if (format == RS_FORMAT_STATA_DICTIONARY)
+        return "Stata dictionary file (DCT)";
+
     if (format == RS_FORMAT_SAV)
         return "SPSS binary file (SAV)";
 
@@ -70,6 +76,9 @@ const char *readstat_format_name(int format) {
 
     if (format == RS_FORMAT_SAS_CATALOG)
         return "SAS catalog file (SAS7BCAT)";
+
+    if (format == RS_FORMAT_SAS_COMMANDS)
+        return "SAS command file";
     
     if (format == RS_FORMAT_CSV)
         return "CSV";
@@ -89,7 +98,8 @@ int is_json(const char *filename) {
 }
 
 int is_dictionary(const char *filename) {
-    return (readstat_format(filename) == RS_FORMAT_DCT);
+    return (readstat_format(filename) == RS_FORMAT_STATA_DICTIONARY ||
+            readstat_format(filename) == RS_FORMAT_SAS_COMMANDS);
 }
 
 int can_read(const char *filename) {
