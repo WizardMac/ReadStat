@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <strings.h>
 
 #include "../readstat.h"
 #include "readstat_schema.h"
