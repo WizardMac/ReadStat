@@ -107,7 +107,7 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
     char buf[1024];
 
     readstat_type_t var_type = READSTAT_TYPE_DOUBLE;
-    int label_type;
+    int label_type = 0;
     int var_row = 0, var_col = 0;
     int var_len = 0;
 
