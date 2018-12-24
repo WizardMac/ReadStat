@@ -2909,7 +2909,7 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
     int first_integer = 0;
     int integer = 0;
     int line_no = 0;
-    u_char *line_start = p;
+    unsigned char *line_start = p;
 
     char varname[32];
     char argname[32];
