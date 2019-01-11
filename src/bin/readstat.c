@@ -9,10 +9,6 @@
 
 #include "../readstat.h"
 #include "../txt/readstat_schema.h"
-#include "../txt/readstat_sas_commands_read.h"
-#include "../txt/readstat_stata_dictionary_read.h"
-#include "../txt/readstat_spss_commands_read.h"
-#include "../txt/readstat_txt_read.h"
 
 #include "write/module.h"
 #include "write/mod_readstat.h"

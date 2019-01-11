@@ -2,7 +2,6 @@
 
 #include "../readstat.h"
 #include "readstat_schema.h"
-#include "readstat_stata_dictionary_read.h"
 
 #include "readstat_copy.h"
 

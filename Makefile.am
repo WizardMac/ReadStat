@@ -105,9 +105,9 @@ noinst_HEADERS = \
        src/spss/readstat_zsav_write.h \
        src/stata/readstat_dta.h \
        src/stata/readstat_dta_parse_timestamp.h \
+       src/txt/commands_util.h \
+       src/txt/readstat_copy.h \
        src/txt/readstat_schema.h \
-       src/txt/readstat_stata_dictionary_read.h \
-       src/txt/readstat_txt_read.h \
        src/bin/extract_metadata.h \
        src/bin/read_csv/jsmn.h \
        src/bin/read_csv/json_metadata.h \

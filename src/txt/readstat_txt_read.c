@@ -9,7 +9,6 @@
 #include "../readstat_iconv.h"
 #include "../readstat_convert.h"
 #include "readstat_schema.h"
-#include "readstat_txt_read.h"
 
 typedef struct txt_ctx_s {
     int                rows;

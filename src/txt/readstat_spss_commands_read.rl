@@ -3,7 +3,6 @@
 
 #include "../readstat.h"
 #include "readstat_schema.h"
-#include "readstat_spss_commands_read.h"
 
 #include "readstat_copy.h"
 #include "commands_util.h"

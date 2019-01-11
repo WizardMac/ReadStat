@@ -5,13 +5,12 @@
 
 #include "../readstat.h"
 #include "readstat_schema.h"
-#include "readstat_sas_commands_read.h"
 
 #include "readstat_copy.h"
 #include "commands_util.h"
 
 
-#line 15 "src/txt/readstat_sas_commands_read.c"
+#line 14 "src/txt/readstat_sas_commands_read.c"
 static const char _sas_commands_actions[] = {
 	0, 1, 0, 1, 1, 1, 2, 1, 
 	3, 1, 7, 1, 12, 1, 13, 1, 
@@ -2822,7 +2821,7 @@ static const int sas_commands_start = 1084;
 static const int sas_commands_en_main = 1084;
 
 
-#line 14 "src/txt/readstat_sas_commands_read.rl"
+#line 13 "src/txt/readstat_sas_commands_read.rl"
 
 
 readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
@@ -2876,12 +2875,12 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
     schema->rows_per_observation = 1;
     
     
-#line 2880 "src/txt/readstat_sas_commands_read.c"
+#line 2879 "src/txt/readstat_sas_commands_read.c"
 	{
 	cs = sas_commands_start;
 	}
 
-#line 2885 "src/txt/readstat_sas_commands_read.c"
+#line 2884 "src/txt/readstat_sas_commands_read.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -2955,19 +2954,19 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 67 "src/txt/readstat_sas_commands_read.rl"
+#line 66 "src/txt/readstat_sas_commands_read.rl"
 	{
             integer = 0;
         }
 	break;
 	case 1:
-#line 71 "src/txt/readstat_sas_commands_read.rl"
+#line 70 "src/txt/readstat_sas_commands_read.rl"
 	{
             integer = 10 * integer + ((*p) - '0');
         }
 	break;
 	case 2:
-#line 75 "src/txt/readstat_sas_commands_read.rl"
+#line 74 "src/txt/readstat_sas_commands_read.rl"
 	{
             int value = 0;
             if ((*p) >= '0' && (*p) <= '9') {
@@ -2981,62 +2980,62 @@ _match:
         }
 	break;
 	case 3:
-#line 87 "src/txt/readstat_sas_commands_read.rl"
+#line 86 "src/txt/readstat_sas_commands_read.rl"
 	{
             var_col = integer - 1;
             var_len = 1;
         }
 	break;
 	case 4:
-#line 92 "src/txt/readstat_sas_commands_read.rl"
+#line 91 "src/txt/readstat_sas_commands_read.rl"
 	{
             var_len = integer - var_col;
         }
 	break;
 	case 5:
-#line 96 "src/txt/readstat_sas_commands_read.rl"
+#line 95 "src/txt/readstat_sas_commands_read.rl"
 	{
             var_type = READSTAT_TYPE_STRING;
         }
 	break;
 	case 6:
-#line 100 "src/txt/readstat_sas_commands_read.rl"
+#line 99 "src/txt/readstat_sas_commands_read.rl"
 	{
             var_type = READSTAT_TYPE_DOUBLE;
         }
 	break;
 	case 7:
-#line 104 "src/txt/readstat_sas_commands_read.rl"
+#line 103 "src/txt/readstat_sas_commands_read.rl"
 	{
             readstat_copy(buf, sizeof(buf), (char *)str_start, str_len);
         }
 	break;
 	case 8:
-#line 108 "src/txt/readstat_sas_commands_read.rl"
+#line 107 "src/txt/readstat_sas_commands_read.rl"
 	{
             readstat_copy(labelset, sizeof(labelset), (char *)str_start, str_len);
         }
 	break;
 	case 9:
-#line 112 "src/txt/readstat_sas_commands_read.rl"
+#line 111 "src/txt/readstat_sas_commands_read.rl"
 	{
             readstat_copy(string_value, sizeof(string_value), (char *)str_start, str_len);
         }
 	break;
 	case 10:
-#line 116 "src/txt/readstat_sas_commands_read.rl"
+#line 115 "src/txt/readstat_sas_commands_read.rl"
 	{
             readstat_copy(argname, sizeof(argname), (char *)str_start, str_len);
         }
 	break;
 	case 11:
-#line 120 "src/txt/readstat_sas_commands_read.rl"
+#line 119 "src/txt/readstat_sas_commands_read.rl"
 	{
             readstat_copy_lower(varname, sizeof(varname), (char *)str_start, str_len);
         }
 	break;
 	case 12:
-#line 124 "src/txt/readstat_sas_commands_read.rl"
+#line 123 "src/txt/readstat_sas_commands_read.rl"
 	{
             if (strcasecmp(argname, "firstobs") == 0) {
                 schema->first_line = integer;
@@ -3047,7 +3046,7 @@ _match:
         }
 	break;
 	case 13:
-#line 133 "src/txt/readstat_sas_commands_read.rl"
+#line 132 "src/txt/readstat_sas_commands_read.rl"
 	{
             readstat_schema_entry_t *entry = readstat_schema_find_or_create_entry(schema, varname);
             entry->variable.type = var_type;
@@ -3057,28 +3056,28 @@ _match:
         }
 	break;
 	case 14:
-#line 141 "src/txt/readstat_sas_commands_read.rl"
+#line 140 "src/txt/readstat_sas_commands_read.rl"
 	{
             readstat_schema_entry_t *entry = readstat_schema_find_or_create_entry(schema, varname);
             entry->len = var_len;
         }
 	break;
 	case 15:
-#line 146 "src/txt/readstat_sas_commands_read.rl"
+#line 145 "src/txt/readstat_sas_commands_read.rl"
 	{
             readstat_schema_entry_t *entry = readstat_schema_find_or_create_entry(schema, varname);
             readstat_copy(entry->variable.label, sizeof(entry->variable.label), buf, sizeof(buf));
         }
 	break;
 	case 16:
-#line 151 "src/txt/readstat_sas_commands_read.rl"
+#line 150 "src/txt/readstat_sas_commands_read.rl"
 	{
             readstat_schema_entry_t *entry = readstat_schema_find_or_create_entry(schema, varname);
             readstat_copy(entry->labelset, sizeof(entry->labelset), labelset, sizeof(labelset));
         }
 	break;
 	case 17:
-#line 156 "src/txt/readstat_sas_commands_read.rl"
+#line 155 "src/txt/readstat_sas_commands_read.rl"
 	{
             error = submit_value_label(parser, labelset, label_type,
                 first_integer, integer, string_value, buf, user_ctx); 
@@ -3087,66 +3086,66 @@ _match:
         }
 	break;
 	case 18:
-#line 163 "src/txt/readstat_sas_commands_read.rl"
+#line 162 "src/txt/readstat_sas_commands_read.rl"
 	{ str_start = p; }
 	break;
 	case 19:
-#line 163 "src/txt/readstat_sas_commands_read.rl"
+#line 162 "src/txt/readstat_sas_commands_read.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 20:
-#line 165 "src/txt/readstat_sas_commands_read.rl"
+#line 164 "src/txt/readstat_sas_commands_read.rl"
 	{ str_start = p; }
 	break;
 	case 21:
-#line 165 "src/txt/readstat_sas_commands_read.rl"
+#line 164 "src/txt/readstat_sas_commands_read.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 22:
-#line 173 "src/txt/readstat_sas_commands_read.rl"
+#line 172 "src/txt/readstat_sas_commands_read.rl"
 	{ line_no++; line_start = p; }
 	break;
 	case 23:
-#line 177 "src/txt/readstat_sas_commands_read.rl"
+#line 176 "src/txt/readstat_sas_commands_read.rl"
 	{ str_start = p; }
 	break;
 	case 24:
-#line 177 "src/txt/readstat_sas_commands_read.rl"
+#line 176 "src/txt/readstat_sas_commands_read.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 25:
-#line 216 "src/txt/readstat_sas_commands_read.rl"
+#line 215 "src/txt/readstat_sas_commands_read.rl"
 	{ label_type = LABEL_TYPE_DOUBLE; integer *= -1; }
 	break;
 	case 26:
-#line 217 "src/txt/readstat_sas_commands_read.rl"
+#line 216 "src/txt/readstat_sas_commands_read.rl"
 	{ label_type = LABEL_TYPE_DOUBLE; }
 	break;
 	case 27:
-#line 218 "src/txt/readstat_sas_commands_read.rl"
+#line 217 "src/txt/readstat_sas_commands_read.rl"
 	{ first_integer = integer; label_type = LABEL_TYPE_RANGE; }
 	break;
 	case 28:
-#line 219 "src/txt/readstat_sas_commands_read.rl"
+#line 218 "src/txt/readstat_sas_commands_read.rl"
 	{ label_type = LABEL_TYPE_STRING; }
 	break;
 	case 29:
-#line 220 "src/txt/readstat_sas_commands_read.rl"
+#line 219 "src/txt/readstat_sas_commands_read.rl"
 	{ label_type = LABEL_TYPE_STRING; }
 	break;
 	case 30:
-#line 223 "src/txt/readstat_sas_commands_read.rl"
+#line 222 "src/txt/readstat_sas_commands_read.rl"
 	{ var_len = integer; }
 	break;
 	case 31:
-#line 322 "src/txt/readstat_sas_commands_read.rl"
+#line 321 "src/txt/readstat_sas_commands_read.rl"
 	{ var_row = integer - 1; }
 	break;
 	case 32:
-#line 326 "src/txt/readstat_sas_commands_read.rl"
+#line 325 "src/txt/readstat_sas_commands_read.rl"
 	{ var_row = 0; }
 	break;
-#line 3150 "src/txt/readstat_sas_commands_read.c"
+#line 3149 "src/txt/readstat_sas_commands_read.c"
 		}
 	}
 
@@ -3163,10 +3162,10 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 22:
-#line 173 "src/txt/readstat_sas_commands_read.rl"
+#line 172 "src/txt/readstat_sas_commands_read.rl"
 	{ line_no++; line_start = p; }
 	break;
-#line 3170 "src/txt/readstat_sas_commands_read.c"
+#line 3169 "src/txt/readstat_sas_commands_read.c"
 		}
 	}
 	}
@@ -3174,7 +3173,7 @@ _again:
 	_out: {}
 	}
 
-#line 372 "src/txt/readstat_sas_commands_read.rl"
+#line 371 "src/txt/readstat_sas_commands_read.rl"
 
                                        
    /* suppress warnings */
