@@ -1836,7 +1836,7 @@ static rt_test_group_t _test_groups[] = {
                 .label = "Generic test file with all column types",
                 .test_formats = RT_FORMAT_ALL,
                 .write_error = READSTAT_OK,
-                .rows = 5,
+                .rows = 6,
                 .columns = {
                     { 
                         .name = "VAR1",
@@ -1846,6 +1846,7 @@ static rt_test_group_t _test_groups[] = {
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } }, 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 30.0 } }, 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 10.0 } }, 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -3.14159, } }, 
                             { .type = READSTAT_TYPE_DOUBLE, .is_system_missing = 1, .v = { .double_value = NAN } }, 
@@ -1859,6 +1860,7 @@ static rt_test_group_t _test_groups[] = {
                         .alignment = READSTAT_ALIGNMENT_CENTER,
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
+                            { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 30.0 } }, 
                             { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 20.0 } }, 
                             { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 15.0 } },
                             { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 3.14159 } },
@@ -1873,6 +1875,7 @@ static rt_test_group_t _test_groups[] = {
                         .alignment = READSTAT_ALIGNMENT_CENTER,
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 30 } },
                             { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 20 } },
                             { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 15 } },
                             { .type = READSTAT_TYPE_INT32, .v = { .i32_value = -281817 } },
@@ -1887,6 +1890,7 @@ static rt_test_group_t _test_groups[] = {
                         .alignment = READSTAT_ALIGNMENT_CENTER,
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
+                            { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 30 } }, 
                             { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 20 } }, 
                             { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 15 } }, 
                             { .type = READSTAT_TYPE_INT16, .v = { .i16_value = -28117 } },
@@ -1901,6 +1905,7 @@ static rt_test_group_t _test_groups[] = {
                         .alignment = READSTAT_ALIGNMENT_CENTER,
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 30 } },
                             { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 20 } },
                             { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 15 } },
                             { .type = READSTAT_TYPE_INT8, .v = { .i8_value = -28 } },
@@ -1916,6 +1921,7 @@ static rt_test_group_t _test_groups[] = {
                         .measure = READSTAT_MEASURE_ORDINAL,
                         .values = { 
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Hello" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Hello" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Goodbye" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Goodbye" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Goodbye" } },
@@ -1929,6 +1935,7 @@ static rt_test_group_t _test_groups[] = {
                         .alignment = READSTAT_ALIGNMENT_LEFT,
                         .measure = READSTAT_MEASURE_ORDINAL,
                         .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
