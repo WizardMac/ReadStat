@@ -388,9 +388,12 @@ readstat_schema_t *readstat_parse_spss_commands(readstat_parser_t *parser,
 readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
     const char *filepath, void *user_ctx, readstat_error_t *outError);
 
-/* ... then pass the schema to the plain-text parser */
+/* ... then pass the schema to the plain-text parser ... */
 readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filename, 
         readstat_schema_t *schema, void *user_ctx);
+
+/* ... and free the schema structure */
+void readstat_schema_free(readstat_schema_t *schema);
 
 /* Internal module callbacks */
 typedef struct readstat_string_ref_s {
