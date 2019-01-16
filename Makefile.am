@@ -129,6 +129,7 @@ noinst_HEADERS = \
        src/bin/util/quote_and_escape.h \
        src/bin/util/readstat_dta_days.h \
        src/bin/util/readstat_sav_date.h \
+       src/fuzz/fuzz_format.h \
        src/test/test_buffer.h \
        src/test/test_buffer_io.h \
        src/test/test_dta.h \
@@ -144,9 +145,6 @@ noinst_HEADERS = \
 bin_PROGRAMS = \
     extract_metadata \
 	readstat
-
-noinst_PROGRAMS = \
-	generate_corpus
 
 readstat_SOURCES = \
 	src/bin/readstat.c \
@@ -238,6 +236,9 @@ test_double_decimals_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors
 
 TESTS = test_readstat test_dta_days test_sav_date test_double_decimals
 
+EXTRA_PROGRAMS = \
+    generate_corpus
+
 generate_corpus_SOURCES = \
 	src/fuzz/generate_corpus.c \
 	src/test/test_buffer.c \
@@ -252,11 +253,7 @@ generate_corpus_SOURCES = \
 generate_corpus_LDADD = libreadstat.la
 generate_corpus_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
 
-if FUZZER_ENABLED
-noinst_HEADERS += \
-	src/fuzz/fuzz_format.h
-
-noinst_PROGRAMS += \
+EXTRA_PROGRAMS += \
 	fuzz_compression_sas_rle \
 	fuzz_compression_sav \
 	fuzz_format_dta \
@@ -387,5 +384,3 @@ fuzz_compression_sav_SOURCES = \
 
 fuzz_compression_sav_LDADD = libreadstat.la
 fuzz_compression_sav_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
-
-endif
