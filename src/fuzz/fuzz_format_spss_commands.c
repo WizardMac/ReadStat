@@ -5,8 +5,6 @@
 #include "../test/test_types.h"
 #include "../test/test_buffer.h"
 #include "../test/test_buffer_io.h"
-#include "../txt/readstat_schema.h"
-#include "../txt/readstat_spss_commands_read.h"
 
 #include "fuzz_format.h"
 
