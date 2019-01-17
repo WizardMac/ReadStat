@@ -7,6 +7,7 @@ AC_SUBST([READSTAT_VERSION], [0.2.0-prerelease])
 LT_INIT([disable-static])
 
 AC_PROG_CC
+AC_PROG_CXX
 
 AC_ARG_ENABLE([static-iconv], AS_HELP_STRING([--enable-static-iconv], [Link iconv statically]), [static_iconv=yes], [static_iconv=no])
 AC_ARG_ENABLE([code-coverage], AS_HELP_STRING([--enable-code-coverage], [Enable code coverage profiling]), [code_coverage=yes], [code_coverage=no])
@@ -72,7 +73,9 @@ AC_MSG_RESULT([
 Configuration:
 
 C compiler: $CC
+C++ compiler: $CXX
 CFLAGS: $CFLAGS
+CXXFLAGS: $CXXFLAGS
 
 Host: $host
 Extra warnings: $EXTRA_WARNINGS

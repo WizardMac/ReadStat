@@ -271,6 +271,24 @@ EXTRA_PROGRAMS += \
 	fuzz_grammar_sav_time \
 	fuzz_grammar_spss_format
 
+# Force C++ linking for fuzz targets
+nodist_EXTRA_fuzz_compression_sas_rle_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_compression_sav_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_format_dta_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_format_por_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_format_sav_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_format_sas7bcat_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_format_sas7bdat_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_format_xport_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_format_sas_commands_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_format_spss_commands_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_format_stata_dictionary_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_grammar_dta_timestamp_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_grammar_por_double_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_grammar_sav_date_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_grammar_sav_time_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_grammar_spss_format_SOURCES = dummy.cxx
+
 fuzz_grammar_dta_timestamp_SOURCES = \
 	src/fuzz/fuzz_grammar_dta_timestamp.c
 
