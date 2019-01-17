@@ -51,6 +51,9 @@ AS_CASE([$host],
 	[EXTRA_LDFLAGS=""])
 AC_SUBST([EXTRA_LDFLAGS])
 
+AC_ARG_VAR([LIB_FUZZING_ENGINE], [Location of prebuilt fuzzing engine library])
+AC_SUBST([LIB_FUZZING_ENGINE])
+
 AC_ARG_VAR([RAGEL], [Ragel generator command])
 AC_ARG_VAR([RAGELFLAGS], [Ragel generator flags])
 AC_PATH_PROG([RAGEL], [ragel], [true])
@@ -81,6 +84,8 @@ Host: $host
 Extra warnings: $EXTRA_WARNINGS
 Extra libs: $EXTRA_LIBS
 Extra ld flags: $EXTRA_LDFLAGS
+
+Fuzzing engine: $LIB_FUZZING_ENGINE
 
 Ragel: $RAGEL
 Ragel flags: $RAGELFLAGS])

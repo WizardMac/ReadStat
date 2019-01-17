@@ -292,31 +292,31 @@ nodist_EXTRA_fuzz_grammar_spss_format_SOURCES = dummy.cxx
 fuzz_grammar_dta_timestamp_SOURCES = \
 	src/fuzz/fuzz_grammar_dta_timestamp.c
 
-fuzz_grammar_dta_timestamp_LDADD = libreadstat.la
+fuzz_grammar_dta_timestamp_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_grammar_dta_timestamp_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_grammar_por_double_SOURCES = \
 	src/fuzz/fuzz_grammar_por_double.c
 
-fuzz_grammar_por_double_LDADD = libreadstat.la
+fuzz_grammar_por_double_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_grammar_por_double_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_grammar_sav_date_SOURCES = \
 	src/fuzz/fuzz_grammar_sav_date.c
 
-fuzz_grammar_sav_date_LDADD = libreadstat.la
+fuzz_grammar_sav_date_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_grammar_sav_date_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_grammar_sav_time_SOURCES = \
 	src/fuzz/fuzz_grammar_sav_time.c
 
-fuzz_grammar_sav_time_LDADD = libreadstat.la
+fuzz_grammar_sav_time_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_grammar_sav_time_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_grammar_spss_format_SOURCES = \
 	src/fuzz/fuzz_grammar_spss_format.c
 
-fuzz_grammar_spss_format_LDADD = libreadstat.la
+fuzz_grammar_spss_format_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_grammar_spss_format_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_dta_SOURCES = \
@@ -324,7 +324,7 @@ fuzz_format_dta_SOURCES = \
 	src/fuzz/fuzz_format_dta.c \
 	src/test/test_buffer_io.c
 
-fuzz_format_dta_LDADD = libreadstat.la
+fuzz_format_dta_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_format_dta_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_por_SOURCES = \
@@ -332,7 +332,7 @@ fuzz_format_por_SOURCES = \
 	src/fuzz/fuzz_format_por.c \
 	src/test/test_buffer_io.c
 
-fuzz_format_por_LDADD = libreadstat.la
+fuzz_format_por_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_format_por_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_sas7bcat_SOURCES = \
@@ -340,7 +340,7 @@ fuzz_format_sas7bcat_SOURCES = \
 	src/fuzz/fuzz_format_sas7bcat.c \
 	src/test/test_buffer_io.c
 
-fuzz_format_sas7bcat_LDADD = libreadstat.la
+fuzz_format_sas7bcat_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_format_sas7bcat_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_sas7bdat_SOURCES = \
@@ -348,7 +348,7 @@ fuzz_format_sas7bdat_SOURCES = \
 	src/fuzz/fuzz_format_sas7bdat.c \
 	src/test/test_buffer_io.c
 
-fuzz_format_sas7bdat_LDADD = libreadstat.la
+fuzz_format_sas7bdat_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_format_sas7bdat_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_sav_SOURCES = \
@@ -356,7 +356,7 @@ fuzz_format_sav_SOURCES = \
 	src/fuzz/fuzz_format_sav.c \
 	src/test/test_buffer_io.c
 
-fuzz_format_sav_LDADD = libreadstat.la
+fuzz_format_sav_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_format_sav_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_xport_SOURCES = \
@@ -364,7 +364,7 @@ fuzz_format_xport_SOURCES = \
 	src/fuzz/fuzz_format_xport.c \
 	src/test/test_buffer_io.c
 
-fuzz_format_xport_LDADD = libreadstat.la
+fuzz_format_xport_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_format_xport_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_sas_commands_SOURCES = \
@@ -372,7 +372,7 @@ fuzz_format_sas_commands_SOURCES = \
 	src/fuzz/fuzz_format_sas_commands.c \
 	src/test/test_buffer_io.c
 
-fuzz_format_sas_commands_LDADD = libreadstat.la
+fuzz_format_sas_commands_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_format_sas_commands_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_spss_commands_SOURCES = \
@@ -380,7 +380,7 @@ fuzz_format_spss_commands_SOURCES = \
 	src/fuzz/fuzz_format_spss_commands.c \
 	src/test/test_buffer_io.c
 
-fuzz_format_spss_commands_LDADD = libreadstat.la
+fuzz_format_spss_commands_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_format_spss_commands_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_stata_dictionary_SOURCES = \
@@ -388,17 +388,17 @@ fuzz_format_stata_dictionary_SOURCES = \
 	src/fuzz/fuzz_format_stata_dictionary.c \
 	src/test/test_buffer_io.c
 
-fuzz_format_stata_dictionary_LDADD = libreadstat.la
+fuzz_format_stata_dictionary_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_format_stata_dictionary_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_compression_sas_rle_SOURCES = \
 	src/fuzz/fuzz_compression_sas_rle.c
 
-fuzz_compression_sas_rle_LDADD = libreadstat.la
+fuzz_compression_sas_rle_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_compression_sas_rle_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_compression_sav_SOURCES = \
 	src/fuzz/fuzz_compression_sav.c
 
-fuzz_compression_sav_LDADD = libreadstat.la
+fuzz_compression_sav_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_compression_sav_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
