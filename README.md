@@ -16,7 +16,8 @@ stats packages. Supported data formats include:
 Supported metadata formats include:
 
 * SAS: SAS7BCAT (catalog file) and .sas (command file)
-* Stata: DCT (dictionary file)
+* Stata: .dct (dictionary file)
+* SPSS: .sps (command file)
 
 There is also write support for all the data formats, but not the metadata
 formats. *The produced SAS7BDAT files still cannot be read by SAS*, but feel
@@ -40,9 +41,10 @@ If you're on Windows see [Windows specific notes](#windows-specific-notes).
 Language Bindings
 ==
 
-* Julia: [ReadStat.jl](https://github.com/WizardMac/ReadStat.jl)
+* Julia: [ReadStat.jl](https://github.com/queryverse/ReadStat.jl)
+* Perl 6: [ReadStat.pm6](https://github.com/WizardMac/ReadStat.pm6)
 * Python: [pyreadstat](https://github.com/Roche/pyreadstat)
-* R: [haven](https://github.com/hadley/haven)
+* R: [haven](https://github.com/tidyverse/haven)
 
 
 Docker
@@ -72,15 +74,15 @@ and written as well.
 
 Use the `-f` option to overwrite an existing output file.
 
-If you have a plain-text file described by a Stata dictionary file or a SAS
-command file, a second invocation style is supported:
+If you have a plain-text file described by a Stata dictionary file, a SAS
+command file, or an SPSS command file, a second invocation style is supported:
 
     readstat <input file> <dictionary file> <output file>
 
 Where:
 
 * `<input file>` can be anything
-* `<dictionary file>` ends with `.dct` or `.sas`
+* `<dictionary file>` ends with `.dct`, `.sas`, or `.sps`
 * `<output file>` ends with `.dta`, `.por`, `.sav`, `.xpt`, or `.csv`
 
 If you have a SAS catalog file containing the data set's value labels, you
