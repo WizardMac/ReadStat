@@ -660,7 +660,7 @@ static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len
     int segment_offset = 0;
     int var_index = 0, col = 0;
 
-    while (data_offset < buffer_len && col < ctx->var_index) {
+    while (data_offset < buffer_len && col < ctx->var_index && var_index < ctx->var_index) {
         spss_varinfo_t *col_info = ctx->varinfo[col];
         spss_varinfo_t *var_info = ctx->varinfo[var_index];
         readstat_value_t value = { .type = var_info->type };
