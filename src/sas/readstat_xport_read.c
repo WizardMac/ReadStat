@@ -282,7 +282,7 @@ static readstat_error_t xport_construct_format(char *dst, size_t dst_len,
         snprintf(dst, dst_len, "%s%d",
                 format, width);
     } else {
-        strcpy(dst, format);
+        snprintf(dst, dst_len, "%s", format);
     }
 
     return retval;
