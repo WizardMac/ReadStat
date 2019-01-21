@@ -249,17 +249,18 @@ static readstat_error_t sav_read_variable_missing_values(spss_varinfo_t *info, s
     readstat_error_t retval = READSTAT_OK;
     int i;
 
+    if (info->n_missing_values > 3 || info->n_missing_values < -3) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
     if (info->n_missing_values < 0) {
         info->missing_range = 1;
         info->n_missing_values = abs(info->n_missing_values);
     } else {
         info->missing_range = 0;
     }
-    if (info->n_missing_values > 3) {
-        retval = READSTAT_ERROR_PARSE;
-        goto cleanup;
-    }
-    if (io->read(info->missing_values, info->n_missing_values * sizeof(double), io->io_ctx) < info->n_missing_values * sizeof(double)) {
+    if (io->read(info->missing_values, info->n_missing_values * sizeof(double), io->io_ctx)
+            < info->n_missing_values * sizeof(double)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
