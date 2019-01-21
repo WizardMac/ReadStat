@@ -369,11 +369,11 @@ static readstat_error_t read_missing_value_record(por_ctx_t *ctx) {
         if ((retval = read_double(ctx, &value)) != READSTAT_OK) {
             goto cleanup;
         }
-        varinfo->missing_values[varinfo->n_missing_values++] = value;
-        if (varinfo->n_missing_values > 3) {
+        if (varinfo->n_missing_values > 2) {
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
         }
+        varinfo->missing_values[varinfo->n_missing_values++] = value;
     } else {
         if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) {
             goto cleanup;
