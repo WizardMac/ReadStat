@@ -90,7 +90,6 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
             goto cleanup;
         }
         readstat_value_t value = { .type = is_string ? READSTAT_TYPE_STRING : READSTAT_TYPE_DOUBLE };
-        size_t label_len = sas_read2(&lbp2[8], ctx->bswap);
         char string_val[4*16+1];
         if (is_string) {
             size_t value_entry_len = 6 + lbp1[2];
@@ -111,6 +110,11 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
             }
 
             value.v.double_value = dval;
+        }
+        size_t label_len = sas_read2(&lbp2[8], ctx->bswap);
+        if (&lbp2[10] + label_len - value_start > value_labels_len) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
         }
         if (ctx->value_label_handler) {
             char label[4*label_len+1];
