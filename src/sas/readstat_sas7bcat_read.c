@@ -148,7 +148,7 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
     int payload_offset = 106;
     char name[4*32+1];
 
-    if (data_size < 50)
+    if (data_size < payload_offset)
         goto cleanup;
 
     pad = (data[2] & 0x08) ? 4 : 0; // might be 0x10, not sure
