@@ -172,7 +172,7 @@ static readstat_error_t sas7bdat_parse_column_size_subheader(const char *subhead
     uint64_t col_count;
     readstat_error_t retval = READSTAT_OK;
 
-    if (ctx->column_count) {
+    if (ctx->column_count || ctx->did_submit_columns) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
