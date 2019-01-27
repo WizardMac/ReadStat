@@ -685,6 +685,20 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t sas7bdat_validate_subheader_pointer(subheader_pointer_t *shp_info, size_t page_size,
+        uint16_t subheader_count, sas7bdat_ctx_t *ctx) {
+    if (shp_info->offset > page_size)
+        return READSTAT_ERROR_PARSE;
+    if (shp_info->len > page_size)
+        return READSTAT_ERROR_PARSE;
+    if (shp_info->offset + shp_info->len > page_size)
+        return READSTAT_ERROR_PARSE;
+    if (shp_info->offset < ctx->page_header_size + subheader_count*ctx->subheader_pointer_size)
+        return READSTAT_ERROR_PARSE;
+    
+    return READSTAT_OK;
+}
+
 /* First, extract column text */
 static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_size, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
@@ -708,9 +722,7 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
             goto cleanup;
         }
         if (shp_info.len > 0 && shp_info.compression != SAS_COMPRESSION_TRUNC) {
-            if (shp_info.offset > page_size || shp_info.offset + shp_info.len > page_size
-                    || shp_info.offset < ctx->page_header_size+subheader_count*lshp) {
-                retval = READSTAT_ERROR_PARSE;
+            if ((retval = sas7bdat_validate_subheader_pointer(&shp_info, page_size, subheader_count, ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
             if (shp_info.compression == SAS_COMPRESSION_NONE) {
@@ -769,9 +781,7 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
                 goto cleanup;
             }
             if (shp_info.len > 0 && shp_info.compression != SAS_COMPRESSION_TRUNC) {
-                if (shp_info.offset > page_size || shp_info.offset + shp_info.len > page_size ||
-                        shp_info.offset < ctx->page_header_size+subheader_count*lshp) {
-                    retval = READSTAT_ERROR_PARSE;
+                if ((retval = sas7bdat_validate_subheader_pointer(&shp_info, page_size, subheader_count, ctx)) != READSTAT_OK) {
                     goto cleanup;
                 }
                 if (shp_info.compression == SAS_COMPRESSION_NONE) {
