@@ -57,6 +57,7 @@ typedef struct sas7bdat_ctx_s {
     char           *row;
 
     uint64_t        page_header_size;
+    uint64_t        subheader_signature_size;
     uint64_t        subheader_pointer_size;
 
     int            text_blob_count;
@@ -128,7 +129,7 @@ static readstat_error_t sas7bdat_update_progress(sas7bdat_ctx_t *ctx) {
 
 static readstat_error_t sas7bdat_parse_column_text_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
-    size_t signature_len = ctx->u64 ? 8 : 4;
+    size_t signature_len = ctx->subheader_signature_size;
     uint16_t remainder = sas_read2(&subheader[signature_len], ctx->bswap);
     char *blob = NULL;
     if (remainder != sas_subheader_remainder(len, signature_len)) {
@@ -268,7 +269,7 @@ static readstat_error_t sas7bdat_copy_text_ref(char *out_buffer, size_t out_buff
 
 static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
-    size_t signature_len = ctx->u64 ? 8 : 4;
+    size_t signature_len = ctx->subheader_signature_size;
     int cmax = ctx->u64 ? (len-28)/8 : (len-20)/8;
     int i;
     const char *cnp = &subheader[signature_len+8];
@@ -296,7 +297,7 @@ cleanup:
 
 static readstat_error_t sas7bdat_parse_column_attributes_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
-    size_t signature_len = ctx->u64 ? 8 : 4;
+    size_t signature_len = ctx->subheader_signature_size;
     int cmax = ctx->u64 ? (len-28)/16 : (len-20)/12;
     int i;
     const char *cap = &subheader[signature_len+8];
@@ -511,7 +512,7 @@ cleanup:
 static readstat_error_t sas7bdat_parse_subheader(uint32_t signature, const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
 
-    if (len < 6) {
+    if (len < 2 + ctx->subheader_signature_size) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -717,7 +718,7 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
     for (i=0; i<subheader_count; i++) {
         subheader_pointer_t shp_info = { 0 };
         uint32_t signature = 0;
-        size_t signature_len = ctx->u64 ? 8 : 4;
+        size_t signature_len = ctx->subheader_signature_size;
         if ((retval = sas7bdat_parse_subheader_pointer(shp, page + page_size - shp, &shp_info, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
@@ -1061,6 +1062,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->page_size = hinfo->page_size;
     ctx->page_header_size = hinfo->page_header_size;
     ctx->subheader_pointer_size = hinfo->subheader_pointer_size;
+    ctx->subheader_signature_size = ctx->u64 ? 8 : 4;
     ctx->ctime = hinfo->creation_time;
     ctx->mtime = hinfo->modification_time;
     ctx->version = hinfo->major_version;
