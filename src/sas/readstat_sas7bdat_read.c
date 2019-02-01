@@ -328,16 +328,8 @@ static readstat_error_t sas7bdat_parse_column_attributes_subheader(const char *s
 
         if (cap[off+6] == SAS_COLUMN_TYPE_NUM) {
             ctx->col_info[i].type = READSTAT_TYPE_DOUBLE;
-            if (ctx->col_info[i].width > 8 || ctx->col_info[i].width < 3) {
-                retval = READSTAT_ERROR_PARSE;
-                goto cleanup;
-            }
         } else if (cap[off+6] == SAS_COLUMN_TYPE_CHR) {
             ctx->col_info[i].type = READSTAT_TYPE_STRING;
-            if (ctx->col_info[i].width > INT16_MAX || ctx->col_info[i].width == 0) {
-                retval = READSTAT_ERROR_PARSE;
-                goto cleanup;
-            }
         } else {
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
@@ -543,6 +535,20 @@ cleanup:
     return retval;
 }
 
+static readstat_error_t sas7bdat_validate_column(col_info_t *col_info) {
+    if (col_info->type == READSTAT_TYPE_DOUBLE) {
+        if (col_info->width > 8 || col_info->width < 3) {
+            return READSTAT_ERROR_PARSE;
+        }
+    }
+    if (col_info->type == READSTAT_TYPE_STRING) {
+        if (col_info->width > INT16_MAX || col_info->width == 0) {
+            return READSTAT_ERROR_PARSE;
+        }
+    }
+    return READSTAT_OK;
+}
+
 static readstat_variable_t *sas7bdat_init_variable(sas7bdat_ctx_t *ctx, int i, 
         int index_after_skipping, readstat_error_t *out_retval) {
     readstat_error_t retval = READSTAT_OK;
@@ -553,6 +559,9 @@ static readstat_variable_t *sas7bdat_init_variable(sas7bdat_ctx_t *ctx, int i,
     variable->type = ctx->col_info[i].type;
     variable->storage_width = ctx->col_info[i].width;
 
+    if ((retval = sas7bdat_validate_column(&ctx->col_info[i])) != READSTAT_OK) {
+        goto cleanup;
+    }
     if ((retval = sas7bdat_copy_text_ref(variable->name, sizeof(variable->name), 
                     ctx->col_info[i].name_ref, ctx)) != READSTAT_OK) {
         goto cleanup;
