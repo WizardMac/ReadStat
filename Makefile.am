@@ -60,7 +60,7 @@ endif
 
 libreadstat_la_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
 libreadstat_la_LIBADD = @EXTRA_LIBS@
-libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@
+libreadstat_la_LDFLAGS = @EXTRA_LDFLAGS@ -version-info @READSTAT_VERSION_INFO@
 
 if HAVE_ZLIB
 libreadstat_la_LIBADD += -lz
@@ -76,7 +76,7 @@ libreadstat_la_CFLAGS += -fsanitize=fuzzer-no-link
 libreadstat_la_LDFLAGS += -fsanitize=fuzzer
 endif
 
-dist_man1_MANS = man/readstat.man
+dist_man1_MANS = man/readstat.man man/extract_metadata.man
 
 include_HEADERS = src/readstat.h
 
@@ -109,6 +109,7 @@ noinst_HEADERS = \
        src/txt/readstat_copy.h \
        src/txt/readstat_schema.h \
        src/bin/extract_metadata.h \
+       src/bin/read_csv/csv_metadata.h \
        src/bin/read_csv/jsmn.h \
        src/bin/read_csv/json_metadata.h \
        src/bin/read_csv/mod_csv.h \

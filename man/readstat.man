@@ -1,4 +1,4 @@
-.TH READSTAT 1 "18 January 2018"
+.TH READSTAT 1 "23 January 2019"
 .SH NAME
 readstat \- read and write data set files from SAS, SPSS, and Stata
 .SH SYNOPSIS
@@ -12,8 +12,8 @@ readstat \- read and write data set files from SAS, SPSS, and Stata
 .P
 .B readstat
 [\fB-f\fR]
-.IR input.sas7bdat
-.IR catalog.sas7bcat
+.IR input-file
+.IR metadata-file
 .IR output-file
 .SH DESCRIPTION
 .B readstat
@@ -57,13 +57,34 @@ In addition to the preceding extension list, \fIoutput-file\fR may have extensio
 or
 \fIxlsx\fR, which creates a CSV or Excel file, respectively.
 .PP
-The third invocation style is necessary because SAS stores value labels in a
-"catalog file" separate from the main data set. When three arguments are
-provided,
-.B readstat
-will read data from a SAS data set \fIinput.sas7bdat\fR,
-and named value labels from \fIcatalog.sas7bcat\fR, writing the output in the
-desired format to \fIoutput-file\fR.
+The third invocation style is used when additional metadata about the input
+file, such as value labels or column widths, is stored in a separate file.
+Several types of metadata file are supported:
+.TP
+.IR sas7bcat
+SAS binary "catalog" file, created with SAS version 7 or newer, containing
+value labels
+.TP
+.IR json
+JavaScript Object Notation (JSON) file, containing column metadata that
+cannot be gleaned from the input CSV. For details, see the manual page for 
+the \fBextract_metadata\fR command.
+.TP
+.IR dct
+Stata dictionary file, containing the data layout and column metadata for
+a plain-text input file.
+.TP
+.IR sps
+SPSS command file, describing the data layout and column metadata for a
+plain-text input file.
+.TP
+.IR sps
+SAS command file, describing the data layout and column metadata for a
+plain-text input file.
+.PP
+The last three formats can be used for both fixed-width and delimiter-separated
+(e.g. tab-separated) input files. These are commonly distributed along with
+plain-text ASCII data sets.
 .PP
 Both input and output formats are implied by the file extension.
 .SH OPTIONS
@@ -77,4 +98,4 @@ SAS.
 The finer details of format strings (e.g. "%8.2g") are not properly
 converted between file formats.
 .SH AUTHOR
-Copyright (C) 2012-2018 Evan Miller, and others where indicated.
+Copyright (C) 2012-2019 Evan Miller, and others where indicated.
