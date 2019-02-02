@@ -244,14 +244,58 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t sav_read_variable_missing_values(spss_varinfo_t *info, sav_ctx_t *ctx) {
+static readstat_error_t sav_read_variable_missing_double_values(spss_varinfo_t *info, sav_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
-    readstat_error_t retval = READSTAT_OK;
     int i;
-
-    if (info->n_missing_values > 3 || info->n_missing_values < -3) {
-        retval = READSTAT_ERROR_PARSE;
+    readstat_error_t retval = READSTAT_OK;
+    if (io->read(info->missing_double_values, info->n_missing_values * sizeof(double), io->io_ctx)
+            < info->n_missing_values * sizeof(double)) {
+        retval = READSTAT_ERROR_READ;
         goto cleanup;
+    }
+    for (i=0; i<info->n_missing_values; i++) {
+        if (ctx->bswap) {
+            info->missing_double_values[i] = byteswap_double(info->missing_double_values[i]);
+        }
+
+        uint64_t long_value = 0;
+        memcpy(&long_value, &info->missing_double_values[i], 8);
+
+        if (long_value == ctx->missing_double)
+            info->missing_double_values[i] = NAN;
+        if (long_value == ctx->lowest_double)
+            info->missing_double_values[i] = -HUGE_VAL;
+        if (long_value == ctx->highest_double)
+            info->missing_double_values[i] = HUGE_VAL;
+    }
+
+cleanup:
+    return retval;
+}
+
+static readstat_error_t sav_read_variable_missing_string_values(spss_varinfo_t *info, sav_ctx_t *ctx) {
+    readstat_io_t *io = ctx->io;
+    int i;
+    readstat_error_t retval = READSTAT_OK;
+    for (i=0; i<info->n_missing_values; i++) {
+        char missing_value[8];
+        if (io->read(missing_value, sizeof(missing_value), io->io_ctx) < sizeof(missing_value)) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+        retval = readstat_convert(info->missing_string_values[i], sizeof(info->missing_string_values[0]),
+                missing_value, sizeof(missing_value), ctx->converter);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+    }
+
+cleanup:
+    return retval;
+}
+
+static readstat_error_t sav_read_variable_missing_values(spss_varinfo_t *info, sav_ctx_t *ctx) {
+    if (info->n_missing_values > 3 || info->n_missing_values < -3) {
+        return READSTAT_ERROR_PARSE;
     }
     if (info->n_missing_values < 0) {
         info->missing_range = 1;
@@ -259,30 +303,10 @@ static readstat_error_t sav_read_variable_missing_values(spss_varinfo_t *info, s
     } else {
         info->missing_range = 0;
     }
-    if (io->read(info->missing_values, info->n_missing_values * sizeof(double), io->io_ctx)
-            < info->n_missing_values * sizeof(double)) {
-        retval = READSTAT_ERROR_READ;
-        goto cleanup;
+    if (info->type == READSTAT_TYPE_DOUBLE) {
+        return sav_read_variable_missing_double_values(info, ctx);
     }
-    for (i=0; i<info->n_missing_values; i++) {
-        if (ctx->bswap) {
-            info->missing_values[i] = byteswap_double(info->missing_values[i]);
-        }
-
-        uint64_t long_value = 0;
-        memcpy(&long_value, &info->missing_values[i], 8);
-
-        if (long_value == ctx->missing_double)
-            info->missing_values[i] = NAN;
-        if (long_value == ctx->lowest_double)
-            info->missing_values[i] = -HUGE_VAL;
-        if (long_value == ctx->highest_double)
-            info->missing_values[i] = HUGE_VAL;
-    }
-
-cleanup:
-
-    return retval;
+    return sav_read_variable_missing_string_values(info, ctx);
 }
 
 static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {

@@ -912,6 +912,15 @@ static rt_test_group_t _test_groups[] = {
                             { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2.5 } },
                               .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2.5 } } }
                         }
+                    },
+                    {
+                        .name = "VAR3",
+                        .type = READSTAT_TYPE_STRING,
+                        .missing_ranges_count = 1,
+                        .missing_ranges= { 
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } } }
+                        }
                     }
                 }
             },
@@ -944,6 +953,15 @@ static rt_test_group_t _test_groups[] = {
                         .missing_ranges = { 
                             { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
                               .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } } }
+                        }
+                    },
+                    {
+                        .name = "VAR4",
+                        .type = READSTAT_TYPE_STRING,
+                        .missing_ranges_count = 1,
+                        .missing_ranges = { 
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "AAA" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "ZZZ" } } }
                         }
                     }
                 }
