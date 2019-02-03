@@ -1449,7 +1449,7 @@ static rt_test_group_t _test_groups[] = {
                 },
                 .columns = {
                     {
-                        .name = "VAR2",
+                        .name = "VAR1",
                         .type = READSTAT_TYPE_STRING,
                         .label_set = "labels0"
                     }
