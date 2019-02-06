@@ -76,7 +76,8 @@ void add_val_labels(struct context *ctx, readstat_variable_t *variable, const ch
                 fprintf(ctx->fp, "{ \"code\": \"%s\", \"label\": %s} ", s, lbl);
             }
             free(lbl);
-        } else if (variable->type == READSTAT_TYPE_DOUBLE && ctx->input_format == RS_FORMAT_DTA) {
+        } else if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_NUMERIC
+                && ctx->input_format == RS_FORMAT_DTA) {
             char* lbl = quote_and_escape(value_label->label);
             int k = value_label->int32_key;
             char tag = 0;
