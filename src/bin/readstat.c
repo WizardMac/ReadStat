@@ -159,8 +159,10 @@ static void print_usage(const char *cmd) {
     fprintf(stdout, "\n  Convert a file:\n");
     fprintf(stdout, "\n     %s input.(" INPUT_FORMATS ") output.(" OUTPUT_FORMATS ")\n", cmd);
 
+#if HAVE_CSVREADER
     fprintf(stdout, "\n  Convert a CSV file with column metadata stored in a separate JSON file (see extract_metadata):\n");
     fprintf(stdout, "\n     %s input.csv metadata.json output.(" OUTPUT_FORMATS ")\n", cmd);
+#endif
 
     fprintf(stdout, "\n  Convert a text file with column metadata stored in a SAS command files, SPSS command file, or Stata dictionary file:\n");
     fprintf(stdout, "\n     %s input.xxx metadata.(dct|sas|sps) output.(" OUTPUT_FORMATS ")\n", cmd);

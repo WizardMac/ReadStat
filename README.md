@@ -107,7 +107,7 @@ format strings (e.g. `%8.2g`) are not.
 Command-line Usage with CSV input
 ==
 
-A prerequisite for CSV input is that the [libcsv](https://github.com/robertpostill/libcsv.git)
+A prerequisite for CSV input is that the [libcsv](https://github.com/rgamble/libcsv)
 library is found at compile time.
 
 CSV input is supported together with a metadata file describing the data:
