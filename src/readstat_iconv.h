@@ -1,10 +1,6 @@
 #include <iconv.h>
 
-#ifdef WINICONV_CONST
-typedef const char ** readstat_iconv_inbuf_t;
-#else
-typedef char ** readstat_iconv_inbuf_t;
-#endif
+typedef ICONV_CONST char ** readstat_iconv_inbuf_t;
 
 typedef struct readstat_charset_entry_s {
     int     code;

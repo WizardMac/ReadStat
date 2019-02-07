@@ -37,6 +37,9 @@ Bootstrap autotools by running ./autogen.sh and then proceed as usual:
 
 If you're on Windows see [Windows specific notes](#windows-specific-notes).
 
+If you're on Mac and see errors about `AM_ICONV` when you run ./autogen.sh,
+you'll need to install [gettext](https://www.gnu.org/software/gettext/).
+
 
 Language Bindings
 ==
