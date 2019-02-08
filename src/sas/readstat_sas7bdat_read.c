@@ -705,6 +705,12 @@ static readstat_error_t sas7bdat_validate_subheader_pointer(subheader_pointer_t 
         return READSTAT_ERROR_PARSE;
     if (shp_info->offset < ctx->page_header_size + subheader_count*ctx->subheader_pointer_size)
         return READSTAT_ERROR_PARSE;
+    if (shp_info->compression == SAS_COMPRESSION_NONE) {
+        if (shp_info->len < ctx->subheader_signature_size)
+            return READSTAT_ERROR_PARSE;
+        if (shp_info->offset + ctx->subheader_signature_size > page_size)
+            return READSTAT_ERROR_PARSE;
+    }
     
     return READSTAT_OK;
 }
@@ -736,10 +742,6 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
                 goto cleanup;
             }
             if (shp_info.compression == SAS_COMPRESSION_NONE) {
-                if (shp_info.len < signature_len || shp_info.offset + 4 > page_size) {
-                    retval = READSTAT_ERROR_PARSE;
-                    goto cleanup;
-                }
                 signature = sas_read4(page + shp_info.offset, ctx->bswap);
                 if (!ctx->little_endian && signature == -1 && signature_len == 8) {
                     signature = sas_read4(page + shp_info.offset + 4, ctx->bswap);
