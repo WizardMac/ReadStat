@@ -404,7 +404,7 @@ typedef struct readstat_string_ref_s {
 } readstat_string_ref_t;
 
 typedef size_t (*readstat_variable_width_callback)(readstat_type_t type, size_t user_width);
-typedef readstat_error_t (*readstat_variable_ok_callback)(readstat_variable_t *variable);
+typedef readstat_error_t (*readstat_variable_ok_callback)(const readstat_variable_t *variable);
 
 typedef readstat_error_t (*readstat_write_int8_callback)(void *row_data, const readstat_variable_t *variable, int8_t value);
 typedef readstat_error_t (*readstat_write_int16_callback)(void *row_data, const readstat_variable_t *variable, int16_t value);
@@ -420,6 +420,7 @@ typedef readstat_error_t (*readstat_begin_data_callback)(void *writer);
 typedef readstat_error_t (*readstat_write_row_callback)(void *writer, void *row_data, size_t row_len);
 typedef readstat_error_t (*readstat_end_data_callback)(void *writer);
 typedef void (*readstat_module_ctx_free_callback)(void *module_ctx);
+typedef readstat_error_t (*readstat_metadata_ok_callback)(void *writer);
 
 typedef struct readstat_writer_callbacks_s {
     readstat_variable_width_callback    variable_width;
@@ -438,6 +439,7 @@ typedef struct readstat_writer_callbacks_s {
     readstat_write_row_callback         write_row;
     readstat_end_data_callback          end_data;
     readstat_module_ctx_free_callback   module_ctx_free;
+    readstat_metadata_ok_callback       metadata_ok;
 } readstat_writer_callbacks_t;
 
 /* You'll need to define one of these to get going. Should return # bytes written,
@@ -565,6 +567,10 @@ readstat_error_t readstat_begin_writing_sas7bcat(readstat_writer_t *writer, void
 readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void *user_ctx, long row_count);
 readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count);
 readstat_error_t readstat_begin_writing_xport(readstat_writer_t *writer, void *user_ctx, long row_count);
+
+// Optional, file-specific validation routines, to be called AFTER readstat_begin_writing_XXX
+readstat_error_t readstat_validate_metadata(readstat_writer_t *writer);
+readstat_error_t readstat_validate_variable(readstat_writer_t *writer, const readstat_variable_t *variable);
 
 // Start a row of data (that is, a case or observation)
 readstat_error_t readstat_begin_row(readstat_writer_t *writer);

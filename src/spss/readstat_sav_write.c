@@ -1335,8 +1335,21 @@ static readstat_error_t sav_write_compressed_row(void *writer_ctx, void *row, si
     return readstat_write_bytes(writer, output, output_offset);
 }
 
+static readstat_error_t sav_metadata_ok(void *writer_ctx) {
+    readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
+
+    if (writer->version == 2 && writer->compression == READSTAT_COMPRESS_BINARY)
+        return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
+
+    if (writer->version != 2 && writer->version != 3)
+        return READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
+
+    return READSTAT_OK;
+}
+
 readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count) {
 
+    writer->callbacks.metadata_ok = &sav_metadata_ok;
     writer->callbacks.variable_width = &sav_variable_width;
     writer->callbacks.write_int8 = &sav_write_int8;
     writer->callbacks.write_int16 = &sav_write_int16;
@@ -1348,14 +1361,10 @@ readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *use
     writer->callbacks.write_missing_number = &sav_write_missing_number;
     writer->callbacks.begin_data = &sav_begin_data;
 
-    if (writer->version == 2) {
-        if (writer->compression == READSTAT_COMPRESS_BINARY) {
-            return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
-        }
-    } else if (writer->version == 3) {
+    if (writer->version == 3) {
         writer->compression = READSTAT_COMPRESS_BINARY;
-    } else if (writer->version != 0) {
-        return READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
+    } else if (writer->version == 0) {
+        writer->version = (writer->compression == READSTAT_COMPRESS_BINARY) ? 3 : 2;
     }
 
     if (writer->compression == READSTAT_COMPRESS_ROWS) {
