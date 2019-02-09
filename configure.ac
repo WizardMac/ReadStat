@@ -18,7 +18,6 @@ LT_INIT([disable-static])
 AC_PROG_CC
 AC_PROG_CXX
 
-AC_ARG_ENABLE([static-iconv], AS_HELP_STRING([--enable-static-iconv], [Link iconv statically]), [static_iconv=yes], [static_iconv=no])
 AC_ARG_ENABLE([code-coverage], AS_HELP_STRING([--enable-code-coverage], [Enable code coverage profiling]), [code_coverage=yes], [code_coverage=no])
 AC_ARG_ENABLE([fuzz-testing], AS_HELP_STRING([--enable-fuzz-testing], ["Enable fuzz testing (requires Clang 6 or later)"]), [
    AC_MSG_CHECKING([whether $CC accepts -fsanitize=fuzzer])
