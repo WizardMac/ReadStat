@@ -521,7 +521,7 @@ readstat_error_t readstat_begin_writing_file(readstat_writer_t *writer, void *us
 
     writer->initialized = 1;
 
-    return READSTAT_OK;
+    return readstat_validate_metadata(writer);
 }
 
 readstat_error_t readstat_begin_row(readstat_writer_t *writer) {
