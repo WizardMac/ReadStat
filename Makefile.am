@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = foreign dist-zip
+
 lib_LTLIBRARIES = libreadstat.la
 
 libreadstat_la_SOURCES = \
