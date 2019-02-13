@@ -29,16 +29,20 @@ For reading in R data files, please see the related
 Installation
 ==
 
-Bootstrap autotools by running ./autogen.sh and then proceed as usual:
+Grab the latest [release](https://github.com/WizardMac/ReadStat/releases) and
+then proceed as usual:
 
     ./configure
     make
     sudo make install
 
-If you're on Windows see [Windows specific notes](#windows-specific-notes).
+If you're cloning the repository, first make sure you have autotools installed,
+and then run `./autogen.sh` to generate the configure file.
 
-If you're on Mac and see errors about `AM_ICONV` when you run ./autogen.sh,
+If you're on Mac and see errors about `AM_ICONV` when you run `./autogen.sh`,
 you'll need to install [gettext](https://www.gnu.org/software/gettext/).
+
+If you're on Windows see [Windows specific notes](#windows-specific-notes).
 
 
 Language Bindings
