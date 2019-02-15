@@ -67,16 +67,20 @@ static int handle_variable_sav(int index, readstat_variable_t *variable, const c
     char* type = "";
     const char *format = readstat_variable_get_format(variable);
     const char *label = readstat_variable_get_label(variable);
-    int sav_date = format && (strcmp(format, "EDATE40") == 0) && variable->type == READSTAT_TYPE_DOUBLE;
     int decimals = -1;
 
-    if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_STRING) {
+    if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_STRING) {
         type = "STRING";
-    } else if (sav_date) {
-        type = "DATE";
-    } else if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_NUMERIC) {
-        type = "NUMERIC";
-        decimals = extract_decimals(format, 'F');
+    } else if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_NUMERIC) {
+        if (format && (strncmp(format, "DATE", sizeof("DATE")-1) == 0 || 
+                    strncmp(format, "ADATE", sizeof("ADATE")-1) == 0 || 
+                    strncmp(format, "EDATE", sizeof("EDATE")-1) == 0 || 
+                    strncmp(format, "SDATE", sizeof("SDATE")-1) == 0)) {
+            type = "DATE";
+        } else {
+            type = "NUMERIC";
+            decimals = extract_decimals(format, 'F');
+        }
     } else {
         fprintf(stderr, "%s:%d unhandled type %s\n", __FILE__, __LINE__, readstat_type_str(variable->type));
         exit(EXIT_FAILURE);
@@ -110,16 +114,17 @@ static int handle_variable_dta(int index, readstat_variable_t *variable, const c
     char *type;
     const char *format = readstat_variable_get_format(variable);
     const char *label = readstat_variable_get_label(variable);
-    int dta_date = format && (strcmp(format, "%td") == 0) && variable->type == READSTAT_TYPE_INT32;
     int decimals = -1;
 
-    if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_STRING) {
+    if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_STRING) {
         type = "STRING";
-    } else if (dta_date) {
-        type = "DATE";
-    } else if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_NUMERIC) {
-        type = "NUMERIC";
-        decimals = extract_decimals(format, '%');
+    } else if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_NUMERIC) {
+        if (format && strcmp(format, "%td") == 0) {
+            type = "DATE";
+        } else {
+            type = "NUMERIC";
+            decimals = extract_decimals(format, '%');
+        }
     } else {
         fprintf(stderr, "%s:%d unhandled type %s\n", __FILE__, __LINE__, readstat_type_str(variable->type));
         exit(EXIT_FAILURE);
