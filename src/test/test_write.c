@@ -3,8 +3,8 @@
 #include "../readstat.h"
 #include "../CKHashTable.h"
 
-#include "test_types.h"
 #include "test_buffer.h"
+#include "test_types.h"
 #include "test_readstat.h"
 #include "test_dta.h"
 #include "test_sas.h"

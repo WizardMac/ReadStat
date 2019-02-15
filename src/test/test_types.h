@@ -85,17 +85,6 @@ typedef struct rt_error_s {
     char             msg[256];
 } rt_error_t;
 
-typedef struct rt_buffer_s {
-    size_t      used;
-    size_t      size;
-    char       *bytes;
-} rt_buffer_t;
-
-typedef struct rt_buffer_ctx_s {
-    rt_buffer_t  *buffer;
-    size_t       pos;
-} rt_buffer_ctx_t;
-
 typedef struct rt_parse_ctx_s {
     rt_error_t      *errors;
     long             errors_count;

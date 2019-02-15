@@ -2,9 +2,9 @@
 
 #include "../readstat.h"
 
+#include "test_buffer.h"
 #include "test_types.h"
 #include "test_error.h"
-#include "test_buffer.h"
 #include "test_buffer_io.h"
 #include "test_readstat.h"
 #include "test_read.h"
@@ -55,17 +55,6 @@ char *file_extension(long format) {
         return "xpt8";
 
     return "data";
-}
-
-static rt_buffer_ctx_t *buffer_ctx_init(rt_buffer_t *buffer) {
-    rt_buffer_ctx_t *buffer_ctx = calloc(1, sizeof(rt_buffer_ctx_t));
-    buffer_ctx->buffer = buffer;
-    return buffer_ctx;
-}
-
-static void buffer_ctx_reset(rt_buffer_ctx_t *buffer_ctx) {
-    buffer_reset(buffer_ctx->buffer);
-    buffer_ctx->pos = 0;
 }
 
 rt_parse_ctx_t *parse_ctx_init(rt_buffer_t *buffer, rt_test_file_t *file) {

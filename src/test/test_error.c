@@ -3,6 +3,7 @@
 
 #include "../readstat.h"
 
+#include "test_buffer.h"
 #include "test_types.h"
 #include "test_error.h"
 #include "test_readstat.h"
