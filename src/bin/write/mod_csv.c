@@ -70,15 +70,29 @@ static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     return mod_ctx->var_count == 0;
 }
 
+static void emit_escaped_string(mod_csv_ctx_t *mod_ctx, const char *string) {
+    if (string == NULL) {
+        fprintf(mod_ctx->out_file, "\"\"");
+    } else {
+        fprintf(mod_ctx->out_file, "\"");
+        const char *p = NULL;
+        while ((string = strchr(p = string, '"'))) {
+            fwrite(p, string - p, 1, mod_ctx->out_file);
+            fprintf(mod_ctx->out_file, "\"\"");
+            string++;
+        }
+        fprintf(mod_ctx->out_file, "%s\"", p);
+    }
+}
+
 static int handle_variable(int index, readstat_variable_t *variable,
                            const char *val_labels, void *ctx) {
     mod_csv_ctx_t *mod_ctx = (mod_csv_ctx_t *)ctx;
     const char *name = readstat_variable_get_name(variable);
     if (index > 0) {
-        fprintf(mod_ctx->out_file, ",\"%s\"", name);
-    } else {
-        fprintf(mod_ctx->out_file, "\"%s\"", name);
+        fprintf(mod_ctx->out_file, ",");
     }
+    emit_escaped_string(mod_ctx, name);
     if (index == mod_ctx->var_count - 1) {
         fprintf(mod_ctx->out_file, "\n");
     }
@@ -98,8 +112,7 @@ static int handle_value(int obs_index, readstat_variable_t *variable, readstat_v
     } else if (readstat_value_is_tagged_missing(value)) {
         /* void */
     } else if (type == READSTAT_TYPE_STRING) {
-        /* TODO escape */
-        fprintf(mod_ctx->out_file, "\"%s\"", readstat_string_value(value));
+        emit_escaped_string(mod_ctx, readstat_string_value(value));
     } else if (type == READSTAT_TYPE_INT8) {
         #ifdef __MINGW32__
         __mingw_fprintf(mod_ctx->out_file, "%hhd", readstat_int8_value(value));
