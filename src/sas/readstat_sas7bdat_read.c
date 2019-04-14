@@ -725,7 +725,7 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
     const char *shp = &page[ctx->page_header_size];
     int lshp = ctx->subheader_pointer_size;
 
-    if (ctx->page_header_size + subheader_count*lshp > ctx->page_size) {
+    if (ctx->page_header_size + subheader_count*lshp > page_size) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -785,10 +785,16 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
 
         int i;
         const char *shp = &page[ctx->page_header_size];
+        int lshp = ctx->subheader_pointer_size;
+
+        if (ctx->page_header_size + subheader_count*lshp > page_size) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
+
         for (i=0; i<subheader_count; i++) {
             subheader_pointer_t shp_info = { 0 };
             uint32_t signature = 0;
-            int lshp = ctx->subheader_pointer_size;
             if ((retval = sas7bdat_parse_subheader_pointer(shp, page + page_size - shp, &shp_info, ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
