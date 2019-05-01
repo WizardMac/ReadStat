@@ -845,6 +845,10 @@ static readstat_error_t sav_read_compressed_data(sav_ctx_t *ctx,
     }
 
     while (1) {
+        retval = sav_update_progress(ctx);
+        if (retval != READSTAT_OK)
+            goto done;
+
         buffer_used = io->read(buffer, sizeof(buffer), io->io_ctx);
         if (buffer_used == -1 || buffer_used == 0 || (buffer_used % 8) != 0)
             goto done;
