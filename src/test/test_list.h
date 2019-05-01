@@ -987,18 +987,21 @@ static rt_test_group_t _test_groups[] = {
             {
                 .label = "SPSS missing values for long strings",
                 .test_formats = RT_FORMAT_SPSS,
-                .rows = 2,
+                .rows = 3,
                 .columns = {
                     {
                         .name = "VAR3",
                         .type = READSTAT_TYPE_STRING,
-                        .missing_ranges_count = 1,
+                        .missing_ranges_count = 2,
                         .missing_ranges= { 
                             { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } },
-                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } } }
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING2" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING2" } } }
                         },
                         .values = {
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING2" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "NOT MISSING!!!!!!!!!" } }
                         }
                     }
