@@ -48,7 +48,7 @@ void push_error(rt_parse_ctx_t *ctx,
     error->file = ctx->file;
     error->file_format = ctx->file_format;
     error->file_extension = ctx->file_extension;
-    error->pos = ctx->buffer_ctx->pos;
+    error->pos = ((rt_buffer_ctx_t *)ctx->buffer_ctx)->pos;
     error->var_index = ctx->var_index;
     error->obs_index = ctx->obs_index;
     snprintf(error->msg, sizeof(error->msg), "%s", msg);

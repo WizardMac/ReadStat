@@ -107,5 +107,5 @@ typedef struct rt_parse_ctx_s {
     size_t           max_file_label_len;
     size_t           max_table_name_len;
 
-    rt_buffer_ctx_t *buffer_ctx;
+    void            *buffer_ctx;
 } rt_parse_ctx_t;
