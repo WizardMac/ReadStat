@@ -636,7 +636,7 @@ static rt_test_group_t _test_groups[] = {
             {
                 .label = "Column name begins with number",
                 .write_error = READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER,
-                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAS,
+                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAS | RT_FORMAT_SAV,
                 .rows = 0,
                 .columns = {
                     {
@@ -755,6 +755,28 @@ static rt_test_group_t _test_groups[] = {
                 .columns = {
                     {
                         .name = "var1",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
+                .label = "SAV column name is a reserved word",
+                .write_error = READSTAT_ERROR_NAME_IS_RESERVED_WORD,
+                .test_formats = RT_FORMAT_SAV,
+                .columns = {
+                    {
+                        .name = "ALL",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
+                .label = "SAV column name contains punctuation",
+                .write_error = READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
+                .test_formats = RT_FORMAT_SAV,
+                .columns = {
+                    {
+                        .name = "VAR!",
                         .type = READSTAT_TYPE_DOUBLE
                     }
                 }
