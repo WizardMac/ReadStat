@@ -35,6 +35,7 @@ script:
   - ./.travis/configure.sh
   - make
   - make check
+  - make generate_corpus
 
 after_success:
   - mv src/sas/.libs/*.gc* .

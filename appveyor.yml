@@ -19,7 +19,6 @@ install:
   - ps: |
       if ($env:TOOLCHAIN -eq "msys2")
       {
-        C:\msys64\usr\bin\bash --login -c "pacman -S --noconfirm mingw-w64-x86_64-cmake"
         C:\msys64\usr\bin\bash --login -c "pacman -S --noconfirm mingw-w64-x86_64-ragel"
       }
       else
@@ -34,12 +33,14 @@ build_script:
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && ./autogen.sh"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && ./configure"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && make"
+        C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && make generate_corpus"
       }
       else
       {
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && ./autogen.sh"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && ./configure"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && make"
+        C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && make generate_corpus"
       }
 
 test_script:
