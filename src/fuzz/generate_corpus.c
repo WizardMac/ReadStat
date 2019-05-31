@@ -11,10 +11,10 @@
 
 #include "../stata/readstat_dta.h"
 
+#include "../test/test_buffer.h"
 #include "../test/test_types.h"
 #include "../test/test_error.h"
 #include "../test/test_readstat.h"
-#include "../test/test_buffer.h"
 #include "../test/test_read.h"
 #include "../test/test_write.h"
 #include "../test/test_list.h"
