@@ -1293,19 +1293,19 @@ static sav_varnames_t *sav_varnames_init(readstat_writer_t *writer) {
         const char *name = r_variable->name;
         char *shortname = varnames[i].shortname;
         char *stem = varnames[i].stem;
-        strncpy(shortname, name, 8);
-        for (k=0; k<8 && shortname[k]; k++) { // upcase
+        snprintf(shortname, sizeof(varnames[0].shortname), "%s", name);
+        for (k=0; shortname[k]; k++) { // upcase
             shortname[k] = toupper(shortname[k]);
         }
         if (ck_str_hash_lookup(shortname, table)) {
-            snprintf(shortname, 8, "V%d_A", i+1);
+            snprintf(shortname, sizeof(varnames[0].shortname), "V%d_A", i+1);
         }
         ck_str_hash_insert(shortname, r_variable, table);
 
         if (r_variable->user_width <= MAX_STRING_SIZE)
             continue;
 
-        strncpy(stem, shortname, 5); // conflict resolution?
+        snprintf(stem, sizeof(varnames[0].stem), "%s", shortname); // conflict resolution?
     }
     ck_hash_table_free(table);
     return varnames;
