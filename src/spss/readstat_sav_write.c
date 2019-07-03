@@ -1293,7 +1293,7 @@ static sav_varnames_t *sav_varnames_init(readstat_writer_t *writer) {
         const char *name = r_variable->name;
         char *shortname = varnames[i].shortname;
         char *stem = varnames[i].stem;
-        snprintf(shortname, sizeof(varnames[0].shortname), "%s", name);
+        snprintf(shortname, sizeof(varnames[0].shortname), "%.8s", name);
         for (k=0; shortname[k]; k++) { // upcase
             shortname[k] = toupper(shortname[k]);
         }
@@ -1305,7 +1305,7 @@ static sav_varnames_t *sav_varnames_init(readstat_writer_t *writer) {
         if (r_variable->user_width <= MAX_STRING_SIZE)
             continue;
 
-        snprintf(stem, sizeof(varnames[0].stem), "%s", shortname); // conflict resolution?
+        snprintf(stem, sizeof(varnames[0].stem), "%.5s", shortname); // conflict resolution?
     }
     ck_hash_table_free(table);
     return varnames;
