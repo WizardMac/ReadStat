@@ -627,7 +627,7 @@ static readstat_error_t read_por_file_data(por_ctx_t *ctx) {
                 }
                 value.is_system_missing = isnan(value.v.double_value);
             }
-            if (ctx->handle.value && !ctx->variables[i]->skip && !ctx->rows_skip) {
+            if (ctx->handle.value && !ctx->variables[i]->skip && !ctx->row_offset) {
                 if (ctx->handle.value(ctx->obs_count, ctx->variables[i], value, ctx->user_ctx) != READSTAT_HANDLER_OK) {
                     rs_retval = READSTAT_ERROR_USER_ABORT;
                     goto cleanup;
@@ -635,8 +635,8 @@ static readstat_error_t read_por_file_data(por_ctx_t *ctx) {
             }
 
         }
-        if (ctx->rows_skip) {
-            ctx->rows_skip--;
+        if (ctx->row_offset) {
+            ctx->row_offset--;
         } else {
             ctx->obs_count++;
         }
@@ -748,8 +748,8 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
     ctx->user_ctx = user_ctx;
     ctx->io = io;
     ctx->row_limit = parser->row_limit;
-    if (parser->rows_skip > 0)
-        ctx->rows_skip = parser->rows_skip;
+    if (parser->row_offset > 0)
+        ctx->row_offset = parser->row_offset;
 
     if (parser->output_encoding) {
         if (strcmp(parser->output_encoding, "UTF-8") != 0)

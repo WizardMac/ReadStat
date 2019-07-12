@@ -25,7 +25,7 @@ typedef struct por_ctx_s {
     int            var_count;
     int            var_offset;
     int            row_limit;
-    int            rows_skip;
+    int            row_offset;
     readstat_variable_t **variables;
     spss_varinfo_t *varinfo;
     ck_hash_table_t *var_dict;

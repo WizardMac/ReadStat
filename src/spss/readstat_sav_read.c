@@ -678,8 +678,8 @@ static readstat_error_t sav_read_dictionary_termination_record(sav_ctx_t *ctx) {
 }
 
 static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len, sav_ctx_t *ctx) {
-    if (ctx->rows_skip) {
-        ctx->rows_skip--;
+    if (ctx->row_offset) {
+        ctx->row_offset--;
         return READSTAT_OK;
     }
 
@@ -808,12 +808,12 @@ static readstat_error_t sav_read_uncompressed_data(sav_ctx_t *ctx,
 
     buffer = readstat_malloc(buffer_len);
 
-    if (ctx->rows_skip) {
-        if (io->seek(buffer_len * ctx->rows_skip, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+    if (ctx->row_offset) {
+        if (io->seek(buffer_len * ctx->row_offset, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             goto done;
         }
-        ctx->rows_skip = 0;
+        ctx->row_offset = 0;
     }
 
     while (ctx->row_limit == -1 || ctx->current_row < ctx->row_limit) {
@@ -1582,9 +1582,9 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
     ctx->output_encoding = parser->output_encoding;
     ctx->user_ctx = user_ctx;
     ctx->file_size = file_size;
-    if (parser->rows_skip > 0)
-        ctx->rows_skip = parser->rows_skip;
-    int record_count_after_skipping = ctx->record_count - ctx->rows_skip;
+    if (parser->row_offset > 0)
+        ctx->row_offset = parser->row_offset;
+    int record_count_after_skipping = ctx->record_count - ctx->row_offset;
     if (record_count_after_skipping < 0)
         record_count_after_skipping = 0;
     ctx->row_limit = record_count_after_skipping;
