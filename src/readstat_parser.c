@@ -114,3 +114,8 @@ readstat_error_t readstat_set_row_limit(readstat_parser_t *parser, long row_limi
     parser->row_limit = row_limit;
     return READSTAT_OK;
 }
+
+readstat_error_t readstat_set_rows_skip(readstat_parser_t *parser, long rows_skip) {
+    parser->rows_skip = rows_skip;
+    return READSTAT_OK;
+}

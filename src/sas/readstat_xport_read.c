@@ -29,6 +29,7 @@ typedef struct xport_ctx_s {
     int            obs_count;
     int            var_count;
     int            row_limit;
+    int            rows_skip;
     size_t         row_length;
     int            parsed_row_count;
     char           file_label[40*4+1];
@@ -599,6 +600,14 @@ static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
         goto cleanup;
     }
 
+    if (ctx->rows_skip) {
+        if (ctx->io->seek(ctx->row_length * ctx->rows_skip, READSTAT_SEEK_CUR, ctx->io->io_ctx) == -1) {
+            retval = READSTAT_ERROR_SEEK;
+            goto cleanup;
+        }
+        ctx->rows_skip = 0;
+    }
+
     memset(blank_row, ' ', ctx->row_length);
     while (1) {
         ssize_t bytes_read = read_bytes(ctx, row, ctx->row_length);
@@ -667,6 +676,8 @@ readstat_error_t readstat_parse_xport(readstat_parser_t *parser, const char *pat
     ctx->user_ctx = user_ctx;
     ctx->io = io;
     ctx->row_limit = parser->row_limit;
+    if (parser->rows_skip > 0)
+        ctx->rows_skip = parser->rows_skip;
 
     if (io->open(path, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_OPEN;
