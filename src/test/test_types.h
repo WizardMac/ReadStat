@@ -70,6 +70,11 @@ typedef struct rt_test_group_s {
     rt_test_file_t   tests[MAX_TESTS_PER_GROUP];
 } rt_test_group_t;
 
+typedef struct rt_test_args_s {
+    long             row_limit;
+    long             row_offset;    
+} rt_test_args_t;
+
 
 typedef struct rt_error_s {
     readstat_value_t received;
@@ -98,6 +103,8 @@ typedef struct rt_parse_ctx_s {
     long             variables_count;
     long             value_labels_count;
     long             notes_count;
+
+    rt_test_args_t  *args;
 
     rt_test_file_t  *file;
     long             file_format;
