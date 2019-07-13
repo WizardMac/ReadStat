@@ -570,12 +570,17 @@ static readstat_error_t xport_process_row(xport_ctx_t *ctx, const char *row, siz
         }
         pos += variable->storage_width;
 
-        if (ctx->handle.value && !ctx->variables[i]->skip) {
+        if (ctx->handle.value && !ctx->variables[i]->skip && !ctx->row_offset) {
             if (ctx->handle.value(ctx->parsed_row_count, variable, value, ctx->user_ctx) != READSTAT_HANDLER_OK) {
                 retval = READSTAT_ERROR_USER_ABORT;
                 goto cleanup;
             }
         }
+    }
+    if (ctx->row_offset) {
+        ctx->row_offset--;
+    } else {
+        ctx->parsed_row_count++;
     }
 
 cleanup:
@@ -598,14 +603,6 @@ static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
     if (row == NULL || blank_row == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
-    }
-
-    if (ctx->row_offset) {
-        if (ctx->io->seek(ctx->row_length * ctx->row_offset, READSTAT_SEEK_CUR, ctx->io->io_ctx) == -1) {
-            retval = READSTAT_ERROR_SEEK;
-            goto cleanup;
-        }
-        ctx->row_offset = 0;
     }
 
     memset(blank_row, ' ', ctx->row_length);
@@ -639,7 +636,7 @@ static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
             if (retval != READSTAT_OK)
                 goto cleanup;
 
-            if (++(ctx->parsed_row_count) == ctx->row_limit)
+            if (ctx->parsed_row_count == ctx->row_limit)
                 goto cleanup;
 
             num_blank_rows--;
@@ -653,7 +650,7 @@ static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
         if (retval != READSTAT_OK)
             goto cleanup;
 
-        if (++(ctx->parsed_row_count) == ctx->row_limit)
+        if (ctx->parsed_row_count == ctx->row_limit)
             break;
     }
 
