@@ -120,7 +120,7 @@ static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
 
     if (obs_count != -1) {
         push_error_if_doubles_differ(rt_ctx, 
-                rt_ctx->file->rows, obs_count, 
+                expected_row_count(rt_ctx), obs_count, 
                 "Number of observations");
     }
 
@@ -308,14 +308,7 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     push_error_if_doubles_differ(parse_ctx, parse_ctx->file->columns_count,
             parse_ctx->variables_count, "Column count");
 
-    long expected_rows = parse_ctx->file->rows;
-    if (parse_ctx->args->row_offset > 0)
-        expected_rows -= parse_ctx->args->row_offset;
-    if (expected_rows < 0)
-        expected_rows = 0;
-    if (parse_ctx->args->row_limit > 0 && parse_ctx->args->row_limit < expected_rows)
-        expected_rows = parse_ctx->args->row_limit;
-    push_error_if_doubles_differ(parse_ctx, expected_rows,
+    push_error_if_doubles_differ(parse_ctx, expected_row_count(parse_ctx),
             parse_ctx->obs_index + 1, "Row count");
 
     long value_labels_count = 0;
@@ -331,5 +324,16 @@ cleanup:
     readstat_parser_free(parser);
 
     return error;
+}
+
+long expected_row_count(rt_parse_ctx_t *parse_ctx) {
+    long expected_rows = parse_ctx->file->rows;
+    if (parse_ctx->args->row_offset > 0)
+        expected_rows -= parse_ctx->args->row_offset;
+    if (expected_rows < 0)
+        expected_rows = 0;
+    if (parse_ctx->args->row_limit > 0 && parse_ctx->args->row_limit < expected_rows)
+        expected_rows = parse_ctx->args->row_limit;
+    return expected_rows;
 }
 
