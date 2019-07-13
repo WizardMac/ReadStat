@@ -636,7 +636,7 @@ static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
             if (retval != READSTAT_OK)
                 goto cleanup;
 
-            if (ctx->parsed_row_count == ctx->row_limit)
+            if (ctx->row_limit > 0 && ctx->parsed_row_count == ctx->row_limit)
                 goto cleanup;
 
             num_blank_rows--;
@@ -650,7 +650,7 @@ static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
         if (retval != READSTAT_OK)
             goto cleanup;
 
-        if (ctx->parsed_row_count == ctx->row_limit)
+        if (ctx->row_limit > 0 && ctx->parsed_row_count == ctx->row_limit)
             break;
     }
 

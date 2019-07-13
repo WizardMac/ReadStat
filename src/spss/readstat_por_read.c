@@ -645,7 +645,7 @@ static readstat_error_t read_por_file_data(por_ctx_t *ctx) {
         if (rs_retval != READSTAT_OK)
             break;
             
-        if (ctx->obs_count == ctx->row_limit)
+        if (ctx->row_limit > 0 && ctx->obs_count == ctx->row_limit)
             break;
     }
 cleanup:
