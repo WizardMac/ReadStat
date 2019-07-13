@@ -309,7 +309,7 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
             parse_ctx->variables_count, "Column count");
 
     long expected_rows = parse_ctx->file->rows;
-    if (parse_ctx->args->row_offset > 0);
+    if (parse_ctx->args->row_offset > 0)
         expected_rows -= parse_ctx->args->row_offset;
     if (expected_rows < 0)
         expected_rows = 0;
