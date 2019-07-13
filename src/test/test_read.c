@@ -101,6 +101,17 @@ void parse_ctx_free(rt_parse_ctx_t *parse_ctx) {
     free(parse_ctx);
 }
 
+long expected_row_count(rt_parse_ctx_t *parse_ctx) {
+    long expected_rows = parse_ctx->file->rows;
+    if (parse_ctx->args->row_offset > 0)
+        expected_rows -= parse_ctx->args->row_offset;
+    if (expected_rows < 0)
+        expected_rows = 0;
+    if (parse_ctx->args->row_limit > 0 && parse_ctx->args->row_limit < expected_rows)
+        expected_rows = parse_ctx->args->row_limit;
+    return expected_rows;
+}
+
 static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
 
@@ -324,16 +335,5 @@ cleanup:
     readstat_parser_free(parser);
 
     return error;
-}
-
-long expected_row_count(rt_parse_ctx_t *parse_ctx) {
-    long expected_rows = parse_ctx->file->rows;
-    if (parse_ctx->args->row_offset > 0)
-        expected_rows -= parse_ctx->args->row_offset;
-    if (expected_rows < 0)
-        expected_rows = 0;
-    if (parse_ctx->args->row_limit > 0 && parse_ctx->args->row_limit < expected_rows)
-        expected_rows = parse_ctx->args->row_limit;
-    return expected_rows;
 }
 
