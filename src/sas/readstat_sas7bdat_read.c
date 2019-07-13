@@ -238,6 +238,7 @@ static readstat_error_t sas7bdat_parse_row_size_subheader(const char *subheader,
         total_row_count_after_skipping -= ctx->row_offset;
     } else {
         total_row_count_after_skipping = 0;
+        ctx->row_offset = total_row_count;
     }
     if (ctx->row_limit == 0 || total_row_count_after_skipping < ctx->row_limit)
         ctx->row_limit = total_row_count_after_skipping;

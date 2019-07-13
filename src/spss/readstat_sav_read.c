@@ -1584,12 +1584,18 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
     ctx->file_size = file_size;
     if (parser->row_offset > 0)
         ctx->row_offset = parser->row_offset;
-    int record_count_after_skipping = ctx->record_count - ctx->row_offset;
-    if (record_count_after_skipping < 0)
-        record_count_after_skipping = 0;
-    ctx->row_limit = record_count_after_skipping;
-    if (parser->row_limit > 0 && (parser->row_limit < record_count_after_skipping || ctx->record_count == -1)) 
+    if (ctx->record_count != -1) {
+        int record_count_after_skipping = ctx->record_count - ctx->row_offset;
+        if (record_count_after_skipping < 0) {
+            record_count_after_skipping = 0;
+            ctx->row_offset = ctx->record_count;
+        }
+        ctx->row_limit = record_count_after_skipping;
+        if (parser->row_limit > 0 && parser->row_limit < record_count_after_skipping) 
+            ctx->row_limit = parser->row_limit;
+    } else if (parser->row_limit > 0) {
         ctx->row_limit = parser->row_limit;
+    }
     
     if ((retval = sav_parse_timestamp(ctx, &header)) != READSTAT_OK)
         goto cleanup;

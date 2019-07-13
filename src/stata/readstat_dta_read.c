@@ -1189,8 +1189,10 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     if (parser->row_offset > 0)
         ctx->row_offset = parser->row_offset;
     int64_t nobs_after_skipping = ctx->nobs - ctx->row_offset;
-    if (nobs_after_skipping < 0)
+    if (nobs_after_skipping < 0) {
         nobs_after_skipping = 0;
+        ctx->row_offset = ctx->nobs;
+    }
     ctx->row_limit = nobs_after_skipping;
     if (parser->row_limit > 0 && parser->row_limit < nobs_after_skipping)
         ctx->row_limit = parser->row_limit;
