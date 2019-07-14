@@ -1,17 +1,6 @@
 
 #define RT_FORMAT_TEST_TIMESTAMPS  (RT_FORMAT_DTA_105_AND_NEWER | RT_FORMAT_SPSS | RT_FORMAT_SAS7BDAT)
 
-static rt_test_args_t _test_args[] = {
-    {
-        .row_limit = 0,
-        .row_offset = 0,
-    },
-    {
-        .row_limit = 1,
-        .row_offset = 1,
-    }
-};
-
 static rt_test_group_t _test_groups[] = {
     {
         .label = "Table name",

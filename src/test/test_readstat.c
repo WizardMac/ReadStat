@@ -19,6 +19,17 @@
 #include "test_write.h"
 #include "test_list.h"
 
+static rt_test_args_t _test_args[] = {
+    {
+        .row_limit = 0,
+        .row_offset = 0,
+    },
+    {
+        .row_limit = 1,
+        .row_offset = 1,
+    }
+};
+
 static void dump_buffer(rt_buffer_t *buffer, long format) {
     char filename[128];
     snprintf(filename, sizeof(filename), "/tmp/test_readstat.%s", 
