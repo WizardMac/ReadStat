@@ -663,7 +663,6 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
         }
-        ctx->row_offset = 0;
     }
 
     for (i=0; i<ctx->row_limit; i++) {
@@ -680,8 +679,8 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
         }
     }
 
-    if (ctx->row_limit < ctx->nobs) {
-        if (io->seek(ctx->record_len * (ctx->nobs - ctx->row_limit), READSTAT_SEEK_CUR, io->io_ctx) == -1)
+    if (ctx->row_limit < ctx->nobs - ctx->row_offset) {
+        if (io->seek(ctx->record_len * (ctx->nobs - ctx->row_offset - ctx->row_limit), READSTAT_SEEK_CUR, io->io_ctx) == -1)
             retval = READSTAT_ERROR_SEEK;
     }
 
