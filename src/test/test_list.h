@@ -1761,9 +1761,9 @@ static rt_test_group_t _test_groups[] = {
         .label = "Timestamps",
         .tests = {
             {
-                .label = "January 1, 1970",
+                .label = "January 2, 1970", /* Windows localtime can't handle negative UNIX timestamps */
                 .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
-                .timestamp = { .tm_year = /* 19 */70, .tm_mon = 0, .tm_mday = 1, .tm_hour = 0, .tm_min = 0 },
+                .timestamp = { .tm_year = /* 19 */70, .tm_mon = 0, .tm_mday = 2, .tm_hour = 0, .tm_min = 0 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
