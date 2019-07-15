@@ -666,14 +666,14 @@ readstat_error_t read_version_and_timestamp(por_ctx_t *ctx) {
         goto cleanup;
     }
     if (sscanf(string, "%04d%02d%02d", &timestamp.tm_year, &timestamp.tm_mon, &timestamp.tm_mday) != 3) {
-        retval = READSTAT_ERROR_BAD_TIMESTAMP;
+        retval = READSTAT_ERROR_BAD_TIMESTAMP_STRING;
         goto cleanup;
     }
     if ((retval = read_string(ctx, string, sizeof(string))) != READSTAT_OK) { /* creation time */
         goto cleanup;
     }
     if (sscanf(string, "%02d%02d%02d", &timestamp.tm_hour, &timestamp.tm_min, &timestamp.tm_sec) != 3) {
-        retval = READSTAT_ERROR_BAD_TIMESTAMP;
+        retval = READSTAT_ERROR_BAD_TIMESTAMP_STRING;
         goto cleanup;
     }
 

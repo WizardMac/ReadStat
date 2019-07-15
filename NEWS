@@ -1,6 +1,9 @@
 New in 1.1:
 
     * New function: readstat_set_row_offset (#185). Thanks to @mikmart
+    * Fix segfault when localtime fails on Windows
+    * New error code: READSTAT_ERROR_BAD_TIMESTAMP_VALUE
+    * Renamed error code: READSTAT_ERROR_BAD_TIMESTAMP => READSTAT_ERROR_BAD_TIMESTAMP_STRING
 
 New in 1.0.2:
 
