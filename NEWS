@@ -1,0 +1,17 @@
+New in 1.1:
+
+    * New function: readstat_set_row_offset (#185). Thanks to @mikmart
+
+New in 1.0.2:
+
+    * Compilation: Fix -Wstringop-truncation warnings on GCC 8.2 and later (#151)
+    * SPSS command parser: Fix signed integer overflow (oss-fuzz/15049)
+    * POR parser: Use doubles internally to prevent integer overflows with very large exponents (#182)
+
+New in 1.0.1:
+
+    * SAV writer: Validate variable names
+    * Fix a buffer overflow reading SPSS commands (oss-fuzz/15050) 
+    * New error code READSTAT_ERROR_NAME_IS_ZERO_LENGTH when a blank variable name is provided
+    * New fuzzing dictionary files in fuzz/dict for parsing plain-text file formats
+    * Move corpus files from corpus to fuzz/corpus
