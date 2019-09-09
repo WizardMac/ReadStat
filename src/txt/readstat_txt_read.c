@@ -72,11 +72,13 @@ static readstat_error_t txt_parse_delimited(readstat_parser_t *parser,
     int k=0;
     
     while (1) {
-        int done = 0;
         for (int j=0; j<schema->entry_count; j++) {
             readstat_schema_entry_t *entry = &schema->entries[j];
             int delimiter = (j == schema->entry_count-1) ? '\n' : schema->field_delimiter;
             ssize_t chars_read = txt_getdelim(&value_buffer, &value_buffer_len, delimiter, io);
+            if (chars_read == 0)
+                goto cleanup;
+
             if (chars_read == -1) {
                 retval = READSTAT_ERROR_READ;
                 goto cleanup;
@@ -93,13 +95,13 @@ static readstat_error_t txt_parse_delimited(readstat_parser_t *parser,
                     goto cleanup;
             }
         }
-        k++;
-        if (done)
+        if (++k == parser->row_limit)
             break;
     }
-    ctx->rows = k;
 
 cleanup:
+    ctx->rows = k;
+
     if (value_buffer)
         free(value_buffer);
     
@@ -144,7 +146,8 @@ static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser,
             }
         }
         
-        k++;
+        if (++k == parser->row_limit)
+            break;
     }
 
 cleanup:
