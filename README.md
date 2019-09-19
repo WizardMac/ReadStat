@@ -1,6 +1,7 @@
 [![Travis CI build status](https://travis-ci.org/WizardMac/ReadStat.svg?branch=master)](https://travis-ci.org/WizardMac/ReadStat)
 [![Appveyor build status](https://ci.appveyor.com/api/projects/status/76ctatpy3grlrd9x/branch/master?svg=true)](https://ci.appveyor.com/project/evanmiller/readstat/branch/master)
 [![codecov](https://codecov.io/gh/WizardMac/ReadStat/branch/master/graph/badge.svg)](https://codecov.io/gh/WizardMac/ReadStat)
+[![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/readstat.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:readstat)
 
 ReadStat: Read (and write) data sets from SAS, Stata, and SPSS
 --
