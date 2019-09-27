@@ -431,7 +431,9 @@ sure you update your initial msys2 installation as described on that page.
 
 Second, install a number of additional packages at the msys2 command line:
 
-    pacman -S autoconf automake libtool mingw-w64-x86_64-toolchain ingw-w64-x86_64-cmake mingw-w64-x86_64-libiconv
+    pacman -S autoconf automake libtool mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-libiconv
+
+Consider adding `--disable-download-timeout` to that command to prevent timeout errors on slow connections.
 
 Finally, start a MINGW command line (not the msys2 prompt!) and follow the general install instructions for this package.
 
