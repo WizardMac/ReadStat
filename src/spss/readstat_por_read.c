@@ -812,8 +812,10 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
-    
-    if (por_utf8_encode(check, sizeof(check), tr_check, sizeof(tr_check), ctx->byte2unicode) == -1) {
+
+    ssize_t encoded_len;
+
+    if ((encoded_len = por_utf8_encode(check, sizeof(check), tr_check, sizeof(tr_check), ctx->byte2unicode)) == -1) {
         if (ctx->handle.error) {
             snprintf(error_buf, sizeof(error_buf), "Error converting check string: %.*s", (int)sizeof(check), check);
             ctx->handle.error(error_buf, ctx->user_ctx);
@@ -822,7 +824,7 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
         goto cleanup;
     }
 
-    if (strncmp("SPSSPORT", tr_check, sizeof(tr_check)) != 0) {
+    if (strncmp("SPSSPORT", tr_check, encoded_len) != 0) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
