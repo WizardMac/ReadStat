@@ -172,6 +172,7 @@ static readstat_error_t sas7bdat_realloc_col_info(sas7bdat_ctx_t *ctx, size_t co
         if (ctx->col_info == NULL) {
             return READSTAT_ERROR_MALLOC;
         }
+        memset(ctx->col_info, 0, ctx->col_info_count * sizeof(col_info_t));
     }
     return READSTAT_OK;
 }
