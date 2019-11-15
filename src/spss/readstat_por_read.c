@@ -214,6 +214,7 @@ static readstat_error_t maybe_read_string(por_ctx_t *ctx, char *data, size_t len
     if (string_length > ctx->string_buffer_len) {
         ctx->string_buffer_len = string_length;
         ctx->string_buffer = realloc(ctx->string_buffer, ctx->string_buffer_len);
+        memset(ctx->string_buffer, 0, ctx->string_buffer_len);
     }
     
     if (read_bytes(ctx, ctx->string_buffer, string_length) == -1) {
