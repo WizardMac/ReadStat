@@ -1,3 +1,17 @@
+New in 1.1.2:
+
+    * Improved support for reading SAV files containing space-padded timestamps #197
+    * Improved support for writing SAV files with a large number of variables #199
+    * Improved support for reading SAS7BDAT files created by Stat/Transfer #198
+    * Fix several integer overflows and undefined values #192 #193 #194 #195 #196
+
+New in 1.1.1:
+
+    * Support row limits in the plain-text parsers
+    * SAV reader: Allow spaces in timestamp strings
+    * README: Fix Windows / pacman instructions #189
+    * Fix </sortlist> errors opening files in Stata 15 (tidyverse/haven#461)
+
 New in 1.1:
 
     * New function: readstat_set_row_offset (#185). Thanks to @mikmart
