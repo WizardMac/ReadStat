@@ -1,12 +1,12 @@
 # Update this with each release
-AC_INIT([ReadStat], [1.1.1], [emmiller@gmail.com], [readstat], [https://github.com/WizardMac/ReadStat])
+AC_INIT([ReadStat], [1.1.2-rc0], [emmiller@gmail.com], [readstat], [https://github.com/WizardMac/ReadStat])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
 
 # Don't forget to update these too
 READSTAT_MAJOR_VERSION=1
 READSTAT_MINOR_VERSION=1
-READSTAT_MICRO_VERSION=1
+READSTAT_MICRO_VERSION=2
 
 # libtool stuff, see https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html#Updating-version-info
 READSTAT_VERSION=$READSTAT_MAJOR_VERSION.$READSTAT_MINOR_VERSION.$READSTAT_MICRO_VERSION
