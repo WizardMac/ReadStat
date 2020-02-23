@@ -14,6 +14,11 @@
 
 readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
     const char *filepath, void *user_ctx, readstat_error_t *outError) {
+    if (parser->io->open(filepath, parser->io->io_ctx) == -1) {
+        if (outError)
+            *outError = READSTAT_ERROR_OPEN;
+        return NULL;
+    }
     readstat_schema_t *schema = NULL;
     unsigned char *bytes = NULL;
     readstat_error_t error = READSTAT_OK;
