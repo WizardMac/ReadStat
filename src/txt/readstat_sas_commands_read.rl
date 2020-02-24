@@ -222,7 +222,8 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
                 integer %{ label_type = LABEL_TYPE_DOUBLE; double_value = integer; } |
                 integer whitespace+ "-" whitespace+ %{ first_integer = integer; } integer %{ label_type = LABEL_TYPE_RANGE; } |
                 unquoted_string %{ label_type = LABEL_TYPE_STRING; } %copy_string |
-                quoted_string %{ label_type = LABEL_TYPE_STRING; } %copy_string
+                quoted_string %{ label_type = LABEL_TYPE_STRING; } %copy_string |
+                "other" %{ label_type = LABEL_TYPE_OTHER; }
                 ) whitespace* "=" whitespace* quoted_string %handle_value_label;
 
         var_len = ("$" whitespace* integer %set_str | integer %set_dbl) %{ var_len = integer; };
