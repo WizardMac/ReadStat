@@ -27,13 +27,17 @@ static readstat_error_t handle_value(readstat_parser_t *parser, iconv_t converte
         if (error != READSTAT_OK)
             goto cleanup;
         value.v.string_value = converted_value;
-    } else if (variable->type == READSTAT_TYPE_DOUBLE) { 
-        value.v.double_value = strtod(bytes, NULL);
-    } else if (variable->type == READSTAT_TYPE_FLOAT) {
-        value.v.float_value = strtof(bytes, NULL);
     } else {
-        value.v.i32_value = strtol(bytes, NULL, 10);
-        value.type = READSTAT_TYPE_INT32;
+        char *endptr = NULL;
+        if (variable->type == READSTAT_TYPE_DOUBLE) {
+            value.v.double_value = strtod(bytes, &endptr);
+        } else if (variable->type == READSTAT_TYPE_FLOAT) {
+            value.v.float_value = strtof(bytes, &endptr);
+        } else {
+            value.v.i32_value = strtol(bytes, &endptr, 10);
+            value.type = READSTAT_TYPE_INT32;
+        }
+        value.is_system_missing = (endptr == bytes);
     }
     if (parser->handlers.value(obs_index, variable, value, ctx) == READSTAT_HANDLER_ABORT) {
         error = READSTAT_ERROR_USER_ABORT;
