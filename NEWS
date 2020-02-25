@@ -1,5 +1,8 @@
 New in 1.1.2:
 
+    * CLI tool: Allow uppercase filename extensions
+    * Improved support for reading SPSS and SAS command files
+    * Improved support for reading POR files with format widths >100
     * Improved support for reading SAV files containing space-padded timestamps #197
     * Improved support for writing SAV files with a large number of variables #199
     * Improved support for reading SAS7BDAT files created by Stat/Transfer #198
