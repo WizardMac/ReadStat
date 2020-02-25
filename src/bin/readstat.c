@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
-#include <strings.h>
 #include <sys/time.h>
 #include <sys/stat.h>
 

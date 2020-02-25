@@ -1,4 +1,5 @@
 #include <string.h>
+#include <strings.h>
 
 #include "file_format.h"
 #include "../../readstat.h"
