@@ -11,48 +11,48 @@ int readstat_format(const char *filename) {
     if (len < sizeof(".dta")-1)
         return RS_FORMAT_UNKNOWN;
 
-    if (strncmp(filename + len - 4, ".dta", 4) == 0)
+    if (strncasecmp(filename + len - 4, ".dta", 4) == 0)
         return RS_FORMAT_DTA;
 
-    if (strncmp(filename + len - 4, ".dct", 4) == 0)
+    if (strncasecmp(filename + len - 4, ".dct", 4) == 0)
         return RS_FORMAT_STATA_DICTIONARY;
 
-    if (strncmp(filename + len - 4, ".por", 4) == 0)
+    if (strncasecmp(filename + len - 4, ".por", 4) == 0)
         return RS_FORMAT_POR;
 
-    if (strncmp(filename + len - 4, ".sas", 4) == 0)
+    if (strncasecmp(filename + len - 4, ".sas", 4) == 0)
         return RS_FORMAT_SAS_COMMANDS;
 
-    if (strncmp(filename + len - 4, ".sps", 4) == 0)
+    if (strncasecmp(filename + len - 4, ".sps", 4) == 0)
         return RS_FORMAT_SPSS_COMMANDS;
 
-    if (strncmp(filename + len - 4, ".sav", 4) == 0)
+    if (strncasecmp(filename + len - 4, ".sav", 4) == 0)
         return RS_FORMAT_SAV;
 
 #if HAVE_CSVREADER
-    if (strncmp(filename + len - 4, ".csv", 4) == 0)
+    if (strncasecmp(filename + len - 4, ".csv", 4) == 0)
         return RS_FORMAT_CSV;
 #endif
 
-    if (strncmp(filename + len - 4, ".xpt", 4) == 0)
+    if (strncasecmp(filename + len - 4, ".xpt", 4) == 0)
         return RS_FORMAT_XPORT;
 
     if (len < sizeof(".json")-1)
         return RS_FORMAT_UNKNOWN;
     
-    if (strncmp(filename + len - 5, ".json", 5) == 0)
+    if (strncasecmp(filename + len - 5, ".json", 5) == 0)
         return RS_FORMAT_JSON;
 
-    if (strncmp(filename + len - 5, ".zsav", 5) == 0)
+    if (strncasecmp(filename + len - 5, ".zsav", 5) == 0)
         return RS_FORMAT_ZSAV;
 
     if (len < sizeof(".sas7bdat")-1)
         return RS_FORMAT_UNKNOWN;
 
-    if (strncmp(filename + len - 9, ".sas7bdat", 9) == 0)
+    if (strncasecmp(filename + len - 9, ".sas7bdat", 9) == 0)
         return RS_FORMAT_SAS_DATA;
 
-    if (strncmp(filename + len - 9, ".sas7bcat", 9) == 0)
+    if (strncasecmp(filename + len - 9, ".sas7bcat", 9) == 0)
         return RS_FORMAT_SAS_CATALOG;
 
     return RS_FORMAT_UNKNOWN;
