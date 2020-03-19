@@ -67,7 +67,8 @@ static readstat_charset_entry_t _charset_table[] = {
     { .code = 125,   .name = "GB18030" }, // "euc-cn" in SAS
     { .code = 134,   .name = "EUC-JP" },
     { .code = 138,   .name = "CP932" }, // "shift-jis" in SAS
-    { .code = 140,   .name = "EUC-KR" }
+    { .code = 140,   .name = "EUC-KR" },
+    { .code = 204,   .name = SAS_DEFAULT_STRING_ENCODING } // "any" in SAS
 };
 
 static time_t sas_convert_time(double time, time_t epoch) {
