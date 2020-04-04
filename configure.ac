@@ -1,5 +1,5 @@
 # Update this with each release
-AC_INIT([ReadStat], [1.1.2-rc2], [emmiller@gmail.com], [readstat], [https://github.com/WizardMac/ReadStat])
+AC_INIT([ReadStat], [1.1.2], [emmiller@gmail.com], [readstat], [https://github.com/WizardMac/ReadStat])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
 
