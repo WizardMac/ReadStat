@@ -82,9 +82,12 @@ AC_MSG_RESULT([
 Configuration:
 
 C compiler: $CC
-C++ compiler: $CXX
 CFLAGS: $CFLAGS
+LD: $LD
+
+C++ compiler: $CXX
 CXXFLAGS: $CXXFLAGS
+CXXLD: $CXXLD
 
 Host: $host
 Extra warnings: $EXTRA_WARNINGS
