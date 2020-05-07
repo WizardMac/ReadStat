@@ -10,6 +10,10 @@ jobs:
     os: linux
   - compiler: gcc-8
     os: linux
+  - compiler: gcc-9
+    os: linux
+  - compiler: gcc-10
+    os: linux
   - compiler: clang
     os: osx
     osx_image: xcode11.2
@@ -24,6 +28,8 @@ addons:
     packages:
     - gcc-7
     - gcc-8
+    - gcc-9
+    - gcc-10
   homebrew:
     packages:
     - gettext
