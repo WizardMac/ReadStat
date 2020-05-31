@@ -1,3 +1,10 @@
+New in 1.1.3:
+
+    * Fix warnings when compiling with GCC 10 #202
+    * SAS RLE compressor: Fixes for large files #201
+    * SAV reader: Return a better error message if the magic number doesn't match
+    * SAV reader: Support for dash-separated timestamps
+
 New in 1.1.2:
 
     * DTA reader: support for Spanish-locale timestamps
