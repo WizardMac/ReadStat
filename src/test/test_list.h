@@ -587,6 +587,10 @@ static rt_test_group_t _test_groups[] = {
                     {
                         .name = "stra" "\xc3\x9f" "e",
                         .type = READSTAT_TYPE_DOUBLE
+                    },
+                    { /* https://github.com/WizardMac/ReadStat/issues/206 */
+                        .name = "\xd7\x95\xd7\xaa\xd7\xa7_\xd7\x91",
+                        .type = READSTAT_TYPE_DOUBLE
                     }
                 }
             },
