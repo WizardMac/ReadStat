@@ -45,3 +45,5 @@ test_double_decimals
 *.csv
 *.json
 *.py
+*.tar.gz
+*.zip
