@@ -940,8 +940,14 @@ static readstat_error_t sav_parse_machine_integer_info_record(const void *data, 
         // illegally truncated strings (e.g. the last character is three bytes
         // but the field only has room for two bytes). So to prevent the client
         // from receiving an invalid byte sequence, we ram everything through
-        // iconv, even if most of the time it will be a no-op.
-        iconv_t converter = iconv_open(dst_charset, src_charset);
+        // iconv with the //IGNORE option set.
+        char tocharset[1024];
+        if (!strcasecmp(dst_charset, src_charset)) {
+            snprintf(tocharset, sizeof(tocharset), "%s//IGNORE", dst_charset);
+        } else {
+            snprintf(tocharset, sizeof(tocharset), "%s", dst_charset);
+        }
+        iconv_t converter = iconv_open(tocharset, src_charset);
         if (converter == (iconv_t)-1) {
             return READSTAT_ERROR_UNSUPPORTED_CHARSET;
         }
