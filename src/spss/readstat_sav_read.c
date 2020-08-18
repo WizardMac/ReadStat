@@ -934,7 +934,13 @@ static readstat_error_t sav_parse_machine_integer_info_record(const void *data, 
         }
         ctx->input_encoding = src_charset;
     }
-    if (src_charset && dst_charset && strcmp(src_charset, dst_charset) != 0) {
+    if (src_charset && dst_charset) {
+        // You might be tempted to skip the charset conversion when src_charset
+        // and dst_charset are the same. However, some versions of SPSS insert
+        // illegally truncated strings (e.g. the last character is three bytes
+        // but the field only has room for two bytes). So to prevent the client
+        // from receiving an invalid byte sequence, we ram everything through
+        // iconv, even if most of the time it will be a no-op.
         iconv_t converter = iconv_open(dst_charset, src_charset);
         if (converter == (iconv_t)-1) {
             return READSTAT_ERROR_UNSUPPORTED_CHARSET;
