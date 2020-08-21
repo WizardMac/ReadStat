@@ -47,3 +47,4 @@ test_double_decimals
 *.py
 *.tar.gz
 *.zip
+.DS_Store
