@@ -450,21 +450,21 @@ static readstat_error_t xport_read_variables(xport_ctx_t *ctx) {
         variable->alignment = namestr.nfj ? READSTAT_ALIGNMENT_RIGHT : READSTAT_ALIGNMENT_LEFT;
 
         if (ctx->version == 5) {
-            readstat_convert(variable->name, sizeof(variable->name),
+            retval = readstat_convert(variable->name, sizeof(variable->name),
                     namestr.nname, sizeof(namestr.nname), ctx->converter);
         } else {
-            readstat_convert(variable->name, sizeof(variable->name),
+            retval = readstat_convert(variable->name, sizeof(variable->name),
                     namestr.longname, sizeof(namestr.longname), ctx->converter);
         }
         if (retval != READSTAT_OK)
             goto cleanup;
 
-        readstat_convert(variable->label, sizeof(variable->label),
+        retval = readstat_convert(variable->label, sizeof(variable->label),
                 namestr.nlabel, sizeof(namestr.nlabel), ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
 
-        xport_construct_format(variable->format, sizeof(variable->format),
+        retval = xport_construct_format(variable->format, sizeof(variable->format),
                 namestr.nform, sizeof(namestr.nform),
                 variable->display_width, variable->decimals);
         if (retval != READSTAT_OK)
