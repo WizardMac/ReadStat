@@ -77,10 +77,10 @@ ssize_t readstat_por_parse_double(const char *data, size_t len, double *result,
     double val = 0.0;
     double denom = 30.0;
     double temp_frac = 0.0;
-    uint64_t num = 0;
-    uint64_t exp = 0;
+    double num = 0.0;
+    double exp = 0.0;
     
-    uint64_t temp_val = 0;
+    double temp_val = 0.0;
     
     const unsigned char *p = (const unsigned char *)data;
     const unsigned char *pe = p + len;
@@ -246,7 +246,7 @@ _again:
         if (exp_is_negative)
             exp *= -1;
         if (exp) {
-            val *= pow(10.0, exp);
+            val *= pow(30.0, exp);
         }
         if (is_negative)
             val *= -1;

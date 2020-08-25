@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <limits.h>
 #include <inttypes.h>
 
 #include "readstat_sas.h"
@@ -12,8 +13,9 @@
 #include "../readstat_convert.h"
 #include "../readstat_writer.h"
 
-#define HEADER_SIZE 1024
-#define PAGE_SIZE   4096
+#define SAS_FILE_HEADER_SIZE_32BIT 1024
+#define SAS_FILE_HEADER_SIZE_64BIT 8192
+#define SAS_DEFAULT_PAGE_SIZE      4096
 
 #define SAS_DEFAULT_STRING_ENCODING "WINDOWS-1252"
 
@@ -65,8 +67,20 @@ static readstat_charset_entry_t _charset_table[] = {
     { .code = 125,   .name = "GB18030" }, // "euc-cn" in SAS
     { .code = 134,   .name = "EUC-JP" },
     { .code = 138,   .name = "CP932" }, // "shift-jis" in SAS
-    { .code = 140,   .name = "EUC-KR" }
+    { .code = 140,   .name = "EUC-KR" },
+    { .code = 204,   .name = SAS_DEFAULT_STRING_ENCODING } // "any" in SAS
 };
+
+static time_t sas_convert_time(double time, time_t epoch) {
+    time += epoch;
+    if (isnan(time))
+        return 0;
+    if (time > (double)LONG_MAX)
+        return LONG_MAX;
+    if (time < (double)LONG_MIN)
+        return LONG_MIN;
+    return time;
+}
 
 uint64_t sas_read8(const char *data, int bswap) {
     uint64_t tmp;
@@ -86,15 +100,8 @@ uint16_t sas_read2(const char *data, int bswap) {
     return bswap ? byteswap2(tmp) : tmp;
 }
 
-time_t sas_convert_time(double time, time_t epoch) {
-    time += epoch;
-    if (isnan(time))
-        return 0;
-    if (time > 1.0 * INT64_MAX)
-        return INT64_MAX;
-    if (time < 1.0 * INT64_MIN)
-        return INT64_MIN;
-    return time;
+size_t sas_subheader_remainder(size_t len, size_t signature_len) {
+    return len - (4+2*signature_len);
 }
 
 readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo, 
@@ -241,12 +248,16 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
         goto cleanup;
     }
     int major, minor, revision;
-    if (sscanf(header_end.release, "%1d.%04dM%1d", &major, &minor, &revision) == 3) {
-        hinfo->major_version = major;
-        hinfo->minor_version = minor;
-        hinfo->revision = revision;
+    if (sscanf(header_end.release, "%1d.%04dM%1d", &major, &minor, &revision) != 3) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
     }
-    if (major == 9 && minor == 0 && revision == 0) {
+
+    hinfo->major_version = major;
+    hinfo->minor_version = minor;
+    hinfo->revision = revision;
+
+    if ((major == 8 || major == 9) && minor == 0 && revision == 0) {
         /* A bit of a hack, but most SAS installations are running a minor update */
         hinfo->vendor = READSTAT_VENDOR_STAT_TRANSFER;
     } else {
@@ -271,11 +282,17 @@ readstat_error_t sas_write_header(readstat_writer_t *writer, sas_header_info_t *
     struct tm epoch_tm = { .tm_year = 60, .tm_mday = 1 };
     time_t epoch = mktime(&epoch_tm);
 
-    sas_header_end_t header_end = {
-        .host = "W32_VSPRO"
-    };
+    memset(header_start.file_label, ' ', sizeof(header_start.file_label));
 
-    strncpy(header_start.file_label, writer->file_label, sizeof(header_start.file_label));
+    size_t file_label_len = strlen(writer->file_label);
+    if (file_label_len > sizeof(header_start.file_label))
+        file_label_len = sizeof(header_start.file_label);
+
+    if (file_label_len) {
+        memcpy(header_start.file_label, writer->file_label, file_label_len);
+    } else {
+        memcpy(header_start.file_label, "DATASET", sizeof("DATASET")-1);
+    }
 
     retval = readstat_write_bytes(writer, &header_start, sizeof(sas_header_start_t));
     if (retval != READSTAT_OK)
@@ -326,9 +343,13 @@ readstat_error_t sas_write_header(readstat_writer_t *writer, sas_header_info_t *
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    char release[32];
-    snprintf(release, sizeof(release), "%1ld.%04ldM0", writer->version / 10000, writer->version % 10000);
-    strncpy(header_end.release, release, sizeof(header_end.release));
+    sas_header_end_t header_end = {
+        .host = "W32_VSPRO"
+    };
+
+    char release[sizeof(header_end.release)+1] = { 0 };
+    snprintf(release, sizeof(release), "%1d.%04dM0", (unsigned int)writer->version % 10, 101);
+    memcpy(header_end.release, release, sizeof(header_end.release));
 
     retval = readstat_write_bytes(writer, &header_end, sizeof(sas_header_end_t));
     if (retval != READSTAT_OK)
@@ -346,14 +367,15 @@ sas_header_info_t *sas_header_info_init(readstat_writer_t *writer, int is_64bit)
     sas_header_info_t *hinfo = calloc(1, sizeof(sas_header_info_t));
     hinfo->creation_time = writer->timestamp;
     hinfo->modification_time = writer->timestamp;
-    hinfo->header_size = HEADER_SIZE;
-    hinfo->page_size = PAGE_SIZE;
+    hinfo->page_size = SAS_DEFAULT_PAGE_SIZE;
     hinfo->u64 = !!is_64bit;
 
     if (hinfo->u64) {
+        hinfo->header_size = SAS_FILE_HEADER_SIZE_64BIT;
         hinfo->page_header_size = SAS_PAGE_HEADER_SIZE_64BIT;
         hinfo->subheader_pointer_size = SAS_SUBHEADER_POINTER_SIZE_64BIT;
     } else {
+        hinfo->header_size = SAS_FILE_HEADER_SIZE_32BIT;
         hinfo->page_header_size = SAS_PAGE_HEADER_SIZE_32BIT;
         hinfo->subheader_pointer_size = SAS_SUBHEADER_POINTER_SIZE_32BIT;
     }
@@ -370,7 +392,7 @@ readstat_error_t sas_fill_page(readstat_writer_t *writer, sas_header_info_t *hin
     return READSTAT_OK;
 }
 
-static readstat_error_t sas_validate_name(const char *name) {
+readstat_error_t sas_validate_name(const char *name, size_t max_len) {
     int j;
     for (j=0; name[j]; j++) {
         if (name[j] != '_' &&
@@ -381,6 +403,10 @@ static readstat_error_t sas_validate_name(const char *name) {
         }
     }
     char first_char = name[0];
+
+    if (!first_char)
+        return READSTAT_ERROR_NAME_IS_ZERO_LENGTH;
+
     if (first_char != '_' &&
             !(first_char >= 'a' && first_char <= 'z') &&
             !(first_char >= 'A' && first_char <= 'Z')) {
@@ -392,12 +418,40 @@ static readstat_error_t sas_validate_name(const char *name) {
         return READSTAT_ERROR_NAME_IS_RESERVED_WORD;
     }
 
-    if (strlen(name) > 32)
+    if (strlen(name) > max_len)
         return READSTAT_ERROR_NAME_IS_TOO_LONG;
 
     return READSTAT_OK;
 }
 
-readstat_error_t sas_validate_variable(readstat_variable_t *variable) {
-    return sas_validate_name(readstat_variable_get_name(variable));
+readstat_error_t sas_validate_variable(const readstat_variable_t *variable) {
+    return sas_validate_name(readstat_variable_get_name(variable), 32);
+}
+
+readstat_error_t sas_validate_tag(char tag) {
+    if (tag == '_' || (tag >= 'A' && tag <= 'Z'))
+        return READSTAT_OK;
+
+    return READSTAT_ERROR_TAGGED_VALUE_IS_OUT_OF_RANGE;
+}
+
+void sas_assign_tag(readstat_value_t *value, uint8_t tag) {
+    /* We accommodate two tag schemes. In the first, the tag is an ASCII code
+     * given by uint8_t tag above. System missing is represented by an ASCII
+     * period. In the second scheme, (tag-2) is an offset from 'A', except when
+     * tag == 0, in which case it represents an underscore, or tag == 1, in
+     * which case it represents system-missing.
+     */
+    if (tag == 0) {
+        tag = '_';
+    } else if (tag >= 2 && tag < 28) {
+        tag = 'A' + (tag - 2);
+    }
+    if (sas_validate_tag(tag) == READSTAT_OK) {
+        value->tag = tag;
+        value->is_tagged_missing = 1;
+    } else {
+        value->tag = 0;
+        value->is_system_missing = 1;
+    }
 }

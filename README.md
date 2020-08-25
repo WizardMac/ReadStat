@@ -1,32 +1,66 @@
 [![Travis CI build status](https://travis-ci.org/WizardMac/ReadStat.svg?branch=master)](https://travis-ci.org/WizardMac/ReadStat)
 [![Appveyor build status](https://ci.appveyor.com/api/projects/status/76ctatpy3grlrd9x/branch/master?svg=true)](https://ci.appveyor.com/project/evanmiller/readstat/branch/master)
 [![codecov](https://codecov.io/gh/WizardMac/ReadStat/branch/master/graph/badge.svg)](https://codecov.io/gh/WizardMac/ReadStat)
+[![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/readstat.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:readstat)
 
 ReadStat: Read (and write) data sets from SAS, Stata, and SPSS
 --
 
 Originally developed for [Wizard](http://www.wizardmac.com/), ReadStat is a
 command-line tool and MIT-licensed C library for reading files from popular
-stats packages. Supported formats include:
+stats packages. Supported data formats include:
 
-* SAS: SAS7BDAT, SAS7BCAT, and XPORT
-* Stata: DTA 104-119
-* SPSS: POR, SAV, and ZSAV
+* SAS: SAS7BDAT (binary file) and XPORT (transport file)
+* Stata: DTA (binary file) versions 104-119
+* SPSS: POR (portable file), SAV (binary file), and ZSAV (compressed binary)
 
-There is also write support for all formats except SAS7BCAT. For reading in R
-data files, please see the related
+Supported metadata formats include:
+
+* SAS: SAS7BCAT (catalog file) and .sas (command file)
+* Stata: .dct (dictionary file)
+* SPSS: .sps (command file)
+
+There is also write support for all the data formats, but not the metadata
+formats. *The produced SAS7BDAT files still cannot be read by SAS*, but feel
+free to contribute your binary-format expertise here.
+
+For reading in R data files, please see the related
 [librdata](https://github.com/WizardMac/librdata) project.
 
 Installation
 ==
 
-Bootstrap autotools by running ./autogen.sh and then proceed as usual:
+Grab the latest [release](https://github.com/WizardMac/ReadStat/releases) and
+then proceed as usual:
 
     ./configure
     make
     sudo make install
 
+If you're cloning the repository, first make sure you have autotools installed,
+and then run `./autogen.sh` to generate the configure file.
+
+If you're on Mac and see errors about `AM_ICONV` when you run `./autogen.sh`,
+you'll need to install [gettext](https://www.gnu.org/software/gettext/).
+
 If you're on Windows see [Windows specific notes](#windows-specific-notes).
+
+
+Language Bindings
+==
+
+* Julia: [ReadStat.jl](https://github.com/queryverse/ReadStat.jl)
+* Perl 6: [ReadStat.pm6](https://github.com/WizardMac/ReadStat.pm6)
+* Python: [pyreadstat](https://github.com/Roche/pyreadstat)
+* R: [haven](https://github.com/tidyverse/haven)
+
+
+Docker
+==
+
+A dockerized version is available [here](https://github.com/jbn/readstat)
+
+
 
 Command-line Usage
 ==
@@ -48,12 +82,23 @@ and written as well.
 
 Use the `-f` option to overwrite an existing output file.
 
-If you have a SAS catalog file containing the data set's value labels, a second
-invocation style is supported:
+If you have a plain-text file described by a Stata dictionary file, a SAS
+command file, or an SPSS command file, a second invocation style is supported:
+
+    readstat <input file> <dictionary file> <output file>
+
+Where:
+
+* `<input file>` can be anything
+* `<dictionary file>` ends with `.dct`, `.sas`, or `.sps`
+* `<output file>` ends with `.dta`, `.por`, `.sav`, `.xpt`, or `.csv`
+
+If you have a SAS catalog file containing the data set's value labels, you
+can use the same invocation:
 
     readstat <input file> <catalog file> <output file>
 
-Where:
+Except where:
 
 * `<input file>` ends with `.sas7bdat`
 * `<catalog file>` ends with `.sas7bcat`
@@ -70,7 +115,7 @@ format strings (e.g. `%8.2g`) are not.
 Command-line Usage with CSV input
 ==
 
-A prerequisite for CSV input is that the [libcsv](https://github.com/robertpostill/libcsv.git)
+A prerequisite for CSV input is that the [libcsv](https://github.com/rgamble/libcsv)
 library is found at compile time.
 
 CSV input is supported together with a metadata file describing the data:
@@ -81,9 +126,15 @@ The `<output file>` should end with `.dta`, `.sav`, or `.csv`.
 
 The `<input file.csv>` is a regular CSV file.
 
-The `<input metadata.json>` is a JSON file describing column types, value labels and missing values.
-The schema of this JSON file is fully described in [variablemetadata_schema.json](variablemetadata_schema.json)
-using [JSON Schema](http://json-schema.org/).
+The `<input metadata.json>` is a JSON file describing column types, value
+labels and missing values. The easiest way to create such a metadata file is to
+use the provided `extract_metadata` program on an existing file:
+
+    $ extract_metadata <input file.(dta|sav|sas7bcat)>
+
+The schema of this JSON file is fully described in
+[variablemetadata_schema.json](variablemetadata_schema.json) using [JSON
+Schema](http://json-schema.org/).
 
 The following is an example of a valid metadata file:
 
@@ -201,10 +252,10 @@ Example: Return the number of records in a DTA file.
 ```c
 #include "readstat.h"
 
-int handle_info(int obs_count, int var_count, void *ctx) {
+int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     int *my_count = (int *)ctx;
 
-    *my_count = obs_count;
+    *my_count = readstat_get_row_count(metadata);
 
     return READSTAT_HANDLER_OK;
 }
@@ -217,7 +268,7 @@ int main(int argc, char *argv[]) {
     int my_count = 0;
     readstat_error_t error = READSTAT_OK;
     readstat_parser_t *parser = readstat_parser_init();
-    readstat_set_info_handler(parser, &handle_info);
+    readstat_set_metadata_handler(parser, &handle_metadata);
 
     error = readstat_parse_dta(parser, argv[1], &my_count);
 
@@ -237,10 +288,10 @@ Example: Convert a DTA to a tab-separated file.
 ```c
 #include "readstat.h"
 
-int handle_info(int obs_count, int var_count, void *ctx) {
+int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     int *my_var_count = (int *)ctx;
     
-    *my_var_count = var_count;
+    *my_var_count = readstat_get_var_count(metadata);
 
     return READSTAT_HANDLER_OK;
 }
@@ -295,7 +346,7 @@ int main(int argc, char *argv[]) {
     int my_var_count = 0;
     readstat_error_t error = READSTAT_OK;
     readstat_parser_t *parser = readstat_parser_init();
-    readstat_set_info_handler(parser, &handle_info);
+    readstat_set_metadata_handler(parser, &handle_metadata);
     readstat_set_variable_handler(parser, &handle_variable);
     readstat_set_value_handler(parser, &handle_value);
 
@@ -370,13 +421,6 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-Language Bindings
-==
-
-* Julia: [ReadStat.jl](https://github.com/WizardMac/ReadStat.jl)
-* R: [haven](https://github.com/hadley/haven)
-
-
 Windows specific notes
 ==
 
@@ -387,7 +431,9 @@ sure you update your initial msys2 installation as described on that page.
 
 Second, install a number of additional packages at the msys2 command line:
 
-    pacman -S autoconf automake libtool mingw-w64-x86_64-toolchain ingw-w64-x86_64-cmake mingw-w64-x86_64-libiconv
+    pacman -S autoconf automake libtool make mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-libiconv
+
+Consider adding `--disable-download-timeout` to that command to prevent timeout errors on slow connections.
 
 Finally, start a MINGW command line (not the msys2 prompt!) and follow the general install instructions for this package.
 
@@ -395,17 +441,30 @@ Finally, start a MINGW command line (not the msys2 prompt!) and follow the gener
 Fuzz Testing
 ==
 
-To assist in fuzz testing, ReadStat ships with target files designed to work with [libFuzzer](http://llvm.org/docs/LibFuzzer.html).
+To assist in fuzz testing, ReadStat ships with target files designed to work
+with [libFuzzer](http://llvm.org/docs/LibFuzzer.html). Clang 6 or later is
+required.
 
-1. `./configure --enable-sanitizers` turns on useful sanitizer and sanitizer-coverage flags
-1. `make` will create a new binary called `generate_corpus`. Running this program will use the ReadStat test suite to create a corpus of test files in `corpus/`. There is a subdirectory for each sub-format (`dta104`, `dta105`, etc.). Currently a total of 468 files are created.
-1. If libFuzzer is found on the system, `make` will also create eight fuzzer targets, one for each of six file formats, and two fuzzers for testing the compression routines.
+1. `./configure --enable-fuzz-testing` turns on useful sanitizer and sanitizer-coverage flags
+1. `make` will create a new binary called `generate_corpus`. Running this
+   program will use the ReadStat test suite to create a corpus of test files in
+   `corpus/`. There is a subdirectory for each sub-format (`dta104`, `dta105`,
+   etc.). Currently a total of 468 files are created.
+1. If fuzz-testing has been enabled, `make` will also create fourteen fuzzer
+   targets, one for each of seven file formats, five for internally used
+   grammars, and two fuzzers for testing the compression routines.
    * `fuzz_format_dta`
    * `fuzz_format_por`
    * `fuzz_format_sas7bcat`
    * `fuzz_format_sas7bdat`
    * `fuzz_format_sav`
    * `fuzz_format_xport`
+   * `fuzz_format_stata_dictionary`
+   * `fuzz_grammar_dta_timestamp`
+   * `fuzz_grammar_por_double`
+   * `fuzz_grammar_sav_date`
+   * `fuzz_grammar_sav_time`
+   * `fuzz_grammar_spss_format`
    * `fuzz_compression_sas_rle`
    * `fuzz_compression_sav`
 
@@ -425,7 +484,3 @@ Finally, the compression fuzzers can be invoked without a corpus:
 * `./fuzz_compression_sav`
 
 
-Docker
-==
-
-A dockerized version is available [here](https://github.com/jbn/readstat)

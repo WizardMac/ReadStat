@@ -145,18 +145,6 @@ static readstat_error_t sas7bdat_emit_header(readstat_writer_t *writer, sas_head
 
     memcpy(&header_start.magic, sas7bdat_magic_number, sizeof(header_start.magic));
 
-    memset(header_start.file_label, ' ', sizeof(header_start.file_label));
-
-    size_t file_label_len = strlen(writer->file_label);
-    if (file_label_len > sizeof(header_start.file_label))
-        file_label_len = sizeof(header_start.file_label);
-
-    if (file_label_len) {
-        memcpy(header_start.file_label, writer->file_label, file_label_len);
-    } else {
-        memcpy(header_start.file_label, "DATASET", sizeof("DATASET")-1);
-    }
-
     return sas_write_header(writer, hinfo, header_start);
 }
 
@@ -173,26 +161,30 @@ static sas7bdat_subheader_t *sas7bdat_row_size_subheader_init(readstat_writer_t 
         sas_header_info_t *hinfo) {
     sas7bdat_subheader_t *subheader = sas7bdat_subheader_init(
             SAS_SUBHEADER_SIGNATURE_ROW_SIZE,
-            hinfo->u64 ? 128 : 64);
+            hinfo->u64 ? 808 : 480);
 
     if (hinfo->u64) {
         int64_t row_length = sas7bdat_row_length(writer);
         int64_t row_count = writer->row_count;
+        int64_t ncfl1 = writer->variables_count;
         int64_t page_size = hinfo->page_size;
 
         memcpy(&subheader->data[40], &row_length, sizeof(int64_t));
         memcpy(&subheader->data[48], &row_count, sizeof(int64_t));
+        memcpy(&subheader->data[72], &ncfl1, sizeof(int64_t));
         memcpy(&subheader->data[104], &page_size, sizeof(int64_t));
-        // memset(&subheader->data[128], 0xFF, 16);
+        memset(&subheader->data[128], 0xFF, 16);
     } else {
         int32_t row_length = sas7bdat_row_length(writer);
         int32_t row_count = writer->row_count;
+        int32_t ncfl1 = writer->variables_count;
         int32_t page_size = hinfo->page_size;
 
         memcpy(&subheader->data[20], &row_length, sizeof(int32_t));
         memcpy(&subheader->data[24], &row_count, sizeof(int32_t));
+        memcpy(&subheader->data[36], &ncfl1, sizeof(int32_t));
         memcpy(&subheader->data[52], &page_size, sizeof(int32_t));
-        // memset(&subheader->data[64], 0xFF, 8);
+        memset(&subheader->data[64], 0xFF, 8);
     }
 
     return subheader;
@@ -222,7 +214,7 @@ static sas7bdat_subheader_t *sas7bdat_col_name_subheader_init(readstat_writer_t 
         sas_header_info_t *hinfo, sas7bdat_column_text_array_t *column_text_array) {
     size_t len = sas7bdat_col_name_subheader_length(writer, hinfo);
     size_t signature_len = hinfo->u64 ? 8 : 4;
-    uint16_t remainder = len - (4+2*signature_len);
+    uint16_t remainder = sas_subheader_remainder(len, signature_len);
     sas7bdat_subheader_t *subheader = sas7bdat_subheader_init(
             SAS_SUBHEADER_SIGNATURE_COLUMN_NAME, len);
     memcpy(&subheader->data[signature_len], &remainder, sizeof(uint16_t));
@@ -251,7 +243,7 @@ static sas7bdat_subheader_t *sas7bdat_col_attrs_subheader_init(readstat_writer_t
         sas_header_info_t *hinfo) {
     size_t len = sas7bdat_col_attrs_subheader_length(writer, hinfo);
     size_t signature_len = hinfo->u64 ? 8 : 4;
-    uint16_t remainder = len - (4+2*signature_len);
+    uint16_t remainder = sas_subheader_remainder(len, signature_len);
     sas7bdat_subheader_t *subheader = sas7bdat_subheader_init(
             SAS_SUBHEADER_SIGNATURE_COLUMN_ATTRS, len);
     memcpy(&subheader->data[signature_len], &remainder, sizeof(uint16_t));
@@ -312,14 +304,21 @@ static sas7bdat_subheader_t *sas7bdat_col_format_subheader_init(readstat_variabl
     return subheader;
 }
 
+static size_t sas7bdat_col_text_subheader_length(sas_header_info_t *hinfo,
+        sas7bdat_column_text_t *column_text) {
+    size_t signature_len = hinfo->u64 ? 8 : 4;
+    size_t text_len = column_text ? column_text->used : 0;
+    return signature_len + 28 + text_len;
+}
+
 static sas7bdat_subheader_t *sas7bdat_col_text_subheader_init(readstat_writer_t *writer,
         sas_header_info_t *hinfo, sas7bdat_column_text_t *column_text) {
     size_t signature_len = hinfo->u64 ? 8 : 4;
-    size_t len = signature_len + 28 + column_text->used;
+    size_t len = sas7bdat_col_text_subheader_length(hinfo, column_text);
     sas7bdat_subheader_t *subheader = sas7bdat_subheader_init(
             SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT, len);
 
-    uint16_t used = len - (4+2*signature_len);
+    uint16_t used = sas_subheader_remainder(len, signature_len);
     memcpy(&subheader->data[signature_len], &used, sizeof(uint16_t));
     memset(&subheader->data[signature_len+12], ' ', 8);
     memcpy(&subheader->data[signature_len+28], column_text->data, column_text->used);
@@ -328,37 +327,33 @@ static sas7bdat_subheader_t *sas7bdat_col_text_subheader_init(readstat_writer_t 
 
 static sas7bdat_subheader_array_t *sas7bdat_subheader_array_init(readstat_writer_t *writer,
         sas_header_info_t *hinfo) {
-    sas7bdat_subheader_t *row_size_subheader = NULL;
-    sas7bdat_subheader_t *col_size_subheader = NULL;
-    sas7bdat_subheader_t *col_name_subheader = NULL;
-    sas7bdat_subheader_t *col_attrs_subheader = NULL;
-
     sas7bdat_column_text_array_t *column_text_array = calloc(1, sizeof(sas7bdat_column_text_array_t));
     column_text_array->count = 1;
     column_text_array->column_texts = malloc(sizeof(sas7bdat_column_text_t *));
     column_text_array->column_texts[0] = sas7bdat_column_text_init(0, 
-            hinfo->page_size - hinfo->page_header_size - hinfo->subheader_pointer_size);
-
-    row_size_subheader = sas7bdat_row_size_subheader_init(writer, hinfo);
-    col_size_subheader = sas7bdat_col_size_subheader_init(writer, hinfo);
-    col_name_subheader = sas7bdat_col_name_subheader_init(writer, hinfo, column_text_array);
-    col_attrs_subheader = sas7bdat_col_attrs_subheader_init(writer, hinfo);
+            hinfo->page_size - hinfo->page_header_size - hinfo->subheader_pointer_size - 
+            sas7bdat_col_text_subheader_length(hinfo, NULL));
 
     sas7bdat_subheader_array_t *sarray = calloc(1, sizeof(sas7bdat_subheader_array_t));
     sarray->count = 4+writer->variables_count;
     sarray->subheaders = calloc(sarray->count, sizeof(sas7bdat_subheader_t *));
 
     long idx = 0;
-
-    sarray->subheaders[idx++] = row_size_subheader;
-    sarray->subheaders[idx++] = col_size_subheader;
-    sarray->subheaders[idx++] = col_name_subheader;
-    sarray->subheaders[idx++] = col_attrs_subheader;
-
     int i;
+    sas7bdat_subheader_t *col_name_subheader = NULL;
+    sas7bdat_subheader_t *col_attrs_subheader = NULL;
+    sas7bdat_subheader_t **col_format_subheaders = NULL;
+
+    col_name_subheader = sas7bdat_col_name_subheader_init(writer, hinfo, column_text_array);
+    col_attrs_subheader = sas7bdat_col_attrs_subheader_init(writer, hinfo);
+
+    sarray->subheaders[idx++] = sas7bdat_row_size_subheader_init(writer, hinfo);
+    sarray->subheaders[idx++] = sas7bdat_col_size_subheader_init(writer, hinfo);
+
+    col_format_subheaders = calloc(writer->variables_count, sizeof(sas7bdat_subheader_t *));
     for (i=0; i<writer->variables_count; i++) {
         readstat_variable_t *variable = readstat_get_variable(writer, i);
-        sarray->subheaders[idx++] = sas7bdat_col_format_subheader_init(variable, hinfo, column_text_array);
+        col_format_subheaders[i] = sas7bdat_col_format_subheader_init(variable, hinfo, column_text_array);
     }
     sarray->count += column_text_array->count;
     sarray->subheaders = realloc(sarray->subheaders, sarray->count * sizeof(sas7bdat_subheader_t *));
@@ -367,6 +362,14 @@ static sas7bdat_subheader_array_t *sas7bdat_subheader_array_init(readstat_writer
                 column_text_array->column_texts[i]);
     }
     sas7bdat_column_text_array_free(column_text_array);
+
+    sarray->subheaders[idx++] = col_name_subheader;
+    sarray->subheaders[idx++] = col_attrs_subheader;
+
+    for (i=0; i<writer->variables_count; i++) {
+        sarray->subheaders[idx++] = col_format_subheaders[i];
+    }
+    free(col_format_subheaders);
 
     sarray->capacity = sarray->count;
 
@@ -547,7 +550,7 @@ static readstat_error_t sas7bdat_emit_header_and_meta_pages(readstat_writer_t *w
     readstat_error_t retval = READSTAT_OK;
 
     if (sas7bdat_row_length(writer) == 0) {
-        retval = READSTAT_ERROR_ROW_IS_EMPTY;
+        retval = READSTAT_ERROR_TOO_FEW_COLUMNS;
         goto cleanup;
     }
 
@@ -645,14 +648,15 @@ static readstat_error_t sas7bdat_write_missing_tagged_raw(void *row, const reads
 }
 
 static readstat_error_t sas7bdat_write_missing_tagged(void *row, const readstat_variable_t *var, char tag) {
-    if (tag == '_' || (tag >= 'A' && tag <= 'Z'))
+    readstat_error_t error = sas_validate_tag(tag);
+    if (error == READSTAT_OK)
         return sas7bdat_write_missing_tagged_raw(row, var, tag);
 
-    return READSTAT_ERROR_TAGGED_VALUE_IS_OUT_OF_RANGE;
+    return error;
 }
 
 static readstat_error_t sas7bdat_write_missing_numeric(void *row, const readstat_variable_t *var) {
-    return sas7bdat_write_missing_tagged_raw(row, var, 0);
+    return sas7bdat_write_missing_tagged_raw(row, var, '.');
 }
 
 static readstat_error_t sas7bdat_write_string(void *row, const readstat_variable_t *var, const char *value) {
@@ -759,15 +763,22 @@ static readstat_error_t sas7bdat_write_row(void *writer_ctx, void *bytes, size_t
     return retval;
 }
 
-readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void *user_ctx, long row_count) {
+static readstat_error_t sas7bdat_metadata_ok(void *writer_ctx) {
+    readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
 
     if (writer->compression != READSTAT_COMPRESS_NONE &&
             writer->compression != READSTAT_COMPRESS_ROWS)
         return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
 
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void *user_ctx, long row_count) {
+
     if (writer->version == 0)
         writer->version = SAS_DEFAULT_FILE_VERSION;
 
+    writer->callbacks.metadata_ok = &sas7bdat_metadata_ok;
     writer->callbacks.write_int8 = &sas7bdat_write_int8;
     writer->callbacks.write_int16 = &sas7bdat_write_int16;
     writer->callbacks.write_int32 = &sas7bdat_write_int32;

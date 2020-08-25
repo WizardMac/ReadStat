@@ -25,8 +25,18 @@ sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header, readstat_io_t *io) {
     if (ctx == NULL) {
         return NULL;
     }
+
+    if (memcmp(&header->rec_type, "$FL2", 4) == 0) {
+        ctx->format_version = 2;
+    } else if (memcmp(&header->rec_type, "$FL3", 4) == 0) {
+        ctx->format_version = 3;
+    } else {
+        sav_ctx_free(ctx);
+        return NULL;
+    }
     
     ctx->bswap = !(header->layout_code == 2 || header->layout_code == 3);
+    ctx->endianness = (machine_is_little_endian() ^ ctx->bswap) ? READSTAT_ENDIAN_LITTLE : READSTAT_ENDIAN_BIG;
 
     if (header->compression == 1 || byteswap4(header->compression) == 1) {
         ctx->compression = READSTAT_COMPRESS_ROWS;
@@ -41,11 +51,10 @@ sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header, readstat_io_t *io) {
     ctx->highest_double = SAV_HIGHEST_DOUBLE;
     
     ctx->bias = ctx->bswap ? byteswap_double(header->bias) : header->bias;
-    ctx->format_version = header->rec_type[3] == '3' ? 3 : 2;
     
     ctx->varinfo_capacity = SAV_VARINFO_INITIAL_CAPACITY;
     
-    if ((ctx->varinfo = readstat_calloc(ctx->varinfo_capacity, sizeof(spss_varinfo_t))) == NULL) {
+    if ((ctx->varinfo = readstat_calloc(ctx->varinfo_capacity, sizeof(spss_varinfo_t *))) == NULL) {
         sav_ctx_free(ctx);
         return NULL;
     }
@@ -58,9 +67,8 @@ sav_ctx_t *sav_ctx_init(sav_file_header_record_t *header, readstat_io_t *io) {
 void sav_ctx_free(sav_ctx_t *ctx) {
     if (ctx->varinfo) {
         int i;
-        for (i=0; i<ctx->var_count; i++) {
-            if (ctx->varinfo[i].label)
-                free(ctx->varinfo[i].label);
+        for (i=0; i<ctx->var_index; i++) {
+            spss_varinfo_free(ctx->varinfo[i]);
         }
         free(ctx->varinfo);
     }
@@ -76,9 +84,8 @@ void sav_ctx_free(sav_ctx_t *ctx) {
         free(ctx->raw_string);
     if (ctx->utf8_string)
         free(ctx->utf8_string);
-    if (ctx->converter) {
+    if (ctx->converter)
         iconv_close(ctx->converter);
-    }
     if (ctx->variable_display_values) {
         free(ctx->variable_display_values);
     }

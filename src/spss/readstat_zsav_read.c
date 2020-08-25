@@ -43,7 +43,8 @@ readstat_error_t zsav_read_compressed_data(sav_ctx_t *ctx,
 
     struct sav_row_stream_s state = { 
         .missing_value = ctx->missing_double,
-        .bias = ctx->bias };
+        .bias = ctx->bias,
+        .bswap = ctx->bswap };
 
     struct zheader zheader;
     struct ztrailer ztrailer;
@@ -53,17 +54,14 @@ readstat_error_t zsav_read_compressed_data(sav_ctx_t *ctx,
     int block_i = 0;
     int i;
 
-    int bswap = ctx->bswap;
-    ctx->bswap = 0;
-
     if (io->read(&zheader, sizeof(struct zheader), io->io_ctx) < sizeof(struct zheader)) {
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
 
-    zheader.zheader_ofs = bswap ? byteswap8(zheader.zheader_ofs) : zheader.zheader_ofs;
-    zheader.ztrailer_ofs = bswap ? byteswap8(zheader.ztrailer_ofs) : zheader.ztrailer_ofs;
-    zheader.ztrailer_len = bswap ? byteswap8(zheader.ztrailer_len) : zheader.ztrailer_len;
+    zheader.zheader_ofs = ctx->bswap ? byteswap8(zheader.zheader_ofs) : zheader.zheader_ofs;
+    zheader.ztrailer_ofs = ctx->bswap ? byteswap8(zheader.ztrailer_ofs) : zheader.ztrailer_ofs;
+    zheader.ztrailer_len = ctx->bswap ? byteswap8(zheader.ztrailer_len) : zheader.ztrailer_len;
 
     if (zheader.zheader_ofs != io->seek(0, READSTAT_SEEK_CUR, io->io_ctx) - sizeof(struct zheader)) {
         retval = READSTAT_ERROR_PARSE;
@@ -82,10 +80,10 @@ readstat_error_t zsav_read_compressed_data(sav_ctx_t *ctx,
         goto cleanup;
     }
 
-    ztrailer.bias = bswap ? byteswap8(ztrailer.bias) : ztrailer.bias;
-    ztrailer.zero = bswap ? byteswap8(ztrailer.zero) : ztrailer.zero;
-    ztrailer.block_size = bswap ? byteswap4(ztrailer.block_size) : ztrailer.block_size;
-    ztrailer.n_blocks = bswap ? byteswap4(ztrailer.n_blocks) : ztrailer.n_blocks;
+    ztrailer.bias = ctx->bswap ? byteswap8(ztrailer.bias) : ztrailer.bias;
+    ztrailer.zero = ctx->bswap ? byteswap8(ztrailer.zero) : ztrailer.zero;
+    ztrailer.block_size = ctx->bswap ? byteswap4(ztrailer.block_size) : ztrailer.block_size;
+    ztrailer.n_blocks = ctx->bswap ? byteswap4(ztrailer.n_blocks) : ztrailer.n_blocks;
 
     if (n_blocks != ztrailer.n_blocks) {
         retval = READSTAT_ERROR_PARSE;
@@ -106,10 +104,10 @@ readstat_error_t zsav_read_compressed_data(sav_ctx_t *ctx,
     for (i=0; i<n_blocks; i++) {
         struct ztrailer_entry *entry = &ztrailer_entries[i];
 
-        entry->uncompressed_ofs = bswap ? byteswap8(entry->uncompressed_ofs) : entry->uncompressed_ofs;
-        entry->compressed_ofs = bswap ? byteswap8(entry->compressed_ofs) : entry->compressed_ofs;
-        entry->uncompressed_size = bswap ? byteswap4(entry->uncompressed_size) : entry->uncompressed_size;
-        entry->compressed_size = bswap ? byteswap4(entry->compressed_size) : entry->compressed_size;
+        entry->uncompressed_ofs = ctx->bswap ? byteswap8(entry->uncompressed_ofs) : entry->uncompressed_ofs;
+        entry->compressed_ofs = ctx->bswap ? byteswap8(entry->compressed_ofs) : entry->compressed_ofs;
+        entry->uncompressed_size = ctx->bswap ? byteswap4(entry->uncompressed_size) : entry->uncompressed_size;
+        entry->compressed_size = ctx->bswap ? byteswap4(entry->compressed_size) : entry->compressed_size;
     }
 
     if (uncompressed_row_len && (uncompressed_row = readstat_malloc(uncompressed_row_len)) == NULL) {
@@ -118,61 +116,64 @@ readstat_error_t zsav_read_compressed_data(sav_ctx_t *ctx,
     }
 
     while (1) {
-        if (state.avail_in == 0) {
-            if (block_i == n_blocks)
-                goto cleanup;
-
-            struct ztrailer_entry *entry = &ztrailer_entries[block_i];
-            if (io->seek(entry->compressed_ofs, READSTAT_SEEK_SET, io->io_ctx) == -1) {
-                retval = READSTAT_ERROR_SEEK;
-                goto cleanup;
-            }
-            if ((compressed_block = readstat_realloc(compressed_block, entry->compressed_size)) == NULL) {
-                retval = READSTAT_ERROR_MALLOC;
-                goto cleanup;
-            }
-            if (io->read(compressed_block, entry->compressed_size, io->io_ctx) != entry->compressed_size) {
-                retval = READSTAT_ERROR_READ;
-                goto cleanup;
-            }
-
-            uncompressed_block_len = entry->uncompressed_size;
-            if ((uncompressed_block = readstat_realloc(uncompressed_block, uncompressed_block_len)) == NULL) {
-                retval = READSTAT_ERROR_MALLOC;
-                goto cleanup;
-            }
-            int status = uncompress(uncompressed_block, &uncompressed_block_len,
-                    compressed_block, entry->compressed_size);
-            if (status != Z_OK || uncompressed_block_len != entry->uncompressed_size) {
-                retval = READSTAT_ERROR_PARSE;
-                goto cleanup;
-            }
-
-            block_i++;
-            data_offset = 0;
-        }
-
-        state.next_in = &uncompressed_block[data_offset];
-        state.avail_in = uncompressed_block_len - data_offset;
-
-        state.next_out = &uncompressed_row[uncompressed_offset];
-        state.avail_out = uncompressed_row_len - uncompressed_offset;
-
-        int finished = sav_decompress_row(&state);
-
-        uncompressed_offset = uncompressed_row_len - state.avail_out;
-        data_offset = uncompressed_block_len - state.avail_in;
-
-        if (state.avail_out == 0) {
-            retval = row_handler(uncompressed_row, uncompressed_row_len, ctx);
-            if (retval != READSTAT_OK)
-                goto cleanup;
-
-            uncompressed_offset = 0;
-        }
-
-        if (finished || ctx->current_row == ctx->row_limit)
+        if (block_i == n_blocks)
             goto cleanup;
+
+        struct ztrailer_entry *entry = &ztrailer_entries[block_i];
+        if (io->seek(entry->compressed_ofs, READSTAT_SEEK_SET, io->io_ctx) == -1) {
+            retval = READSTAT_ERROR_SEEK;
+            goto cleanup;
+        }
+        if ((compressed_block = readstat_realloc(compressed_block, entry->compressed_size)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        if (io->read(compressed_block, entry->compressed_size, io->io_ctx) != entry->compressed_size) {
+            retval = READSTAT_ERROR_READ;
+            goto cleanup;
+        }
+
+        uncompressed_block_len = entry->uncompressed_size;
+        if ((uncompressed_block = readstat_realloc(uncompressed_block, uncompressed_block_len)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        int status = uncompress(uncompressed_block, &uncompressed_block_len,
+                compressed_block, entry->compressed_size);
+        if (status != Z_OK || uncompressed_block_len != entry->uncompressed_size) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
+
+        block_i++;
+        state.status = SAV_ROW_STREAM_HAVE_DATA;
+        data_offset = 0;
+
+        while (state.status != SAV_ROW_STREAM_NEED_DATA) {
+            state.next_in = &uncompressed_block[data_offset];
+            state.avail_in = uncompressed_block_len - data_offset;
+
+            state.next_out = &uncompressed_row[uncompressed_offset];
+            state.avail_out = uncompressed_row_len - uncompressed_offset;
+
+            sav_decompress_row(&state);
+
+            uncompressed_offset = uncompressed_row_len - state.avail_out;
+            data_offset = uncompressed_block_len - state.avail_in;
+
+            if (state.status == SAV_ROW_STREAM_FINISHED_ROW) {
+                retval = row_handler(uncompressed_row, uncompressed_row_len, ctx);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
+                uncompressed_offset = 0;
+            }
+
+            if (state.status == SAV_ROW_STREAM_FINISHED_ALL)
+                goto cleanup;
+            if (ctx->row_limit > 0 && ctx->current_row == ctx->row_limit)
+                goto cleanup;
+        }
     }
 
 cleanup:
@@ -184,8 +185,6 @@ cleanup:
         free(compressed_block);
     if (uncompressed_block)
         free(uncompressed_block);
-
-    ctx->bswap = bswap;
 
     return retval;
 }

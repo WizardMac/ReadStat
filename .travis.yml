@@ -1,10 +1,26 @@
 language: c
-sudo: required
+dist: bionic
 
-compiler:
-  - clang
-  - gcc
-  - gcc-7
+jobs:
+  include:
+  - compiler: clang
+    os: linux
+  - compiler: gcc
+    os: linux
+  - compiler: gcc-7
+    os: linux
+  - compiler: gcc-8
+    os: linux
+  - compiler: gcc-9
+    os: linux
+  - compiler: gcc-10
+    os: linux
+  - compiler: clang
+    os: osx
+    osx_image: xcode11.2
+  - compiler: gcc
+    os: osx
+    osx_image: xcode11.2
 
 addons:
   apt:
@@ -12,14 +28,21 @@ addons:
     - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages:
     - gcc-7
+    - gcc-8
+    - gcc-9
+    - gcc-10
+  homebrew:
+    packages:
+    - gettext
 
 before_script:
-  - ./autogen.sh
+  - ./.travis/autogen.sh
 
 script:
   - ./.travis/configure.sh
   - make
   - make check
+  - make generate_corpus
 
 after_success:
   - mv src/sas/.libs/*.gc* .

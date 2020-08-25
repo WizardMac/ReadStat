@@ -46,6 +46,7 @@ typedef struct rt_test_file_s {
     long                test_formats;
 
     char                label[80];
+    char                table_name[32];
     struct tm           timestamp;
     long                rows;
 
@@ -69,31 +70,25 @@ typedef struct rt_test_group_s {
     rt_test_file_t   tests[MAX_TESTS_PER_GROUP];
 } rt_test_group_t;
 
+typedef struct rt_test_args_s {
+    long             row_limit;
+    long             row_offset;    
+} rt_test_args_t;
+
 
 typedef struct rt_error_s {
-    readstat_value_t    received;
-    readstat_value_t    expected;
+    readstat_value_t received;
+    readstat_value_t expected;
 
-    rt_test_file_t     *file;
-    long                file_format;
-    const char         *file_extension;
+    rt_test_file_t  *file;
+    long             file_format;
+    const char      *file_extension;
 
-    readstat_off_t      pos;
-    long                var_index;
-    long                obs_index;
-    char                msg[256];
+    size_t           pos;
+    long             var_index;
+    long             obs_index;
+    char             msg[256];
 } rt_error_t;
-
-typedef struct rt_buffer_s {
-    size_t      used;
-    size_t      size;
-    char       *bytes;
-} rt_buffer_t;
-
-typedef struct rt_buffer_ctx_s {
-    rt_buffer_t     *buffer;
-    readstat_off_t   pos;
-} rt_buffer_ctx_t;
 
 typedef struct rt_parse_ctx_s {
     rt_error_t      *errors;
@@ -109,12 +104,15 @@ typedef struct rt_parse_ctx_s {
     long             value_labels_count;
     long             notes_count;
 
+    rt_test_args_t  *args;
+
     rt_test_file_t  *file;
     long             file_format;
     long             file_format_version;
     const char      *file_extension;
 
     size_t           max_file_label_len;
+    size_t           max_table_name_len;
 
-    rt_buffer_ctx_t *buffer_ctx;
+    void            *buffer_ctx;
 } rt_parse_ctx_t;

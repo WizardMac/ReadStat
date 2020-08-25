@@ -1,4 +1,4 @@
-
+#include <limits.h>
 #include <stdlib.h>
 #include "../readstat.h"
 #include "../readstat_iconv.h"
@@ -29,7 +29,7 @@ static int count_vars(sav_ctx_t *ctx) {
     spss_varinfo_t *last_info = NULL;
     int var_count = 0;
     for (i=0; i<ctx->var_index; i++) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
+        spss_varinfo_t *info = ctx->varinfo[i];
         if (last_info == NULL || strcmp(info->name, last_info->name) != 0) {
             var_count++;
         }
@@ -44,7 +44,7 @@ static varlookup_t *build_lookup_table(int var_count, sav_ctx_t *ctx) {
     int i;
     spss_varinfo_t *last_info = NULL;
     for (i=0; i<ctx->var_index; i++) {
-        spss_varinfo_t *info = &ctx->varinfo[i];
+        spss_varinfo_t *info = ctx->varinfo[i];
 
         if (last_info == NULL || strcmp(info->name, last_info->name) != 0) {
             varlookup_t *entry = &table[offset++];
@@ -89,6 +89,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
                 (readstat_iconv_inbuf_t)&data, &input_len,
                 (char **)&pe, &output_len);
         if (status == (size_t)-1) {
+            free(table);
             free(output_buffer);
             return READSTAT_ERROR_PARSE;
         }
@@ -104,11 +105,12 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
         action set_long_name {
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
-                memcpy(ctx->varinfo[found->index].longname, temp_val, str_len);
-                ctx->varinfo[found->index].longname[str_len] = '\0';
-            } else if (ctx->error_handler) {
+                spss_varinfo_t *info = ctx->varinfo[found->index];
+                memcpy(info->longname, temp_val, str_len);
+                info->longname[str_len] = '\0';
+            } else if (ctx->handle.error) {
                 snprintf(error_buf, sizeof(error_buf), "Failed to find %s", temp_key);
-                ctx->error_handler(error_buf, ctx->user_ctx);
+                ctx->handle.error(error_buf, ctx->user_ctx);
             }
         }
 
@@ -122,15 +124,11 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
             temp_val[str_len] = '\0';
         }
 
-        non_ascii_character = ( # UTF-8 byte sequences
-                0xC0..0xDF 0x80..0xBF | 
-                0xE0..0xEF (0x80..0xBF){2} |
-                0xF0..0xF7 (0x80..0xBF){3}
-                );
+        non_ascii_byte = (0xC0..0xDF | 0x80..0xBF | 0xE0..0xEF | 0xF0..0xF7); # UTF-8 byte sequences (might be incomplete)
         
-        key = ( ( non_ascii_character | [A-Z@] ) ( non_ascii_character | [A-Z0-9@#$_\.] ){0,7} ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
+        key = ( ( non_ascii_byte | [A-Z@] ) ( non_ascii_byte | [A-Z0-9@#$_\.] ){0,7} ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
         
-        value = ( non_ascii_character | print ){1,64} >{ str_start = fpc; } %{ str_len = fpc - str_start; };
+        value = ( non_ascii_byte | print ){1,64} >{ str_start = fpc; } %{ str_len = fpc - str_start; };
         
         keyval = ( key %copy_key "=" value %copy_value ) %set_long_name;
         
@@ -141,10 +139,10 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
     }%%
 
     if (cs < %%{ write first_final; }%%|| p != pe) {
-        if (ctx->error_handler) {
+        if (ctx->handle.error) {
             snprintf(error_buf, sizeof(error_buf), "Error parsing string \"%.*s\" around byte #%ld/%d, character %c", 
                     count, (char *)data, (long)(p - c_data), count, *p);
-            ctx->error_handler(error_buf, ctx->user_ctx);
+            ctx->handle.error(error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_PARSE;
     }
@@ -172,18 +170,18 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     readstat_error_t retval = READSTAT_OK;
 
     char temp_key[8*4+1];
-    int temp_val = 0;
+    unsigned int temp_val = 0;
     unsigned char *str_start = NULL;
     size_t str_len = 0;
 
     size_t error_buf_len = 1024 + count;
-    char *error_buf = readstat_malloc(error_buf_len);
+    char *error_buf = NULL;
     unsigned char *p = NULL;
     unsigned char *pe = NULL;
 
     unsigned char *output_buffer = NULL;
-
-    varlookup_t *table = build_lookup_table(var_count, ctx);
+    varlookup_t *table = NULL;
+    int cs;
 
     if (ctx->converter) {
         size_t input_len = count;
@@ -202,14 +200,15 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
         p = c_data;
         pe = c_data + count;
     }
-    
-    int cs;
+
+    error_buf = readstat_malloc(error_buf_len);
+    table = build_lookup_table(var_count, ctx);
     
     %%{
         action set_width {
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
-                ctx->varinfo[found->index].string_length = temp_val;
+                ctx->varinfo[found->index]->string_length = temp_val;
             }
         }
 
@@ -219,18 +218,19 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
         }
         
         action incr_val {
-            if (fc != '\0') { 
-                temp_val = 10 * temp_val + (fc - '0'); 
+            if (fc != '\0') {
+                unsigned char digit = fc - '0';
+                if (temp_val <= (UINT_MAX - digit) / 10) {
+                    temp_val = 10 * temp_val + digit;
+                } else {
+                    fbreak;
+                }
             }
         }
         
-        non_ascii_character = ( # UTF-8 byte sequences
-                0xC0..0xDF 0x80..0xBF | 
-                0xE0..0xEF (0x80..0xBF){2} |
-                0xF0..0xF7 (0x80..0xBF){3}
-                );
+        non_ascii_byte = (0xC0..0xDF | 0x80..0xBF | 0xE0..0xEF | 0xF0..0xF7); # UTF-8 byte sequences (might be incomplete)
 
-        key = ( ( non_ascii_character | [A-Z@] ) ( non_ascii_character | [A-Z0-9@#$_\.] ){0,7} ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
+        key = ( ( non_ascii_byte | [A-Z@] ) ( non_ascii_byte | [A-Z0-9@#$_\.] ){0,7} ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
         
         value = [0-9]+ >{ temp_val = 0; } $incr_val;
         
@@ -243,10 +243,10 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     }%%
     
     if (cs < %%{ write first_final; }%% || p != pe) {
-        if (ctx->error_handler) {
+        if (ctx->handle.error) {
             snprintf(error_buf, error_buf_len, "Parsed %ld of %ld bytes. Remaining bytes: %.*s",
                     (long)(p - c_data), (long)(pe - c_data), (int)(pe - p), p);
-            ctx->error_handler(error_buf, ctx->user_ctx);
+            ctx->handle.error(error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_PARSE;
     }

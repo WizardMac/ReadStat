@@ -16,17 +16,12 @@
 #define LINE_LEN        80
 
 typedef struct xport_ctx_s {
-    readstat_info_handler           info_handler;
-    readstat_metadata_handler       metadata_handler;
-    readstat_note_handler           note_handler;
-    readstat_variable_handler       variable_handler;
-    readstat_fweight_handler        fweight_handler;
-    readstat_value_handler          value_handler;
-    readstat_value_label_handler    value_label_handler;
-    readstat_error_handler          error_handler;
-    readstat_progress_handler       progress_handler;
-    size_t                          file_size;
-    void                           *user_ctx;
+    readstat_callbacks_t handle;
+    size_t         file_size;
+    void          *user_ctx;
+    const char    *input_encoding;
+    const char    *output_encoding;
+    iconv_t        converter;
 
     readstat_io_t *io;
     time_t         timestamp;
@@ -34,8 +29,11 @@ typedef struct xport_ctx_s {
     int            obs_count;
     int            var_count;
     int            row_limit;
+    int            row_offset;
     size_t         row_length;
     int            parsed_row_count;
+    char           file_label[40*4+1];
+    char           table_name[32*4+1];
 
     readstat_variable_t **variables;
 
@@ -44,7 +42,7 @@ typedef struct xport_ctx_s {
 
 static readstat_error_t xport_update_progress(xport_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
-    return io->update(ctx->file_size, ctx->progress_handler, ctx->user_ctx, io->io_ctx);
+    return io->update(ctx->file_size, ctx->handle.progress, ctx->user_ctx, io->io_ctx);
 }
 
 static xport_ctx_t *xport_ctx_init() {
@@ -60,6 +58,9 @@ static void xport_ctx_free(xport_ctx_t *ctx) {
                 free(ctx->variables[i]);
         }
         free(ctx->variables);
+    }
+    if (ctx->converter) {
+        iconv_close(ctx->converter);
     }
 
     free(ctx);
@@ -145,25 +146,35 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t xport_read_file_label_record(xport_ctx_t *ctx) {
+static readstat_error_t xport_read_table_name_record(xport_ctx_t *ctx) {
     char line[LINE_LEN+1];
-    char label[40*4+1];
     readstat_error_t retval = READSTAT_OK;
 
     retval = xport_read_record(ctx, line);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    retval = readstat_convert(label, sizeof(label), &line[32], 40, NULL);
+    retval = readstat_convert(ctx->table_name, sizeof(ctx->table_name), &line[8],
+            ctx->version == 5 ? 8 : 32, ctx->converter);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    if (ctx->metadata_handler) {
-        if (ctx->metadata_handler(label, NULL, ctx->timestamp, ctx->version, ctx->user_ctx) != READSTAT_HANDLER_OK) {
-            retval = READSTAT_ERROR_USER_ABORT;
-            goto cleanup;
-        }
-    }
+cleanup:
+    return retval;
+}
+
+static readstat_error_t xport_read_file_label_record(xport_ctx_t *ctx) {
+    char line[LINE_LEN+1];
+    readstat_error_t retval = READSTAT_OK;
+
+    retval = xport_read_record(ctx, line);
+    if (retval != READSTAT_OK)
+        goto cleanup;
+
+    retval = readstat_convert(ctx->file_label, sizeof(ctx->file_label), &line[32],
+            40, ctx->converter);
+    if (retval != READSTAT_OK)
+        goto cleanup;
 
 cleanup:
     return retval;
@@ -243,8 +254,17 @@ static readstat_error_t xport_read_namestr_header_record(xport_ctx_t *ctx) {
         goto cleanup;
     }
 
-    if (ctx->info_handler) {
-        if (ctx->info_handler(-1, ctx->var_count, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+    if (ctx->handle.metadata) {
+        readstat_metadata_t metadata = {
+            .row_count = -1,
+            .var_count = ctx->var_count,
+            .file_label = ctx->file_label,
+            .table_name = ctx->table_name,
+            .creation_time = ctx->timestamp,
+            .modified_time = ctx->timestamp,
+            .file_format_version = ctx->version
+        };
+        if (ctx->handle.metadata(&metadata, ctx->user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
         }
@@ -270,7 +290,7 @@ static readstat_error_t xport_construct_format(char *dst, size_t dst_len,
         snprintf(dst, dst_len, "%s%d",
                 format, width);
     } else {
-        strcpy(dst, format);
+        snprintf(dst, dst_len, "%s", format);
     }
 
     return retval;
@@ -313,12 +333,12 @@ static readstat_error_t xport_read_labels_v8(xport_ctx_t *ctx, int label_count) 
         }
 
         retval = readstat_convert(variable->name, sizeof(variable->name),
-                name, name_len,  NULL);
+                name, name_len, ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
 
         retval = readstat_convert(variable->label, sizeof(variable->label),
-                label, label_len,  NULL);
+                label, label_len, ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
     }
@@ -381,12 +401,12 @@ static readstat_error_t xport_read_labels_v9(xport_ctx_t *ctx, int label_count) 
         }
 
         retval = readstat_convert(variable->name, sizeof(variable->name),
-                name, name_len,  NULL);
+                name, name_len, ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
 
         retval = readstat_convert(variable->label, sizeof(variable->label),
-                label, label_len,  NULL);
+                label, label_len, ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
 
@@ -430,12 +450,12 @@ static readstat_error_t xport_read_variables(xport_ctx_t *ctx) {
         variable->alignment = namestr.nfj ? READSTAT_ALIGNMENT_RIGHT : READSTAT_ALIGNMENT_LEFT;
 
         readstat_convert(variable->name, sizeof(variable->name),
-                namestr.nname, sizeof(namestr.nname), NULL);
+                namestr.nname, sizeof(namestr.nname), ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
 
         readstat_convert(variable->label, sizeof(variable->label),
-                namestr.nlabel, sizeof(namestr.nlabel), NULL);
+                namestr.nlabel, sizeof(namestr.nlabel), ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
 
@@ -482,8 +502,8 @@ static readstat_error_t xport_read_variables(xport_ctx_t *ctx) {
         variable->index_after_skipping = index_after_skipping;
         
         int cb_retval = READSTAT_HANDLER_OK;
-        if (ctx->variable_handler) {
-            cb_retval = ctx->variable_handler(i, variable, variable->format, ctx->user_ctx);
+        if (ctx->handle.variable) {
+            cb_retval = ctx->handle.variable(i, variable, variable->format, ctx->user_ctx);
         }
         if (cb_retval == READSTAT_HANDLER_ABORT) {
             retval = READSTAT_ERROR_USER_ABORT;
@@ -518,7 +538,7 @@ static readstat_error_t xport_process_row(xport_ctx_t *ctx, const char *row, siz
                 goto cleanup;
             }
             retval = readstat_convert(string, 4*variable->storage_width+1,
-                    &row[pos], variable->storage_width, NULL);
+                    &row[pos], variable->storage_width, ctx->converter);
             if (retval != READSTAT_OK)
                 goto cleanup;
 
@@ -529,7 +549,7 @@ static readstat_error_t xport_process_row(xport_ctx_t *ctx, const char *row, siz
                     variable->storage_width >= XPORT_MIN_DOUBLE_SIZE) {
                 char full_value[8] = { 0 };
                 if (memcmp(&full_value[1], &row[pos+1], variable->storage_width - 1) == 0 &&
-                        (row[pos] == '_' || row[pos] == '.' || (row[pos] >= 'A' && row[pos] <= 'Z'))) {
+                        (row[pos] == '.' || sas_validate_tag(row[pos]) == READSTAT_OK)) {
                     if (row[pos] == '.') {
                         value.is_system_missing = 1;
                     } else {
@@ -550,10 +570,17 @@ static readstat_error_t xport_process_row(xport_ctx_t *ctx, const char *row, siz
         }
         pos += variable->storage_width;
 
-        if (ctx->value_handler(ctx->parsed_row_count, variable, value, ctx->user_ctx) != READSTAT_HANDLER_OK) {
-            retval = READSTAT_ERROR_USER_ABORT;
-            goto cleanup;
+        if (ctx->handle.value && !ctx->variables[i]->skip && !ctx->row_offset) {
+            if (ctx->handle.value(ctx->parsed_row_count, variable, value, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+                retval = READSTAT_ERROR_USER_ABORT;
+                goto cleanup;
+            }
         }
+    }
+    if (ctx->row_offset) {
+        ctx->row_offset--;
+    } else {
+        ctx->parsed_row_count++;
     }
 
 cleanup:
@@ -565,7 +592,7 @@ static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
     if (!ctx->row_length)
         return READSTAT_OK;
 
-    if (!ctx->value_handler)
+    if (!ctx->handle.value)
         return READSTAT_OK;
 
     readstat_error_t retval = READSTAT_OK;
@@ -609,7 +636,7 @@ static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
             if (retval != READSTAT_OK)
                 goto cleanup;
 
-            if (++(ctx->parsed_row_count) == ctx->row_limit)
+            if (ctx->row_limit > 0 && ctx->parsed_row_count == ctx->row_limit)
                 goto cleanup;
 
             num_blank_rows--;
@@ -623,7 +650,7 @@ static readstat_error_t xport_read_data(xport_ctx_t *ctx) {
         if (retval != READSTAT_OK)
             goto cleanup;
 
-        if (++(ctx->parsed_row_count) == ctx->row_limit)
+        if (ctx->row_limit > 0 && ctx->parsed_row_count == ctx->row_limit)
             break;
     }
 
@@ -640,17 +667,14 @@ readstat_error_t readstat_parse_xport(readstat_parser_t *parser, const char *pat
     readstat_io_t *io = parser->io;
 
     xport_ctx_t *ctx = xport_ctx_init();
-    ctx->info_handler = parser->info_handler;
-    ctx->metadata_handler = parser->metadata_handler;
-    ctx->note_handler = parser->note_handler;
-    ctx->variable_handler = parser->variable_handler;
-    ctx->value_handler = parser->value_handler;
-    ctx->value_label_handler = parser->value_label_handler;
-    ctx->error_handler = parser->error_handler;
-    ctx->progress_handler = parser->progress_handler;
+    ctx->handle = parser->handlers;
+    ctx->input_encoding = parser->input_encoding;
+    ctx->output_encoding = parser->output_encoding;
     ctx->user_ctx = user_ctx;
     ctx->io = io;
     ctx->row_limit = parser->row_limit;
+    if (parser->row_offset > 0)
+        ctx->row_offset = parser->row_offset;
 
     if (io->open(path, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_OPEN;
@@ -665,6 +689,15 @@ readstat_error_t readstat_parse_xport(readstat_parser_t *parser, const char *pat
     if (io->seek(0, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         goto cleanup;
+    }
+
+    if (ctx->input_encoding && ctx->output_encoding && strcmp(ctx->input_encoding, ctx->output_encoding) != 0) {
+        iconv_t converter = iconv_open(ctx->output_encoding, ctx->input_encoding);
+        if (converter == (iconv_t)-1) {
+            retval = READSTAT_ERROR_UNSUPPORTED_CHARSET;
+            goto cleanup;
+        }
+        ctx->converter = converter;
     }
 
     retval = xport_read_library_record(ctx);
@@ -687,7 +720,7 @@ readstat_error_t readstat_parse_xport(readstat_parser_t *parser, const char *pat
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    retval = xport_skip_record(ctx);
+    retval = xport_read_table_name_record(ctx);
     if (retval != READSTAT_OK)
         goto cleanup;
 

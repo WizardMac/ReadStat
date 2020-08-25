@@ -1,7 +1,7 @@
 
 typedef struct zsav_block_s {
-    int32_t uncompressed_size;
-    int32_t compressed_size;
+    int32_t        uncompressed_size;
+    int32_t        compressed_size;
 
     z_stream       stream;
 
@@ -15,9 +15,10 @@ typedef struct zsav_ctx_s {
     int             blocks_count;
     int             blocks_capacity;
 
-    int64_t     uncompressed_block_size;
+    int64_t         uncompressed_block_size;
+    int64_t         zheader_ofs;
 
-    int64_t     zheader_ofs;
+    int             compression_level;
 } zsav_ctx_t;
 
 zsav_ctx_t *zsav_ctx_init(size_t max_row_len, int64_t offset);

@@ -64,16 +64,12 @@ typedef struct sav_dictionary_termination_record_s {
 #pragma pack(pop)
 
 typedef struct sav_ctx_s {
-    readstat_error_handler          error_handler;
-    readstat_progress_handler       progress_handler;
-    readstat_note_handler           note_handler;
-    readstat_value_handler          value_handler;
-    readstat_value_label_handler    value_label_handler;
-    size_t                          file_size;
-    readstat_io_t                  *io;
-    void                           *user_ctx;
+    readstat_callbacks_t  handle;
+    size_t                file_size;
+    readstat_io_t        *io;
+    void                 *user_ctx;
 
-    spss_varinfo_t       *varinfo;
+    spss_varinfo_t      **varinfo;
     size_t                varinfo_capacity;
     readstat_variable_t **variables;
 
@@ -89,6 +85,7 @@ typedef struct sav_ctx_s {
     int            var_count;
     int            record_count;
     int            row_limit;
+    int            row_offset;
     int            current_row;
     int            value_labels_count;
     int            fweight_index;
@@ -107,6 +104,7 @@ typedef struct sav_ctx_s {
     int            format_version;
 
     readstat_compress_t  compression;
+    readstat_endian_t   endianness;
     unsigned int   bswap:1;
 } sav_ctx_t;
 
@@ -127,7 +125,8 @@ typedef struct sav_ctx_s {
 #define SAV_RECORD_SUBTYPE_DATA_FILE_ATTRS   17
 #define SAV_RECORD_SUBTYPE_VARIABLE_ATTRS    18
 #define SAV_RECORD_SUBTYPE_CHAR_ENCODING     20
-#define SAV_RECORD_SUBTYPE_LONG_VALUE_LABELS 21
+#define SAV_RECORD_SUBTYPE_LONG_STRING_VALUE_LABELS   21
+#define SAV_RECORD_SUBTYPE_LONG_STRING_MISSING_VALUES 22
 
 #define SAV_FLOATING_POINT_REP_IEEE      1
 #define SAV_FLOATING_POINT_REP_IBM       2

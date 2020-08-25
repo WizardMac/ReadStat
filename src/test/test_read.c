@@ -2,9 +2,9 @@
 
 #include "../readstat.h"
 
+#include "test_buffer.h"
 #include "test_types.h"
 #include "test_error.h"
-#include "test_buffer.h"
 #include "test_buffer_io.h"
 #include "test_readstat.h"
 #include "test_read.h"
@@ -57,21 +57,11 @@ char *file_extension(long format) {
     return "data";
 }
 
-static rt_buffer_ctx_t *buffer_ctx_init(rt_buffer_t *buffer) {
-    rt_buffer_ctx_t *buffer_ctx = calloc(1, sizeof(rt_buffer_ctx_t));
-    buffer_ctx->buffer = buffer;
-    return buffer_ctx;
-}
-
-static void buffer_ctx_reset(rt_buffer_ctx_t *buffer_ctx) {
-    buffer_reset(buffer_ctx->buffer);
-    buffer_ctx->pos = 0;
-}
-
-rt_parse_ctx_t *parse_ctx_init(rt_buffer_t *buffer, rt_test_file_t *file) {
+rt_parse_ctx_t *parse_ctx_init(rt_buffer_t *buffer, rt_test_file_t *file, rt_test_args_t *args) {
     rt_parse_ctx_t *parse_ctx = calloc(1, sizeof(rt_parse_ctx_t));
     parse_ctx->buffer_ctx = buffer_ctx_init(buffer);
     parse_ctx->file = file;
+    parse_ctx->args = args;
     return parse_ctx;
 }
 
@@ -91,6 +81,11 @@ void parse_ctx_reset(rt_parse_ctx_t *parse_ctx, long file_format) {
     } else {
         parse_ctx->max_file_label_len = 20;
     }
+    if ((file_format & RT_FORMAT_XPORT_5)) {
+        parse_ctx->max_table_name_len = 8;
+    } else if ((file_format & RT_FORMAT_XPORT_8)) {
+        parse_ctx->max_table_name_len = 32;
+    }
     parse_ctx->var_index = -1;
     parse_ctx->obs_index = -1;
     parse_ctx->notes_count = 0;
@@ -106,11 +101,29 @@ void parse_ctx_free(rt_parse_ctx_t *parse_ctx) {
     free(parse_ctx);
 }
 
-static int handle_info(int obs_count, int var_count, void *ctx) {
+long expected_row_count(rt_parse_ctx_t *parse_ctx) {
+    long expected_rows = parse_ctx->file->rows;
+    if (parse_ctx->args->row_offset > 0)
+        expected_rows -= parse_ctx->args->row_offset;
+    if (expected_rows < 0)
+        expected_rows = 0;
+    if (parse_ctx->args->row_limit > 0 && parse_ctx->args->row_limit < expected_rows)
+        expected_rows = parse_ctx->args->row_limit;
+    return expected_rows;
+}
+
+static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
 
     rt_ctx->var_index = -1;
     rt_ctx->obs_index = -1;
+
+    int var_count = readstat_get_var_count(metadata);
+    int obs_count = readstat_get_row_count(metadata);
+    const char *file_label = readstat_get_file_label(metadata);
+    const char *table_name = readstat_get_table_name(metadata);
+    time_t timestamp = readstat_get_creation_time(metadata);
+    long format_version = readstat_get_file_format_version(metadata);
 
     push_error_if_doubles_differ(rt_ctx, 
             rt_ctx->file->columns_count, var_count, 
@@ -118,18 +131,16 @@ static int handle_info(int obs_count, int var_count, void *ctx) {
 
     if (obs_count != -1) {
         push_error_if_doubles_differ(rt_ctx, 
-                rt_ctx->file->rows, obs_count, 
+                expected_row_count(rt_ctx), obs_count, 
                 "Number of observations");
     }
 
-    return READSTAT_HANDLER_OK;
-}
-
-static int handle_metadata(const char *file_label, const char *encoding, time_t timestamp, long format_version, void *ctx) {
-    rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
-
     push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->label, file_label, 
-            rt_ctx->max_file_label_len, "File labels");
+            rt_ctx->max_file_label_len-1, "File labels");
+    if (table_name == NULL || strcmp(table_name, "DATASET") != 0) {
+        push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->table_name, table_name, 
+                rt_ctx->max_table_name_len, "Table names");
+    }
     if (rt_ctx->file->timestamp.tm_year) {
         struct tm timestamp_s = rt_ctx->file->timestamp;
         timestamp_s.tm_isdst = -1;
@@ -237,16 +248,17 @@ static int handle_value(int obs_index, readstat_variable_t *variable, readstat_v
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
     rt_ctx->obs_index = obs_index;
     rt_ctx->var_index = readstat_variable_get_index(variable);
+    long file_obs_index = obs_index + rt_ctx->args->row_offset;
 
     rt_column_t *column = &rt_ctx->file->columns[rt_ctx->var_index];
 
     if (column->type == READSTAT_TYPE_STRING_REF) {
         push_error_if_strings_differ(rt_ctx,
-                rt_ctx->file->string_refs[readstat_int32_value(column->values[obs_index])],
+                rt_ctx->file->string_refs[readstat_int32_value(column->values[file_obs_index])],
                 readstat_string_value(value), "String ref values");
     } else {
         push_error_if_values_differ(rt_ctx, 
-                column->values[obs_index],
+                column->values[file_obs_index],
                 value, "Data values");
     }
 
@@ -269,7 +281,6 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     readstat_set_update_handler(parser, rt_update_handler);
     readstat_set_io_ctx(parser, parse_ctx->buffer_ctx);
 
-    readstat_set_info_handler(parser, &handle_info);
     readstat_set_metadata_handler(parser, &handle_metadata);
     readstat_set_note_handler(parser, &handle_note);
     readstat_set_variable_handler(parser, &handle_variable);
@@ -277,6 +288,9 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     readstat_set_value_handler(parser, &handle_value);
     readstat_set_value_label_handler(parser, &handle_value_label);
     readstat_set_error_handler(parser, &handle_error);
+
+    readstat_set_row_limit(parser, parse_ctx->args->row_limit);
+    readstat_set_row_offset(parser, parse_ctx->args->row_offset);
 
     if ((format & RT_FORMAT_DTA)) {
         parse_ctx->file_format_version = dta_file_format_version(format);
@@ -305,7 +319,7 @@ readstat_error_t read_file(rt_parse_ctx_t *parse_ctx, long format) {
     push_error_if_doubles_differ(parse_ctx, parse_ctx->file->columns_count,
             parse_ctx->variables_count, "Column count");
 
-    push_error_if_doubles_differ(parse_ctx, parse_ctx->file->rows,
+    push_error_if_doubles_differ(parse_ctx, expected_row_count(parse_ctx),
             parse_ctx->obs_index + 1, "Row count");
 
     long value_labels_count = 0;

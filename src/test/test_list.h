@@ -3,6 +3,37 @@
 
 static rt_test_group_t _test_groups[] = {
     {
+        .label = "Table name",
+        .tests = {
+            {
+                .label = "Legal name",
+                .test_formats = RT_FORMAT_XPORT,
+                .table_name = "hello",
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .label = "Double-precision variable"
+                    }
+                }
+            },
+            {
+                .label = "Illegal name",
+                .test_formats = RT_FORMAT_XPORT,
+                .table_name = "#&(@!",
+                .write_error = READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .label = "Double-precision variable"
+                    }
+                }
+            },
+        }
+    },
+
+    {
         .label = "Notes",
         .tests = {
             {
@@ -73,6 +104,25 @@ static rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "spaces->        <-- here" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blah" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "blahblahblah" } }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "SAV short row compression",
+                .test_formats = RT_FORMAT_SAV_COMP,
+                .rows = 4,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .label = "Double-precision variable",
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } }
                         }
                     }
                 }
@@ -537,6 +587,10 @@ static rt_test_group_t _test_groups[] = {
                     {
                         .name = "stra" "\xc3\x9f" "e",
                         .type = READSTAT_TYPE_DOUBLE
+                    },
+                    { /* https://github.com/WizardMac/ReadStat/issues/206 */
+                        .name = "\xd7\x95\xd7\xaa\xd7\xa7_\xd7\x91",
+                        .type = READSTAT_TYPE_DOUBLE
                     }
                 }
             },
@@ -586,7 +640,7 @@ static rt_test_group_t _test_groups[] = {
             {
                 .label = "Column name begins with number",
                 .write_error = READSTAT_ERROR_NAME_BEGINS_WITH_ILLEGAL_CHARACTER,
-                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAS,
+                .test_formats = RT_FORMAT_DTA | RT_FORMAT_SAS | RT_FORMAT_SAV,
                 .rows = 0,
                 .columns = {
                     {
@@ -705,6 +759,28 @@ static rt_test_group_t _test_groups[] = {
                 .columns = {
                     {
                         .name = "var1",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
+                .label = "SAV column name is a reserved word",
+                .write_error = READSTAT_ERROR_NAME_IS_RESERVED_WORD,
+                .test_formats = RT_FORMAT_SAV,
+                .columns = {
+                    {
+                        .name = "ALL",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
+                .label = "SAV column name contains punctuation",
+                .write_error = READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
+                .test_formats = RT_FORMAT_SAV,
+                .columns = {
+                    {
+                        .name = "VAR!",
                         .type = READSTAT_TYPE_DOUBLE
                     }
                 }
@@ -862,6 +938,15 @@ static rt_test_group_t _test_groups[] = {
                             { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2.5 } },
                               .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2.5 } } }
                         }
+                    },
+                    {
+                        .name = "VAR3",
+                        .type = READSTAT_TYPE_STRING,
+                        .missing_ranges_count = 1,
+                        .missing_ranges= { 
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } } }
+                        }
                     }
                 }
             },
@@ -895,6 +980,15 @@ static rt_test_group_t _test_groups[] = {
                             { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
                               .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } } }
                         }
+                    },
+                    {
+                        .name = "VAR4",
+                        .type = READSTAT_TYPE_STRING,
+                        .missing_ranges_count = 1,
+                        .missing_ranges = { 
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "AAA" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "ZZZ" } } }
+                        }
                     }
                 }
             },
@@ -912,6 +1006,29 @@ static rt_test_group_t _test_groups[] = {
                               .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } } },
                             { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
                               .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -1.0 } } },
+                        }
+                    }
+                }
+            },
+            {
+                .label = "SPSS missing values for long strings",
+                .test_formats = RT_FORMAT_SPSS,
+                .rows = 3,
+                .columns = {
+                    {
+                        .name = "VAR3",
+                        .type = READSTAT_TYPE_STRING,
+                        .missing_ranges_count = 2,
+                        .missing_ranges= { 
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING2" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING2" } } }
+                        },
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING2" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "NOT MISSING!!!!!!!!!" } }
                         }
                     }
                 }
@@ -1203,6 +1320,33 @@ static rt_test_group_t _test_groups[] = {
             },
 
             {
+                .label = "DTA negative value labels",
+                .test_formats = RT_FORMAT_DTA_105_AND_NEWER,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "somelbl",
+                        .type = READSTAT_TYPE_INT32,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            { .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = -1 } },
+                              .label = "Negative One" },
+
+                            { .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 1 } },
+                              .label = "Positive One" }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .label_set = "somelbl"
+                    }
+                }
+            },
+
+            {
                 .label = "DTA tagged value labels",
                 .test_formats = RT_FORMAT_DTA_114_AND_NEWER,
                 .label_sets_count = 1,
@@ -1354,7 +1498,7 @@ static rt_test_group_t _test_groups[] = {
                 },
                 .columns = {
                     {
-                        .name = "VAR2",
+                        .name = "VAR1",
                         .type = READSTAT_TYPE_STRING,
                         .label_set = "labels0"
                     }
@@ -1621,9 +1765,9 @@ static rt_test_group_t _test_groups[] = {
         .label = "Timestamps",
         .tests = {
             {
-                .label = "January 1, 1970",
+                .label = "January 2, 1970", /* Windows localtime can't handle negative UNIX timestamps */
                 .test_formats = RT_FORMAT_TEST_TIMESTAMPS,
-                .timestamp = { .tm_year = /* 19 */70, .tm_mon = 0, .tm_mday = 1, .tm_hour = 0, .tm_min = 0 },
+                .timestamp = { .tm_year = /* 19 */70, .tm_mon = 0, .tm_mday = 2, .tm_hour = 0, .tm_min = 0 },
                 .columns = { { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE } }
             },
 
@@ -1759,7 +1903,7 @@ static rt_test_group_t _test_groups[] = {
                 .label = "Generic test file with all column types",
                 .test_formats = RT_FORMAT_ALL,
                 .write_error = READSTAT_OK,
-                .rows = 5,
+                .rows = 6,
                 .columns = {
                     { 
                         .name = "VAR1",
@@ -1769,6 +1913,7 @@ static rt_test_group_t _test_groups[] = {
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } }, 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 30.0 } }, 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 10.0 } }, 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -3.14159, } }, 
                             { .type = READSTAT_TYPE_DOUBLE, .is_system_missing = 1, .v = { .double_value = NAN } }, 
@@ -1782,6 +1927,7 @@ static rt_test_group_t _test_groups[] = {
                         .alignment = READSTAT_ALIGNMENT_CENTER,
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
+                            { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 30.0 } }, 
                             { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 20.0 } }, 
                             { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 15.0 } },
                             { .type = READSTAT_TYPE_FLOAT, .v = { .float_value = 3.14159 } },
@@ -1796,6 +1942,7 @@ static rt_test_group_t _test_groups[] = {
                         .alignment = READSTAT_ALIGNMENT_CENTER,
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
+                            { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 30 } },
                             { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 20 } },
                             { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 15 } },
                             { .type = READSTAT_TYPE_INT32, .v = { .i32_value = -281817 } },
@@ -1810,6 +1957,7 @@ static rt_test_group_t _test_groups[] = {
                         .alignment = READSTAT_ALIGNMENT_CENTER,
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
+                            { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 30 } }, 
                             { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 20 } }, 
                             { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 15 } }, 
                             { .type = READSTAT_TYPE_INT16, .v = { .i16_value = -28117 } },
@@ -1824,6 +1972,7 @@ static rt_test_group_t _test_groups[] = {
                         .alignment = READSTAT_ALIGNMENT_CENTER,
                         .measure = READSTAT_MEASURE_SCALE,
                         .values = { 
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 30 } },
                             { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 20 } },
                             { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 15 } },
                             { .type = READSTAT_TYPE_INT8, .v = { .i8_value = -28 } },
@@ -1839,6 +1988,7 @@ static rt_test_group_t _test_groups[] = {
                         .measure = READSTAT_MEASURE_ORDINAL,
                         .values = { 
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Hello" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Hello" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Goodbye" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Goodbye" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Goodbye" } },
@@ -1852,6 +2002,7 @@ static rt_test_group_t _test_groups[] = {
                         .alignment = READSTAT_ALIGNMENT_LEFT,
                         .measure = READSTAT_MEASURE_ORDINAL,
                         .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },

@@ -26,7 +26,7 @@ dta_ctx_t *dta_ctx_alloc(readstat_io_t *io) {
     return ctx;
 }
 
-readstat_error_t dta_ctx_init(dta_ctx_t *ctx, uint16_t nvar, uint32_t nobs,
+readstat_error_t dta_ctx_init(dta_ctx_t *ctx, uint32_t nvar, uint64_t nobs,
         unsigned char byteorder, unsigned char ds_format,
         const char *input_encoding, const char *output_encoding) {
     readstat_error_t retval = READSTAT_OK;
@@ -39,9 +39,11 @@ readstat_error_t dta_ctx_init(dta_ctx_t *ctx, uint16_t nvar, uint32_t nobs,
     }
 
     ctx->bswap = (byteorder != machine_byteorder);
+    ctx->ds_format = ds_format;
+    ctx->endianness = byteorder == DTA_LOHI ? READSTAT_ENDIAN_LITTLE : READSTAT_ENDIAN_BIG;
 
-    ctx->nvar = ctx->bswap ? byteswap2(nvar) : nvar;
-    ctx->nobs = ctx->bswap ? byteswap4(nobs) : nobs;
+    ctx->nvar = nvar;
+    ctx->nobs = nobs;
 
     if (ctx->nvar) {
         if ((ctx->variables = readstat_calloc(ctx->nvar, sizeof(readstat_variable_t *))) == NULL) {
@@ -168,7 +170,12 @@ readstat_error_t dta_ctx_init(dta_ctx_t *ctx, uint16_t nvar, uint32_t nobs,
         }
     }
 
-    ctx->srtlist_len = (ctx->nvar + 1) * sizeof(int16_t);
+    if (ds_format < 119) {
+        ctx->srtlist_len = (ctx->nvar + 1) * sizeof(int16_t);
+    } else {
+        ctx->srtlist_len = (ctx->nvar + 1) * sizeof(int32_t);
+    }
+
     if ((ctx->srtlist = readstat_malloc(ctx->srtlist_len)) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;

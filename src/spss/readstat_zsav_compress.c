@@ -16,6 +16,8 @@ zsav_ctx_t *zsav_ctx_init(size_t max_row_len, int64_t offset) {
     ctx->uncompressed_block_size = 0x3FF000;
     ctx->zheader_ofs = offset;
 
+    ctx->compression_level = Z_DEFAULT_COMPRESSION;
+
     return ctx;
 }
 
@@ -41,7 +43,7 @@ zsav_block_t *zsav_add_block(zsav_ctx_t *ctx) {
     block = calloc(1, sizeof(zsav_block_t));
     ctx->blocks[ctx->blocks_count++] = block;
 
-    deflateInit(&block->stream, Z_DEFAULT_COMPRESSION);
+    deflateInit(&block->stream, ctx->compression_level);
 
     block->compressed_data_capacity = deflateBound(&block->stream, ctx->uncompressed_block_size);
     block->compressed_data = malloc(block->compressed_data_capacity);

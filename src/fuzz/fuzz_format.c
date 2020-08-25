@@ -5,11 +5,7 @@
 #include "../test/test_types.h"
 #include "../test/test_buffer_io.h"
 
-static int handle_info(int obs_count, int var_count, void *ctx) {
-    return READSTAT_HANDLER_OK;
-}
-
-static int handle_metadata(const char *file_label, const char *encoding, time_t timestamp, long format_version, void *ctx) {
+static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
     return READSTAT_HANDLER_OK;
 }
 
@@ -42,7 +38,6 @@ readstat_parser_t *fuzzer_parser_init(const uint8_t *Data, size_t Size) {
     readstat_set_read_handler(parser, rt_read_handler);
     readstat_set_update_handler(parser, rt_update_handler);
 
-    readstat_set_info_handler(parser, &handle_info);
     readstat_set_metadata_handler(parser, &handle_metadata);
     readstat_set_note_handler(parser, &handle_note);
     readstat_set_variable_handler(parser, &handle_variable);

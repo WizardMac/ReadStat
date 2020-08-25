@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "../readstat.h"
+#include "../readstat_bits.h"
 #include "../readstat_iconv.h"
 #include "readstat_sav.h"
 #include "readstat_sav_compress.h"
@@ -73,14 +74,16 @@ size_t sav_compress_row(void *output_row, void *input_row, size_t input_len,
     return output_offset;
 }
 
-int sav_decompress_row(struct sav_row_stream_s *state) {
+void sav_decompress_row(struct sav_row_stream_s *state) {
     double fp_value;
+    uint64_t missing_value = state->bswap ? byteswap8(state->missing_value) : state->missing_value;
     int i = 8 - state->i;
-    int finished = 0;
     while (1) {
         if (i == 8) {
-            if (state->avail_in < 8)
+            if (state->avail_in < 8) {
+                state->status = SAV_ROW_STREAM_NEED_DATA;
                 goto done;
+            }
 
             memcpy(state->chunk, state->next_in, 8);
             state->next_in += 8;
@@ -93,11 +96,13 @@ int sav_decompress_row(struct sav_row_stream_s *state) {
                 case 0:
                     break;
                 case 252:
-                    finished = 1;
+                    state->status = SAV_ROW_STREAM_FINISHED_ALL;
                     goto done;
                 case 253:
-                    if (state->avail_in < 8)
+                    if (state->avail_in < 8) {
+                        state->status = SAV_ROW_STREAM_NEED_DATA;
                         goto done;
+                    }
                     memcpy(state->next_out, state->next_in, 8);
                     state->next_out += 8;
                     state->avail_out -= 8;
@@ -110,24 +115,25 @@ int sav_decompress_row(struct sav_row_stream_s *state) {
                     state->avail_out -= 8;
                     break;
                 case 255:
-                    memcpy(state->next_out, &state->missing_value, sizeof(uint64_t));
+                    memcpy(state->next_out, &missing_value, sizeof(uint64_t));
                     state->next_out += 8;
                     state->avail_out -= 8;
                     break;
                 default:
                     fp_value = state->chunk[i] - state->bias;
+                    fp_value = state->bswap ? byteswap_double(fp_value) : fp_value;
                     memcpy(state->next_out, &fp_value, sizeof(double));
                     state->next_out += 8;
                     state->avail_out -= 8;
                     break;
             }
             i++;
-            if (state->avail_out < 8)
+            if (state->avail_out < 8) {
+                state->status = SAV_ROW_STREAM_FINISHED_ROW;
                 goto done;
+            }
         }
     }
 done:
     state->i = 8 - i;
-
-    return finished;
 }
