@@ -32,7 +32,7 @@ typedef struct xport_ctx_s {
     int            row_offset;
     size_t         row_length;
     int            parsed_row_count;
-    char           file_label[40*4+1];
+    char           file_label[256*4+1];
     char           table_name[32*4+1];
 
     readstat_variable_t **variables;

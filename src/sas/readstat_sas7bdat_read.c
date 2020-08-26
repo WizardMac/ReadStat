@@ -85,7 +85,7 @@ typedef struct sas7bdat_ctx_s {
     time_t         ctime;
     time_t         mtime;
     int            version;
-    char           file_label[4*64+1];
+    char           table_name[4*32+1];
     char           error_buf[2048];
 } sas7bdat_ctx_t;
 
@@ -616,7 +616,7 @@ static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx, int compres
         readstat_metadata_t metadata = {
             .row_count = ctx->row_limit,
             .var_count = ctx->column_count,
-            .file_label = ctx->file_label,
+            .table_name = ctx->table_name,
             .file_encoding = ctx->input_encoding, /* orig encoding? */
             .creation_time = ctx->ctime,
             .modified_time = ctx->mtime,
@@ -1116,8 +1116,8 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
         ctx->converter = converter;
     }
 
-    if ((retval = readstat_convert(ctx->file_label, sizeof(ctx->file_label),
-                hinfo->file_label, sizeof(hinfo->file_label), ctx->converter)) != READSTAT_OK) {
+    if ((retval = readstat_convert(ctx->table_name, sizeof(ctx->table_name),
+                hinfo->table_name, sizeof(hinfo->table_name), ctx->converter)) != READSTAT_OK) {
         goto cleanup;
     }
 
