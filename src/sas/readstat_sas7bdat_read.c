@@ -88,7 +88,7 @@ typedef struct sas7bdat_ctx_s {
     char           file_label[4*64+1];
     char           error_buf[2048];
 
-    int           rdc_compression:1;
+    unsigned int  rdc_compression:1;
 } sas7bdat_ctx_t;
 
 static void sas7bdat_ctx_free(sas7bdat_ctx_t *ctx) {
