@@ -507,50 +507,38 @@ static readstat_error_t sas7bdat_parse_subheader_rdc(const char *subheader, size
 
             if ((prefix & (1 << (15 - i))) == 0) {
                 *output++ = *input++;
-            } else {
-                unsigned char marker_byte = *input++;
-                unsigned char next_byte = *input++;
-                size_t insert_len = 0, copy_len = 0;
-                unsigned char insert_byte = 0x00;
-                size_t back_offset = 0;
+                continue;
+            }
+            unsigned char marker_byte = *input++;
+            unsigned char next_byte = *input++;
+            size_t insert_len = 0, copy_len = 0;
+            unsigned char insert_byte = 0x00;
+            size_t back_offset = 0;
 
-                if (marker_byte >= 0x00 && marker_byte <= 0x07) {
-                    insert_len = 3 + marker_byte;
-                    insert_byte = next_byte;
-                } else if (marker_byte >= 0x08 && marker_byte <= 0x0A) {
-//                        (next_byte & 0x0F) != (next_byte >> 4)) {
-                    copy_len = 14 + next_byte;
-                    back_offset = (marker_byte - 0x05) * 8;
-//                    input--;
-                } else if (marker_byte >= 0x0B && marker_byte <= 0x0F) {
-                    copy_len = 0; // 14 + (*input++);
-                    back_offset = (marker_byte - 0x05) * 8;
-                    input++; // eat a byte
-                } else if ((marker_byte >> 4) > 2) {
-                    copy_len = (marker_byte >> 4);
-                    back_offset = 3 + (marker_byte & 0x0F) + next_byte * 16;
-                } else if ((marker_byte >> 4) == 2) {
-                    copy_len = 16 + (*input++);
-                    back_offset = 3 + (marker_byte & 0x0F) + next_byte * 16;
-                } else if ((marker_byte >> 4) == 1) {
-                    insert_len = 19 + (marker_byte & 0x0F) + next_byte * 16;
-                    insert_byte = *input++;
-                } else {
+            if (marker_byte <= 0x0F) {
+                insert_len = 3 + marker_byte;
+                insert_byte = next_byte;
+            } else if ((marker_byte >> 4) == 1) {
+                insert_len = 19 + (marker_byte & 0x0F) + next_byte * 16;
+                insert_byte = *input++;
+            } else if ((marker_byte >> 4) == 2) {
+                copy_len = 16 + (*input++);
+                back_offset = 3 + (marker_byte & 0x0F) + next_byte * 16;
+            } else {
+                copy_len = (marker_byte >> 4);
+                back_offset = 3 + (marker_byte & 0x0F) + next_byte * 16;
+            }
+
+            if (insert_len) {
+                memset(output, insert_byte, insert_len);
+                output += insert_len;
+            } else if (copy_len) {
+                if (output - buffer < back_offset || copy_len > back_offset) {
                     retval = READSTAT_ERROR_PARSE;
                     goto cleanup;
                 }
-
-                if (insert_len) {
-                    memset(output, insert_byte, insert_len);
-                    output += insert_len;
-                } else if (copy_len) {
-                    if (output - buffer < back_offset || copy_len > back_offset) {
-                        retval = READSTAT_ERROR_PARSE;
-                        goto cleanup;
-                    }
-                    memcpy(output, output - back_offset, copy_len);
-                    output += copy_len;
-                }
+                memcpy(output, output - back_offset, copy_len);
+                output += copy_len;
             }
         }
     }
@@ -704,10 +692,17 @@ static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx, int compres
             .creation_time = ctx->ctime,
             .modified_time = ctx->mtime,
             .file_format_version = ctx->version,
-            .compression = compressed ? READSTAT_COMPRESS_ROWS : READSTAT_COMPRESS_NONE,
+            .compression = READSTAT_COMPRESS_NONE,
             .endianness = ctx->little_endian ? READSTAT_ENDIAN_LITTLE : READSTAT_ENDIAN_BIG,
             .is64bit = ctx->u64
         };
+        if (compressed) {
+            if (ctx->rdc_compression) {
+                metadata.compression = READSTAT_COMPRESS_BINARY;
+            } else {
+                metadata.compression = READSTAT_COMPRESS_ROWS;
+            }
+        }
         if (ctx->handle.metadata(&metadata, ctx->user_ctx) != READSTAT_HANDLER_OK) {
             retval = READSTAT_ERROR_USER_ABORT;
             goto cleanup;
