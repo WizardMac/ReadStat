@@ -806,7 +806,7 @@ static rt_test_group_t _test_groups[] = {
         .tests = {
             {
                 .label = "Display width",
-                .test_formats = RT_FORMAT_SPSS | RT_FORMAT_DTA,
+                .test_formats = RT_FORMAT_SPSS | RT_FORMAT_DTA | RT_FORMAT_XPORT,
                 .columns = {
                     { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .display_width = 12 },
                     { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .display_width = 100 },
