@@ -802,6 +802,21 @@ static rt_test_group_t _test_groups[] = {
     },
 
     {
+        .label = "Display widths",
+        .tests = {
+            {
+                .label = "Display width",
+                .test_formats = RT_FORMAT_SPSS | RT_FORMAT_DTA,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .display_width = 12 },
+                    { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .display_width = 100 },
+                    { .name = "VAR3", .type = READSTAT_TYPE_STRING, .display_width = 255 }
+                }
+            },
+        },
+    },
+
+    {
         .label = "Formats",
         .tests = {
             {

@@ -197,6 +197,11 @@ static int handle_variable(int index, readstat_variable_t *variable,
                 readstat_variable_get_format(variable),
                 "Column formats");
 
+    if (column->display_width)
+        push_error_if_doubles_differ(rt_ctx, column->display_width,
+                readstat_variable_get_display_width(variable),
+                "Column display widths");
+
     push_error_if_doubles_differ(rt_ctx, column->missing_ranges_count,
             readstat_variable_get_missing_ranges_count(variable),
             "Missing values count");
