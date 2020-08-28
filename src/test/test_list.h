@@ -186,6 +186,7 @@ static rt_test_group_t _test_groups[] = {
                     {
                         .name = "VAR252",
                         .type = READSTAT_TYPE_STRING,
+                        .display_width = 252,
                         .values = { 
                             { .type = READSTAT_TYPE_STRING, .v = 
                                 { .string_value = /* 252 bytes long */
@@ -205,6 +206,7 @@ static rt_test_group_t _test_groups[] = {
                     {
                         .name = "VAR253",
                         .type = READSTAT_TYPE_STRING,
+                        .display_width = 253,
                         .values = { 
                             { .type = READSTAT_TYPE_STRING, .v = 
                                 { .string_value = /* 253 bytes long */
@@ -224,6 +226,7 @@ static rt_test_group_t _test_groups[] = {
                     {
                         .name = "VAR254",
                         .type = READSTAT_TYPE_STRING,
+                        .display_width = 254,
                         .values = { 
                             { .type = READSTAT_TYPE_STRING, .v = 
                                 { .string_value = /* 254 bytes long */
@@ -243,6 +246,7 @@ static rt_test_group_t _test_groups[] = {
                     {
                         .name = "VAR255",
                         .type = READSTAT_TYPE_STRING,
+                        .display_width = 255,
                         .values = { 
                             { .type = READSTAT_TYPE_STRING, .v = 
                                 { .string_value = /* 255 bytes long */
@@ -262,6 +266,7 @@ static rt_test_group_t _test_groups[] = {
                     {
                         .name = "VAR256",
                         .type = READSTAT_TYPE_STRING,
+                        .display_width = 256,
                         .values = { 
                             { .type = READSTAT_TYPE_STRING, .v = 
                                 { .string_value = /* 256 bytes long */
