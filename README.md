@@ -4,9 +4,9 @@
 [![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/readstat.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:readstat)
 
 ReadStat: Read (and write) data sets from SAS, Stata, and SPSS
---
+==
 
-Originally developed for [Wizard](http://www.wizardmac.com/), ReadStat is a
+Originally developed for [Wizard](https://www.wizardmac.com/), ReadStat is a
 command-line tool and MIT-licensed C library for reading files from popular
 stats packages. Supported data formats include:
 
@@ -28,7 +28,7 @@ For reading in R data files, please see the related
 [librdata](https://github.com/WizardMac/librdata) project.
 
 Installation
-==
+--
 
 Grab the latest [release](https://github.com/WizardMac/ReadStat/releases) and
 then proceed as usual:
@@ -47,7 +47,7 @@ If you're on Windows see [Windows specific notes](#windows-specific-notes).
 
 
 Language Bindings
-==
+--
 
 * Julia: [ReadStat.jl](https://github.com/queryverse/ReadStat.jl)
 * Perl 6: [ReadStat.pm6](https://github.com/WizardMac/ReadStat.pm6)
@@ -56,14 +56,14 @@ Language Bindings
 
 
 Docker
-==
+--
 
 A dockerized version is available [here](https://github.com/jbn/readstat)
 
 
 
 Command-line Usage
-==
+--
 
 Standard usage:
 
@@ -113,7 +113,7 @@ At the moment value labels are supported, but the finer nuances of converting
 format strings (e.g. `%8.2g`) are not.
 
 Command-line Usage with CSV input
-==
+--
 
 A prerequisite for CSV input is that the [libcsv](https://github.com/rgamble/libcsv)
 library is found at compile time.
@@ -231,7 +231,7 @@ The last column type is `STRING`:
 Value labels are not supported for `STRING`.
 
 Library Usage: Reading Files
-==
+--
 
 The ReadStat API is callback-based. It uses very little memory, and is suitable
 for programs with progress bars.  ReadStat uses
@@ -363,7 +363,7 @@ int main(int argc, char *argv[]) {
 ```
 
 Library Usage: Writing Files
-==
+--
 
 ReadStat can write data sets to a number of file formats, and uses largely the
 same API for each of them. Files are written incrementally, with the header
@@ -371,7 +371,7 @@ written first, followed by individual rows of data, and ending with some kind
 of trailer. (So the full data file never resides in memory.) Unlike like the
 callback-based API for reading files, the writer API consists of function that
 the developer must call in a particular order. The complete API can be found in
-src/readstat.h.
+[readstat.h](./src/readstat.h).
 
 Basic usage:
 
@@ -422,7 +422,7 @@ int main(int argc, char *argv[]) {
 ```
 
 Windows specific notes
-==
+--
 
 You need to install and configure an msys2 environment to compile ReadStat.
 
@@ -439,7 +439,7 @@ Finally, start a MINGW command line (not the msys2 prompt!) and follow the gener
 
 
 Fuzz Testing
-==
+--
 
 To assist in fuzz testing, ReadStat ships with target files designed to work
 with [libFuzzer](http://llvm.org/docs/LibFuzzer.html). Clang 6 or later is
