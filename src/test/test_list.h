@@ -810,7 +810,8 @@ static rt_test_group_t _test_groups[] = {
                 .columns = {
                     { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .display_width = 12 },
                     { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .display_width = 100 },
-                    { .name = "VAR3", .type = READSTAT_TYPE_STRING, .display_width = 255 }
+                    { .name = "VAR3", .type = READSTAT_TYPE_STRING, .display_width = 255 },
+                    { .name = "VAR4", .type = READSTAT_TYPE_STRING, .display_width = 1000 }
                 }
             },
         },
