@@ -27,6 +27,7 @@ typedef struct rt_column_s {
     char                    name[RT_MAX_STRING];
     char                    label[RT_MAX_STRING];
     char                    format[RT_MAX_STRING];
+    int                     display_width;
     readstat_alignment_t    alignment;
     readstat_measure_t      measure;
     readstat_type_t         type;

@@ -1,3 +1,13 @@
+New in 1.1.4:
+
+    * SAS7BDAT reader: Add support for binary-compressed files #21
+    * XPT v8 writer: Improve compatibility with SAS #207 (thanks to @reikoch)
+    * XPT reader: Fix reading of long variable names #208 (thanks to @reikoch) 
+    * SAS readers: Support for more character encodings
+    * SAV reader: Clients sometimes received truncated UTF-8 strings
+    * SPSS writers: Improve compatibility with PSPP with DATETIME fields #211
+    * All formats: Improved support for setting / getting the `display_width` #210
+
 New in 1.1.3:
 
     * Fix warnings when compiling with GCC 10 #202
