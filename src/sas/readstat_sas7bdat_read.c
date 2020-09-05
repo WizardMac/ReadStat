@@ -86,6 +86,7 @@ typedef struct sas7bdat_ctx_s {
     time_t         mtime;
     int            version;
     char           table_name[4*32+1];
+    char           file_label[4*256+1];
     char           error_buf[2048];
 
     unsigned int  rdc_compression:1;
@@ -298,6 +299,9 @@ static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subhead
 
     for (i=ctx->col_names_count-cmax; i<ctx->col_names_count; i++) {
         ctx->col_info[i].name_ref = sas7bdat_parse_text_ref(cnp, ctx);
+        if (i == 0) {
+            memcpy(ctx->file_label, &ctx->text_blobs[0][32+4*ctx->u64+8*ctx->rdc_compression], ctx->col_info[0].name_ref.offset-32-4*ctx->u64-8*ctx->rdc_compression);
+        }
         cnp += 8;
     }
 
@@ -713,6 +717,7 @@ static readstat_error_t sas7bdat_submit_columns(sas7bdat_ctx_t *ctx, int compres
             .row_count = ctx->row_limit,
             .var_count = ctx->column_count,
             .table_name = ctx->table_name,
+            .file_label = ctx->file_label,
             .file_encoding = ctx->input_encoding, /* orig encoding? */
             .creation_time = ctx->ctime,
             .modified_time = ctx->mtime,

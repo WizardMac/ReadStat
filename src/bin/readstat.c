@@ -404,7 +404,7 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
         printf("Table name: %s\n", table_name);
     }
     if (file_label && file_label[0]) {
-        printf("File label: %s\n", file_label);
+        printf("Table label: %s\n", file_label);
     }
     if (version) {
         printf("Format version: %ld\n", version);
