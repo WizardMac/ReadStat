@@ -300,7 +300,10 @@ static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subhead
     for (i=ctx->col_names_count-cmax; i<ctx->col_names_count; i++) {
         ctx->col_info[i].name_ref = sas7bdat_parse_text_ref(cnp, ctx);
         if (i == 0) {
-            memcpy(ctx->file_label, &ctx->text_blobs[0][32+4*ctx->u64+8*ctx->rdc_compression], ctx->col_info[0].name_ref.offset-32-4*ctx->u64-8*ctx->rdc_compression);
+            memcpy(ctx->file_label,
+                   &ctx->text_blobs[0][12 + 24*ctx->u64 + 8*ctx->rdc_compression],
+                   ctx->col_info[0].name_ref.offset - ctx->col_info[0].name_ref.length
+                   );
         }
         cnp += 8;
     }

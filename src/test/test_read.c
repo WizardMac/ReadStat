@@ -77,7 +77,8 @@ void parse_ctx_reset(rt_parse_ctx_t *parse_ctx, long file_format) {
     } else if ((file_format & RT_FORMAT_SAV)) {
         parse_ctx->max_file_label_len = 64;
     } else if ((file_format & RT_FORMAT_SAS7BDAT)) {
-        parse_ctx->max_file_label_len = 64;
+        parse_ctx->max_table_name_len = 32;
+        parse_ctx->max_file_label_len = 256;
     } else {
         parse_ctx->max_file_label_len = 20;
     }
@@ -85,6 +86,7 @@ void parse_ctx_reset(rt_parse_ctx_t *parse_ctx, long file_format) {
         parse_ctx->max_table_name_len = 8;
     } else if ((file_format & RT_FORMAT_XPORT_8)) {
         parse_ctx->max_table_name_len = 32;
+        parse_ctx->max_file_label_len = 256;
     }
     parse_ctx->var_index = -1;
     parse_ctx->obs_index = -1;
