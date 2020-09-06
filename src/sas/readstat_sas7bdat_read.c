@@ -300,7 +300,7 @@ static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subhead
     for (i=ctx->col_names_count-cmax; i<ctx->col_names_count; i++) {
         ctx->col_info[i].name_ref = sas7bdat_parse_text_ref(cnp, ctx);
         if (i == 0) {
-            uint8_t off = ctx->text_blobs[0][11];
+            uint16_t off = (ctx->text_blobs[0][10]<<8)+ctx->text_blobs[0][11];
             memcpy(ctx->file_label,
                    &ctx->text_blobs[0][12+4*ctx->u64+off+ctx->rdc_compression*ctx->subheader_pointer_size],
                    ctx->col_info[0].name_ref.offset - 12 - 4*ctx->u64 - off - ctx->rdc_compression*ctx->subheader_pointer_size
