@@ -286,6 +286,7 @@ static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subhead
     int i;
     const char *cnp = &subheader[signature_len+8];
     uint16_t remainder = sas_read2(&subheader[signature_len], ctx->bswap);
+    int off;
 
     if (remainder != sas_subheader_remainder(len, signature_len)) {
         retval = READSTAT_ERROR_PARSE;
@@ -300,10 +301,12 @@ static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subhead
     for (i=ctx->col_names_count-cmax; i<ctx->col_names_count; i++) {
         ctx->col_info[i].name_ref = sas7bdat_parse_text_ref(cnp, ctx);
         if (i == 0) {
-            uint16_t off = (ctx->text_blobs[0][10]<<8)+ctx->text_blobs[0][11];
+            if (!memcmp(&ctx->text_blobs[0][12], "SASYZCR", 7)) {
+                off = 44;
+            } else off = ctx->u64 ? 36 : 12;
             memcpy(ctx->file_label,
-                   &ctx->text_blobs[0][12+4*ctx->u64+off+ctx->rdc_compression*ctx->subheader_pointer_size],
-                   ctx->col_info[0].name_ref.offset - 12 - 4*ctx->u64 - off - ctx->rdc_compression*ctx->subheader_pointer_size
+                   &ctx->text_blobs[0][off],
+                   ctx->col_info[i].name_ref.offset - off
                    );
         }
         cnp += 8;
