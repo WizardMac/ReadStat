@@ -94,7 +94,7 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_NAME_CONTAINS_ILLEGAL_CHARACTER,
     READSTAT_ERROR_NAME_IS_RESERVED_WORD,
     READSTAT_ERROR_NAME_IS_TOO_LONG,
-    READSTAT_ERROR_BAD_TIMESTAMP,
+    READSTAT_ERROR_BAD_TIMESTAMP_STRING,
     READSTAT_ERROR_BAD_FREQUENCY_WEIGHT,
     READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS,
     READSTAT_ERROR_NOTE_IS_TOO_LONG,
@@ -102,7 +102,9 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_STRING_REF_IS_REQUIRED,
     READSTAT_ERROR_ROW_IS_TOO_WIDE_FOR_PAGE,
     READSTAT_ERROR_TOO_FEW_COLUMNS,
-    READSTAT_ERROR_TOO_MANY_COLUMNS
+    READSTAT_ERROR_TOO_MANY_COLUMNS,
+    READSTAT_ERROR_NAME_IS_ZERO_LENGTH,
+    READSTAT_ERROR_BAD_TIMESTAMP_VALUE
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);
@@ -197,6 +199,26 @@ typedef struct readstat_variable_s {
     int                     skip;
     int                     index_after_skipping;
 } readstat_variable_t;
+
+typedef struct readstat_schema_entry_s {
+    int                 row;
+    int                 col;
+    int                 len;
+    int                 skip;
+    readstat_variable_t variable;
+    char                labelset[32];
+    char                decimal_separator;
+} readstat_schema_entry_t;
+
+typedef struct readstat_schema_s {
+    char                    filename[255];
+    int                     rows_per_observation;
+    int                     cols_per_observation;
+    int                     first_line;
+    int                     entry_count;
+    char                    field_delimiter;
+    readstat_schema_entry_t *entries;
+} readstat_schema_t;
 
 /* Value accessors */
 readstat_type_t readstat_value_type(readstat_value_t value);
@@ -324,6 +346,7 @@ typedef struct readstat_parser_s {
     const char             *input_encoding;
     const char             *output_encoding;
     long                    row_limit;
+    long                    row_offset;
 } readstat_parser_t;
 
 readstat_parser_t *readstat_parser_init(void);
@@ -355,7 +378,9 @@ readstat_error_t readstat_set_file_character_encoding(readstat_parser_t *parser,
 readstat_error_t readstat_set_handler_character_encoding(readstat_parser_t *parser, const char *encoding);
 
 readstat_error_t readstat_set_row_limit(readstat_parser_t *parser, long row_limit);
+readstat_error_t readstat_set_row_offset(readstat_parser_t *parser, long row_offset);
 
+/* Parse binary / portable files */
 readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path, void *user_ctx);
 readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path, void *user_ctx);
 readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path, void *user_ctx);
@@ -363,6 +388,20 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *path, void *user_ctx);
 readstat_error_t readstat_parse_xport(readstat_parser_t *parser, const char *path, void *user_ctx);
 
+/* Parse a schema file... */
+readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
+    const char *filepath, void *user_ctx, readstat_error_t *outError);
+readstat_schema_t *readstat_parse_spss_commands(readstat_parser_t *parser,
+    const char *filepath, void *user_ctx, readstat_error_t *outError);
+readstat_schema_t *readstat_parse_stata_dictionary(readstat_parser_t *parser,
+    const char *filepath, void *user_ctx, readstat_error_t *outError);
+
+/* ... then pass the schema to the plain-text parser ... */
+readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filename, 
+        readstat_schema_t *schema, void *user_ctx);
+
+/* ... and free the schema structure */
+void readstat_schema_free(readstat_schema_t *schema);
 
 /* Internal module callbacks */
 typedef struct readstat_string_ref_s {
@@ -373,7 +412,7 @@ typedef struct readstat_string_ref_s {
 } readstat_string_ref_t;
 
 typedef size_t (*readstat_variable_width_callback)(readstat_type_t type, size_t user_width);
-typedef readstat_error_t (*readstat_variable_ok_callback)(readstat_variable_t *variable);
+typedef readstat_error_t (*readstat_variable_ok_callback)(const readstat_variable_t *variable);
 
 typedef readstat_error_t (*readstat_write_int8_callback)(void *row_data, const readstat_variable_t *variable, int8_t value);
 typedef readstat_error_t (*readstat_write_int16_callback)(void *row_data, const readstat_variable_t *variable, int16_t value);
@@ -389,6 +428,7 @@ typedef readstat_error_t (*readstat_begin_data_callback)(void *writer);
 typedef readstat_error_t (*readstat_write_row_callback)(void *writer, void *row_data, size_t row_len);
 typedef readstat_error_t (*readstat_end_data_callback)(void *writer);
 typedef void (*readstat_module_ctx_free_callback)(void *module_ctx);
+typedef readstat_error_t (*readstat_metadata_ok_callback)(void *writer);
 
 typedef struct readstat_writer_callbacks_s {
     readstat_variable_width_callback    variable_width;
@@ -407,6 +447,7 @@ typedef struct readstat_writer_callbacks_s {
     readstat_write_row_callback         write_row;
     readstat_end_data_callback          end_data;
     readstat_module_ctx_free_callback   module_ctx_free;
+    readstat_metadata_ok_callback       metadata_ok;
 } readstat_writer_callbacks_t;
 
 /* You'll need to define one of these to get going. Should return # bytes written,
@@ -482,8 +523,10 @@ void readstat_variable_set_label_set(readstat_variable_t *variable, readstat_lab
 void readstat_variable_set_measure(readstat_variable_t *variable, readstat_measure_t measure);
 void readstat_variable_set_alignment(readstat_variable_t *variable, readstat_alignment_t alignment);
 void readstat_variable_set_display_width(readstat_variable_t *variable, int display_width);
-void readstat_variable_add_missing_double_value(readstat_variable_t *variable, double value);
-void readstat_variable_add_missing_double_range(readstat_variable_t *variable, double lo, double hi);
+readstat_error_t readstat_variable_add_missing_double_value(readstat_variable_t *variable, double value);
+readstat_error_t readstat_variable_add_missing_double_range(readstat_variable_t *variable, double lo, double hi);
+readstat_error_t readstat_variable_add_missing_string_value(readstat_variable_t *variable, const char *value);
+readstat_error_t readstat_variable_add_missing_string_range(readstat_variable_t *variable, const char *lo, const char *hi);
 readstat_variable_t *readstat_get_variable(readstat_writer_t *writer, int index);
 
 // "Notes" appear in the file metadata. In SPSS these are stored as
@@ -532,6 +575,10 @@ readstat_error_t readstat_begin_writing_sas7bcat(readstat_writer_t *writer, void
 readstat_error_t readstat_begin_writing_sas7bdat(readstat_writer_t *writer, void *user_ctx, long row_count);
 readstat_error_t readstat_begin_writing_sav(readstat_writer_t *writer, void *user_ctx, long row_count);
 readstat_error_t readstat_begin_writing_xport(readstat_writer_t *writer, void *user_ctx, long row_count);
+
+// Optional, file-specific validation routines, to be called AFTER readstat_begin_writing_XXX
+readstat_error_t readstat_validate_metadata(readstat_writer_t *writer);
+readstat_error_t readstat_validate_variable(readstat_writer_t *writer, const readstat_variable_t *variable);
 
 // Start a row of data (that is, a case or observation)
 readstat_error_t readstat_begin_row(readstat_writer_t *writer);

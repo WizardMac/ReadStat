@@ -1,8 +1,5 @@
 #include <stdlib.h>
 
-#include "../readstat.h"
-
-#include "test_types.h"
 #include "test_buffer.h"
 
 rt_buffer_t *buffer_init() {
@@ -27,4 +24,15 @@ void buffer_grow(rt_buffer_t *buffer, size_t len) {
 void buffer_free(rt_buffer_t *buffer) {
     free(buffer->bytes);
     free(buffer);
+}
+
+rt_buffer_ctx_t *buffer_ctx_init(rt_buffer_t *buffer) {
+    rt_buffer_ctx_t *buffer_ctx = calloc(1, sizeof(rt_buffer_ctx_t));
+    buffer_ctx->buffer = buffer;
+    return buffer_ctx;
+}
+
+void buffer_ctx_reset(rt_buffer_ctx_t *buffer_ctx) {
+    buffer_reset(buffer_ctx->buffer);
+    buffer_ctx->pos = 0;
 }

@@ -11,10 +11,10 @@
 
 #include "../stata/readstat_dta.h"
 
+#include "../test/test_buffer.h"
 #include "../test/test_types.h"
 #include "../test/test_error.h"
 #include "../test/test_readstat.h"
-#include "../test/test_buffer.h"
 #include "../test/test_read.h"
 #include "../test/test_write.h"
 #include "../test/test_list.h"
@@ -23,9 +23,11 @@
 #define mkdir(A, B) mkdir(A)
 #endif
 
+#define CORPUS_DIR "fuzz/corpus"
+
 static void dump_buffer(rt_buffer_t *buffer, long format, int test_case) {
     char filename[128];
-    snprintf(filename, sizeof(filename), "corpus/%s/test-case-%03d", 
+    snprintf(filename, sizeof(filename), CORPUS_DIR "/%s/test-case-%03d", 
             file_extension(format), test_case);
 
     int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
@@ -44,12 +46,12 @@ int main(int argc, char *argv[]) {
     int g, t, f;
     int file_count = 0, test_count = 0;
 
-    if (mkdir("corpus", 0755) == -1 && errno != EEXIST)
-        perror("corpus");
+    if (mkdir(CORPUS_DIR, 0755) == -1 && errno != EEXIST)
+        perror(CORPUS_DIR);
 
     for (f=RT_FORMAT_DTA_104; f<RT_FORMAT_ALL; f*=2) {
         char filename[128];
-        snprintf(filename, sizeof(filename), "corpus/%s", file_extension(f));
+        snprintf(filename, sizeof(filename), CORPUS_DIR "/%s", file_extension(f));
         if (mkdir(filename, 0755) == -1 && errno != EEXIST)
             perror(filename);
     }

@@ -46,6 +46,9 @@ generate_corpus
 *.csv
 *.json
 *.py
+*.tar.gz
+*.zip
+.DS_Store
 **/*.vcxproj.user
 Debug/
 Release/

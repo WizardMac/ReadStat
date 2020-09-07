@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../bin/modules/double_decimals.h"
+#include "../bin/write/double_decimals.h"
 
 int main(int argc, char *argv[]) {
     #define EXPECT_DECIMALS(v, expected) \

@@ -27,6 +27,7 @@ typedef struct rt_column_s {
     char                    name[RT_MAX_STRING];
     char                    label[RT_MAX_STRING];
     char                    format[RT_MAX_STRING];
+    int                     display_width;
     readstat_alignment_t    alignment;
     readstat_measure_t      measure;
     readstat_type_t         type;
@@ -70,6 +71,11 @@ typedef struct rt_test_group_s {
     rt_test_file_t   tests[MAX_TESTS_PER_GROUP];
 } rt_test_group_t;
 
+typedef struct rt_test_args_s {
+    long             row_limit;
+    long             row_offset;    
+} rt_test_args_t;
+
 
 typedef struct rt_error_s {
     readstat_value_t received;
@@ -85,17 +91,6 @@ typedef struct rt_error_s {
     char             msg[256];
 } rt_error_t;
 
-typedef struct rt_buffer_s {
-    size_t      used;
-    size_t      size;
-    char       *bytes;
-} rt_buffer_t;
-
-typedef struct rt_buffer_ctx_s {
-    rt_buffer_t  *buffer;
-    size_t       pos;
-} rt_buffer_ctx_t;
-
 typedef struct rt_parse_ctx_s {
     rt_error_t      *errors;
     long             errors_count;
@@ -110,6 +105,8 @@ typedef struct rt_parse_ctx_s {
     long             value_labels_count;
     long             notes_count;
 
+    rt_test_args_t  *args;
+
     rt_test_file_t  *file;
     long             file_format;
     long             file_format_version;
@@ -118,5 +115,5 @@ typedef struct rt_parse_ctx_s {
     size_t           max_file_label_len;
     size_t           max_table_name_len;
 
-    rt_buffer_ctx_t *buffer_ctx;
+    void            *buffer_ctx;
 } rt_parse_ctx_t;

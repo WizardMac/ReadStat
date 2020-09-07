@@ -324,17 +324,18 @@ static dta_strl_t dta_interpret_strl_vo_bytes(dta_ctx_t *ctx, const unsigned cha
     if (ctx->strl_v_len == 2) {
         if (ctx->endianness == READSTAT_ENDIAN_BIG) {
             strl.v = (vo_bytes[0] << 8) + vo_bytes[1];
-            strl.o = (((uint64_t)vo_bytes[2] << 40) 
+            strl.o = (((uint64_t)vo_bytes[2] << 40)
                     + ((uint64_t)vo_bytes[3] << 32)
-                    + (vo_bytes[4] << 24) 
+                    + ((uint64_t)vo_bytes[4] << 24)
                     + (vo_bytes[5] << 16)
-                    + (vo_bytes[6] << 8) 
+                    + (vo_bytes[6] << 8)
                     + vo_bytes[7]);
         } else {
             strl.v = vo_bytes[0] + (vo_bytes[1] << 8);
             strl.o = (vo_bytes[2] + (vo_bytes[3] << 8)
-                    + (vo_bytes[4] << 16) + (vo_bytes[5] << 24)
-                    + ((uint64_t)vo_bytes[6] << 32) 
+                    + (vo_bytes[4] << 16)
+                    + ((uint64_t)vo_bytes[5] << 24)
+                    + ((uint64_t)vo_bytes[6] << 32)
                     + ((uint64_t)vo_bytes[7] << 40));
         }
     } else if (ctx->strl_v_len == 4) {
@@ -657,6 +658,13 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
         goto cleanup;
     }
 
+    if (ctx->row_offset) {
+        if (io->seek(ctx->record_len * ctx->row_offset, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+            retval = READSTAT_ERROR_SEEK;
+            goto cleanup;
+        }
+    }
+
     for (i=0; i<ctx->row_limit; i++) {
         if (io->read(buf, ctx->record_len, io->io_ctx) != ctx->record_len) {
             retval = READSTAT_ERROR_READ;
@@ -671,8 +679,8 @@ static readstat_error_t dta_handle_rows(dta_ctx_t *ctx) {
         }
     }
 
-    if (ctx->row_limit < ctx->nobs) {
-        if (io->seek(ctx->record_len * (ctx->nobs - ctx->row_limit), READSTAT_SEEK_CUR, io->io_ctx) == -1)
+    if (ctx->row_limit < ctx->nobs - ctx->row_offset) {
+        if (io->seek(ctx->record_len * (ctx->nobs - ctx->row_offset - ctx->row_limit), READSTAT_SEEK_CUR, io->io_ctx) == -1)
             retval = READSTAT_ERROR_SEEK;
     }
 
@@ -1177,8 +1185,15 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     ctx->user_ctx = user_ctx;
     ctx->file_size = file_size;
     ctx->handle = parser->handlers;
-    ctx->row_limit = ctx->nobs;
-    if (parser->row_limit > 0 && parser->row_limit < ctx->nobs)
+    if (parser->row_offset > 0)
+        ctx->row_offset = parser->row_offset;
+    int64_t nobs_after_skipping = ctx->nobs - ctx->row_offset;
+    if (nobs_after_skipping < 0) {
+        nobs_after_skipping = 0;
+        ctx->row_offset = ctx->nobs;
+    }
+    ctx->row_limit = nobs_after_skipping;
+    if (parser->row_limit > 0 && parser->row_limit < nobs_after_skipping)
         ctx->row_limit = parser->row_limit;
 
     retval = dta_update_progress(ctx);

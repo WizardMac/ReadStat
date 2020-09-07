@@ -3,6 +3,8 @@
 #include <stdio.h>
 
 #include "../readstat.h"
+#include "../readstat_iconv.h"
+#include "../readstat_convert.h"
 #include "readstat_spss.h"
 #include "readstat_spss_parse.h"
 
@@ -73,13 +75,12 @@ int spss_varinfo_compare(const void *elem1, const void *elem2) {
     return (offset > v->offset);
 }
 
-static readstat_value_t spss_boxed_value(double fp_value) {
-    readstat_value_t value = {
-        .type = READSTAT_TYPE_DOUBLE,
-        .v = { .double_value = fp_value },
-        .is_system_missing = isnan(fp_value)
-    };
-    return value;
+void spss_varinfo_free(spss_varinfo_t *info) {
+    if (info) {
+        if (info->label)
+            free(info->label);
+        free(info);
+    }
 }
 
 uint64_t spss_64bit_value(readstat_value_t value) {
@@ -99,30 +100,55 @@ uint64_t spss_64bit_value(readstat_value_t value) {
     return special_val;
 }
 
+static readstat_value_t spss_boxed_double_value(double fp_value) {
+    readstat_value_t value = {
+        .type = READSTAT_TYPE_DOUBLE,
+        .v = { .double_value = fp_value },
+        .is_system_missing = isnan(fp_value)
+    };
+    return value;
+}
+
+static readstat_value_t spss_boxed_string_value(const char *string) {
+    readstat_value_t value = {
+        .type = READSTAT_TYPE_STRING,
+        .v = { .string_value = string }
+    };
+    return value;
+}
+
+static readstat_value_t spss_boxed_missing_value(spss_varinfo_t *info, int i) {
+    if (info->type == READSTAT_TYPE_DOUBLE) {
+        return spss_boxed_double_value(info->missing_double_values[i]);
+    }
+    return spss_boxed_string_value(info->missing_string_values[i]);
+}
+
 readstat_missingness_t spss_missingness_for_info(spss_varinfo_t *info) {
     readstat_missingness_t missingness;
-    memset(&missingness, 0, sizeof(readstat_missingness_t));
+    memset(&missingness, '\0', sizeof(readstat_missingness_t));
 
     if (info->missing_range) {
         missingness.missing_ranges_count++;
-        missingness.missing_ranges[0] = spss_boxed_value(info->missing_values[0]);
-        missingness.missing_ranges[1] = spss_boxed_value(info->missing_values[1]);
+        missingness.missing_ranges[0] = spss_boxed_missing_value(info, 0);
+        missingness.missing_ranges[1] = spss_boxed_missing_value(info, 1);
 
         if (info->n_missing_values == 3) {
             missingness.missing_ranges_count++;
-            missingness.missing_ranges[2] = missingness.missing_ranges[3] = spss_boxed_value(info->missing_values[2]);
+            missingness.missing_ranges[2] = missingness.missing_ranges[3] = spss_boxed_missing_value(info, 2);
         }
     } else if (info->n_missing_values > 0) {
         missingness.missing_ranges_count = info->n_missing_values;
         int i=0;
         for (i=0; i<info->n_missing_values; i++) {
-            missingness.missing_ranges[2*i] = missingness.missing_ranges[2*i+1] = spss_boxed_value(info->missing_values[i]);
+            missingness.missing_ranges[2*i] = missingness.missing_ranges[2*i+1] = spss_boxed_missing_value(info, i);
         }
     }
     return missingness;
 }
 
-readstat_variable_t *spss_init_variable_for_info(spss_varinfo_t *info, int index_after_skipping) {
+readstat_variable_t *spss_init_variable_for_info(spss_varinfo_t *info, int index_after_skipping,
+        iconv_t converter) {
     readstat_variable_t *variable = calloc(1, sizeof(readstat_variable_t));
 
     variable->index = info->index;
@@ -135,9 +161,11 @@ readstat_variable_t *spss_init_variable_for_info(spss_varinfo_t *info, int index
     }
 
     if (info->longname[0]) {
-        snprintf(variable->name, sizeof(variable->name), "%s", info->longname);
+        readstat_convert(variable->name, sizeof(variable->name),
+                info->longname, sizeof(info->longname), converter);
     } else {
-        snprintf(variable->name, sizeof(variable->name), "%s", info->name);
+        readstat_convert(variable->name, sizeof(variable->name),
+                info->name, sizeof(info->name), converter);
     }
     if (info->label) {
         snprintf(variable->label, sizeof(variable->label), "%s", info->label);
@@ -147,7 +175,11 @@ readstat_variable_t *spss_init_variable_for_info(spss_varinfo_t *info, int index
 
     variable->missingness = spss_missingness_for_info(info);
     variable->measure = info->measure;
-    variable->display_width = info->display_width;
+    if (info->display_width) {
+        variable->display_width = info->display_width;
+    } else {
+        variable->display_width = info->print_format.width;
+    }
 
     return variable;
 }
@@ -204,14 +236,20 @@ readstat_error_t spss_format_for_variable(readstat_variable_t *r_variable,
 
     if (r_variable->type == READSTAT_TYPE_STRING) {
         spss_format->type = SPSS_FORMAT_TYPE_A;
-        if (r_variable->user_width) {
+        if (r_variable->display_width) {
+            spss_format->width = r_variable->display_width;
+        } else if (r_variable->user_width) {
             spss_format->width = r_variable->user_width;
         } else {
             spss_format->width = r_variable->storage_width;
         }
     } else {
         spss_format->type = SPSS_FORMAT_TYPE_F;
-        spss_format->width = 8;
+        if (r_variable->display_width) {
+            spss_format->width = r_variable->display_width;
+        } else {
+            spss_format->width = 8;
+        }
         if (r_variable->type == READSTAT_TYPE_DOUBLE ||
                 r_variable->type == READSTAT_TYPE_FLOAT) {
             spss_format->decimal_places = 2;

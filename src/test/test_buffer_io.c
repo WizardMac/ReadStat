@@ -2,7 +2,7 @@
 
 #include "../readstat.h"
 
-#include "test_types.h"
+#include "test_buffer.h"
 #include "test_buffer_io.h"
 
 int rt_open_handler(const char *path, void *io_ctx) {

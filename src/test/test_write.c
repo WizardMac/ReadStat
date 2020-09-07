@@ -3,8 +3,8 @@
 #include "../readstat.h"
 #include "../CKHashTable.h"
 
-#include "test_types.h"
 #include "test_buffer.h"
+#include "test_types.h"
 #include "test_readstat.h"
 #include "test_dta.h"
 #include "test_sas.h"
@@ -113,11 +113,21 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_variable_set_label_set(variable, label_set);
         if (column->format[0])
             readstat_variable_set_format(variable, column->format);
+        if (column->display_width)
+            readstat_variable_set_display_width(variable, column->display_width);
 
-        for (i=0; i<column->missing_ranges_count; i++) {
-            readstat_variable_add_missing_double_range(variable,
-                    readstat_double_value(column->missing_ranges[i].lo),
-                    readstat_double_value(column->missing_ranges[i].hi));
+        if (column->type == READSTAT_TYPE_STRING) {
+            for (i=0; i<column->missing_ranges_count; i++) {
+                readstat_variable_add_missing_string_range(variable,
+                        readstat_string_value(column->missing_ranges[i].lo),
+                        readstat_string_value(column->missing_ranges[i].hi));
+            }
+        } else {
+            for (i=0; i<column->missing_ranges_count; i++) {
+                readstat_variable_add_missing_double_range(variable,
+                        readstat_double_value(column->missing_ranges[i].lo),
+                        readstat_double_value(column->missing_ranges[i].hi));
+            }
         }
 
         if (strcmp(column->name, file->fweight) == 0) {

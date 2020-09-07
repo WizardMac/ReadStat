@@ -1,0 +1,54 @@
+.TH EXTRACT_METADATA 1 "01 February 2019"
+.SH NAME
+extract_metadata \- read column metadata from SPSS and Stata binary files, and format it as JSON
+.SH SYNOPSIS
+.B extract_metadata
+.IR input-file
+.IR output-file
+.SH DESCRIPTION
+.B extract_metadata
+reads column metadata from existing binary data files, so that \fBreadstat\fR
+can produce new, column-compatible binary files from CSV input files. Both programs
+use JSON as a metadata interchange format.
+.PP
+The
+.IR input\-file
+should be a file with one of the following extensions:
+.TP
+.IR dta
+Stata binary file, version 104 or newer
+.TP
+.IR sav
+SPSS uncompressed binary file
+.TP
+.IR zsav
+SPSS compressed binary file
+.PP
+In all cases, \fIoutput-file\fR should end in .json.
+.SH EXAMPLE
+Suppose you have a Stata file with last year's survey data, and want to produce
+a compatible Stata file containing this year's survey data. First, extract the
+metadata:
+.PP
+.nf
+.RS
+extract_metadata last-year.dta survey-metadata.json
+.RE
+.fi
+.PP
+Now apply it to this year's data, which is stored in a CSV file:
+.PP
+.nf
+.RS
+readstat this-year.csv metadata.json this-year.dta
+.RE
+.fi
+.PP
+The first line of the CSV file should contain column names which match the
+column names in last-year.dta. If everything went well, your new binary data
+set is now stored in this-year.dta.
+.SH OPTIONS
+.PP
+None.
+.SH AUTHOR
+Copyright (C) 2012-2019 Evan Miller, and others where indicated.

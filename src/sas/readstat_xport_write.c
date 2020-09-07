@@ -12,10 +12,12 @@
 #define XPORT_DEFAULT_VERISON   8
 #define RECORD_LEN 80
 
-static void copypad(char *dst, size_t dst_len, const char *src) {
-    strncpy(dst, src, dst_len);
-    if (strlen(src) < dst_len)
-        memset(&dst[strlen(src)], ' ', dst_len-strlen(src));
+static void copypad(char * restrict dst, size_t dst_len, const char * restrict src) {
+    char *dst_end = dst + dst_len;
+    while (dst < dst_end && *src)
+        *dst++ = *src++;
+    while (dst < dst_end)
+        *dst++ = ' ';
 }
 
 static readstat_error_t xport_write_bytes(readstat_writer_t *writer, const void *bytes, size_t len) {
@@ -85,9 +87,11 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
         readstat_variable_t *variable = readstat_get_variable(writer, i);
         size_t width = xport_variable_width(variable->type, variable->user_width);
         xport_namestr_t namestr = { 
-            .nvar0 = i,
+            .nvar0 = i+1,
             .nlng = width,
-            .npos = offset
+            .npos = offset,
+            .niform = "        ",
+            .nform = "        "
         };
         if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_STRING) {
             namestr.ntype = SAS_COLUMN_TYPE_CHR;
@@ -117,6 +121,8 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
                 any_has_long_format = 1;
                 needs_long_record = 1;
             }
+        } else if (variable->display_width) {
+            namestr.nfl = variable->display_width;
         }
 
         namestr.nfj = (variable->alignment == READSTAT_ALIGNMENT_RIGHT);
@@ -187,7 +193,7 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
             }
 
             if (has_long_format) {
-                uint16_t labeldef[5] = { i, name_len, format_len, format_len, label_len };
+                uint16_t labeldef[5] = { i+1, name_len, format_len, format_len, label_len };
 
                 if (machine_is_little_endian()) {
                     labeldef[0] = byteswap2(labeldef[0]);
@@ -218,7 +224,7 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
                     goto cleanup;
 
             } else if (has_long_label) {
-                uint16_t labeldef[3] = { i, name_len, label_len };
+                uint16_t labeldef[3] = { i+1, name_len, label_len };
 
                 if (machine_is_little_endian()) {
                     labeldef[0] = byteswap2(labeldef[0]);
@@ -297,16 +303,12 @@ static readstat_error_t xport_write_member_record_v8(readstat_writer_t *writer,
     if (writer->table_name[0])
         ds_name = writer->table_name;
 
-    if ((retval = sas_validate_name(ds_name, 32)) != READSTAT_OK)
-        goto cleanup;
-
     snprintf(member_header, sizeof(member_header),
             "%-8.8s" "%-32.32s"   "%-8.8s"   "%-8.8s" "%-8.8s" "%16.16s",
             "SAS",   ds_name, "SASDATA", "6.06",  "bsd4.2", timestamp);
 
     retval = xport_write_record(writer, member_header);
 
-cleanup:
     return retval;
 }
 
@@ -321,16 +323,12 @@ static readstat_error_t xport_write_member_record(readstat_writer_t *writer,
     if (writer->table_name[0])
         ds_name = writer->table_name;
 
-    if ((retval = sas_validate_name(ds_name, 8)) != READSTAT_OK)
-        goto cleanup;
-
     snprintf(member_header, sizeof(member_header),
             "%-8.8s" "%-8.8s" "%-8.8s"   "%-8.8s" "%-8.8s"  "%-24.24s" "%16.16s",
             "SAS",   ds_name, "SASDATA", "6.06",  "bsd4.2", "",        timestamp);
 
     retval = xport_write_record(writer, member_header);
 
-cleanup:
     return retval;
 }
 
@@ -365,8 +363,11 @@ static readstat_error_t xport_write_obs_header_record(readstat_writer_t *writer)
     return xport_write_header_record(writer, &xrecord);
 }
 
-static void xport_format_timestamp(char *output, size_t output_len, time_t timestamp) {
+static readstat_error_t xport_format_timestamp(char *output, size_t output_len, time_t timestamp) {
     struct tm *ts = localtime(&timestamp);
+
+    if (!ts)
+        return READSTAT_ERROR_BAD_TIMESTAMP_VALUE;
 
     snprintf(output, output_len, 
             "%02d%3.3s%02d:%02d:%02d:%02d",
@@ -377,13 +378,18 @@ static void xport_format_timestamp(char *output, size_t output_len, time_t times
             (unsigned int)ts->tm_min % 100,
             (unsigned int)ts->tm_sec % 100
             );
+
+    return READSTAT_OK;
 }
 
 static readstat_error_t xport_begin_data(void *writer_ctx) {
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     readstat_error_t retval = READSTAT_OK;
     char timestamp[17];
-    xport_format_timestamp(timestamp, sizeof(timestamp), writer->timestamp);
+
+    retval = xport_format_timestamp(timestamp, sizeof(timestamp), writer->timestamp);
+    if (retval != READSTAT_OK)
+        goto cleanup;
 
     retval = xport_write_first_header_record(writer);
     if (retval != READSTAT_OK)
@@ -495,11 +501,29 @@ static readstat_error_t xport_write_missing_string(void *row, const readstat_var
 
 static readstat_error_t xport_write_missing_tagged(void *row, const readstat_variable_t *var, char tag) {
     char *row_bytes = (char *)row;
-    if (tag == '_' || (tag >= 'A' && tag <= 'Z')) {
+    readstat_error_t error = sas_validate_tag(tag);
+    if (error == READSTAT_OK) {
         row_bytes[0] = tag;
-        return READSTAT_OK;
     }
-    return READSTAT_ERROR_TAGGED_VALUE_IS_OUT_OF_RANGE;
+    return error;
+}
+
+static readstat_error_t xport_metadata_ok(void *writer_ctx) {
+    readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
+
+    if (writer->version != 5 && writer->version != 8)
+        return READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
+
+    if (writer->table_name[0]) {
+        if (writer->version == 8) {
+            return sas_validate_name(writer->table_name, 32);
+        }
+        if (writer->version == 5) {
+            return sas_validate_name(writer->table_name, 8);
+        }
+    }
+
+    return READSTAT_OK;
 }
 
 readstat_error_t readstat_begin_writing_xport(readstat_writer_t *writer, void *user_ctx, long row_count) {
@@ -507,9 +531,7 @@ readstat_error_t readstat_begin_writing_xport(readstat_writer_t *writer, void *u
     if (writer->version == 0)
         writer->version = XPORT_DEFAULT_VERISON;
 
-    if (writer->version != 5 && writer->version != 8)
-        return READSTAT_ERROR_UNSUPPORTED_FILE_FORMAT_VERSION;
-
+    writer->callbacks.metadata_ok = &xport_metadata_ok;
     writer->callbacks.write_int8 = &xport_write_int8;
     writer->callbacks.write_int16 = &xport_write_int16;
     writer->callbacks.write_int32 = &xport_write_int32;

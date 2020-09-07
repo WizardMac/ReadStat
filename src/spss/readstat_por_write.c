@@ -19,6 +19,31 @@ typedef struct por_write_ctx_s {
     size_t           unicode2byte_len;
 } por_write_ctx_t;
 
+static inline char por_encode_base30_digit(uint64_t digit) {
+    if (digit < 10)
+        return '0' + digit;
+    return 'A' + (digit - 10);
+}
+
+static int por_write_base30_integer(char *string, size_t string_len, uint64_t integer) {
+    int start = 0;
+    int end = 0;
+    int offset = 0;
+    while (integer) {
+        string[offset++] = por_encode_base30_digit(integer % 30);
+        integer /= 30;
+    }
+    end = offset;
+    offset--;
+    while (offset > start) {
+        char tmp = string[start];
+        string[start] = string[offset];
+        string[offset] = tmp;
+        offset--; start++;
+    }
+    return end;
+}
+
 static readstat_error_t por_finish(readstat_writer_t *writer) {
     return readstat_write_line_padding(writer, 'Z', 80, "\r\n");
 }
@@ -76,35 +101,19 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
         double integer_part;
         double fraction = modf(fabs(value), &integer_part);
         int64_t integer = integer_part;
+        int64_t exponent = 0;
         if (value < 0.0) {
             string[offset++] = '-';
         }
         if (integer == 0) {
             string[offset++] = '0';
         } else {
-            int start = offset;
-            int end = offset;
-            while (integer) {
-                int64_t remainder = integer % 30;
-                if (remainder < 0) {
-                    return -1;
-                } else if (remainder < 10) {
-                    string[offset++] = '0' + remainder;
-                } else {
-                    string[offset++] = 'A' + (remainder - 10);
-                }
+            while (fraction == 0 && integer != 0 && (integer % 30) == 0) {
                 integer /= 30;
-                integers_printed++;
+                exponent++;
             }
-            end = offset;
-            offset--;
-            while (offset > start) {
-                char tmp = string[start];
-                string[start] = string[offset];
-                string[offset] = tmp;
-                offset--; start++;
-            }
-            offset = end;
+            integers_printed = por_write_base30_integer(&string[offset], buffer_len - offset, integer);
+            offset += integers_printed;
         }
         /* should use exponents for efficiency, but this works */
         if (fraction) {
@@ -115,12 +124,14 @@ static ssize_t por_write_double_to_buffer(char *string, size_t buffer_len, doubl
             integer = integer_part;
             if (integer < 0) {
                 return -1;
-            } else if (integer < 10) {
-                string[offset++] = '0' + integer;
             } else {
-                string[offset++] = 'A' + (integer - 10);
+                string[offset++] = por_encode_base30_digit(integer);
             }
             integers_printed++;
+        }
+        if (exponent) {
+            string[offset++] = '+';
+            offset += por_write_base30_integer(&string[offset], buffer_len - offset, exponent);
         }
         string[offset++] = '/';
     }
@@ -220,6 +231,11 @@ static readstat_error_t por_emit_version_and_timestamp(readstat_writer_t *writer
         por_write_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     struct tm *timestamp = localtime(&writer->timestamp);
+
+    if (!timestamp) {
+        retval = READSTAT_ERROR_BAD_TIMESTAMP_VALUE;
+        goto cleanup;
+    }
 
     if ((retval = por_write_tag(writer, ctx, 'A')) != READSTAT_OK)
         goto cleanup;
@@ -368,7 +384,56 @@ cleanup:
     return retval;
 }
 
-static readstat_error_t por_emit_missing_values_records(readstat_writer_t *writer,
+static readstat_error_t por_emit_missing_string_values_records(readstat_writer_t *writer,
+        por_write_ctx_t *ctx, readstat_variable_t *r_variable) {
+    readstat_error_t retval = READSTAT_OK;
+    int n_missing_values = 0;
+    int n_missing_ranges = readstat_variable_get_missing_ranges_count(r_variable);
+    /* ranges */
+    int j;
+
+    for (j=0; j<n_missing_ranges; j++) {
+        readstat_value_t lo_value = readstat_variable_get_missing_range_lo(r_variable, j);
+        readstat_value_t hi_value = readstat_variable_get_missing_range_hi(r_variable, j);
+        const char *lo = readstat_string_value(lo_value);
+        const char *hi = readstat_string_value(hi_value);
+        if (lo && hi && strcmp(lo, hi) != 0) {
+            if ((retval = por_write_tag(writer, ctx, 'B')) != READSTAT_OK)
+                goto cleanup;
+
+            if ((retval = por_write_string_field(writer, ctx, lo)) != READSTAT_OK)
+                goto cleanup;
+
+            if ((retval = por_write_string_field(writer, ctx, hi)) != READSTAT_OK)
+                goto cleanup;
+
+            n_missing_values += 2;
+        }
+    }
+    /* values */
+    for (j=0; j<n_missing_ranges; j++) {
+        readstat_value_t lo_value = readstat_variable_get_missing_range_lo(r_variable, j);
+        readstat_value_t hi_value = readstat_variable_get_missing_range_hi(r_variable, j);
+        const char *lo = readstat_string_value(lo_value);
+        const char *hi = readstat_string_value(hi_value);
+        if (lo && hi && strcmp(lo, hi) == 0) {
+            if ((retval = por_write_tag(writer, ctx, '8')) != READSTAT_OK)
+                goto cleanup;
+
+            if ((retval = por_write_string_field(writer, ctx, lo)) != READSTAT_OK)
+                goto cleanup;
+
+            n_missing_values++;
+        }
+    }
+    if (n_missing_values > 3)
+        retval = READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS;
+
+cleanup:
+    return retval;
+}
+
+static readstat_error_t por_emit_missing_double_values_records(readstat_writer_t *writer,
         por_write_ctx_t *ctx, readstat_variable_t *r_variable) {
     readstat_error_t retval = READSTAT_OK;
     int n_missing_values = 0;
@@ -431,6 +496,14 @@ static readstat_error_t por_emit_missing_values_records(readstat_writer_t *write
 
 cleanup:
     return retval;
+}
+
+static readstat_error_t por_emit_missing_values_records(readstat_writer_t *writer,
+        por_write_ctx_t *ctx, readstat_variable_t *r_variable) {
+    if (r_variable->type == READSTAT_TYPE_DOUBLE) {
+        return por_emit_missing_double_values_records(writer, ctx, r_variable);
+    }
+    return por_emit_missing_string_values_records(writer, ctx, r_variable);
 }
 
 static readstat_error_t por_emit_variable_records(readstat_writer_t *writer,
@@ -621,7 +694,7 @@ static size_t por_variable_width(readstat_type_t type, size_t user_width) {
     return POR_BASE30_PRECISION + 4; // minus sign + period + plus/minus + slash
 }
 
-static readstat_error_t por_variable_ok(readstat_variable_t *variable) {
+static readstat_error_t por_variable_ok(const readstat_variable_t *variable) {
     return validate_variable_name(readstat_variable_get_name(variable));
 }
 
@@ -691,11 +764,18 @@ static readstat_error_t por_write_row(void *writer_ctx, void *row, size_t row_le
     return por_write_string_n(writer, writer->module_ctx, row_chars, output);
 }
 
-readstat_error_t readstat_begin_writing_por(readstat_writer_t *writer, void *user_ctx, long row_count) {
+static readstat_error_t por_metadata_ok(void *writer_ctx) {
+    readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
 
     if (writer->compression != READSTAT_COMPRESS_NONE)
         return READSTAT_ERROR_UNSUPPORTED_COMPRESSION;
 
+    return READSTAT_OK;
+}
+
+readstat_error_t readstat_begin_writing_por(readstat_writer_t *writer, void *user_ctx, long row_count) {
+
+    writer->callbacks.metadata_ok = &por_metadata_ok;
     writer->callbacks.variable_width = &por_variable_width;
     writer->callbacks.variable_ok = &por_variable_ok;
     writer->callbacks.write_int8 = &por_write_int8_value;
