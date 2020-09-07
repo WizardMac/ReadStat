@@ -304,9 +304,13 @@ static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subhead
             if (!memcmp(&ctx->text_blobs[0][12], "SASYZCR", 7)) {
                 off = 44;
             } else off = ctx->u64 ? 36 : 12;
+            if (ctx->col_info[0].name_ref.offset > ctx->text_blob_lengths[0]) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
             memcpy(ctx->file_label,
                    &ctx->text_blobs[0][off],
-                   ctx->col_info[i].name_ref.offset - off
+                   ctx->col_info[0].name_ref.offset - off
                    );
         }
         cnp += 8;
