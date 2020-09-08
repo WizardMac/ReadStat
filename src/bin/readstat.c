@@ -9,7 +9,6 @@
 #if !defined _MSC_VER
 #   include <sys/time.h>
 #else
-#   define READSTAT_VERSION "0.2.0"
 #   include <sys/timeb.h>
 #   include <sys/types.h>
 #   include <winsock2.h>
