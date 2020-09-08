@@ -280,16 +280,13 @@ static readstat_error_t xport_read_obs_header_record(xport_ctx_t *ctx) {
 
 static readstat_error_t xport_construct_format(char *dst, size_t dst_len,
         const char *src, size_t src_len, int width, int decimals) {
-#if !defined _MSC_VER
-    char format[4*src_len+1];
-    readstat_error_t retval = readstat_convert(format, sizeof(format), src, src_len, NULL);
-#else
-    char * format = malloc((sizeof(char))*(4 * src_len + 1 + 1));
-    readstat_error_t retval = readstat_convert(format, (4 * src_len + 1), src, src_len, NULL);
-#endif
+    char *format = malloc(4 * src_len + 1);
+    readstat_error_t retval = readstat_convert(format, 4 * src_len + 1, src, src_len, NULL);
 
-    if (retval != READSTAT_OK)
+    if (retval != READSTAT_OK) {
+        free(format);
         return retval;
+    }
 
     if (!format[0]) {
         *dst = '\0';
@@ -303,15 +300,15 @@ static readstat_error_t xport_construct_format(char *dst, size_t dst_len,
         snprintf(dst, dst_len, "%s", format);
     }
 
-#if defined _MSC_VER
     free(format);
-#endif
     return retval;
 }
 
 static readstat_error_t xport_read_labels_v8(xport_ctx_t *ctx, int label_count) {
     readstat_error_t retval = READSTAT_OK;
     uint16_t labeldef[3];
+    char *name = NULL;
+    char *label = NULL;
     int i;
     for (i=0; i<label_count; i++) {
         int index, name_len, label_len;
@@ -335,42 +332,23 @@ static readstat_error_t xport_read_labels_v8(xport_ctx_t *ctx, int label_count) 
             goto cleanup;
         }
 
-#if !defined _MSC_VER
-        char name[name_len+1];
-        char label[label_len+1];
-#else
-        char * name = malloc((sizeof(char))*(name_len + 1 + 1));
-        char * label = malloc((sizeof(char))*(label_len + 1 + 1));
-#endif
-        readstat_variable_t *variable = ctx->variables[index];
+        name = realloc(name, name_len + 1);
+        label = realloc(label, label_len + 1);
+        readstat_variable_t *variable = ctx->variables[index-1];
 
         if (read_bytes(ctx, name, name_len) != name_len ||
                 read_bytes(ctx, label, label_len) != label_len) {
             retval = READSTAT_ERROR_READ;
-#if defined _MSC_VER
-            free(name);
-            free(label);
-#endif
             goto cleanup;
         }
 
         retval = readstat_convert(variable->name, sizeof(variable->name),
-                name, name_len,  ctx->converter);
-#if defined _MSC_VER
-        free(name);
-#endif
-        if (retval != READSTAT_OK) {
-#if defined _MSC_VER
-            free(label);
-#endif
+                name, name_len, ctx->converter);
+        if (retval != READSTAT_OK)
             goto cleanup;
-        }
 
         retval = readstat_convert(variable->label, sizeof(variable->label),
-                label, label_len,  ctx->converter);
-#if defined _MSC_VER
-        free(label);
-#endif
+                label, label_len, ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
     }
@@ -384,6 +362,10 @@ static readstat_error_t xport_read_labels_v8(xport_ctx_t *ctx, int label_count) 
         goto cleanup;
 
 cleanup:
+    if(name)
+        free(name);
+    if(label)
+        free(label);
     return retval;
 }
 
@@ -391,6 +373,11 @@ static readstat_error_t xport_read_labels_v9(xport_ctx_t *ctx, int label_count) 
     readstat_error_t retval = READSTAT_OK;
     uint16_t labeldef[5];
     int i;
+    char *name = NULL;
+    char *format = NULL;
+    char *informat = NULL;
+    char *label = NULL;
+
     for (i=0; i<label_count; i++) {
         int index, name_len, format_len, informat_len, label_len;
         if (read_bytes(ctx, labeldef, sizeof(labeldef)) != sizeof(labeldef)) {
@@ -417,17 +404,10 @@ static readstat_error_t xport_read_labels_v9(xport_ctx_t *ctx, int label_count) 
             goto cleanup;
         }
 
-#if !defined _MSC_VER
-        char name[name_len+1];
-        char format[format_len+1];
-        char informat[informat_len+1];
-        char label[label_len+1];
-#else
-        char * name = malloc((sizeof(char))*(name_len + 1 + 1));
-        char * format = malloc((sizeof(char))*(format_len + 1 + 1));
-        char * informat = malloc((sizeof(char))*(informat_len + 1 + 1));
-        char * label = malloc((sizeof(char))*(label_len + 1 + 1));
-#endif
+        name = realloc(name, name_len + 1);
+        format = realloc(format, format_len + 1);
+        informat = realloc(informat, informat_len + 1);
+        label = realloc(label, label_len + 1);
 
         readstat_variable_t *variable = ctx->variables[index-1];
 
@@ -436,48 +416,21 @@ static readstat_error_t xport_read_labels_v9(xport_ctx_t *ctx, int label_count) 
                 read_bytes(ctx, informat, informat_len) != informat_len ||
                 read_bytes(ctx, label, label_len) != label_len) {
             retval = READSTAT_ERROR_READ;
-#if defined _MSC_VER
-            free(name);
-            free(format);
-            free(informat);
-            free(label);
-#endif
             goto cleanup;
         }
 
         retval = readstat_convert(variable->name, sizeof(variable->name),
-                name, name_len,  ctx->converter);
-#if defined _MSC_VER
-        free(name);
-#endif
-        if (retval != READSTAT_OK) {
-#if defined _MSC_VER
-            free(format);
-            free(informat);
-            free(label);
-#endif
+                name, name_len, ctx->converter);
+        if (retval != READSTAT_OK)
             goto cleanup;
-        }
 
         retval = readstat_convert(variable->label, sizeof(variable->label),
-                label, label_len,  ctx->converter);
-#if defined _MSC_VER
-        free(label);
-#endif
-        if (retval != READSTAT_OK) {
-#if defined _MSC_VER
-            free(format);
-            free(informat);
-#endif
+                label, label_len, ctx->converter);
+        if (retval != READSTAT_OK)
             goto cleanup;
-        }
 
         retval = xport_construct_format(variable->format, sizeof(variable->format),
                 format, format_len, variable->display_width, variable->decimals);
-#if defined _MSC_VER
-        free(format);
-        free(informat);
-#endif
         if (retval != READSTAT_OK)
             goto cleanup;
     }
@@ -491,6 +444,14 @@ static readstat_error_t xport_read_labels_v9(xport_ctx_t *ctx, int label_count) 
         goto cleanup;
 
 cleanup:
+    if(name)
+        free(name);
+    if(format)
+        free(format);
+    if(informat)
+        free(informat);
+    if(label)
+        free(label);
     return retval;
 }
 

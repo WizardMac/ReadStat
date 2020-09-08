@@ -78,8 +78,8 @@ static void readstat_label_set_free(readstat_label_set_t *label_set) {
 static void readstat_copy_label(readstat_value_label_t *value_label, const char *label) {
     if (label && strlen(label)) {
         value_label->label_len = strlen(label);
-        value_label->label = malloc(value_label->label_len + 1);
-        memcpy(value_label->label, label, value_label->label_len + 1);
+        value_label->label = malloc(value_label->label_len);
+        memcpy(value_label->label, label, value_label->label_len);
     }
 }
 
@@ -258,17 +258,12 @@ static readstat_error_t readstat_write_repeated_byte(readstat_writer_t *writer, 
     if (len == 0)
         return READSTAT_OK;
 
-#if !defined _MSC_VER
-    char zeros[len];
-#else
-    char * zeros = malloc(sizeof(char)*(len+1));
-#endif
+    char *zeros = malloc(len);
 
     memset(zeros, byte, len);
     readstat_error_t error = readstat_write_bytes(writer, zeros, len);
-#if defined _MSC_VER
+
     free(zeros);
-#endif
     return error;
 }
 
@@ -360,8 +355,8 @@ void readstat_label_string_value(readstat_label_set_t *label_set, const char *va
     readstat_value_label_t *new_value_label = readstat_add_value_label(label_set, label);
     if (value && strlen(value)) {
         new_value_label->string_key_len = strlen(value);
-        new_value_label->string_key = malloc(new_value_label->string_key_len + 1);
-        memcpy(new_value_label->string_key, value, new_value_label->string_key_len + 1);
+        new_value_label->string_key = malloc(new_value_label->string_key_len);
+        memcpy(new_value_label->string_key, value, new_value_label->string_key_len);
     }
 }
 
