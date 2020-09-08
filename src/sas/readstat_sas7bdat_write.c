@@ -699,8 +699,7 @@ static readstat_error_t sas7bdat_write_row_uncompressed(readstat_writer_t *write
         int16_t page_row_count = (writer->row_count - writer->current_row < rows_per_page 
                 ? writer->row_count - writer->current_row
                 : rows_per_page);
-        char *header = malloc(hinfo->page_header_size);
-        memset(header, 0, hinfo->page_header_size);
+        char *header = calloc(hinfo->page_header_size, 1);
         memcpy(&header[hinfo->page_header_size-6], &page_row_count, sizeof(int16_t));
         memcpy(&header[hinfo->page_header_size-8], &page_type, sizeof(int16_t));
         retval = readstat_write_bytes(writer, header, hinfo->page_header_size);

@@ -362,10 +362,8 @@ static readstat_error_t xport_read_labels_v8(xport_ctx_t *ctx, int label_count) 
         goto cleanup;
 
 cleanup:
-    if(name)
-        free(name);
-    if(label)
-        free(label);
+    free(name);
+    free(label);
     return retval;
 }
 
@@ -444,14 +442,10 @@ static readstat_error_t xport_read_labels_v9(xport_ctx_t *ctx, int label_count) 
         goto cleanup;
 
 cleanup:
-    if(name)
-        free(name);
-    if(format)
-        free(format);
-    if(informat)
-        free(informat);
-    if(label)
-        free(label);
+    free(name);
+    free(format);
+    free(informat);
+    free(label);
     return retval;
 }
 

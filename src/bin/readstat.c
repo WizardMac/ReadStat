@@ -48,6 +48,10 @@ int gettimeofday(struct timeval* t, void* timezone)
 
 #include "util/file_format.h"
 
+#if defined _MSC_VER
+#define unlink _unlink
+#endif
+
 typedef struct rs_ctx_s {
     rs_module_t *module;
     void        *module_ctx;
@@ -402,16 +406,22 @@ cleanup:
             fprintf(stderr, "Error opening %s: File exists (Use -f to overwrite)\n", output_filename);
         } else {
             fprintf(stderr, "Error processing %s: %s\n", rs_ctx->error_filename, readstat_error_message(error));
-#if !defined _MSC_VER
             unlink(output_filename);
-#else
-            _unlink(output_filename);
-#endif
         }
         return 1;
     }
 
     return 0;
+}
+
+size_t readstat_strftime(char *s, size_t maxsize, const char *format, time_t timestamp) {
+#if !defined _MSC_VER
+    return strftime(s, maxsize, format, localtime(&timestamp));
+#else
+    struct tm ltm;
+    localtime_s(&ltm, &timestamp);
+    return strftime(s, maxsize, format, &ltm);
+#endif
 }
 
 static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
@@ -445,13 +455,7 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
     }
     if (timestamp) {
         char buffer[128];
-#if !defined _MSC_VER
-        strftime(buffer, sizeof(buffer), "%d %b %Y %H:%M", localtime(&timestamp));
-#else
-        struct tm ltm;
-        localtime_s(&ltm, &timestamp);
-        strftime(buffer, sizeof(buffer), "%d %b %Y %H:%M", &ltm);
-#endif
+        readstat_strftime(buffer, sizeof(buffer), "%d %b %Y %H:%M", timestamp);
         printf("Timestamp: %s\n", buffer);
     }
     return 0;

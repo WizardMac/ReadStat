@@ -134,12 +134,8 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
     }
 
 cleanup:
-    if(label)
-        free(label);
-
-    if (value_offset)
-        free(value_offset);
-
+    free(label);
+    free(value_offset);
     return retval;
 }
 
