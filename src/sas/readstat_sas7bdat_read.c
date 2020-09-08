@@ -301,17 +301,33 @@ static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subhead
     for (i=ctx->col_names_count-cmax; i<ctx->col_names_count; i++) {
         ctx->col_info[i].name_ref = sas7bdat_parse_text_ref(cnp, ctx);
         if (i == 0) {
-            if (!memcmp(&ctx->text_blobs[0][12], "SASYZCR", 7)) {
-                off = 44;
-            } else off = ctx->u64 ? 36 : 12;
-            if (ctx->col_info[0].name_ref.offset > ctx->text_blob_lengths[0]) {
+            if (ctx->version < 9) {
+                off = 36;
+            } else {
+                if (ctx->text_blob_lengths[0] < 19) {
+                    retval = READSTAT_ERROR_PARSE;
+                    goto cleanup;
+                }
+                if (!memcmp(&ctx->text_blobs[0][12], "SASYZCR", 7)) {
+                        off = 44;
+                } else {
+                    off = ctx->u64 ? 36 : 12;
+                }
+            }
+            if (ctx->col_info[0].name_ref.offset >=
+                ctx->text_blob_lengths[0] ||
+                ctx->col_info[0].name_ref.offset < off) {
                 retval = READSTAT_ERROR_PARSE;
                 goto cleanup;
             }
-            memcpy(ctx->file_label,
-                   &ctx->text_blobs[0][off],
-                   ctx->col_info[0].name_ref.offset - off
-                   );
+            retval = readstat_convert(ctx->file_label,
+                                      sizeof(ctx->file_label),
+                                      &ctx->text_blobs[0][off],
+                                      ctx->col_info[0].name_ref.offset - off,
+                                      ctx->converter
+                                      );
+            if (retval != READSTAT_OK)
+                goto cleanup;
         }
         cnp += 8;
     }
