@@ -19,22 +19,16 @@
     <Filter Include="Header Files\modules">
       <UniqueIdentifier>{de4b7ac4-3816-4eea-a44f-949af9bb3a37}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\util">
-      <UniqueIdentifier>{fa004f5e-d943-4d0a-87f7-1d3e101261ef}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\util">
-      <UniqueIdentifier>{a484a637-6af1-41c8-8da2-5f7db19ddf10}</UniqueIdentifier>
+      <UniqueIdentifier>{8f2a21ef-feb4-4b94-bfa9-40433fb84f36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{ddbd8e6f-15a8-42dc-ac41-a8dbf6b67fea}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\bin\readstat.c">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\util\readstat_sav_date.c">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\util\readstat_dta_days.c">
-      <Filter>Source Files\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\bin\read_csv\jsmn.c">
       <Filter>Source Files</Filter>
@@ -72,14 +66,14 @@
     <ClCompile Include="..\..\src\bin\util\quote_and_escape.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\bin\util\readstat_dta_days.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\util\readstat_sav_date.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\bin\util\readstat_dta_days.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\util\readstat_sav_date.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\bin\extract_metadata.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -139,6 +133,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\bin\util\quote_and_escape.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\util\readstat_dta_days.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\util\readstat_sav_date.h">
+      <Filter>Header Files\util</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
