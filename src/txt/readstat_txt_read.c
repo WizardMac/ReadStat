@@ -10,6 +10,10 @@
 #include "../readstat_convert.h"
 #include "readstat_schema.h"
 
+#if defined _MSC_VER
+#define restrict __restrict
+#endif
+
 typedef struct txt_ctx_s {
     int                rows;
     iconv_t            converter;
