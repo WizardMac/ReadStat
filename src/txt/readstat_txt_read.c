@@ -1,7 +1,8 @@
-
 #include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
+#if !defined(_MSC_VER)
+#   include <unistd.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 
