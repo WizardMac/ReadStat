@@ -24,11 +24,11 @@ typedef struct txt_ctx_s {
 static readstat_error_t handle_value(readstat_parser_t *parser, iconv_t converter,
         int obs_index, readstat_schema_entry_t *entry, char *bytes, size_t len, void *ctx) {
     readstat_error_t error = READSTAT_OK;
-    char converted_value[4*len+1];
+    char *converted_value = malloc(4*len+1);
     readstat_variable_t *variable = &entry->variable;
     readstat_value_t value = { .type = variable->type };
     if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_STRING) {
-        error = readstat_convert(converted_value, sizeof(converted_value), bytes, len, converter);
+        error = readstat_convert(converted_value, 4 * len + 1, bytes, len, converter);
         if (error != READSTAT_OK)
             goto cleanup;
         value.v.string_value = converted_value;
@@ -48,6 +48,7 @@ static readstat_error_t handle_value(readstat_parser_t *parser, iconv_t converte
         error = READSTAT_ERROR_USER_ABORT;
     }
 cleanup:
+    free(converted_value);
     return error;
 }
 
