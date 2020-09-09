@@ -3188,7 +3188,7 @@ _match:
 	break;
 	case 25:
 #line 221 "src/txt/readstat_sas_commands_read.rl"
-	{ label_type = LABEL_TYPE_DOUBLE; double_value = -integer; }
+	{ label_type = LABEL_TYPE_DOUBLE; double_value = -(double)integer; }
 	break;
 	case 26:
 #line 222 "src/txt/readstat_sas_commands_read.rl"

@@ -1989,7 +1989,7 @@ _match:
 	break;
 	case 31:
 #line 259 "src/txt/readstat_spss_commands_read.rl"
-	{ label_type = LABEL_TYPE_DOUBLE; double_value = -integer; }
+	{ label_type = LABEL_TYPE_DOUBLE; double_value = -(double)integer; }
 	break;
 	case 32:
 #line 260 "src/txt/readstat_spss_commands_read.rl"

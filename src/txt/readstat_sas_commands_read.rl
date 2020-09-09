@@ -223,7 +223,7 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
 
         empty_cmd = ";";
 
-        value_label = ( "-" integer %{ label_type = LABEL_TYPE_DOUBLE; double_value = -integer; } |
+        value_label = ( "-" integer %{ label_type = LABEL_TYPE_DOUBLE; double_value = -(double)integer; } |
                 integer %{ label_type = LABEL_TYPE_DOUBLE; double_value = integer; } |
                 integer whitespace+ "-" whitespace+ %{ first_integer = integer; } integer %{ label_type = LABEL_TYPE_RANGE; } |
                 unquoted_string %{ label_type = LABEL_TYPE_STRING; } %copy_string |
