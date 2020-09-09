@@ -30,132 +30,114 @@
     <ClCompile Include="..\..\src\bin\readstat.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\mod_readstat.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\json_metadata.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\mod_csv.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_csv_column_header.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_csv_value.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_csv_value_csv.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_csv_value_dta.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_csv_value_sav.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_missingness.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_missingness_dta.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_missingness_sav.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_value_label.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_value_label_dta.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\produce_value_label_sav.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\double_decimals.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\modules\jsmn.c">
-      <Filter>Source Files\modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bin\module_util.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\bin\util\readstat_sav_date.c">
       <Filter>Source Files\util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\bin\util\readstat_dta_days.c">
       <Filter>Source Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\bin\format.c">
+    <ClCompile Include="..\..\src\bin\read_csv\jsmn.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\read_csv\json_metadata.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\read_csv\mod_csv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\read_csv\mod_dta.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\read_csv\mod_sav.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\read_csv\value.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\write\double_decimals.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\write\mod_csv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\write\mod_readstat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\write\module_util.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\util\file_format.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bin\util\quote_and_escape.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\bin\modules\mod_readstat.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\mod_xlsx.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_csv_column_header.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_csv_value.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_csv_value_csv.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_csv_value_dta.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_csv_value_sav.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_missingness.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_missingness_dta.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_missingness_sav.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_value_label.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_value_label_dta.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\produce_value_label_sav.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\double_decimals.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\jsmn.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\json_metadata.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\mod_csv.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\modules\mod_csv_reader.h">
-      <Filter>Header Files\modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\bin\module_util.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\bin\util\readstat_dta_days.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\bin\util\readstat_sav_date.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\bin\format.h">
+    <ClInclude Include="..\..\src\bin\extract_metadata.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\read_csv\csv_metadata.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\read_csv\jsmn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\read_csv\json_metadata.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\read_csv\mod_csv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\read_csv\mod_dta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\read_csv\mod_sav.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\read_csv\read_csv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\read_csv\read_module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\read_csv\value.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\write\double_decimals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\write\json\write_missing_values.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\write\json\write_value_labels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\write\mod_csv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\write\mod_readstat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\write\mod_xlsx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\write\module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\write\module_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\util\file_format.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\util\quote_and_escape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

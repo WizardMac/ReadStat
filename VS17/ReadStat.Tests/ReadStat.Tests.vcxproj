@@ -94,6 +94,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
+      <ObjectFileName>$(IntDir)\%(RelativeDir)\%(Filename).obj</ObjectFileName>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\iconv\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -115,6 +116,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
+      <ObjectFileName>$(IntDir)\%(RelativeDir)\%(Filename).obj</ObjectFileName>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\iconv\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -134,6 +136,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
+      <ObjectFileName>$(IntDir)\%(RelativeDir)\%(Filename).obj</ObjectFileName>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\iconv\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -155,6 +158,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
+      <ObjectFileName>$(IntDir)\%(RelativeDir)\%(Filename).obj</ObjectFileName>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\iconv\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -171,21 +175,26 @@
     <ClInclude Include="..\..\src\test\test_buffer_io.h" />
     <ClInclude Include="..\..\src\test\test_dta.h" />
     <ClInclude Include="..\..\src\test\test_error.h" />
+    <ClInclude Include="..\..\src\test\test_list.h" />
     <ClInclude Include="..\..\src\test\test_read.h" />
     <ClInclude Include="..\..\src\test\test_readstat.h" />
     <ClInclude Include="..\..\src\test\test_sas.h" />
     <ClInclude Include="..\..\src\test\test_sav.h" />
+    <ClInclude Include="..\..\src\test\test_types.h" />
     <ClInclude Include="..\..\src\test\test_write.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\test\test_buffer.c" />
     <ClCompile Include="..\..\src\test\test_buffer_io.c" />
+    <ClCompile Include="..\..\src\test\test_double_decimals.c" />
     <ClCompile Include="..\..\src\test\test_dta.c" />
+    <ClCompile Include="..\..\src\test\test_dta_days.c" />
     <ClCompile Include="..\..\src\test\test_error.c" />
     <ClCompile Include="..\..\src\test\test_read.c" />
     <ClCompile Include="..\..\src\test\test_readstat.c" />
     <ClCompile Include="..\..\src\test\test_sas.c" />
     <ClCompile Include="..\..\src\test\test_sav.c" />
+    <ClCompile Include="..\..\src\test\test_sav_date.c" />
     <ClCompile Include="..\..\src\test\test_write.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
