@@ -6,8 +6,8 @@ platform: x64
 
 environment:
   matrix:
-  - TOOLCHAIN: "msys2"
-  - TOOLCHAIN: "cygwin"
+#  - TOOLCHAIN: "msys2"
+#  - TOOLCHAIN: "cygwin"
   - TOOLCHAIN: "msvc"
 
 branches:
@@ -72,7 +72,7 @@ test_script:
         $state = "PASS"
         $tests = @("readstat","double_decimals","sav_date","dta_days")
 
-        Copy-Item "C:\projects\iconv\lib64\libiconv.dll" -Destination "C:\projects\readstat\VS17\x64\Debug\"
+        Copy-Item "C:\projects\iconv\lib64\libiconvD.dll" -Destination "C:\projects\readstat\VS17\x64\Debug\"
 
         for($i=0 ; $i -lt $tests.Length ; $i++)
         {
