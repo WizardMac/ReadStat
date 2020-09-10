@@ -69,14 +69,32 @@ test_script:
       }
       else
       {
-        echo "Running test ReadStat_Test_readstat..."
-        C:\projects\readstat\VS17\x64\Debug\ReadStat_Test_readstat.exe
-        echo "Running test ReadStat_Test_double_decimals..."
-        C:\projects\readstat\VS17\x64\Debug\ReadStat_Test_double_decimals.exe
-        echo "Running test ReadStat_Test_dta_days..."
-        C:\projects\readstat\VS17\x64\Debug\ReadStat_Test_dta_days.exe
-        echo "Running test ReadStat_Test_sav_date..."
-        C:\projects\readstat\VS17\x64\Debug\ReadStat_Test_sav_date.exe
+        $state = "PASS"
+        $tests = @("readstat","double_decimals","sav_date","dta_days")
+
+        Copy-Item "C:\projects\iconv\lib64\libiconv.dll" -Destination "C:\projects\readstat\VS17\x64\Debug\"
+
+        for($i=0 ; $i -lt $tests.Length ; $i++)
+        {
+          $currTest = $tests[$i]
+          $currExec = 'C:\projects\readstat\VS17\x64\Debug\ReadStat_Test_' + $currTest + '.exe;$?'
+
+          echo "Running test $currTest..."
+          $success = Invoke-Expression $currExec
+
+          if(-not $success){
+            $state = "FAIL"
+            echo "Test result: FAIL"
+          }
+          else{
+            echo "Test result: PASS"
+          }
+        }
+
+        if($state -eq "FAIL")
+        {
+          exit 1
+        }
       }
 
 on_success:
