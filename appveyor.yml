@@ -6,8 +6,8 @@ platform: x64
 
 environment:
   matrix:
-#  - TOOLCHAIN: "msys2"
-#  - TOOLCHAIN: "cygwin"
+  - TOOLCHAIN: "msys2"
+  - TOOLCHAIN: "cygwin"
   - TOOLCHAIN: "msvc"
 
 branches:
