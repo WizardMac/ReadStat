@@ -1,12 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#if !defined _MSC_VER
-#   include <unistd.h>
-#endif
 #include <errno.h>
 #include <time.h>
 #if !defined _MSC_VER
+#   include <unistd.h>
 #   include <sys/time.h>
 #else
 #   include <sys/timeb.h>

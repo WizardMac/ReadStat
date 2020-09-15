@@ -1,8 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#if !defined(_MSC_VER)
-#   include <unistd.h>
-#endif
 #include <string.h>
 #include <errno.h>
 #include "jsmn.h"

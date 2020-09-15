@@ -2,9 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#if !defined(_MSC_VER)
-#   include <unistd.h>
-#endif
 #include <errno.h>
 #if !defined(_MSC_VER)
 #   include <sys/time.h>
@@ -43,11 +40,11 @@ static void dump_buffer(rt_buffer_t *buffer, long format) {
 #endif
 #if DEBUG
     printf("Writing file buffer to %s\n", filename);
-    int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    int bytes_written = write(fd, buffer->bytes, buffer->used);
+    FILE *file = fopen(filename, "wb");
+    int bytes_written = fwrite(buffer->bytes, buffer->used, 1, file);
     if (bytes_written != buffer->used)
         printf("Failed to write file!\n");
-    close(fd);
+    fclose(file);
 #endif
 }
 

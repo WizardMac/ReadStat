@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <libgen.h>
 #include <errno.h>
 #include <sys/stat.h>
@@ -30,15 +29,15 @@ static void dump_buffer(rt_buffer_t *buffer, long format, int test_case) {
     snprintf(filename, sizeof(filename), CORPUS_DIR "/%s/test-case-%03d", 
             file_extension(format), test_case);
 
-    int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    if (fd == -1) {
+    FILE *file = fopen(filename, "wb");
+    if (!file) {
         perror(filename);
     }
-    ssize_t bytes_written = write(fd, buffer->bytes, buffer->used);
+    ssize_t bytes_written = fwrite(buffer->bytes, buffer->used, 1, file);
     if (bytes_written < 0) {
         perror(filename);
     }
-    close(fd);
+    fclose(file);
 }
 
 int main(int argc, char *argv[]) {

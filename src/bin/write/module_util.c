@@ -1,6 +1,3 @@
-#if !defined(_MSC_VER)
-#   include <unistd.h>
-#endif
 #include <string.h>
 
 int rs_ends_with(const char *filename, const char *ending) {
