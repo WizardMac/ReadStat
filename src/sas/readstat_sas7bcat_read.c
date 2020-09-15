@@ -51,6 +51,7 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
     /* Doubles appear to be stored as big-endian, always */
     int bswap_doubles = machine_is_little_endian();
     int is_string = (name[0] == '$');
+    char *label = NULL;
 
     if (value_offset == NULL) {
         retval = READSTAT_ERROR_MALLOC;
@@ -117,8 +118,8 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
             goto cleanup;
         }
         if (ctx->value_label_handler) {
-            char label[4*label_len+1];
-            retval = readstat_convert(label, sizeof(label),
+            label = realloc(label, 4 * label_len + 1);
+            retval = readstat_convert(label, 4 * label_len + 1,
                     &lbp2[10], label_len, ctx->converter);
             if (retval != READSTAT_OK)
                 goto cleanup;
@@ -133,9 +134,8 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
     }
 
 cleanup:
-    if (value_offset)
-        free(value_offset);
-
+    free(label);
+    free(value_offset);
     return retval;
 }
 
