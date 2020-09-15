@@ -27,7 +27,7 @@ free to contribute your binary-format expertise here.
 For reading in R data files, please see the related
 [librdata](https://github.com/WizardMac/librdata) project.
 
-Installation
+Installation on Unix / macOS
 --
 
 Grab the latest [release](https://github.com/WizardMac/ReadStat/releases) and
@@ -43,8 +43,21 @@ and then run `./autogen.sh` to generate the configure file.
 If you're on Mac and see errors about `AM_ICONV` when you run `./autogen.sh`,
 you'll need to install [gettext](https://www.gnu.org/software/gettext/).
 
-If you're on Windows see [Windows specific notes](#windows-specific-notes).
+Installation on Windows
+--
 
+ReadStat now includes a Microsoft Visual Studio project file that includes
+build targets for the library and tests. See the [VS17](./VS17) folder in
+the downloaded release for a "one-click" Windows build.
+
+Alternatively, you can build ReadStat on the command line using an
+[msys2](https://msys2.github.io/) environment. After installing msys2,
+download some other packages:
+
+    pacman -S autoconf automake libtool make mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-libiconv
+
+Then start a MINGW command line (not the msys2 prompt!) and follow the UNIX
+install instructions above for this package.
 
 Language Bindings
 --
@@ -420,23 +433,6 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 ```
-
-Windows specific notes
---
-
-You need to install and configure an msys2 environment to compile ReadStat.
-
-First, download and install msys2 from [here](https://msys2.github.io/). Make
-sure you update your initial msys2 installation as described on that page.
-
-Second, install a number of additional packages at the msys2 command line:
-
-    pacman -S autoconf automake libtool make mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-libiconv
-
-Consider adding `--disable-download-timeout` to that command to prevent timeout errors on slow connections.
-
-Finally, start a MINGW command line (not the msys2 prompt!) and follow the general install instructions for this package.
-
 
 Fuzz Testing
 --
