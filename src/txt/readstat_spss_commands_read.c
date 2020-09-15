@@ -1,7 +1,12 @@
 
 #line 1 "src/txt/readstat_spss_commands_read.rl"
 #include <stdlib.h>
-#include <strings.h>
+#if defined(_MSC_VER)
+#   define strncasecmp _strnicmp
+#   define strcasecmp _stricmp
+#else
+#   include <strings.h>
+#endif
 #include <inttypes.h>
 
 #include "../readstat.h"
@@ -1984,7 +1989,7 @@ _match:
 	break;
 	case 31:
 #line 259 "src/txt/readstat_spss_commands_read.rl"
-	{ label_type = LABEL_TYPE_DOUBLE; double_value = -integer; }
+	{ label_type = LABEL_TYPE_DOUBLE; double_value = -(double)integer; }
 	break;
 	case 32:
 #line 260 "src/txt/readstat_spss_commands_read.rl"

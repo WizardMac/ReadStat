@@ -1,0 +1,243 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\sas">
+      <UniqueIdentifier>{36d69d1d-b944-4abc-9981-ca8572816f7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\spss">
+      <UniqueIdentifier>{88abd1ce-1660-482c-87b3-9d210ee57a1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\stata">
+      <UniqueIdentifier>{f7d7807e-0c88-4fd8-8d4a-4e1c18783cae}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\readstat_io_unistd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\readstat_malloc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\readstat_metadata.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\readstat_parser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\readstat_value.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\readstat_variable.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\readstat_writer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\CKHashTable.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\readstat_bits.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\readstat_convert.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\readstat_error.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_sas7bdat_write.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_xport.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_xport_read.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_xport_write.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sas\ieee.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_sas.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_sas_rle.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_sas7bcat_read.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_sas7bcat_write.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_sas7bdat_read.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_sav_write.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_spss.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_spss_parse.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_por.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_por_parse.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_por_read.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_por_write.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_sav.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_sav_compress.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_sav_parse.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_sav_parse_timestamp.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_sav_read.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stata\readstat_dta_parse_timestamp.c">
+      <Filter>Source Files\stata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stata\readstat_dta_read.c">
+      <Filter>Source Files\stata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stata\readstat_dta_write.c">
+      <Filter>Source Files\stata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\stata\readstat_dta.c">
+      <Filter>Source Files\stata</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\txt\commands_util.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\txt\readstat_copy.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\txt\readstat_sas_commands_read.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\txt\readstat_spss_commands_read.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\txt\readstat_schema.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\txt\readstat_stata_dictionary_read.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\txt\readstat_txt_read.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\readstat_writer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\CKHashTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\readstat_bits.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\readstat_convert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\readstat_iconv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\readstat_io_unistd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\readstat_malloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sas\ieee.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sas\readstat_sas.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sas\readstat_sas_rle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sas\readstat_xport.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_por.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_por_parse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_sav.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_sav_compress.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_sav_parse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_sav_parse_timestamp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_spss.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_spss_parse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_zsav_compress.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_zsav_read.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\spss\readstat_zsav_write.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stata\readstat_dta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\stata\readstat_dta_parse_timestamp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\txt\commands_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\txt\readstat_copy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\txt\readstat_schema.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

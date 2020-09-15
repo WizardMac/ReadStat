@@ -1,7 +1,12 @@
 
 #line 1 "src/txt/readstat_sas_commands_read.rl"
 #include <stdlib.h>
-#include <strings.h>
+#if defined(_MSC_VER)
+#   define strncasecmp _strnicmp
+#   define strcasecmp _stricmp
+#else
+#   include <strings.h>
+#endif
 
 #include "../readstat.h"
 #include "readstat_schema.h"
@@ -3183,7 +3188,7 @@ _match:
 	break;
 	case 25:
 #line 221 "src/txt/readstat_sas_commands_read.rl"
-	{ label_type = LABEL_TYPE_DOUBLE; double_value = -integer; }
+	{ label_type = LABEL_TYPE_DOUBLE; double_value = -(double)integer; }
 	break;
 	case 26:
 #line 222 "src/txt/readstat_sas_commands_read.rl"
