@@ -140,7 +140,7 @@ static readstat_error_t sas7bdat_emit_header(readstat_writer_t *writer, sas_head
         .file_format = SAS_FILE_FORMAT_UNIX,
         .encoding = 20, /* UTF-8 */
         .file_type = "SAS FILE",
-        .file_info = "DATA ~ ~"
+        .file_info = "DATA    "
     };
 
     memcpy(&header_start.magic, sas7bdat_magic_number, sizeof(header_start.magic));
@@ -218,13 +218,16 @@ static sas7bdat_subheader_t *sas7bdat_col_name_subheader_init(readstat_writer_t 
     sas7bdat_subheader_t *subheader = sas7bdat_subheader_init(
             SAS_SUBHEADER_SIGNATURE_COLUMN_NAME, len);
     memcpy(&subheader->data[signature_len], &remainder, sizeof(uint16_t));
+    
+    sas_text_ref_t text_ref = sas7bdat_make_text_ref(column_text_array, "READSTAT");
+    text_ref = sas7bdat_make_text_ref(column_text_array, hinfo->file_label);
 
     int i;
     char *ptrs = &subheader->data[signature_len+8];
     for (i=0; i<writer->variables_count; i++) {
         readstat_variable_t *variable = readstat_get_variable(writer, i);
         const char *name = readstat_variable_get_name(variable);
-        sas_text_ref_t text_ref = sas7bdat_make_text_ref(column_text_array, name);
+        text_ref = sas7bdat_make_text_ref(column_text_array, name);
         memcpy(&ptrs[0], &text_ref.index, sizeof(uint16_t));
         memcpy(&ptrs[2], &text_ref.offset, sizeof(uint16_t));
         memcpy(&ptrs[4], &text_ref.length, sizeof(uint16_t));

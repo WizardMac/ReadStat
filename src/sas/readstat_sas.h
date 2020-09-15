@@ -49,6 +49,7 @@ typedef struct sas_header_info_s {
     time_t   creation_time;
     time_t   modification_time;
     char     table_name[32];
+    char     file_label[256];
     char    *encoding;
 } sas_header_info_t;
 

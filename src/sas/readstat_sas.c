@@ -379,7 +379,7 @@ readstat_error_t sas_write_header(readstat_writer_t *writer, sas_header_info_t *
         goto cleanup;
 
     sas_header_end_t header_end = {
-        .host = "W32_VSPRO"
+        .host = "9.0401M6Linux"
     };
 
     char release[sizeof(header_end.release)+1] = { 0 };
