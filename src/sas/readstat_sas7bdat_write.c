@@ -220,7 +220,7 @@ static sas7bdat_subheader_t *sas7bdat_col_name_subheader_init(readstat_writer_t 
     memcpy(&subheader->data[signature_len], &remainder, sizeof(uint16_t));
     
     sas_text_ref_t text_ref = sas7bdat_make_text_ref(column_text_array, "READSTAT");
-    text_ref = sas7bdat_make_text_ref(column_text_array, hinfo->file_label);
+    text_ref = sas7bdat_make_text_ref(column_text_array, writer->file_label);
 
     int i;
     char *ptrs = &subheader->data[signature_len+8];
