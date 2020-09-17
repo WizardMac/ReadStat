@@ -682,18 +682,20 @@ _match:
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
                 ctx->varinfo[found->index]->string_length = temp_val;
+                ctx->varinfo[found->index]->write_format.width = temp_val;
+                ctx->varinfo[found->index]->print_format.width = temp_val;
             }
         }
 	break;
 	case 1:
-#line 177 "src/spss/readstat_sav_parse.rl"
+#line 179 "src/spss/readstat_sav_parse.rl"
 	{
             memcpy(temp_key, str_start, str_len);
             temp_key[str_len] = '\0';
         }
 	break;
 	case 2:
-#line 182 "src/spss/readstat_sav_parse.rl"
+#line 184 "src/spss/readstat_sav_parse.rl"
 	{
             if ((*p) != '\0') {
                 unsigned char digit = (*p) - '0';
@@ -706,18 +708,18 @@ _match:
         }
 	break;
 	case 3:
-#line 195 "src/spss/readstat_sav_parse.rl"
+#line 197 "src/spss/readstat_sav_parse.rl"
 	{ str_start = p; }
 	break;
 	case 4:
-#line 195 "src/spss/readstat_sav_parse.rl"
+#line 197 "src/spss/readstat_sav_parse.rl"
 	{ str_len = p - str_start; }
 	break;
 	case 5:
-#line 197 "src/spss/readstat_sav_parse.rl"
+#line 199 "src/spss/readstat_sav_parse.rl"
 	{ temp_val = 0; }
 	break;
-#line 721 "src/spss/readstat_sav_parse.c"
+#line 723 "src/spss/readstat_sav_parse.c"
 		}
 	}
 
@@ -730,7 +732,7 @@ _again:
 	_out: {}
 	}
 
-#line 205 "src/spss/readstat_sav_parse.rl"
+#line 207 "src/spss/readstat_sav_parse.rl"
 
     
     if (cs < 12 || p != pe) {

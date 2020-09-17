@@ -171,6 +171,8 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
             varlookup_t *found = bsearch(temp_key, table, var_count, sizeof(varlookup_t), &compare_key_varlookup);
             if (found) {
                 ctx->varinfo[found->index]->string_length = temp_val;
+                ctx->varinfo[found->index]->write_format.width = temp_val;
+                ctx->varinfo[found->index]->print_format.width = temp_val;
             }
         }
 

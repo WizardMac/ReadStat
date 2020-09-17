@@ -1,10 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <errno.h>
 #include <time.h>
-#include <sys/time.h>
+#if !defined _MSC_VER
+#   include <unistd.h>
+#   include <sys/time.h>
+#else
+#   include <sys/timeb.h>
+#   include <sys/types.h>
+#   include <winsock2.h>
+
+#   define __need_clock_t
+#   include <time.h>
+
+int gettimeofday(struct timeval* t, void* timezone)
+{
+    struct _timeb timebuffer;
+    _ftime_s(&timebuffer);
+    t->tv_sec = timebuffer.time;
+    t->tv_usec = 1000 * timebuffer.millitm;
+    return 0;
+}
+#endif
 #include <sys/stat.h>
 
 #include "../readstat.h"
@@ -26,6 +44,10 @@
 #endif
 
 #include "util/file_format.h"
+
+#if defined _MSC_VER
+#define unlink _unlink
+#endif
 
 typedef struct rs_ctx_s {
     rs_module_t *module;
@@ -389,6 +411,16 @@ cleanup:
     return 0;
 }
 
+size_t readstat_strftime(char *s, size_t maxsize, const char *format, time_t timestamp) {
+#if !defined _MSC_VER
+    return strftime(s, maxsize, format, localtime(&timestamp));
+#else
+    struct tm ltm;
+    localtime_s(&ltm, &timestamp);
+    return strftime(s, maxsize, format, &ltm);
+#endif
+}
+
 static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
     printf("Columns: %d\n", readstat_get_var_count(metadata));
     printf("Rows: %d\n", readstat_get_row_count(metadata));
@@ -424,7 +456,7 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
     }
     if (timestamp) {
         char buffer[128];
-        strftime(buffer, sizeof(buffer), "%d %b %Y %H:%M", localtime(&timestamp));
+        readstat_strftime(buffer, sizeof(buffer), "%d %b %Y %H:%M", timestamp);
         printf("Timestamp: %s\n", buffer);
     }
     return 0;

@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include <string.h>
 
 int rs_ends_with(const char *filename, const char *ending) {

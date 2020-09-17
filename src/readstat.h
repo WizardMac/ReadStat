@@ -295,7 +295,11 @@ typedef int (*readstat_value_label_handler)(const char *val_labels,
 typedef void (*readstat_error_handler)(const char *error_message, void *ctx);
 typedef int (*readstat_progress_handler)(double progress, void *ctx);
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+typedef _off_t readstat_off_t;
+#elif defined _WIN32 || defined __CYGWIN__
 typedef _off64_t readstat_off_t;
 #elif defined _AIX
 typedef off64_t readstat_off_t;

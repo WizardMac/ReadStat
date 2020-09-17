@@ -1,11 +1,14 @@
 version: 0.1.{build}
 
-os: Windows Server 2012 R2
+os: Windows Server 2016
+
+image: Visual Studio 2017
 
 platform: x64
 
 environment:
   matrix:
+  - TOOLCHAIN: "msvc"
   - TOOLCHAIN: "msys2"
   - TOOLCHAIN: "cygwin"
 
@@ -16,7 +19,28 @@ branches:
 
 skip_tags: true
 
-build_script:
+install:
+  - git clone https://github.com/pffang/libiconv-for-Windows.git C:\projects\iconv
+  - cd C:\projects\iconv
+  - git checkout 0e36d95873
+
+for:
+-
+  matrix:
+    only:
+      - TOOLCHAIN: "msvc"
+
+  build:
+    parallel: true
+    project: VS17/ReadStat.sln
+    verbosity: minimal
+
+-
+  matrix:
+    except:
+      - TOOLCHAIN: "msvc"
+
+  build_script:
   - ps: |
       if ($env:TOOLCHAIN -eq "msys2")
       {
@@ -26,9 +50,9 @@ build_script:
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && ./configure"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && make"
       }
-      else
+      elseif ($env:TOOLCHAIN -eq "cygwin")
       {
-        c:\cygwin64\setup-x86_64.exe -qnNdO -s http://cygwin.mirror.constant.com -l C:/cygwin64/var/cache/setup -P libiconv-devel -P ragel -P zlib-devel
+        C:\cygwin64\setup-x86_64.exe -qnNdO -s http://cygwin.mirror.constant.com -l C:/cygwin64/var/cache/setup -P libiconv-devel -P ragel -P zlib-devel
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && ./autogen.sh"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && ./configure"
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && make"
@@ -41,9 +65,38 @@ test_script:
         $env:MSYSTEM="MINGW64"
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && make check"
       }
-      else
+      elseif ($env:TOOLCHAIN -eq "cygwin")
       {
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && make check"
+      }
+      else
+      {
+        $state = "PASS"
+        $tests = @("readstat","double_decimals","sav_date","dta_days")
+
+        Copy-Item "C:\projects\iconv\lib64\libiconvD.dll" -Destination "C:\projects\readstat\VS17\x64\Debug\"
+
+        for($i=0 ; $i -lt $tests.Length ; $i++)
+        {
+          $currTest = $tests[$i]
+          $currExec = 'C:\projects\readstat\VS17\x64\Debug\ReadStat_Test_' + $currTest + '.exe;$?'
+
+          echo "Running test $currTest..."
+          $success = Invoke-Expression $currExec
+
+          if(-not $success){
+            $state = "FAIL"
+            echo "Test result: FAIL"
+          }
+          else{
+            echo "Test result: PASS"
+          }
+        }
+
+        if($state -eq "FAIL")
+        {
+          exit 1
+        }
       }
 
 on_success:
@@ -52,7 +105,7 @@ on_success:
       {
         C:\msys64\usr\bin\bash -l -c "cd /c/projects/readstat && cat ./test-suite.log"
       }
-      else
+      elseif ($env:TOOLCHAIN -eq "cygwin")
       {
         C:\cygwin64\bin\sh -lc "cd /cygdrive/c/projects/readstat && cat ./test-suite.log"
       }

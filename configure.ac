@@ -10,6 +10,8 @@ READSTAT_MICRO_VERSION=4
 
 # libtool stuff, see https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html#Updating-version-info
 READSTAT_VERSION=$READSTAT_MAJOR_VERSION.$READSTAT_MINOR_VERSION.$READSTAT_MICRO_VERSION
+# TODO the following logic is broken. Fix it during the next minor update.
+# See https://github.com/libxls/libxls/commit/cf5b0500e78e77a70361c6de12b08230590857dc
 READSTAT_VERSION_INFO=`expr $READSTAT_MAJOR_VERSION + $READSTAT_MINOR_VERSION`:$READSTAT_MICRO_VERSION:$READSTAT_MINOR_VERSION
 
 AC_SUBST(READSTAT_VERSION)

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <errno.h>
 
 #include "../../readstat.h"
@@ -17,7 +16,7 @@ typedef struct mod_readstat_ctx_s {
     long var_count;
     long row_count;
 
-    int out_fd;
+    FILE *out_file;
 
     unsigned int is_sav:1;
     unsigned int is_zsav:1;
@@ -58,7 +57,7 @@ rs_module_t rs_mod_readstat = {
 
 static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
-    return write(mod_ctx->out_fd, bytes, len);
+    return fwrite(bytes, len, 1, mod_ctx->out_file);
 }
 
 static int accept_file(const char *filename) {
@@ -79,8 +78,8 @@ static void *ctx_init(const char *filename) {
     mod_ctx->is_por = rs_ends_with(filename, ".por");
     mod_ctx->is_sas7bdat = rs_ends_with(filename, ".sas7bdat");
     mod_ctx->is_xport = rs_ends_with(filename, ".xpt");
-    mod_ctx->out_fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    if (mod_ctx->out_fd == -1) {
+    mod_ctx->out_file = fopen(filename, "wb");
+    if (mod_ctx->out_file == NULL) {
         fprintf(stderr, "Error opening %s for writing: %s\n", filename, strerror(errno));
         return NULL;
     }
@@ -95,8 +94,8 @@ static void *ctx_init(const char *filename) {
 void finish_file(void *ctx) {
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
     if (mod_ctx) {
-        if (mod_ctx->out_fd != -1)
-            close(mod_ctx->out_fd);
+        if (mod_ctx->out_file)
+            fclose(mod_ctx->out_file);
         if (mod_ctx->label_set_dict)
             ck_hash_table_free(mod_ctx->label_set_dict);
         if (mod_ctx->writer)
