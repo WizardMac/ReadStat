@@ -301,6 +301,10 @@ static readstat_error_t sas7bdat_parse_column_name_subheader(const char *subhead
     for (i=ctx->col_names_count-cmax; i<ctx->col_names_count; i++) {
         ctx->col_info[i].name_ref = sas7bdat_parse_text_ref(cnp, ctx);
         if (i == 0) {
+            if (ctx->text_blobs == NULL || ctx->text_blob_lengths == NULL) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
             if (ctx->version < 9) {
                 off = 36;
             } else {
