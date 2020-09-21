@@ -36,8 +36,9 @@ int open_with_unicode(const char *path, int options)
     if(buffer_size <= 0)
         return -1;
 
-    wchar_t* wpath = malloc(buffer_size);
+    wchar_t* wpath = malloc((buffer_size + 1) * sizeof(wchar_t));
     const int res = MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath, buffer_size);
+    wpath[buffer_size] = 0;
 
     if(res <= 0)
     {
