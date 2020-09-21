@@ -131,6 +131,9 @@
     <ClInclude Include="..\..\src\bin\util\file_format.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\bin\util\main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\bin\util\quote_and_escape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
