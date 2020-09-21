@@ -10,6 +10,7 @@
 #include "util/readstat_dta_days.h"
 #include "util/quote_and_escape.h"
 #include "util/file_format.h"
+#include "util/main.h"
 #include "extract_metadata.h"
 #include "write/json/write_missing_values.h"
 #include "write/json/write_value_labels.h"
@@ -304,7 +305,7 @@ cleanup: readstat_parser_free(parser);
     return ret;
 }
 
-int main(int argc, char *argv[]) {
+int portable_main(int argc, char *argv[]) {
     if (argc != 3) {
         printf("Usage: %s <input-filename.(dta|sav)> <output-metadata.json>\n", argv[0]);
         return 1;
