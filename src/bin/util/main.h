@@ -7,6 +7,7 @@ int portable_main(int argc, char *argv[]);
 
 
 #if defined _WIN32
+#include <windows.h>
     // Standard way of decoding wide-string command-line arguments one Windows.
     // Call portable_main with UTF-8 strings.
     int wmain(int argc, wchar_t *argv[]) {
