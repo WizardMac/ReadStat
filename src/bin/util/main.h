@@ -33,7 +33,7 @@ int portable_main(int argc, char *argv[]);
             utf8_argv[i][len] = 0;
         }
 
-        ret = portable_main(argc, argv);
+        ret = portable_main(argc, utf8_argv);
 
     cleanup:
         for(int i=0; i<argc; ++i)
