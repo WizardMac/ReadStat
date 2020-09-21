@@ -14,17 +14,17 @@ int portable_main(int argc, char *argv[]);
         char** utf8_argv = calloc(argc, sizeof(char*));
 
         for (int i=0; i<argc; ++i) {
-            const size_t len = wcstombs(NULL, argv[i], 0);
+            const int len = WideCharToMultiByte(CP_UTF8, 0, argv[i], -1, NULL, 0, NULL, NULL);
 
-            if (len == (size_t)-1) {
+            if (len <= 0) {
                 fprintf(stderr, "Fatal error: command line encoding failure (argument %d)\n", i+1);
                 goto cleanup;
             }
 
             utf8_argv[i] = malloc(len + 1);
-            const size_t ret = wcstombs(utf8_argv[i], argv[i], len);
+            const size_t ret = WideCharToMultiByte(CP_UTF8, 0, argv[i], -1, utf8_argv[i], len, NULL, NULL);
 
-            if (len == (size_t)-1) {
+            if (ret <= 0) {
                 fprintf(stderr, "Fatal error: command line encoding failure (argument %d)\n", i+1);
                 goto cleanup;
             }

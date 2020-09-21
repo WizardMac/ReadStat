@@ -31,27 +31,21 @@
 int open_with_unicode(const char *path, int options)
 {
 #if defined _WIN32
-    size_t res;
-    mbstate_t state;
+    const int buffer_size = MultiByteToWideChar(CP_UTF8, 0, path, -1, NULL, 0);
 
-    memset(&state, 0, sizeof(state));
-    res = mbrtowc(NULL, path, 0, &state);
-
-    if(res == (size_t)-1)
+    if(buffer_size <= 0)
         return -1;
 
-    memset(&state, 0, sizeof(state));
-    const size_t len = res + 1;
-    wchar_t* wpath = malloc(len);
-    res = mbrtowc(wpath, path, len, &state);
+    wchar_t* wpath = malloc(buffer_size);
+    const int res = MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath, buffer_size);
 
-    if(res == (size_t)-1)
+    if(res <= 0)
     {
         free(wpath);
         return -1;
     }
 
-    const int fd = _wopen(wpath, options);
+    int fd = _wopen(wpath, options);
 
     free(wpath);
     return fd;
