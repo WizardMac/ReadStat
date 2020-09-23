@@ -44,6 +44,7 @@ int gettimeofday(struct timeval* t, void* timezone)
 #endif
 
 #include "util/file_format.h"
+#include "util/main.h"
 
 #if defined _MSC_VER
 #define unlink _unlink
@@ -480,7 +481,7 @@ static int dump_file(const char *input_filename) {
     return 0;
 }
 
-int main(int argc, char** argv) {
+int portable_main(int argc, char** argv) {
     char *input_filename = NULL;
     char *catalog_filename = NULL;
     char *output_filename = NULL;

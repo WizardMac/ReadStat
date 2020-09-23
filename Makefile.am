@@ -128,6 +128,7 @@ noinst_HEADERS = \
        src/bin/write/mod_xlsx.h \
        src/bin/write/module.h \
        src/bin/write/module_util.h \
+       src/bin/util/main.h \
        src/bin/util/file_format.h \
        src/bin/util/quote_and_escape.h \
        src/bin/util/readstat_dta_days.h \

@@ -57,6 +57,7 @@
     <ClInclude Include="..\..\src\bin\write\module.h" />
     <ClInclude Include="..\..\src\bin\write\module_util.h" />
     <ClInclude Include="..\..\src\bin\util\file_format.h" />
+    <ClInclude Include="..\..\src\bin\util\main.h" />
     <ClInclude Include="..\..\src\bin\util\quote_and_escape.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
