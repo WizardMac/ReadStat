@@ -483,7 +483,7 @@ typedef struct readstat_writer_s {
 
     int                         row_count;
     int                         current_row;
-    char                        file_label[100];
+    char                        file_label[257];
     char                        table_name[33];
     const readstat_variable_t  *fweight_variable;
 

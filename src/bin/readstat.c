@@ -425,6 +425,7 @@ size_t readstat_strftime(char *s, size_t maxsize, const char *format, time_t tim
 static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
     printf("Columns: %d\n", readstat_get_var_count(metadata));
     printf("Rows: %d\n", readstat_get_row_count(metadata));
+    const char *table_name = readstat_get_table_name(metadata);
     const char *file_label = readstat_get_file_label(metadata);
     const char *orig_encoding = readstat_get_file_encoding(metadata);
     long version = readstat_get_file_format_version(metadata);
@@ -432,8 +433,11 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
     readstat_compress_t compression = readstat_get_compression(metadata);
     readstat_endian_t endianness = readstat_get_endianness(metadata);
 
+    if (table_name && table_name[0]) {
+        printf("Table name: %s\n", table_name);
+    }
     if (file_label && file_label[0]) {
-        printf("File label: %s\n", file_label);
+        printf("Table label: %s\n", file_label);
     }
     if (version) {
         printf("Format version: %ld\n", version);
