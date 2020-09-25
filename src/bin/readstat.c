@@ -256,7 +256,7 @@ cleanup:
 
 static readstat_error_t parse_text_plus_dct(const char *input_filename,
         const char *dct_filename, rs_ctx_t *rs_ctx) {
-    int dct_format = readstat_format(dct_filename);
+    rs_format_e dct_format = readstat_format(dct_filename);
     readstat_error_t error = READSTAT_OK;
     readstat_schema_t *schema = NULL;
     readstat_parser_t *parser = NULL;
@@ -306,7 +306,7 @@ cleanup:
 static readstat_error_t parse_binary_file(const char *input_filename,
         const char *catalog_filename, rs_ctx_t *rs_ctx) {
     readstat_error_t error = READSTAT_OK;
-    int input_format = readstat_format(input_filename);
+    rs_format_e input_format = readstat_format(input_filename);
     readstat_parser_t *pass1_parser = readstat_parser_init();
     readstat_parser_t *pass2_parser = readstat_parser_init();
 
@@ -434,7 +434,11 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
     readstat_endian_t endianness = readstat_get_endianness(metadata);
 
     if (table_name && table_name[0]) {
-        printf("Table name: %s\n", table_name);
+        if (*(rs_format_e *)ctx == RS_FORMAT_SAS_CATALOG) {
+            printf("Catalog name: %s\n", table_name);
+        } else {
+            printf("Table name: %s\n", table_name);
+        }
     }
     if (file_label && file_label[0]) {
         printf("Table label: %s\n", file_label);
@@ -464,7 +468,7 @@ static int dump_metadata(readstat_metadata_t *metadata, void *ctx) {
 }
 
 static int dump_file(const char *input_filename) {
-    int input_format = readstat_format(input_filename);
+    rs_format_e input_format = readstat_format(input_filename);
     readstat_parser_t *parser = readstat_parser_init();
     readstat_error_t error = READSTAT_OK;
 
@@ -473,7 +477,7 @@ static int dump_file(const char *input_filename) {
     readstat_set_error_handler(parser, &handle_error);
     readstat_set_metadata_handler(parser, &dump_metadata);
 
-    error = parse_file(parser, input_filename, input_format, NULL);
+    error = parse_file(parser, input_filename, input_format, &input_format);
 
     readstat_parser_free(parser);
 

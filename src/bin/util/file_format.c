@@ -9,7 +9,7 @@
 #include "file_format.h"
 #include "../../readstat.h"
 
-int readstat_format(const char *filename) {
+rs_format_e readstat_format(const char *filename) {
     if (filename == NULL)
         return RS_FORMAT_UNKNOWN;
 
@@ -64,7 +64,7 @@ int readstat_format(const char *filename) {
     return RS_FORMAT_UNKNOWN;
 }
 
-const char *readstat_format_name(int format) {
+const char *readstat_format_name(rs_format_e format) {
     if (format == RS_FORMAT_DTA)
         return "Stata binary file (DTA)";
 
