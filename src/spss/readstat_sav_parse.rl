@@ -6,6 +6,19 @@
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"
 
+%%{
+    machine key_defs;
+
+    action copy_key {
+        memcpy(temp_key, str_start, str_len);
+        temp_key[str_len] = '\0';
+    }
+        
+    non_ascii_byte = (0x80 .. 0xF7); # UTF-8 byte sequences (might be incomplete)
+
+    key = ( ( non_ascii_byte | [A-Z@] ) ( non_ascii_byte | [A-Za-z0-9@#$_\.] ){0,7} ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
+}%%
+
 typedef struct varlookup {
     char      name[8*4+1];
     int       index;
@@ -14,13 +27,13 @@ typedef struct varlookup {
 static int compare_key_varlookup(const void *elem1, const void *elem2) {
     const char *key = (const char *)elem1;
     const varlookup_t *v = (const varlookup_t *)elem2;
-    return strcmp(key, v->name);
+    return strcasecmp(key, v->name);
 }
 
 static int compare_varlookups(const void *elem1, const void *elem2) {
     const varlookup_t *v1 = (const varlookup_t *)elem1;
     const varlookup_t *v2 = (const varlookup_t *)elem2;
-    return strcmp(v1->name, v2->name);
+    return strcasecmp(v1->name, v2->name);
 }
 
 static int count_vars(sav_ctx_t *ctx) {
@@ -59,6 +72,7 @@ static varlookup_t *build_lookup_table(int var_count, sav_ctx_t *ctx) {
 
 %%{
     machine sav_long_variable_parse;
+    include key_defs;
     write data nofinal noerror;
     alphtype unsigned char;
 }%%
@@ -96,20 +110,11 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
             }
         }
 
-        action copy_key {
-            memcpy(temp_key, str_start, str_len);
-            temp_key[str_len] = '\0';
-        }
-
         action copy_value {
             memcpy(temp_val, str_start, str_len);
             temp_val[str_len] = '\0';
         }
 
-        non_ascii_byte = (0xC0..0xDF | 0x80..0xBF | 0xE0..0xEF | 0xF0..0xF7); # UTF-8 byte sequences (might be incomplete)
-        
-        key = ( ( non_ascii_byte | [A-Z@] ) ( non_ascii_byte | [A-Z0-9@#$_\.] ){0,7} ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
-        
         value = ( non_ascii_byte | print ){1,64} >{ str_start = fpc; } %{ str_len = fpc - str_start; };
         
         keyval = ( key %copy_key "=" value %copy_value ) %set_long_name;
@@ -141,6 +146,7 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
 
 %%{
     machine sav_very_long_string_parse;
+    include key_defs;
     write data nofinal noerror;
     alphtype unsigned char;
 }%%
@@ -176,11 +182,6 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
             }
         }
 
-        action copy_key {
-            memcpy(temp_key, str_start, str_len);
-            temp_key[str_len] = '\0';
-        }
-        
         action incr_val {
             if (fc != '\0') {
                 unsigned char digit = fc - '0';
@@ -191,10 +192,6 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
                 }
             }
         }
-        
-        non_ascii_byte = (0xC0..0xDF | 0x80..0xBF | 0xE0..0xEF | 0xF0..0xF7); # UTF-8 byte sequences (might be incomplete)
-
-        key = ( ( non_ascii_byte | [A-Z@] ) ( non_ascii_byte | [A-Z0-9@#$_\.] ){0,7} ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
         
         value = [0-9]+ >{ temp_val = 0; } $incr_val;
         
