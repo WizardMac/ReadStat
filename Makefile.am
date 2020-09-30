@@ -89,6 +89,7 @@ noinst_HEADERS = \
        src/readstat_iconv.h \
        src/readstat_io_unistd.h \
        src/readstat_malloc.h \
+       src/readstat_strings.h \
        src/readstat_writer.h \
        src/sas/ieee.h \
        src/sas/readstat_sas.h \

@@ -1,15 +1,10 @@
 
 #line 1 "src/txt/readstat_spss_commands_read.rl"
 #include <stdlib.h>
-#if defined(_MSC_VER)
-#   define strncasecmp _strnicmp
-#   define strcasecmp _stricmp
-#else
-#   include <strings.h>
-#endif
 #include <inttypes.h>
 
 #include "../readstat.h"
+#include "../readstat_strings.h"
 #include "readstat_schema.h"
 
 #include "readstat_copy.h"

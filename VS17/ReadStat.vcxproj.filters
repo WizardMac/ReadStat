@@ -179,6 +179,9 @@
     <ClInclude Include="..\src\readstat_malloc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\readstat_strings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\sas\ieee.h">
       <Filter>Header Files</Filter>
     </ClInclude>

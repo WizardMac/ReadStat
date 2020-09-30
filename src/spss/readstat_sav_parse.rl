@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "../readstat.h"
 #include "../readstat_malloc.h"
+#include "../readstat_strings.h"
 
 #include "readstat_sav.h"
 #include "readstat_sav_parse.h"

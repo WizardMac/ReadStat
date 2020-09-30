@@ -1,12 +1,7 @@
 #include <stdlib.h>
-#if defined(_MSC_VER)
-#   define strncasecmp _strnicmp
-#   define strcasecmp _stricmp
-#else
-#   include <strings.h>
-#endif
 
 #include "../readstat.h"
+#include "../readstat_strings.h"
 #include "readstat_schema.h"
 
 #include "readstat_copy.h"
