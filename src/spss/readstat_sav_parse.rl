@@ -15,7 +15,7 @@
         temp_key[str_len] = '\0';
     }
         
-    non_ascii_byte = (0x80 .. 0xF7); # UTF-8 byte sequences (might be incomplete)
+    non_ascii_byte = (0x80 .. 0xFE); # multi-byte sequence might be incomplete
 
     key = ( ( non_ascii_byte | [A-Z@] ) ( non_ascii_byte | [A-Za-z0-9@#$_\.] ){0,7} ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
 }%%

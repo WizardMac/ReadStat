@@ -72,108 +72,99 @@ static const char _sav_long_variable_parse_actions[] = {
 };
 
 static const short _sav_long_variable_parse_key_offsets[] = {
-	0, 0, 6, 21, 36, 51, 66, 81, 
-	96, 111, 112, 117, 123, 129, 135, 141, 
-	147, 153, 159, 165, 171, 177, 183, 189, 
-	195, 201, 207, 213, 219, 225, 231, 237, 
-	243, 249, 255, 261, 267, 273, 279, 285, 
-	291, 297, 303, 309, 315, 321, 327, 333, 
-	339, 345, 351, 357, 363, 369, 375, 381, 
-	387, 393, 399, 405, 411, 417, 423, 429, 
-	435, 441, 447, 453, 459, 465, 471, 477, 
-	483, 489, 495, 501
+	0, 0, 5, 19, 33, 47, 61, 75, 
+	89, 103, 104, 108, 113, 118, 123, 128, 
+	133, 138, 143, 148, 153, 158, 163, 168, 
+	173, 178, 183, 188, 193, 198, 203, 208, 
+	213, 218, 223, 228, 233, 238, 243, 248, 
+	253, 258, 263, 268, 273, 278, 283, 288, 
+	293, 298, 303, 308, 313, 318, 323, 328, 
+	333, 338, 343, 348, 353, 358, 363, 368, 
+	373, 378, 383, 388, 393, 398, 403, 408, 
+	413, 418, 423, 428
 };
 
 static const unsigned char _sav_long_variable_parse_trans_keys[] = {
-	0u, 63u, 91u, 127u, 248u, 255u, 47u, 61u, 
-	96u, 0u, 34u, 37u, 45u, 58u, 63u, 91u, 
-	94u, 123u, 127u, 248u, 255u, 47u, 61u, 96u, 
-	0u, 34u, 37u, 45u, 58u, 63u, 91u, 94u, 
-	123u, 127u, 248u, 255u, 47u, 61u, 96u, 0u, 
+	255u, 0u, 63u, 91u, 127u, 47u, 61u, 96u, 
+	255u, 0u, 34u, 37u, 45u, 58u, 63u, 91u, 
+	94u, 123u, 127u, 47u, 61u, 96u, 255u, 0u, 
 	34u, 37u, 45u, 58u, 63u, 91u, 94u, 123u, 
-	127u, 248u, 255u, 47u, 61u, 96u, 0u, 34u, 
-	37u, 45u, 58u, 63u, 91u, 94u, 123u, 127u, 
-	248u, 255u, 47u, 61u, 96u, 0u, 34u, 37u, 
-	45u, 58u, 63u, 91u, 94u, 123u, 127u, 248u, 
-	255u, 47u, 61u, 96u, 0u, 34u, 37u, 45u, 
-	58u, 63u, 91u, 94u, 123u, 127u, 248u, 255u, 
-	47u, 61u, 96u, 0u, 34u, 37u, 45u, 58u, 
-	63u, 91u, 94u, 123u, 127u, 248u, 255u, 61u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 0u, 63u, 91u, 127u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 127u, 0u, 
-	31u, 248u, 255u, 9u, 127u, 0u, 31u, 248u, 
-	255u, 9u, 127u, 0u, 31u, 248u, 255u, 9u, 
-	127u, 0u, 31u, 248u, 255u, 9u, 0
+	127u, 47u, 61u, 96u, 255u, 0u, 34u, 37u, 
+	45u, 58u, 63u, 91u, 94u, 123u, 127u, 47u, 
+	61u, 96u, 255u, 0u, 34u, 37u, 45u, 58u, 
+	63u, 91u, 94u, 123u, 127u, 47u, 61u, 96u, 
+	255u, 0u, 34u, 37u, 45u, 58u, 63u, 91u, 
+	94u, 123u, 127u, 47u, 61u, 96u, 255u, 0u, 
+	34u, 37u, 45u, 58u, 63u, 91u, 94u, 123u, 
+	127u, 47u, 61u, 96u, 255u, 0u, 34u, 37u, 
+	45u, 58u, 63u, 91u, 94u, 123u, 127u, 61u, 
+	127u, 255u, 0u, 31u, 9u, 127u, 255u, 0u, 
+	31u, 255u, 0u, 63u, 91u, 127u, 9u, 127u, 
+	255u, 0u, 31u, 9u, 127u, 255u, 0u, 31u, 
+	9u, 127u, 255u, 0u, 31u, 9u, 127u, 255u, 
+	0u, 31u, 9u, 127u, 255u, 0u, 31u, 9u, 
+	127u, 255u, 0u, 31u, 9u, 127u, 255u, 0u, 
+	31u, 9u, 127u, 255u, 0u, 31u, 9u, 127u, 
+	255u, 0u, 31u, 9u, 127u, 255u, 0u, 31u, 
+	9u, 127u, 255u, 0u, 31u, 9u, 127u, 255u, 
+	0u, 31u, 9u, 127u, 255u, 0u, 31u, 9u, 
+	127u, 255u, 0u, 31u, 9u, 127u, 255u, 0u, 
+	31u, 9u, 127u, 255u, 0u, 31u, 9u, 127u, 
+	255u, 0u, 31u, 9u, 127u, 255u, 0u, 31u, 
+	9u, 127u, 255u, 0u, 31u, 9u, 127u, 255u, 
+	0u, 31u, 9u, 127u, 255u, 0u, 31u, 9u, 
+	127u, 255u, 0u, 31u, 9u, 127u, 255u, 0u, 
+	31u, 9u, 127u, 255u, 0u, 31u, 9u, 127u, 
+	255u, 0u, 31u, 9u, 127u, 255u, 0u, 31u, 
+	9u, 127u, 255u, 0u, 31u, 9u, 127u, 255u, 
+	0u, 31u, 9u, 127u, 255u, 0u, 31u, 9u, 
+	127u, 255u, 0u, 31u, 9u, 127u, 255u, 0u, 
+	31u, 9u, 127u, 255u, 0u, 31u, 9u, 127u, 
+	255u, 0u, 31u, 9u, 127u, 255u, 0u, 31u, 
+	9u, 127u, 255u, 0u, 31u, 9u, 127u, 255u, 
+	0u, 31u, 9u, 127u, 255u, 0u, 31u, 9u, 
+	127u, 255u, 0u, 31u, 9u, 127u, 255u, 0u, 
+	31u, 9u, 127u, 255u, 0u, 31u, 9u, 127u, 
+	255u, 0u, 31u, 9u, 127u, 255u, 0u, 31u, 
+	9u, 127u, 255u, 0u, 31u, 9u, 127u, 255u, 
+	0u, 31u, 9u, 127u, 255u, 0u, 31u, 9u, 
+	127u, 255u, 0u, 31u, 9u, 127u, 255u, 0u, 
+	31u, 9u, 127u, 255u, 0u, 31u, 9u, 127u, 
+	255u, 0u, 31u, 9u, 127u, 255u, 0u, 31u, 
+	9u, 127u, 255u, 0u, 31u, 9u, 127u, 255u, 
+	0u, 31u, 9u, 127u, 255u, 0u, 31u, 9u, 
+	127u, 255u, 0u, 31u, 9u, 127u, 255u, 0u, 
+	31u, 9u, 127u, 255u, 0u, 31u, 9u, 127u, 
+	255u, 0u, 31u, 9u, 127u, 255u, 0u, 31u, 
+	9u, 127u, 255u, 0u, 31u, 9u, 127u, 255u, 
+	0u, 31u, 9u, 127u, 255u, 0u, 31u, 9u, 
+	127u, 255u, 0u, 31u, 9u, 0
 };
 
 static const char _sav_long_variable_parse_single_lengths[] = {
-	0, 0, 3, 3, 3, 3, 3, 3, 
-	3, 1, 1, 2, 0, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 1
+	0, 1, 4, 4, 4, 4, 4, 4, 
+	4, 1, 2, 3, 1, 3, 3, 3, 
+	3, 3, 3, 3, 3, 3, 3, 3, 
+	3, 3, 3, 3, 3, 3, 3, 3, 
+	3, 3, 3, 3, 3, 3, 3, 3, 
+	3, 3, 3, 3, 3, 3, 3, 3, 
+	3, 3, 3, 3, 3, 3, 3, 3, 
+	3, 3, 3, 3, 3, 3, 3, 3, 
+	3, 3, 3, 3, 3, 3, 3, 3, 
+	3, 3, 3, 1
 };
 
 static const char _sav_long_variable_parse_range_lengths[] = {
-	0, 3, 6, 6, 6, 6, 6, 6, 
-	6, 0, 2, 2, 3, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 2, 2, 2, 2, 2, 
-	2, 2, 2, 0
+	0, 2, 5, 5, 5, 5, 5, 5, 
+	5, 0, 1, 1, 2, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 0
 };
 
 static const short _sav_long_variable_parse_index_offsets[] = {
@@ -311,12 +302,12 @@ readstat_error_t sav_parse_long_variable_names_record(void *data, int count, sav
     int cs;
 
     
-#line 315 "src/spss/readstat_sav_parse.c"
+#line 306 "src/spss/readstat_sav_parse.c"
 	{
 	cs = sav_long_variable_parse_start;
 	}
 
-#line 320 "src/spss/readstat_sav_parse.c"
+#line 311 "src/spss/readstat_sav_parse.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -434,7 +425,7 @@ _match:
 #line 119 "src/spss/readstat_sav_parse.rl"
 	{ str_len = p - str_start; }
 	break;
-#line 438 "src/spss/readstat_sav_parse.c"
+#line 429 "src/spss/readstat_sav_parse.c"
 		}
 	}
 
@@ -475,7 +466,7 @@ _again:
 #line 119 "src/spss/readstat_sav_parse.rl"
 	{ str_len = p - str_start; }
 	break;
-#line 479 "src/spss/readstat_sav_parse.c"
+#line 470 "src/spss/readstat_sav_parse.c"
 		}
 	}
 	}
@@ -506,44 +497,43 @@ _again:
 }
 
 
-#line 510 "src/spss/readstat_sav_parse.c"
+#line 501 "src/spss/readstat_sav_parse.c"
 static const char _sav_very_long_string_parse_actions[] = {
 	0, 1, 1, 1, 3, 1, 4, 2, 
 	2, 0, 2, 5, 4
 };
 
 static const char _sav_very_long_string_parse_key_offsets[] = {
-	0, 0, 6, 21, 36, 51, 66, 81, 
-	96, 111, 112, 114, 117, 119
+	0, 0, 5, 19, 33, 47, 61, 75, 
+	89, 103, 104, 106, 109, 111
 };
 
 static const unsigned char _sav_very_long_string_parse_trans_keys[] = {
-	0u, 63u, 91u, 127u, 248u, 255u, 47u, 61u, 
-	96u, 0u, 34u, 37u, 45u, 58u, 63u, 91u, 
-	94u, 123u, 127u, 248u, 255u, 47u, 61u, 96u, 
-	0u, 34u, 37u, 45u, 58u, 63u, 91u, 94u, 
-	123u, 127u, 248u, 255u, 47u, 61u, 96u, 0u, 
+	255u, 0u, 63u, 91u, 127u, 47u, 61u, 96u, 
+	255u, 0u, 34u, 37u, 45u, 58u, 63u, 91u, 
+	94u, 123u, 127u, 47u, 61u, 96u, 255u, 0u, 
 	34u, 37u, 45u, 58u, 63u, 91u, 94u, 123u, 
-	127u, 248u, 255u, 47u, 61u, 96u, 0u, 34u, 
-	37u, 45u, 58u, 63u, 91u, 94u, 123u, 127u, 
-	248u, 255u, 47u, 61u, 96u, 0u, 34u, 37u, 
-	45u, 58u, 63u, 91u, 94u, 123u, 127u, 248u, 
-	255u, 47u, 61u, 96u, 0u, 34u, 37u, 45u, 
-	58u, 63u, 91u, 94u, 123u, 127u, 248u, 255u, 
-	47u, 61u, 96u, 0u, 34u, 37u, 45u, 58u, 
-	63u, 91u, 94u, 123u, 127u, 248u, 255u, 61u, 
-	48u, 57u, 0u, 48u, 57u, 0u, 9u, 0u, 
-	63u, 91u, 127u, 248u, 255u, 0
+	127u, 47u, 61u, 96u, 255u, 0u, 34u, 37u, 
+	45u, 58u, 63u, 91u, 94u, 123u, 127u, 47u, 
+	61u, 96u, 255u, 0u, 34u, 37u, 45u, 58u, 
+	63u, 91u, 94u, 123u, 127u, 47u, 61u, 96u, 
+	255u, 0u, 34u, 37u, 45u, 58u, 63u, 91u, 
+	94u, 123u, 127u, 47u, 61u, 96u, 255u, 0u, 
+	34u, 37u, 45u, 58u, 63u, 91u, 94u, 123u, 
+	127u, 47u, 61u, 96u, 255u, 0u, 34u, 37u, 
+	45u, 58u, 63u, 91u, 94u, 123u, 127u, 61u, 
+	48u, 57u, 0u, 48u, 57u, 0u, 9u, 255u, 
+	0u, 63u, 91u, 127u, 0
 };
 
 static const char _sav_very_long_string_parse_single_lengths[] = {
-	0, 0, 3, 3, 3, 3, 3, 3, 
-	3, 1, 0, 1, 2, 0
+	0, 1, 4, 4, 4, 4, 4, 4, 
+	4, 1, 0, 1, 2, 1
 };
 
 static const char _sav_very_long_string_parse_range_lengths[] = {
-	0, 3, 6, 6, 6, 6, 6, 6, 
-	6, 0, 1, 1, 0, 3
+	0, 2, 5, 5, 5, 5, 5, 5, 
+	5, 0, 1, 1, 0, 2
 };
 
 static const char _sav_very_long_string_parse_index_offsets[] = {
@@ -606,12 +596,12 @@ readstat_error_t sav_parse_very_long_string_record(void *data, int count, sav_ct
     table = build_lookup_table(var_count, ctx);
     
     
-#line 610 "src/spss/readstat_sav_parse.c"
+#line 600 "src/spss/readstat_sav_parse.c"
 	{
 	cs = sav_very_long_string_parse_start;
 	}
 
-#line 615 "src/spss/readstat_sav_parse.c"
+#line 605 "src/spss/readstat_sav_parse.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -728,7 +718,7 @@ _match:
 #line 197 "src/spss/readstat_sav_parse.rl"
 	{ temp_val = 0; }
 	break;
-#line 732 "src/spss/readstat_sav_parse.c"
+#line 722 "src/spss/readstat_sav_parse.c"
 		}
 	}
 
