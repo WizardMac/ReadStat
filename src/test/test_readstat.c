@@ -41,7 +41,7 @@ static void dump_buffer(rt_buffer_t *buffer, long format) {
 #if DEBUG
     printf("Writing file buffer to %s\n", filename);
     FILE *file = fopen(filename, "wb");
-    int bytes_written = fwrite(buffer->bytes, buffer->used, 1, file);
+    int bytes_written = fwrite(buffer->bytes, 1, buffer->used, file);
     if (bytes_written != buffer->used)
         printf("Failed to write file!\n");
     fclose(file);

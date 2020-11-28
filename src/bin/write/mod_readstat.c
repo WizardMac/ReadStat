@@ -57,7 +57,7 @@ rs_module_t rs_mod_readstat = {
 
 static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
     mod_readstat_ctx_t *mod_ctx = (mod_readstat_ctx_t *)ctx;
-    return fwrite(bytes, len, 1, mod_ctx->out_file);
+    return fwrite(bytes, 1, len, mod_ctx->out_file);
 }
 
 static int accept_file(const char *filename) {
@@ -239,7 +239,7 @@ static int handle_value(int obs_index, readstat_variable_t *old_variable, readst
         }
         error = readstat_begin_row(writer);
         if (error != READSTAT_OK) {
-            fprintf(stderr, "Error beginning row: %s\n", readstat_error_message(error));
+            fprintf(stderr, "Error beginning row #%d: %s\n", obs_index, readstat_error_message(error));
             goto cleanup;
         }
     }

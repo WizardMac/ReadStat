@@ -33,7 +33,7 @@ static void dump_buffer(rt_buffer_t *buffer, long format, int test_case) {
     if (!file) {
         perror(filename);
     }
-    ssize_t bytes_written = fwrite(buffer->bytes, buffer->used, 1, file);
+    ssize_t bytes_written = fwrite(buffer->bytes, 1, buffer->used, file);
     if (bytes_written < 0) {
         perror(filename);
     }
