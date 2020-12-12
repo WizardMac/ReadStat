@@ -27,7 +27,7 @@ static ssize_t write_data(const void *bytes, size_t len, void *ctx) {
 readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer, long format) {
     readstat_error_t error = READSTAT_OK;
 
-    ck_hash_table_t *label_sets = ck_hash_table_init(100);
+    ck_hash_table_t *label_sets = ck_hash_table_init(100, 16);
 
     readstat_writer_t *writer = readstat_writer_init();
     readstat_set_data_writer(writer, &write_data);
