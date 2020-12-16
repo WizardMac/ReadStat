@@ -14,37 +14,73 @@
 #include "write/json/write_missing_values.h"
 #include "write/json/write_value_labels.h"
 
+typedef enum extract_metadata_type_e {
+    EXTRACT_METADATA_TYPE_NUMERIC,
+    EXTRACT_METADATA_TYPE_STRING,
+    EXTRACT_METADATA_TYPE_UNKNOWN
+} extract_metadata_type_t;
+
+static const char* extract_metadata_type_str(extract_metadata_type_t t) {
+    switch (t) {
+     case EXTRACT_METADATA_TYPE_NUMERIC:
+        return "NUMERIC";
+     case EXTRACT_METADATA_TYPE_STRING:
+        return "STRING";
+     case EXTRACT_METADATA_TYPE_UNKNOWN:
+        return "UNKNOWN";
+    }
+    return "UNKNOWN";
+}
+
+typedef enum extract_metadata_format_e {
+    EXTRACT_METADATA_FORMAT_NUMBER,
+    EXTRACT_METADATA_FORMAT_PERCENT,
+    EXTRACT_METADATA_FORMAT_CURRENCY,
+    EXTRACT_METADATA_FORMAT_DATE,
+    EXTRACT_METADATA_FORMAT_TIME,
+    EXTRACT_METADATA_FORMAT_DATE_TIME,
+    EXTRACT_METADATA_FORMAT_UNSPECIFIED
+} extract_metadata_format_t;
+
+static const char* extract_metadata_format_str(extract_metadata_format_t format) {
+    switch (format) {
+     case EXTRACT_METADATA_FORMAT_NUMBER:
+        return "NUMBER";
+     case EXTRACT_METADATA_FORMAT_PERCENT:
+        return "PERCENT";
+     case EXTRACT_METADATA_FORMAT_CURRENCY:
+        return "CURRENCY";
+     case EXTRACT_METADATA_FORMAT_DATE:
+        return "DATE";
+     case EXTRACT_METADATA_FORMAT_TIME:
+        return "TIME";
+     case EXTRACT_METADATA_FORMAT_DATE_TIME:
+        return "DATE_TIME";
+     case EXTRACT_METADATA_FORMAT_UNSPECIFIED:
+        return "UNSPECIFIED";
+    }
+    return "UNSPECIFIED";
+}
+
 static const char* readstat_type_str(readstat_type_t type) {
-    if (type == READSTAT_TYPE_STRING) {
+    switch (type) {
+     case READSTAT_TYPE_STRING:
         return "READSTAT_TYPE_STRING";
-    }
-    
-    if (type == READSTAT_TYPE_INT8) {
+     case READSTAT_TYPE_INT8:
         return "READSTAT_TYPE_INT8";
-    }
-
-    if (type == READSTAT_TYPE_INT16) {
+     case READSTAT_TYPE_INT16:
         return "READSTAT_TYPE_INT16";
-    }
-
-    if (type == READSTAT_TYPE_INT32) {
+     case READSTAT_TYPE_INT32:
         return "READSTAT_TYPE_INT32";
-    }
-
-    if (type == READSTAT_TYPE_FLOAT) {
+     case READSTAT_TYPE_FLOAT:
         return "READSTAT_TYPE_FLOAT";
-    }
-
-    if (type == READSTAT_TYPE_DOUBLE) {
+     case READSTAT_TYPE_DOUBLE:
         return "READSTAT_TYPE_DOUBLE";
-    }
-
-    if (type == READSTAT_TYPE_STRING_REF) {
+     case READSTAT_TYPE_STRING_REF:
         return "READSTAT_TYPE_STRING_REF";
     }
-
     return "UNKNOWN TYPE";
-} 
+}
 
 static int extract_decimals(const char *s, char prefix) {
     if (s && s[0] && s[0]==prefix) {
@@ -63,27 +99,149 @@ static int extract_decimals(const char *s, char prefix) {
     }
 }
 
-static int handle_variable_sav(int index, readstat_variable_t *variable, const char *val_labels, struct context *ctx) {
-    char* type = "";
-    const char *format = readstat_variable_get_format(variable);
-    const char *label = readstat_variable_get_label(variable);
-    int decimals = -1;
+int hasPrefix(const char *str, char *prefix) {
+    return strncmp(str, prefix, sizeof(prefix)-1);
+}
 
-    if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_STRING) {
-        type = "STRING";
-    } else if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_NUMERIC) {
-        if (format && (strncmp(format, "DATE", sizeof("DATE")-1) == 0 || 
-                    strncmp(format, "ADATE", sizeof("ADATE")-1) == 0 || 
-                    strncmp(format, "EDATE", sizeof("EDATE")-1) == 0 || 
-                    strncmp(format, "SDATE", sizeof("SDATE")-1) == 0)) {
-            type = "DATE";
+static int handle_variable_sav(int index, readstat_variable_t *variable, const char *val_labels, struct context *ctx) {
+    extract_metadata_type_t type = EXTRACT_METADATA_TYPE_UNKNOWN;
+    extract_metadata_format_t format = EXTRACT_METADATA_FORMAT_UNSPECIFIED;
+    char *pattern = "";
+
+    int decimals = -1;
+    const char *vformat = readstat_variable_get_format(variable);
+    const char *label = readstat_variable_get_label(variable);
+
+    switch (readstat_variable_get_type_class(variable)) {
+    case READSTAT_TYPE_CLASS_STRING:
+        type = EXTRACT_METADATA_TYPE_STRING;
+        break;
+    case READSTAT_TYPE_CLASS_NUMERIC:
+        type = EXTRACT_METADATA_TYPE_NUMERIC;
+
+        // Extract format
+        // SPSS data types: https://libguides.library.kent.edu/SPSS/DatesTime
+        // Pattern formats: https://developers.google.com/sheets/api/guides/formats
+        // TODO: Extract currency
+        if (vformat) {
+            if (hasPrefix(vformat, "DATE9") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "d-m-y";
+            } else if (hasPrefix(vformat, "DATE11") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "dd-m-yyyy+";
+            } else if (hasPrefix(vformat, "ADATE8") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "m/d/y";
+            } else if (hasPrefix(vformat, "ADATE10") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "m/d/yyyy+";
+            } else if (hasPrefix(vformat, "EDATE8") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "d.m.y";
+            } else if (hasPrefix(vformat, "EDATE10") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "d.m.yyyy+";
+            } else if (hasPrefix(vformat, "SDATE8") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "y/m/d";
+            } else if (hasPrefix(vformat, "SDATE10") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "yyyy+/m/d";
+            } else if (hasPrefix(vformat, "DATETIME17") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE_TIME;
+                pattern = "d-mm-yyyy+ h:mm";
+            } else if (hasPrefix(vformat, "DATETIME20") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE_TIME;
+                pattern = "d-mm-yyyy+ h:mm:ss";
+            } else if (hasPrefix(vformat, "DATETIME23.2") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE_TIME;
+                pattern = "d-mm-yyy+ h:mm:ss";
+            } else if (hasPrefix(vformat, "YMDHMS16") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE_TIME;
+                pattern = "yyyy+-m-d h:mm";
+            } else if (hasPrefix(vformat, "YMDHMS19") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE_TIME;
+                pattern = "yyyy+-m-d h:mm:ss";
+            } else if (hasPrefix(vformat, "YMDHMS19.2") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE_TIME;
+                pattern = "yyyy+-m-d h:mm:ss";
+            } else if (hasPrefix(vformat, "MTIME5") == 0) {
+                format = EXTRACT_METADATA_FORMAT_TIME;
+                pattern = "[m+]:[s+]";
+            } else if (hasPrefix(vformat, "MTIME8.2") == 0) {
+                format = EXTRACT_METADATA_FORMAT_TIME;
+                pattern = "[m+]:[s+]";
+            } else if (hasPrefix(vformat, "TIME5") == 0) {
+                format = EXTRACT_METADATA_FORMAT_TIME;
+                pattern = "[h+]:[m+]";
+            } else if (hasPrefix(vformat, "TIME8") == 0) {
+                format = EXTRACT_METADATA_FORMAT_TIME;
+                pattern = "[h+]:[m+]:[s+]";
+            } else if (hasPrefix(vformat, "TIME11.2") == 0) {
+                format = EXTRACT_METADATA_FORMAT_TIME;
+                pattern = "[h+]:[m+]:[s+]";
+            } else if (hasPrefix(vformat, "DTIME9") == 0) {
+                format = EXTRACT_METADATA_FORMAT_TIME;
+                pattern = "[d+] [h+]:[m+]";
+            } else if (hasPrefix(vformat, "DTIME12") == 0) {
+                format = EXTRACT_METADATA_FORMAT_TIME;
+                pattern = "[d+] [h+]:[m+]:[s+]";
+            } else if (hasPrefix(vformat, "DTIME15.2") == 0) {
+                format = EXTRACT_METADATA_FORMAT_TIME;
+                pattern = "[d+] [h+]:[m+]:[s+]";
+            } else if (hasPrefix(vformat, "JDATE5") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "yd";
+            } else if (hasPrefix(vformat, "JDATE7") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "yyyy+d";
+            } else if (hasPrefix(vformat, "QYR6") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "q Q y";
+            } else if (hasPrefix(vformat, "QYR8") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "q Q yyyy+";
+            } else if (hasPrefix(vformat, "MOYR6") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "mmm yy";
+            } else if (hasPrefix(vformat, "MOYR8") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "mmm yyyy";
+            } else if (hasPrefix(vformat, "WKYR8") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "w WK y";
+            } else if (hasPrefix(vformat, "WKYR10") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "w WK yyyy+";
+            } else if (hasPrefix(vformat, "WKDAY3") == 0) {
+                // Day of the week, three letter abbreviation (e.g., "Mon").
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "ddd";
+            } else if (hasPrefix(vformat, "WKDAY9") == 0) {
+                // Day of the week, full name.
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "dddd+";
+            } else if (hasPrefix(vformat, "MONTH3") == 0) {
+                // Three letter month abbreviation (e.g., "Feb").
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "mmm";
+            } else if (hasPrefix(vformat, "MONTH9") == 0) {
+                // Full month name. mmmmmm+ also matches this.
+                format = EXTRACT_METADATA_FORMAT_DATE;
+                pattern = "mmmm";
+            } else {
+                format = EXTRACT_METADATA_FORMAT_NUMBER;
+                decimals = extract_decimals(vformat, 'F');
+            }
         } else {
-            type = "NUMERIC";
-            decimals = extract_decimals(format, 'F');
+            format = EXTRACT_METADATA_FORMAT_UNSPECIFIED;
         }
-    } else {
+        break;
+    default:
         fprintf(stderr, "%s:%d unhandled type %s\n", __FILE__, __LINE__, readstat_type_str(variable->type));
         exit(EXIT_FAILURE);
+        break;
     }
 
     if (ctx->count == 0) {
@@ -93,7 +251,16 @@ static int handle_variable_sav(int index, readstat_variable_t *variable, const c
         fprintf(ctx->fp, ",\n");
     }
 
-    fprintf(ctx->fp, "{\"type\": \"%s\", \"name\": \"%s\"", type, variable->name);
+    fprintf(ctx->fp, "{\"type\": \"%s\", \"name\": \"%s\"",
+        extract_metadata_type_str(type),
+        variable->name
+    );
+    if (type == EXTRACT_METADATA_TYPE_NUMERIC) {
+        fprintf(ctx->fp, ", \"format\": \"%s\"", extract_metadata_format_str(format));
+        if (pattern && pattern[0]) {
+            fprintf(ctx->fp, ", \"pattern\": \"%s\"", pattern);
+        }
+    }
     if (decimals > 0) {
         fprintf(ctx->fp, ", \"decimals\": %d", decimals);
     }
@@ -105,29 +272,44 @@ static int handle_variable_sav(int index, readstat_variable_t *variable, const c
 
     add_val_labels(ctx, variable, val_labels);
     add_missing_values(ctx, variable);
-    
+
     fprintf(ctx->fp, "}");
     return 0;
 }
 
 static int handle_variable_dta(int index, readstat_variable_t *variable, const char *val_labels, struct context *ctx) {
-    char *type;
-    const char *format = readstat_variable_get_format(variable);
+    extract_metadata_type_t type = EXTRACT_METADATA_TYPE_UNKNOWN;
+    extract_metadata_format_t format = EXTRACT_METADATA_FORMAT_UNSPECIFIED;
+    char *pattern = "";
+
+    const char *vformat = readstat_variable_get_format(variable);
     const char *label = readstat_variable_get_label(variable);
     int decimals = -1;
 
-    if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_STRING) {
-        type = "STRING";
-    } else if (readstat_variable_get_type_class(variable) == READSTAT_TYPE_CLASS_NUMERIC) {
-        if (format && strcmp(format, "%td") == 0) {
-            type = "DATE";
+    switch (readstat_variable_get_type_class(variable)) {
+    case READSTAT_TYPE_CLASS_STRING:
+        type = EXTRACT_METADATA_TYPE_STRING;
+        break;
+    case READSTAT_TYPE_CLASS_NUMERIC:
+        type = EXTRACT_METADATA_TYPE_NUMERIC;
+
+        // Extract format
+        // Pattern formats: https://developers.google.com/sheets/api/guides/formats
+        if (vformat) {
+            if (strcmp(vformat, "%d") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE;
+            } else if (strcmp(vformat, "%td") == 0) {
+                format = EXTRACT_METADATA_FORMAT_DATE_TIME;
+            }
         } else {
-            type = "NUMERIC";
-            decimals = extract_decimals(format, '%');
+            format = EXTRACT_METADATA_FORMAT_NUMBER;
+            decimals = extract_decimals(vformat, '%');
         }
-    } else {
+        break;
+    default:
         fprintf(stderr, "%s:%d unhandled type %s\n", __FILE__, __LINE__, readstat_type_str(variable->type));
         exit(EXIT_FAILURE);
+        break;
     }
 
     if (ctx->count == 0) {
@@ -137,7 +319,16 @@ static int handle_variable_dta(int index, readstat_variable_t *variable, const c
         fprintf(ctx->fp, ",\n");
     }
 
-    fprintf(ctx->fp, "{\"type\": \"%s\", \"name\": \"%s\"", type, variable->name);
+    fprintf(ctx->fp, "{\"type\": \"%s\", \"name\": \"%s\"",
+        extract_metadata_type_str(type),
+        variable->name
+    );
+    if (type == EXTRACT_METADATA_TYPE_NUMERIC) {
+        fprintf(ctx->fp, ", \"format\": \"%s\"", extract_metadata_format_str(format));
+        if (pattern && pattern[0]) {
+            fprintf(ctx->fp, ", \"pattern\": \"%s\"", pattern);
+        }
+    }
     if (decimals > 0) {
         fprintf(ctx->fp, ", \"decimals\": %d", decimals);
     }
@@ -246,7 +437,7 @@ int pass(struct context *ctx, char *input, char *output, int pass) {
     } else if (pass == 2) {
         readstat_set_variable_handler(parser, &handle_variable);
     }
-    
+
     const char *filename = input;
     size_t len = strlen(filename);
 
