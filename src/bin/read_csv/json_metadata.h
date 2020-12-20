@@ -1,5 +1,6 @@
 #include "jsmn.h"
 #include "../../readstat.h"
+#include "../extract_metadata.h"
 
 #ifndef __JSON_METADATA_H_
 #define __JSON_METADATA_H_
@@ -9,14 +10,9 @@ typedef struct json_metadata {
     jsmntok_t* tok;
 } json_metadata;
 
-typedef enum metadata_column_type_e {
-    METADATA_COLUMN_TYPE_STRING,
-    METADATA_COLUMN_TYPE_NUMERIC,
-    METADATA_COLUMN_TYPE_DATE,
-} metadata_column_type_t;
-
 struct json_metadata* get_json_metadata(const char* filename);
-metadata_column_type_t column_type(struct json_metadata* md, const char* varname, int output_format);
+extract_metadata_type_t column_type(struct json_metadata* md, const char* varname, int output_format);
+extract_metadata_format_t column_format(struct json_metadata* md, const char* varname);
 void free_json_metadata(struct json_metadata*);
 
 int get_decimals(struct json_metadata* md, const char* varname);
