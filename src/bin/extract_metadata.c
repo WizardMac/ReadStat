@@ -121,115 +121,145 @@ static int handle_variable_sav(int index, readstat_variable_t *variable, const c
 
         // Extract format
         // SPSS data types: https://libguides.library.kent.edu/SPSS/DatesTime
-        // Pattern formats: https://developers.google.com/sheets/api/guides/formats
+        // Pattern formats: https://unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
         // TODO: Extract currency
         if (vformat) {
             if (hasPrefix(vformat, "DATE9") == 0) {
+                // e.g. 31-JAN-13
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "d-m-y";
+                pattern = "dd-MMM-yy";
             } else if (hasPrefix(vformat, "DATE11") == 0) {
+                // e.g. 31-JAN-13
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "dd-m-yyyy+";
+                pattern = "dd-MMM-yyyy";
             } else if (hasPrefix(vformat, "ADATE8") == 0) {
+                // e.g. 01/31/13
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "m/d/y";
+                pattern = "MM/dd/yy";
             } else if (hasPrefix(vformat, "ADATE10") == 0) {
+                // e.g. 01/31/2013
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "m/d/yyyy+";
+                pattern = "MM/dd/yyyy";
             } else if (hasPrefix(vformat, "EDATE8") == 0) {
+                // e.g. 31.01.13
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "d.m.y";
+                pattern = "dd.MM.yy";
             } else if (hasPrefix(vformat, "EDATE10") == 0) {
+                // e.g. 31.01.2013
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "d.m.yyyy+";
+                pattern = "dd.MM.yyyy";
             } else if (hasPrefix(vformat, "SDATE8") == 0) {
+                // e.g. 13/01/31
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "y/m/d";
+                pattern = "yy/MM/dd";
             } else if (hasPrefix(vformat, "SDATE10") == 0) {
+                // e.g. 2013/01/31
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "yyyy+/m/d";
+                pattern = "yyyy/MM/dd";
             } else if (hasPrefix(vformat, "DATETIME17") == 0) {
+                // e.g. 31-JAN-2013 01:02
                 format = EXTRACT_METADATA_FORMAT_DATE_TIME;
-                pattern = "d-mm-yyyy+ h:mm";
+                pattern = "dd-MMM-yyyy hh:mm";
             } else if (hasPrefix(vformat, "DATETIME20") == 0) {
+                // e.g. 31-JAN-2013 01:02:33
                 format = EXTRACT_METADATA_FORMAT_DATE_TIME;
-                pattern = "d-mm-yyyy+ h:mm:ss";
+                pattern = "dd-MMM-yyyy hh:mm:ss";
             } else if (hasPrefix(vformat, "DATETIME23.2") == 0) {
+                // e.g. 31-JAN-2013 01:02:33.72
                 format = EXTRACT_METADATA_FORMAT_DATE_TIME;
-                pattern = "d-mm-yyy+ h:mm:ss";
+                pattern = "dd-MMM-yyyy hh:mm:ss.SS+";
             } else if (hasPrefix(vformat, "YMDHMS16") == 0) {
+                // e.g. 2013-01-31 1:02
                 format = EXTRACT_METADATA_FORMAT_DATE_TIME;
-                pattern = "yyyy+-m-d h:mm";
+                pattern = "yyyy-MM-dd h:mm";
             } else if (hasPrefix(vformat, "YMDHMS19") == 0) {
+                // e.g. 2013-01-31 1:02:33
                 format = EXTRACT_METADATA_FORMAT_DATE_TIME;
-                pattern = "yyyy+-m-d h:mm:ss";
+                pattern = "yyyy-MM-dd h:mm:ss";
             } else if (hasPrefix(vformat, "YMDHMS19.2") == 0) {
+                // e.g. 2013-01-31 1:02:33.72
                 format = EXTRACT_METADATA_FORMAT_DATE_TIME;
-                pattern = "yyyy+-m-d h:mm:ss";
+                pattern = "yyyy-MM-dd h:mm:ss.SS+";
             } else if (hasPrefix(vformat, "MTIME5") == 0) {
+                // e.g. 1754:36
                 format = EXTRACT_METADATA_FORMAT_TIME;
                 pattern = "[m+]:[s+]";
             } else if (hasPrefix(vformat, "MTIME8.2") == 0) {
+                // e.g. 1754:36.58
                 format = EXTRACT_METADATA_FORMAT_TIME;
                 pattern = "[m+]:[s+]";
             } else if (hasPrefix(vformat, "TIME5") == 0) {
+                // e.g. 29:14
                 format = EXTRACT_METADATA_FORMAT_TIME;
                 pattern = "[h+]:[m+]";
             } else if (hasPrefix(vformat, "TIME8") == 0) {
+                // e.g. 29:14:36
                 format = EXTRACT_METADATA_FORMAT_TIME;
                 pattern = "[h+]:[m+]:[s+]";
             } else if (hasPrefix(vformat, "TIME11.2") == 0) {
+                // e.g. 29:14:36.58
                 format = EXTRACT_METADATA_FORMAT_TIME;
                 pattern = "[h+]:[m+]:[s+]";
             } else if (hasPrefix(vformat, "DTIME9") == 0) {
+                // e.g. 1 05:14
                 format = EXTRACT_METADATA_FORMAT_TIME;
                 pattern = "[d+] [h+]:[m+]";
             } else if (hasPrefix(vformat, "DTIME12") == 0) {
+                // e.g. 1 05:14:36
                 format = EXTRACT_METADATA_FORMAT_TIME;
                 pattern = "[d+] [h+]:[m+]:[s+]";
             } else if (hasPrefix(vformat, "DTIME15.2") == 0) {
+                // e.g. 1 05:14:36.58
                 format = EXTRACT_METADATA_FORMAT_TIME;
                 pattern = "[d+] [h+]:[m+]:[s+]";
             } else if (hasPrefix(vformat, "JDATE5") == 0) {
+                // e.g. 13031
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "yd";
+                pattern = "yyddd";
             } else if (hasPrefix(vformat, "JDATE7") == 0) {
+                // e.g. 2013031
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "yyyy+d";
+                pattern = "yyyyddd";
             } else if (hasPrefix(vformat, "QYR6") == 0) {
+                // e.g. 1 Q 13
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "q Q y";
+                pattern = "Q 'Q' y";
             } else if (hasPrefix(vformat, "QYR8") == 0) {
+                // e.g. 1 Q 2013
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "q Q yyyy+";
+                pattern = "Q 'Q' yyyy";
             } else if (hasPrefix(vformat, "MOYR6") == 0) {
+                // e.g. JAN 13
                 format = EXTRACT_METADATA_FORMAT_DATE;
                 pattern = "mmm yy";
             } else if (hasPrefix(vformat, "MOYR8") == 0) {
+                // e.g. JAN 2013
                 format = EXTRACT_METADATA_FORMAT_DATE;
                 pattern = "mmm yyyy";
             } else if (hasPrefix(vformat, "WKYR8") == 0) {
+                // e.g. 5 WK 13
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "w WK y";
+                pattern = "w 'WK' yy";
             } else if (hasPrefix(vformat, "WKYR10") == 0) {
+                // e.g. 5 WK 2013
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "w WK yyyy+";
+                pattern = "w 'WK' yyyy";
             } else if (hasPrefix(vformat, "WKDAY3") == 0) {
-                // Day of the week, three letter abbreviation (e.g., "Mon").
+                // Day of the week, three letter abbreviation (e.g. "Mon").
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "ddd";
+                pattern = "eee";
             } else if (hasPrefix(vformat, "WKDAY9") == 0) {
-                // Day of the week, full name.
+                // Day of the week, full name. (e.g. "Monday")
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "dddd+";
+                pattern = "eeee";
             } else if (hasPrefix(vformat, "MONTH3") == 0) {
-                // Three letter month abbreviation (e.g., "Feb").
+                // Three letter month abbreviation (e.g. "Feb").
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "mmm";
+                pattern = "MMM";
             } else if (hasPrefix(vformat, "MONTH9") == 0) {
-                // Full month name. mmmmmm+ also matches this.
+                // Full month name. (e.g. "February")
                 format = EXTRACT_METADATA_FORMAT_DATE;
-                pattern = "mmmm";
+                pattern = "MMMM";
             } else {
                 format = EXTRACT_METADATA_FORMAT_NUMBER;
                 decimals = extract_decimals(vformat, 'F');
@@ -294,7 +324,7 @@ static int handle_variable_dta(int index, readstat_variable_t *variable, const c
         type = EXTRACT_METADATA_TYPE_NUMERIC;
 
         // Extract format
-        // Pattern formats: https://developers.google.com/sheets/api/guides/formats
+        // Pattern formats: https://unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
         if (vformat) {
             if (strcmp(vformat, "%d") == 0) {
                 format = EXTRACT_METADATA_FORMAT_DATE;
