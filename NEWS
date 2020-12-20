@@ -1,3 +1,16 @@
+New in 1.1.5:
+
+    * Compilation: Support compilation with MSVC on Windows #214 (thanks to @zebrys, @Jogo27, @frederic-gutierrez)
+    * DTA reader: Ignore invalid timestamps
+    * DTA reader: Improve support for empty value labels #219
+    * SAS readers: Support for even more character encodings
+    * SAS7BDAT reader: Support dataset labels #180
+    * SAV reader: Fix format widths for very long strings
+    * SAV reader: Support for invalid lowercase variable names #217
+    * SAV reader: Support for non-UTF-8 variable names
+    * POR reader: Improved support for date/time formats #158 #160
+    * Support Unicode file paths on Windows #200 (thanks to @zebrys)
+
 New in 1.1.4:
 
     * SAS7BDAT reader: Add support for binary-compressed files #21
