@@ -1,3 +1,20 @@
+New in 1.1.5:
+
+    * Support for building with MSVC #214 (thanks to @zebrys and @jonathon-love)
+    * CLI tools: Support non-ASCII file paths on Windows #200 #216 (thanks to @zebrys)
+    * DTA reader: Ignore bad timestamps
+    * DTA writer: Fix memory leak
+    * DTA writer: Improved support for empty value labels #219
+    * POR reader: Improved support for date/time formats #160
+    * SAS7BDAT reader: Added support for reading the dataset label #180 #213 (thanks to @reikoch)
+    * SAS7BDAT reader: Improved detection of compressed files
+    * SAS7BDAT reader: Improved bounds checking OSS-Fuzz/28312
+    * SAS7BDAT reader: Support for more character encodings
+    * SAV reader: Tolerate illegal lowercase variable names #217
+    * SAV reader: Better support for non-UTF-8 variable names
+    * SAV reader: Fix format widths for very long strings https://github.com/Roche/pyreadstat/issues/77
+    * SAV reader: Fix undefined behavior with negative row counts OSS-Fuzz/23423
+
 New in 1.1.4:
 
     * SAS7BDAT reader: Add support for binary-compressed files #21
