@@ -4,6 +4,8 @@ jobs:
   codecov:
     runs-on: ubuntu-latest
     steps:
+      - name: Install packages
+        run: sudo apt install gettext
       - uses: actions/checkout@v2
       - name: Autoconf
         run: autoreconf -i -f
