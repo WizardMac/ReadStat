@@ -22,7 +22,7 @@ after_success:
   - mv src/spss/.libs/*.gc* .
   - mv src/stata/.libs/*.gc* .
   - mv src/.libs/*.gc* .
-  - bash <(curl -s https://codecov.io/bash)
+# - bash <(curl -s https://codecov.io/bash)
 
 after_failure:
   - cat test-suite.log

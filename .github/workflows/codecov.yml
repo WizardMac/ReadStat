@@ -1,0 +1,23 @@
+name: Codecov
+on: [ push, pull_request ]
+jobs:
+  codecov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Autoconf
+        run: autoreconf -i -f
+      - name: Configure
+        run: ./configure --enable-code-coverage
+      - name: Make
+        run: make
+      - name: Run tests
+        run: make check
+      - name: Generate corpus
+        run: make generate_corpus
+      - name: Move coverage files
+        run: mv src/.libs/*.gc* .
+      - name: Move more coverage files
+        run: mv src/*/.libs/*.gc* .
+      - name: Upload coverage files
+        run: bash <(curl -s https://codecov.io/bash)
