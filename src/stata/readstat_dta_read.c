@@ -1,4 +1,6 @@
 
+#define _XOPEN_SOURCE 700 /* for strnlen */
+
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
