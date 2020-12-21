@@ -690,6 +690,7 @@ static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len
     size_t raw_str_used = 0;
     int segment_offset = 0;
     int var_index = 0, col = 0;
+    int raw_str_is_utf8 = !strcmp(ctx->input_encoding, "UTF-8");
 
     while (data_offset < buffer_len && col < ctx->var_index && var_index < ctx->var_index) {
         spss_varinfo_t *col_info = ctx->varinfo[col];
@@ -701,8 +702,16 @@ static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len
         }
         if (var_info->type == READSTAT_TYPE_STRING) {
             if (raw_str_used + 8 <= ctx->raw_string_len) {
-                memcpy(ctx->raw_string + raw_str_used, &buffer[data_offset], 8);
-                raw_str_used += 8;
+                if (raw_str_is_utf8) {
+                    /* Skip null bytes, see https://github.com/tidyverse/haven/issues/560  */
+                    char c;
+                    for (int i=0; i<8; i++)
+                        if ((c = buffer[data_offset+i]))
+                            ctx->raw_string[raw_str_used++] = c;
+                } else {
+                    memcpy(ctx->raw_string + raw_str_used, &buffer[data_offset], 8);
+                    raw_str_used += 8;
+                }
             }
             if (++offset == col_info->width) {
                 if (++segment_offset < var_info->n_segments) {
