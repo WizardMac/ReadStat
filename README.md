@@ -1,4 +1,4 @@
-[![GitHub CI build status](https://github.com/WizardMac/ReadStat/workflows/ReadStat%20CI/badge.svg)
+![GitHub CI build status](https://github.com/WizardMac/ReadStat/workflows/build/badge.svg)
 [![Travis CI build status](https://travis-ci.org/WizardMac/ReadStat.svg?branch=master)](https://travis-ci.org/WizardMac/ReadStat)
 [![Appveyor build status](https://ci.appveyor.com/api/projects/status/76ctatpy3grlrd9x/branch/master?svg=true)](https://ci.appveyor.com/project/evanmiller/readstat/branch/master)
 [![codecov](https://codecov.io/gh/WizardMac/ReadStat/branch/master/graph/badge.svg)](https://codecov.io/gh/WizardMac/ReadStat)

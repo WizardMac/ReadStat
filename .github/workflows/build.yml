@@ -1,4 +1,4 @@
-name: ReadStat CI
+name: build
 on: [ push, pull_request ]
 jobs:
   build:
