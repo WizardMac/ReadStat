@@ -16,4 +16,4 @@ jobs:
       - name: Run tests
         run: make check
       - name: Generate corpus
-        run: make generate corpus
+        run: make generate_corpus
