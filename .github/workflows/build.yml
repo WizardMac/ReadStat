@@ -1,0 +1,16 @@
+name: ReadStat CI
+on: [ push pull_request ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Autoconf
+        run: autoreconf -i -f
+      - name: Configure
+        run: ./configure
+      - name: Make
+        run: make
+      - name: Run tests
+        run: make check
+      - name: Generate corpus
+        run: make generate corpus
