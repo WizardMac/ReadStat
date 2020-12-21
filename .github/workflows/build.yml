@@ -31,9 +31,7 @@ jobs:
         compiler: [ clang, gcc ]
     steps:
       - name: Install packages
-        run: brew install gettext
-      - name: Link packages
-        run: brew link --force gettext
+        run: brew install automake
       - uses: actions/checkout@v2
       - name: Autoconf
         run: autoreconf -i -f
