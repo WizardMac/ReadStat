@@ -12,11 +12,6 @@ environment:
   - TOOLCHAIN: "msys2"
   - TOOLCHAIN: "cygwin"
 
-branches:
-  only:
-    - master
-    - dev
-
 skip_tags: true
 
 install:
