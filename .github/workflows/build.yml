@@ -45,7 +45,7 @@ jobs:
         run: make check
       - name: Generate corpus
         run: make generate_corpus
-  windows:
+  msys2:
     runs-on: windows-latest
     env:
       MSYSTEM: MINGW64
@@ -61,3 +61,17 @@ jobs:
         run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && make check'
       - name: Log
         run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && cat ./test-suite.log'
+  cygwin:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install packages
+        run: choco install bash make automake zlib-devel libiconv-devel ragel --source cygwin
+      - name: Configure
+        run: C:\tools\cygwin\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && ./configure'
+      - name: Make
+        run: C:\tools\cygwin\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && make'
+      - name: Test
+        run: C:\tools\cygwin\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && make check'
+      - name: Log
+        run: C:\tools\cygwin\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && cat ./test-suite.log'
