@@ -7,6 +7,7 @@
 #endif
 #if defined _WIN32
 #   include <windows.h>
+#   include <io.h>
 #endif
 
 #include "readstat.h"
@@ -20,10 +21,9 @@
 #define UNISTD_OPEN_OPTIONS O_RDONLY
 #endif
 
-#if defined _MSC_VER && defined WIN64
+#if defined _WIN32
 #define lseek _lseeki64
-#elif defined _MSC_VER
-#elif defined _WIN32 || defined _AIX
+#elif defined _AIX
 #define lseek lseek64
 #endif
 

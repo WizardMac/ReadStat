@@ -298,7 +298,7 @@ typedef int (*readstat_progress_handler)(double progress, void *ctx);
 #if defined(_MSC_VER)
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
-typedef _off_t readstat_off_t;
+typedef __int64 readstat_off_t;
 #elif defined _WIN32 || defined __CYGWIN__
 typedef _off64_t readstat_off_t;
 #elif defined _AIX
