@@ -66,7 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install packages
-        run: choco install bash make automake zlib-devel libiconv-devel ragel --source cygwin
+        run: choco install bash make automake zlib-devel libiconv-devel ragel gettext --source cygwin
       - name: Autoconf
         run: C:\tools\cygwin\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && autoreconf -i -f'
       - name: Configure
