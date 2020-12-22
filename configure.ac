@@ -1,4 +1,4 @@
-# Update this with each release
+# Update this with each release. Be sure to change VS17/PropertySheet.props too
 AC_INIT([ReadStat], [1.1.5], [emmiller@gmail.com], [readstat], [https://github.com/WizardMac/ReadStat])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
