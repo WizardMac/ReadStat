@@ -216,7 +216,8 @@ void produce_column_header_dta(void *csv_metadata, const char *column, readstat_
         break;
         case EXTRACT_METADATA_FORMAT_DATE_TIME:
             var->type = READSTAT_TYPE_INT32;
-            snprintf(var->format, sizeof(var->format), "%s", "%td");
+            snprintf(var->format, sizeof(var->format), "%s", "%tC");
+            // %tC => is equivalent to coordinated universal time (UTC)
         break;
         default:
             var->type = READSTAT_TYPE_DOUBLE;
