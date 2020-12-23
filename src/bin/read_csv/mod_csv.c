@@ -27,10 +27,10 @@ static void produce_column_header_csv(void *csv_metadata, const char *column, re
             var->type = READSTAT_TYPE_DOUBLE;
         break;
         case EXTRACT_METADATA_FORMAT_PERCENT:
-            var->type = READSTAT_TYPE_STRING;
+            var->type = READSTAT_TYPE_DOUBLE;
         break;
         case EXTRACT_METADATA_FORMAT_CURRENCY:
-            var->type = READSTAT_TYPE_STRING;
+            var->type = READSTAT_TYPE_DOUBLE;
         break;
         case EXTRACT_METADATA_FORMAT_DATE:
             var->type = READSTAT_TYPE_STRING;
