@@ -130,25 +130,13 @@ void produce_column_header_sav(void *csv_metadata, const char *column, readstat_
         extract_metadata_format_t colformat = column_format(c->json_md, column);
         switch (colformat) {
         case EXTRACT_METADATA_FORMAT_NUMBER:
-            var->type = READSTAT_TYPE_DOUBLE;
-            snprintf(var->format, sizeof(var->format), "F8.%d", get_decimals(c->json_md, column));
-        break;
         case EXTRACT_METADATA_FORMAT_PERCENT:
-            var->type = READSTAT_TYPE_DOUBLE;
-            snprintf(var->format, sizeof(var->format), "F8.%d", get_decimals(c->json_md, column));
-        break;
         case EXTRACT_METADATA_FORMAT_CURRENCY:
             var->type = READSTAT_TYPE_DOUBLE;
             snprintf(var->format, sizeof(var->format), "F8.%d", get_decimals(c->json_md, column));
         break;
         case EXTRACT_METADATA_FORMAT_DATE:
-            var->type = READSTAT_TYPE_DOUBLE;
-            snprintf(var->format, sizeof(var->format), "%s", "EDATE40");
-        break;
         case EXTRACT_METADATA_FORMAT_TIME:
-            var->type = READSTAT_TYPE_DOUBLE;
-            snprintf(var->format, sizeof(var->format), "%s", "EDATE40");
-        break;
         case EXTRACT_METADATA_FORMAT_DATE_TIME:
             var->type = READSTAT_TYPE_DOUBLE;
             snprintf(var->format, sizeof(var->format), "%s", "EDATE40");
