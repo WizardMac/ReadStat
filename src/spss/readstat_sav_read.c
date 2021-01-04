@@ -690,7 +690,7 @@ static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len
     size_t raw_str_used = 0;
     int segment_offset = 0;
     int var_index = 0, col = 0;
-    int raw_str_is_utf8 = !strcmp(ctx->input_encoding, "UTF-8");
+    int raw_str_is_utf8 = ctx->input_encoding && !strcmp(ctx->input_encoding, "UTF-8");
 
     while (data_offset < buffer_len && col < ctx->var_index && var_index < ctx->var_index) {
         spss_varinfo_t *col_info = ctx->varinfo[col];
