@@ -53,7 +53,7 @@ static void produce_missingness_discrete_sav(struct csv_metadata *c, jsmntok_t* 
     int j = 1;
     for (int i=0; i<values->size; i++) {
         jsmntok_t* missing_value_token = values + j;
-        if (is_date) { 
+        if (is_date) {
             readstat_variable_add_missing_double_value(var, get_double_date_missing_sav(js, missing_value_token));
         } else if (var->type == READSTAT_TYPE_DOUBLE) {
             readstat_variable_add_missing_double_value(var, get_double_from_token(js, missing_value_token));
@@ -101,7 +101,7 @@ void produce_missingness_sav(void *csv_metadata, const char* column) {
     const char *js = c->json_md->js;
     readstat_variable_t* var = &c->variables[c->columns];
     var->missingness.missing_ranges_count = 0;
-    
+
     jsmntok_t* missing = find_variable_property(js, c->json_md->tok, column, "missing");
     if (!missing) {
         return;
@@ -125,14 +125,27 @@ void produce_missingness_sav(void *csv_metadata, const char* column) {
 
 void produce_column_header_sav(void *csv_metadata, const char *column, readstat_variable_t* var) {
     struct csv_metadata *c = (struct csv_metadata *)csv_metadata;
-    metadata_column_type_t coltype = column_type(c->json_md, column, c->output_format);
-    if (coltype == METADATA_COLUMN_TYPE_DATE) {
-        var->type = READSTAT_TYPE_DOUBLE;
-        snprintf(var->format, sizeof(var->format), "%s", "EDATE40");
-    } else if (coltype == METADATA_COLUMN_TYPE_NUMERIC) {
-        var->type = READSTAT_TYPE_DOUBLE;
-        snprintf(var->format, sizeof(var->format), "F8.%d", get_decimals(c->json_md, column));
-    } else if (coltype == METADATA_COLUMN_TYPE_STRING) {
+    extract_metadata_type_t coltype = column_type(c->json_md, column, c->output_format);
+    if (coltype == EXTRACT_METADATA_TYPE_NUMERIC) {
+        extract_metadata_format_t colformat = column_format(c->json_md, column);
+        switch (colformat) {
+        case EXTRACT_METADATA_FORMAT_NUMBER:
+        case EXTRACT_METADATA_FORMAT_PERCENT:
+        case EXTRACT_METADATA_FORMAT_CURRENCY:
+            var->type = READSTAT_TYPE_DOUBLE;
+            snprintf(var->format, sizeof(var->format), "F8.%d", get_decimals(c->json_md, column));
+        break;
+        case EXTRACT_METADATA_FORMAT_DATE:
+        case EXTRACT_METADATA_FORMAT_TIME:
+        case EXTRACT_METADATA_FORMAT_DATE_TIME:
+            var->type = READSTAT_TYPE_DOUBLE;
+            snprintf(var->format, sizeof(var->format), "%s", "EDATE40");
+        break;
+        default:
+            var->type = READSTAT_TYPE_DOUBLE;
+            snprintf(var->format, sizeof(var->format), "F8.%d", get_decimals(c->json_md, column));
+        }
+    } else if (coltype == EXTRACT_METADATA_TYPE_STRING) {
         var->type = READSTAT_TYPE_STRING;
     }
 }

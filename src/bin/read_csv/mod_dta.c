@@ -147,7 +147,7 @@ static void produce_missingness_discrete_dta(struct csv_metadata *c, jsmntok_t* 
     int j = 1;
     for (int i=0; i<values->size; i++) {
         jsmntok_t* missing_value_token = values + j;
-        if (is_date) { 
+        if (is_date) {
             dta_add_missing_date(var, get_dta_days_from_token(js, missing_value_token));
         } else if (var->type == READSTAT_TYPE_DOUBLE) {
             dta_add_missing_double(var, get_double_from_token(js, missing_value_token));
@@ -166,7 +166,7 @@ void produce_missingness_dta(void *csv_metadata, const char* column) {
     const char *js = c->json_md->js;
     readstat_variable_t* var = &c->variables[c->columns];
     var->missingness.missing_ranges_count = 0;
-    
+
     jsmntok_t* missing = find_variable_property(js, c->json_md->tok, column, "missing");
     if (!missing) {
         return;
@@ -190,14 +190,31 @@ void produce_missingness_dta(void *csv_metadata, const char* column) {
 
 void produce_column_header_dta(void *csv_metadata, const char *column, readstat_variable_t* var) {
     struct csv_metadata *c = (struct csv_metadata *)csv_metadata;
-    metadata_column_type_t coltype = column_type(c->json_md, column, c->output_format);
-    if (coltype == METADATA_COLUMN_TYPE_DATE) {
-        snprintf(var->format, sizeof(var->format), "%s", "%td");
-        var->type = READSTAT_TYPE_INT32;
-    } else if (coltype == METADATA_COLUMN_TYPE_NUMERIC) {
-        var->type = READSTAT_TYPE_DOUBLE;
-        snprintf(var->format, sizeof(var->format), "%%9.%df", get_decimals(c->json_md, column));
-    } else if (coltype == METADATA_COLUMN_TYPE_STRING) {
+    extract_metadata_type_t coltype = column_type(c->json_md, column, c->output_format);
+    if (coltype == EXTRACT_METADATA_TYPE_NUMERIC) {
+        extract_metadata_format_t colformat = column_format(c->json_md, column);
+        switch (colformat) {
+        case EXTRACT_METADATA_FORMAT_NUMBER:
+        case EXTRACT_METADATA_FORMAT_PERCENT:
+        case EXTRACT_METADATA_FORMAT_CURRENCY:
+            var->type = READSTAT_TYPE_DOUBLE;
+            snprintf(var->format, sizeof(var->format), "%%9.%df", get_decimals(c->json_md, column));
+        break;
+        case EXTRACT_METADATA_FORMAT_DATE:
+            var->type = READSTAT_TYPE_INT32;
+            snprintf(var->format, sizeof(var->format), "%s", "%td");
+        break;
+        case EXTRACT_METADATA_FORMAT_TIME:
+        case EXTRACT_METADATA_FORMAT_DATE_TIME:
+            var->type = READSTAT_TYPE_INT32;
+            snprintf(var->format, sizeof(var->format), "%s", "%tC");
+            // %tC => is equivalent to coordinated universal time (UTC)
+        break;
+        default:
+            var->type = READSTAT_TYPE_DOUBLE;
+            snprintf(var->format, sizeof(var->format), "%%9.%df", get_decimals(c->json_md, column));
+        }
+    } else if (coltype == EXTRACT_METADATA_TYPE_STRING) {
         var->type = READSTAT_TYPE_STRING;
     }
 }
@@ -214,7 +231,7 @@ static void produce_value_label_int32_date_dta(const char* column, struct csv_me
         .v = { .i32_value = days },
         .type = READSTAT_TYPE_INT32,
     };
-    
+
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
     for (int i=0; i<missing_ranges_count; i++) {
         readstat_value_t lo_val = readstat_variable_get_missing_range_lo(variable, i);
@@ -302,7 +319,7 @@ static readstat_value_t value_int32_date_dta(const char *s, size_t len, struct c
         fprintf(stderr, "%s:%d not a date: %s\n", __FILE__, __LINE__, (char*)s);
         exit(EXIT_FAILURE);
     }
-    
+
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(var);
     for (int i=0; i<missing_ranges_count; i++) {
         readstat_value_t lo_val = readstat_variable_get_missing_range_lo(var, i);

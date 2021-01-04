@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include "../../readstat.h"
+#include "../extract_metadata.h"
 #include "json_metadata.h"
 #include "read_module.h"
 #include "csv_metadata.h"
@@ -17,13 +18,39 @@ rs_read_module_t rs_read_mod_csv = {
 
 static void produce_column_header_csv(void *csv_metadata, const char *column, readstat_variable_t* var) {
     struct csv_metadata *c = (struct csv_metadata *)csv_metadata;
-    metadata_column_type_t coltype = column_type(c->json_md, column, c->output_format);
-    if (coltype == METADATA_COLUMN_TYPE_DATE) {
+    extract_metadata_type_t coltype = column_type(c->json_md, column, c->output_format);
+    switch (coltype) {
+    case EXTRACT_METADATA_TYPE_NUMERIC:;
+        extract_metadata_format_t colformat = column_format(c->json_md, column);
+        switch (colformat) {
+        case EXTRACT_METADATA_FORMAT_NUMBER:
+            var->type = READSTAT_TYPE_DOUBLE;
+        break;
+        case EXTRACT_METADATA_FORMAT_PERCENT:
+            var->type = READSTAT_TYPE_DOUBLE;
+        break;
+        case EXTRACT_METADATA_FORMAT_CURRENCY:
+            var->type = READSTAT_TYPE_DOUBLE;
+        break;
+        case EXTRACT_METADATA_FORMAT_DATE:
+            var->type = READSTAT_TYPE_STRING;
+        break;
+        case EXTRACT_METADATA_FORMAT_TIME:
+            var->type = READSTAT_TYPE_STRING;
+        break;
+        case EXTRACT_METADATA_FORMAT_DATE_TIME:
+            var->type = READSTAT_TYPE_STRING;
+        break;
+        default:
+            var->type = READSTAT_TYPE_DOUBLE;
+        }
+        break;
+    case EXTRACT_METADATA_TYPE_STRING:
         var->type = READSTAT_TYPE_STRING;
-    } else if (coltype == METADATA_COLUMN_TYPE_NUMERIC) {
-        var->type = READSTAT_TYPE_DOUBLE;
-    } else if (coltype == METADATA_COLUMN_TYPE_STRING) {
-        var->type = READSTAT_TYPE_STRING;
+        break;
+    case EXTRACT_METADATA_TYPE_UNKNOWN:
+        // ...
+        break;
     }
 }
 

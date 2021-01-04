@@ -103,7 +103,7 @@ char* copy_variable_property(struct json_metadata* md, const char* varname, cons
 	if (tok == NULL) {
 		return NULL;
 	}
-	
+
 	int len = tok->end - tok->start;
 	if (len == 0) {
 		return NULL;
@@ -185,7 +185,7 @@ int get_decimals(struct json_metadata* md, const char* varname) {
 	}
 }
 
-metadata_column_type_t column_type(struct json_metadata* md, const char* varname, int output_format) {
+extract_metadata_type_t column_type(struct json_metadata* md, const char* varname, int output_format) {
 	jsmntok_t* typ = find_variable_property(md->js, md->tok, varname, "type");
 	if (!typ) {
 		fprintf(stderr, "Could not find type of variable %s in metadata\n", varname);
@@ -193,15 +193,35 @@ metadata_column_type_t column_type(struct json_metadata* md, const char* varname
 	}
 
 	if (match_token(md->js, typ, "NUMERIC")) {
-		return METADATA_COLUMN_TYPE_NUMERIC;
+		return EXTRACT_METADATA_TYPE_NUMERIC;
 	} else if (match_token(md->js, typ, "STRING")) {
-		return METADATA_COLUMN_TYPE_STRING;
-	} else if (match_token(md->js, typ, "DATE")) {
-		return METADATA_COLUMN_TYPE_DATE;
+		return EXTRACT_METADATA_TYPE_STRING;
 	} else {
 		fprintf(stderr, "%s: %d: Unknown metadata type for variable %s\n", __FILE__, __LINE__, varname);
 		exit(EXIT_FAILURE);
 	}
+}
+
+extract_metadata_format_t column_format(struct json_metadata* md, const char* varname) {
+	jsmntok_t* typ = find_variable_property(md->js, md->tok, varname, "format");
+	if (!typ) {
+		return EXTRACT_METADATA_FORMAT_UNSPECIFIED;
+	}
+
+	if (match_token(md->js, typ, "NUMBER")) {
+		return EXTRACT_METADATA_FORMAT_NUMBER;
+	} else if (match_token(md->js, typ, "PERCENT")) {
+		return EXTRACT_METADATA_FORMAT_PERCENT;
+	} else if (match_token(md->js, typ, "CURRENCY")) {
+		return EXTRACT_METADATA_FORMAT_CURRENCY;
+	} else if (match_token(md->js, typ, "DATE")) {
+		return EXTRACT_METADATA_FORMAT_DATE;
+	} else if (match_token(md->js, typ, "TIME")) {
+		return EXTRACT_METADATA_FORMAT_TIME;
+	} else if (match_token(md->js, typ, "DATE_TIME")) {
+		return EXTRACT_METADATA_FORMAT_DATE_TIME;
+	}
+	return EXTRACT_METADATA_FORMAT_UNSPECIFIED;
 }
 
 double get_double_from_token(const char *js, jsmntok_t* token) {
@@ -243,7 +263,7 @@ struct json_metadata* get_json_metadata(const char* filename) {
 		fprintf(stderr, "malloc(): error:%s\n", strerror(errno));
 		goto errexit;
 	}
-	
+
 	fd = fopen(filename, "rb");
 	if (fd == NULL) {
 		fprintf(stderr, "Could not open %s: %s\n", filename, strerror(errno));
