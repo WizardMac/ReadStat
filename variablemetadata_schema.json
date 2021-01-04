@@ -19,7 +19,9 @@
                 },
                 "separator": {
                     "enum": [
-                        ",", ";", "\t"
+                        ",",
+                        ";",
+                        "\t"
                     ]
                 },
                 "variables": {
@@ -32,9 +34,6 @@
                             },
                             {
                                 "$ref": "#/definitions/SPSS-STRING"
-                            },
-                            {
-                                "$ref": "#/definitions/SPSS-DATE"
                             }
                         ]
                     }
@@ -58,6 +57,23 @@
                     "type": "string",
                     "minLength": 0,
                     "maxLength": 255
+                },
+                "format": {
+                    "type": {
+                        "enum": [
+                            "NUMBER",
+                            "PERCENT",
+                            "CURRENCY",
+                            "DATE",
+                            "TIME",
+                            "DATE_TIME",
+                            "UNSPECIFIED"
+                        ]
+                    }
+                },
+                "pattern": {
+                    "type": "string",
+                    "minLength": 1
                 },
                 "decimals": {
                     "type": "integer",
@@ -152,61 +168,6 @@
             ],
             "additionalProperties": false
         },
-        "SPSS-DATE": {
-            "properties": {
-                "type": {
-                    "enum": [
-                        "DATE"
-                    ]
-                },
-                "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64
-                },
-                "label": {
-                    "type": "string",
-                    "minLength": 0,
-                    "maxLength": 255
-                },
-                "categories": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "code": {
-                                "type": "string",
-                                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
-                            },
-                            "label": {
-                                "type": "string"
-                            }
-                        },
-                        "required": [
-                            "code",
-                            "label"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                "missing": {
-                    "type": "object",
-                    "oneOf": [
-                        {
-                            "$ref": "#/definitions/SPSS-DATE-DISCRETE"
-                        },
-                        {
-                            "$ref": "#/definitions/DATE-RANGE"
-                        }
-                    ]
-                }
-            },
-            "required": [
-                "type",
-                "name"
-            ],
-            "additionalProperties": false
-        },
         "SPSS-NUMERIC-DISCRETE": {
             "type": "object",
             "properties": {
@@ -254,30 +215,6 @@
                 "values"
             ],
             "additionalProperties": false
-        },
-        "SPSS-DATE-DISCRETE": {
-            "type": "object",
-            "properties": {
-                "type": {
-                    "enum": [
-                        "DISCRETE"
-                    ]
-                },
-                "values": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
-                    },
-                    "minItems": 1,
-                    "maxItems": 3,
-                    "uniqueItems": true
-                }
-            },
-            "required": [
-                "type",
-                "values"
-            ]
         },
         "NUMERIC-RANGE": {
             "type": "object",
@@ -342,7 +279,9 @@
                 },
                 "separator": {
                     "enum": [
-                        ",", ";", "\t"
+                        ",",
+                        ";",
+                        "\t"
                     ]
                 },
                 "variables": {
@@ -354,9 +293,6 @@
                                 "$ref": "#/definitions/STATA-NUMERIC"
                             },
                             {
-                                "$ref": "#/definitions/STATA-DATE"
-                            },
-                                                        {
                                 "$ref": "#/definitions/STATA-STRING"
                             }
                         ]
@@ -381,6 +317,23 @@
                     "type": "string",
                     "minLength": 0,
                     "maxLength": 255
+                },
+                "format": {
+                    "type": {
+                        "enum": [
+                            "NUMBER",
+                            "PERCENT",
+                            "CURRENCY",
+                            "DATE",
+                            "TIME",
+                            "DATE_TIME",
+                            "UNSPECIFIED"
+                        ]
+                    }
+                },
+                "pattern": {
+                    "type": "string",
+                    "minLength": 1
                 },
                 "decimals": {
                     "type": "integer",
@@ -448,85 +401,6 @@
             ],
             "additionalProperties": false
         },
-        "STATA-DATE": {
-            "properties": {
-                "type": {
-                    "enum": [
-                        "DATE"
-                    ]
-                },
-                "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 32
-                },
-                "label": {
-                    "type": "string",
-                    "minLength": 0,
-                    "maxLength": 255
-                },
-                "categories": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "code": {
-                                "type": "string",
-                                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
-                            },
-                            "label": {
-                                "type": "string"
-                            }
-                        },
-                        "required": [
-                            "code",
-                            "label"
-                        ],
-                        "additionalProperties": false
-                    }
-                },
-                "missing": {
-                    "type": "object",
-                    "oneOf": [
-                        {
-                            "$ref": "#/definitions/STATA-DATE-DISCRETE"
-                        },
-                        {
-                            "$ref": "#/definitions/DATE-RANGE"
-                        }
-                    ]
-                }
-            },
-            "required": [
-                "type",
-                "name"
-            ],
-            "additionalProperties": false
-        },
-        "STATA-DATE-DISCRETE": {
-            "type": "object",
-            "properties": {
-                "type": {
-                    "enum": [
-                        "DISCRETE"
-                    ]
-                },
-                "values": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
-                    },
-                    "minItems": 1,
-                    "maxItems": 26,
-                    "uniqueItems": true
-                }
-            },
-            "required": [
-                "type",
-                "values"
-            ]
-        },
         "STATA-STRING": {
             "properties": {
                 "type": {
@@ -544,7 +418,7 @@
                     "minLength": 0,
                     "maxLength": 255
                 },
-                 "categories": {
+                "categories": {
                     "type": "array",
                     "items": {
                         "type": "object",
