@@ -612,6 +612,10 @@ static readstat_error_t dta_handle_row(const unsigned char *buf, dta_ctx_t *ctx)
         }
 
         if (value.type == READSTAT_TYPE_STRING) {
+            if (max_len == 0) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
             size_t str_len = strnlen((const char *)&buf[offset], max_len);
             retval = readstat_convert(str_buf, sizeof(str_buf),
                     (const char *)&buf[offset], str_len, ctx->converter);
