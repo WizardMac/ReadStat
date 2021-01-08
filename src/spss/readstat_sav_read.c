@@ -7,6 +7,7 @@
 #include <math.h>
 #include <float.h>
 #include <time.h>
+#include <limits.h>
 
 #include "../readstat.h"
 #include "../readstat_bits.h"
@@ -24,6 +25,7 @@
 #endif
 
 #define DATA_BUFFER_SIZE    65536
+#define VERY_LONG_STRING_MAX_LENGTH INT_MAX
 
 /* Others defined in table below */
 
@@ -1472,11 +1474,13 @@ cleanup:
     return retval;
 }
 
-static void sav_set_n_segments_and_var_count(sav_ctx_t *ctx) {
+static readstat_error_t sav_set_n_segments_and_var_count(sav_ctx_t *ctx) {
     int i;
     ctx->var_count = 0;
     for (i=0; i<ctx->var_index;) {
         spss_varinfo_t *info = ctx->varinfo[i];
+        if (info->string_length > VERY_LONG_STRING_MAX_LENGTH)
+            return READSTAT_ERROR_PARSE;
         if (info->string_length) {
             info->n_segments = (info->string_length + 251) / 252;
         }
@@ -1484,6 +1488,7 @@ static void sav_set_n_segments_and_var_count(sav_ctx_t *ctx) {
         i += info->n_segments;
     }
     ctx->variables = readstat_calloc(ctx->var_count, sizeof(readstat_variable_t *));
+    return READSTAT_OK;
 }
 
 static readstat_error_t sav_handle_variables(sav_ctx_t *ctx) {
@@ -1632,7 +1637,8 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
     if ((retval = sav_parse_records_pass2(ctx)) != READSTAT_OK)
         goto cleanup;
  
-    sav_set_n_segments_and_var_count(ctx);
+    if ((retval = sav_set_n_segments_and_var_count(ctx)) != READSTAT_OK)
+        goto cleanup;
 
     if (ctx->var_count == 0) {
         retval = READSTAT_ERROR_PARSE;
