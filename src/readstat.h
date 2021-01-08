@@ -201,9 +201,9 @@ typedef struct readstat_variable_s {
 } readstat_variable_t;
 
 typedef struct readstat_schema_entry_s {
-    int                 row;
-    int                 col;
-    int                 len;
+    uint32_t            row;
+    uint32_t            col;
+    uint32_t            len;
     int                 skip;
     readstat_variable_t variable;
     char                labelset[32];
@@ -212,8 +212,8 @@ typedef struct readstat_schema_entry_s {
 
 typedef struct readstat_schema_s {
     char                    filename[255];
-    int                     rows_per_observation;
-    int                     cols_per_observation;
+    uint32_t                rows_per_observation;
+    uint32_t                cols_per_observation;
     int                     first_line;
     int                     entry_count;
     char                    field_delimiter;
