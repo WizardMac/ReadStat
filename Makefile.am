@@ -57,7 +57,7 @@ endif
 
 if HAVE_RAGEL
 .rl.c:
-	$(AM_V_GEN)$(RAGEL) $(RAGELFLAGS) -C $< -o $@
+	$(AM_V_GEN)$(RAGEL) $(RAGELFLAGS) $< -o $@
 endif
 
 libreadstat_la_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
