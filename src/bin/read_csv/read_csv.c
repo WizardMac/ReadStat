@@ -31,19 +31,24 @@ static void produce_column_header(struct csv_metadata *c, void *s, size_t len) {
     char* column = (char*)s;
     readstat_variable_t* var = &c->variables[c->columns];
     memset(var, 0, sizeof(readstat_variable_t));
-    extract_metadata_type_t coltype = column_type(c->json_md, column, c->output_format);
-    c->is_date[c->columns] = coltype == EXTRACT_METADATA_TYPE_DATE;
 
-    if (coltype == EXTRACT_METADATA_TYPE_STRING) {
+    extract_metadata_type_t coltype = column_type(c->json_md, column, c->output_format);
+    switch (coltype) {
+    case EXTRACT_METADATA_TYPE_STRING:
         var->alignment = READSTAT_ALIGNMENT_LEFT;
-    } else if (coltype == EXTRACT_METADATA_TYPE_NUMERIC) {
+    break;
+    case EXTRACT_METADATA_TYPE_NUMERIC:
         var->alignment = READSTAT_ALIGNMENT_RIGHT;
+    break;
+    default:
+        var->alignment = READSTAT_ALIGNMENT_LEFT;
     }
 
+    extract_metadata_format_t colformat = column_format(c->json_md, column);
+    c->is_date[c->columns] = colformat == EXTRACT_METADATA_FORMAT_DATE;
     if (c->output_module->header) {
         c->output_module->header(c, column, var);
     }
-
     if (c->pass == 2 && coltype == EXTRACT_METADATA_TYPE_STRING) {
         var->storage_width = c->column_width[c->columns];
     }
