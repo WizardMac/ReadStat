@@ -1,3 +1,15 @@
+New in 1.1.6, Release Candidate 0:
+
+    * Migrate to GitHub Actions
+    * Regenerate parsers with Ragel 7 and update build script
+    * SAS7BDAT reader: Improved large file support on Windows #226
+    * SAV reader: Skip null bytes in UTF-8 data https://github.com/tidyverse/haven/issues/560
+    * SAV reader: Fix hang (oss-fuzz/23485)
+    * DTA reader: Disallow str0 type
+    * DTA reader: Fix encoding error when garbage values are present beyond the end of a string
+    * Command file readers: Fix integer overflow (oss-fuzz/15778)
+    * `extract_metadata`: Implement duration support #223 (thanks to @basgys)
+
 New in 1.1.5:
 
     * Support for building with MSVC #214 (thanks to @zebrys and @jonathon-love)
