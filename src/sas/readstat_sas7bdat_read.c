@@ -688,15 +688,13 @@ static readstat_variable_t *sas7bdat_init_variable(sas7bdat_ctx_t *ctx, int i,
                     ctx->col_info[i].name_ref, ctx)) != READSTAT_OK) {
         goto cleanup;
     }
-    char format[256];
-    if ((retval = sas7bdat_copy_text_ref(format, sizeof(format),
+    if ((retval = sas7bdat_copy_text_ref(variable->format, sizeof(variable->format),
                     ctx->col_info[i].format_ref, ctx)) != READSTAT_OK) {
         goto cleanup;
     }
-    if (ctx->col_info[i].format_len) {
-        snprintf(variable->format, sizeof(variable->format), "%s%d", format, ctx->col_info[i].format_len);
-    } else {
-        snprintf(variable->format, sizeof(variable->format), "%s", format);
+    size_t len = strlen(variable->format);
+    if (len && ctx->col_info[i].format_len) {
+        snprintf(variable->format + len, sizeof(variable->format) - len, "%d", ctx->col_info[i].format_len);
     }
     if ((retval = sas7bdat_copy_text_ref(variable->label, sizeof(variable->label), 
                     ctx->col_info[i].label_ref, ctx)) != READSTAT_OK) {
