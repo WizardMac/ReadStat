@@ -1,3 +1,10 @@
+New in 1.1.6, Release Candidate 1:
+
+    * Support for SAS files created with SAS Visual Forecaster #232
+    * Report format widths for date/time SAS formats #233
+    * Document the meaning of a -1 return value from `readstat_get_row_count` #234
+    * Fix SAS file creation / modification times on Windows #238 #240
+
 New in 1.1.6, Release Candidate 0:
 
     * Migrate to GitHub Actions
