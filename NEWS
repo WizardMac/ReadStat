@@ -1,11 +1,4 @@
-New in 1.1.6, Release Candidate 1:
-
-    * Support for SAS files created with SAS Visual Forecaster #232
-    * Report format widths for date/time SAS formats #233
-    * Document the meaning of a -1 return value from `readstat_get_row_count` #234
-    * Fix SAS file creation / modification times on Windows #238 #240
-
-New in 1.1.6, Release Candidate 0:
+New in 1.1.6:
 
     * Migrate to GitHub Actions
     * Regenerate parsers with Ragel 7 and update build script
@@ -16,6 +9,10 @@ New in 1.1.6, Release Candidate 0:
     * DTA reader: Fix encoding error when garbage values are present beyond the end of a string
     * Command file readers: Fix integer overflow (oss-fuzz/15778)
     * `extract_metadata`: Implement duration support #223 (thanks to @basgys)
+    * Support for SAS files created with SAS Visual Forecaster #232
+    * Report format widths for date/time SAS formats #233
+    * Document the meaning of a -1 return value from `readstat_get_row_count` #234
+    * Fix SAS file creation / modification times on Windows #238 #240
 
 New in 1.1.5:
 

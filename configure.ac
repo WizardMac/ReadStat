@@ -1,5 +1,5 @@
 # Update this with each release. Be sure to change VS17/PropertySheet.props too
-AC_INIT([ReadStat], [1.1.6-rc1], [https://github.com/WizardMac/ReadStat/issues], [readstat], [https://github.com/WizardMac/ReadStat])
+AC_INIT([ReadStat], [1.1.6], [https://github.com/WizardMac/ReadStat/issues], [readstat], [https://github.com/WizardMac/ReadStat])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
 
