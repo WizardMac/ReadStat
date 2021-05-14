@@ -354,6 +354,7 @@ typedef struct readstat_parser_s {
 } readstat_parser_t;
 
 readstat_parser_t *readstat_parser_init(void);
+readstat_parser_t *readstat_buffer_parser_init(const char* buf, size_t buf_size);
 void readstat_parser_free(readstat_parser_t *parser);
 void readstat_io_free(readstat_io_t *io);
 
