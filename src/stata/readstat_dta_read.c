@@ -317,10 +317,10 @@ cleanup:
 static int dta_compare_strls(const void *elem1, const void *elem2) {
     const dta_strl_t *key = (const dta_strl_t *)elem1;
     const dta_strl_t *target = *(const dta_strl_t **)elem2;
-    if (key->v == target->v)
-        return key->o - target->o;
+    if (key->o == target->o)
+        return key->v - target->v;
 
-    return key->v - target->v;
+    return key->o - target->o;
 }
 
 static dta_strl_t dta_interpret_strl_vo_bytes(dta_ctx_t *ctx, const unsigned char *vo_bytes) {
