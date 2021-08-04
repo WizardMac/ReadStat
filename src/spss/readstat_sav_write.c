@@ -1304,7 +1304,7 @@ static sav_varnames_t *sav_varnames_init(readstat_writer_t *writer) {
             shortname[k] = toupper(shortname[k]);
         }
         if (ck_str_hash_lookup(shortname, table)) {
-            snprintf(shortname, sizeof(varnames[0].shortname), "V%d_A", i+1);
+            snprintf(shortname, sizeof(varnames[0].shortname), "V%d_A", ((unsigned int)i+1)%100000);
         }
         ck_str_hash_insert(shortname, r_variable, table);
 
