@@ -31,7 +31,7 @@ typedef struct dta_117_strl_header_s {
     int32_t         len;
 } dta_117_strl_header_t;
 
-#define SIZEOF_DTA_117_STRL_HEADER_T (offsetof(dta_117_strl_header_t, len) + sizeof(int32_t))
+#define SIZEOF_DTA_117_STRL_HEADER_T 13
 
 typedef struct dta_118_strl_header_s {
     uint32_t        v;
@@ -40,7 +40,7 @@ typedef struct dta_118_strl_header_s {
     int32_t         len;
 } dta_118_strl_header_t;
 
-#define SIZEOF_DTA_118_STRL_HEADER_T (offsetof(dta_118_strl_header_t, len) + sizeof(int32_t))
+#define SIZEOF_DTA_118_STRL_HEADER_T 17
 
 #pragma pack(pop)
 
