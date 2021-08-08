@@ -15,14 +15,27 @@ readstat_error_t readstat_convert(char *dst, size_t dst_len, const char *src, si
     } else if (converter) {
         size_t dst_left = dst_len - 1;
         char *dst_end = dst;
-        size_t status = iconv(converter, (readstat_iconv_inbuf_t)&src, &src_len, &dst_end, &dst_left);
-        if (status == (size_t)-1) {
-            if (errno == E2BIG) {
-                return READSTAT_ERROR_CONVERT_LONG_STRING;
-            } else if (errno == EILSEQ) {
-                return READSTAT_ERROR_CONVERT_BAD_STRING;
-            } else if (errno != EINVAL) { /* EINVAL indicates improper truncation; accept it */
-                return READSTAT_ERROR_CONVERT;
+        size_t src_left = src_len;
+        const char *src_end = src;
+        while (src_left > 0) {
+            size_t status = iconv(converter, (readstat_iconv_inbuf_t)&src_end, &src_left, &dst_end, &dst_left);
+            if (status == (size_t)-1) {
+                if (errno == E2BIG) {
+                    return READSTAT_ERROR_CONVERT_LONG_STRING;
+                } else if (errno == EILSEQ) { /* EILSEQ indicates an invalid multibyte sequence */
+                    /* if an invalid multi-byte sequence is found, copy over the
+                     * bad bytes and continue */
+                    memcpy(dst_end, src_end, 1);
+                    dst_end++;
+                    src_end++;
+                    dst_left++;
+                    src_left++;
+                } else if (errno != EINVAL) { /* EINVAL indicates improper truncation; accept it */
+                    return READSTAT_ERROR_CONVERT;
+                } else {
+                    /* finish here if an unknown error code is returned */
+                    src_left = 0;
+                }
             }
         }
         dst[dst_len - dst_left - 1] = '\0';
