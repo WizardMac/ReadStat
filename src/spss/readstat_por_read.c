@@ -520,7 +520,8 @@ static readstat_error_t read_variable_label_record(por_ctx_t *ctx) {
     }
 
     varinfo->label = realloc(varinfo->label, 4*strlen(string) + 1);
-    retval = readstat_convert(varinfo->label, 4*strlen(string) + 1, string, strlen(string), ctx->converter);
+    retval = readstat_convert(varinfo->label, 4*strlen(string) + 1, string, strlen(string),
+            ctx->converter, ctx->handle.bad_byte);
 
 cleanup:
     return retval;
@@ -615,7 +616,7 @@ static readstat_error_t read_por_file_data(por_ctx_t *ctx) {
                     goto cleanup;
                 }
                 rs_retval = readstat_convert(output_string, sizeof(output_string),
-                        input_string, strlen(input_string), ctx->converter);
+                        input_string, strlen(input_string), ctx->converter, ctx->handle.bad_byte);
                 if (rs_retval != READSTAT_OK) {
                     goto cleanup;
                 }
@@ -705,7 +706,7 @@ readstat_error_t handle_variables(por_ctx_t *ctx) {
         spss_varinfo_t *info = &ctx->varinfo[i];
         info->index = i;
 
-        ctx->variables[i] = spss_init_variable_for_info(info, index_after_skipping, ctx->converter);
+        ctx->variables[i] = spss_init_variable_for_info(info, index_after_skipping, ctx->converter, ctx->handle.bad_byte);
 
         snprintf(label_name_buf, sizeof(label_name_buf), POR_LABEL_NAME_PREFIX "%d", info->labels_index);
 
@@ -791,7 +792,7 @@ readstat_error_t readstat_parse_por(readstat_parser_t *parser, const char *path,
         goto cleanup;
     }
 
-    retval = readstat_convert(ctx->file_label, sizeof(ctx->file_label), vanity[1] + 20, 20, NULL);
+    retval = readstat_convert(ctx->file_label, sizeof(ctx->file_label), vanity[1] + 20, 20, NULL, NULL);
     if (retval != READSTAT_OK)
         goto cleanup;
     

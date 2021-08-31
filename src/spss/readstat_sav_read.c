@@ -229,7 +229,8 @@ static readstat_error_t sav_read_variable_label(spss_varinfo_t *info, sav_ctx_t 
         goto cleanup;
     }
 
-    retval = readstat_convert(info->label, out_label_len, label_buf, label_len, ctx->converter);
+    retval = readstat_convert(info->label, out_label_len, label_buf, label_len,
+            ctx->converter, ctx->handle.bad_byte);
     if (retval != READSTAT_OK)
         goto cleanup;
 
@@ -287,7 +288,7 @@ static readstat_error_t sav_read_variable_missing_string_values(spss_varinfo_t *
             goto cleanup;
         }
         retval = readstat_convert(info->missing_string_values[i], sizeof(info->missing_string_values[0]),
-                missing_value, sizeof(missing_value), ctx->converter);
+                missing_value, sizeof(missing_value), ctx->converter, ctx->handle.bad_byte);
         if (retval != READSTAT_OK)
             goto cleanup;
     }
@@ -351,12 +352,12 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     info->labels_index = -1;
 
     retval = readstat_convert(info->name, sizeof(info->name),
-            variable.name, sizeof(variable.name), NULL);
+            variable.name, sizeof(variable.name), NULL, NULL);
     if (retval != READSTAT_OK)
         goto cleanup;
 
-    retval = readstat_convert(info->longname, sizeof(info->longname), 
-            variable.name, sizeof(variable.name), NULL);
+    retval = readstat_convert(info->longname, sizeof(info->longname),
+            variable.name, sizeof(variable.name), NULL, NULL);
     if (retval != READSTAT_OK)
         goto cleanup;
 
@@ -527,7 +528,8 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
             goto cleanup;
         }
 
-        retval = readstat_convert(vlabel->label, utf8_label_len, label_buf, padded_label_len, ctx->converter);
+        retval = readstat_convert(vlabel->label, utf8_label_len, label_buf, padded_label_len,
+                ctx->converter, ctx->handle.bad_byte);
         if (retval != READSTAT_OK)
             goto cleanup;
     }
@@ -585,7 +587,7 @@ static readstat_error_t sav_read_value_label_record(sav_ctx_t *ctx) {
             sav_tag_missing_double(&vlabel->final_value, ctx);
         } else {
             retval = readstat_convert(vlabel->utf8_string_value, sizeof(vlabel->utf8_string_value),
-                    vlabel->raw_value, 8, ctx->converter);
+                    vlabel->raw_value, 8, ctx->converter, ctx->handle.bad_byte);
             if (retval != READSTAT_OK)
                 break;
 
@@ -655,7 +657,7 @@ static readstat_error_t sav_read_document_record(sav_ctx_t *ctx) {
         }
 
         retval = readstat_convert(utf8_buffer, sizeof(utf8_buffer),
-                raw_buffer, sizeof(raw_buffer), ctx->converter);
+                raw_buffer, sizeof(raw_buffer), ctx->converter, ctx->handle.bad_byte);
         if (retval != READSTAT_OK)
             goto cleanup;
 
@@ -724,8 +726,8 @@ static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len
             }
             if (segment_offset == var_info->n_segments) {
                 if (!ctx->variables[var_info->index]->skip) {
-                    retval = readstat_convert(ctx->utf8_string, ctx->utf8_string_len, 
-                            ctx->raw_string, raw_str_used, ctx->converter);
+                    retval = readstat_convert(ctx->utf8_string, ctx->utf8_string_len,
+                            ctx->raw_string, raw_str_used, ctx->converter, ctx->handle.bad_byte);
                     if (retval != READSTAT_OK)
                         goto done;
                     value.v.string_value = ctx->utf8_string;
@@ -1046,7 +1048,7 @@ static readstat_error_t sav_read_pascal_string(char *buf, size_t buf_len,
         goto cleanup;
     }
 
-    retval = readstat_convert(buf, buf_len, data_ptr, var_name_len, NULL);
+    retval = readstat_convert(buf, buf_len, data_ptr, var_name_len, NULL, NULL);
     if (retval != READSTAT_OK)
         goto cleanup;
 
@@ -1138,7 +1140,8 @@ static readstat_error_t sav_parse_long_string_value_labels_record(const void *da
                 goto cleanup;
             }
 
-            retval = readstat_convert(value_buffer, value_buffer_len, data_ptr, value_len, ctx->converter);
+            retval = readstat_convert(value_buffer, value_buffer_len, data_ptr, value_len,
+                    ctx->converter, ctx->handle.bad_byte);
             if (retval != READSTAT_OK)
                 goto cleanup;
 
@@ -1167,7 +1170,8 @@ static readstat_error_t sav_parse_long_string_value_labels_record(const void *da
                 goto cleanup;
             }
 
-            retval = readstat_convert(label_buffer, label_buffer_len, data_ptr, label_len, ctx->converter);
+            retval = readstat_convert(label_buffer, label_buffer_len, data_ptr, label_len,
+                    ctx->converter, ctx->handle.bad_byte);
             if (retval != READSTAT_OK)
                 goto cleanup;
 
@@ -1248,7 +1252,7 @@ static readstat_error_t sav_parse_long_string_missing_values_record(const void *
 
                     retval = readstat_convert(info->missing_string_values[j],
                             sizeof(info->missing_string_values[0]),
-                            data_ptr, var_name_len, ctx->converter);
+                            data_ptr, var_name_len, ctx->converter, ctx->handle.bad_byte);
                     if (retval != READSTAT_OK)
                         goto cleanup;
 
@@ -1502,7 +1506,7 @@ static readstat_error_t sav_handle_variables(sav_ctx_t *ctx) {
     for (i=0; i<ctx->var_index;) {
         char label_name_buf[256];
         spss_varinfo_t *info = ctx->varinfo[i];
-        ctx->variables[info->index] = spss_init_variable_for_info(info, index_after_skipping, ctx->converter);
+        ctx->variables[info->index] = spss_init_variable_for_info(info, index_after_skipping, ctx->converter, ctx->handle.bad_byte);
 
         snprintf(label_name_buf, sizeof(label_name_buf), SAV_LABEL_NAME_PREFIX "%d", info->labels_index);
 
@@ -1657,7 +1661,8 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
             .endianness = ctx->endianness
         };
         if ((retval = readstat_convert(ctx->file_label, sizeof(ctx->file_label),
-                        header.file_label, sizeof(header.file_label), ctx->converter)) != READSTAT_OK)
+                        header.file_label, sizeof(header.file_label), ctx->converter,
+                        ctx->handle.bad_byte)) != READSTAT_OK)
             goto cleanup;
 
         metadata.file_label = ctx->file_label;

@@ -154,7 +154,7 @@ static readstat_error_t sas7bdat_copy_text_ref(char *out_buffer, size_t out_buff
         return READSTAT_ERROR_PARSE;
 
     return readstat_convert(out_buffer, out_buffer_len, &blob[text_ref.offset], text_ref.length,
-            ctx->converter);
+            ctx->converter, ctx->handle.bad_byte);
 }
 
 static readstat_error_t sas7bdat_parse_column_text_subheader(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
@@ -398,7 +398,7 @@ static readstat_error_t sas7bdat_handle_data_value(readstat_variable_t *variable
 
     if (col_info->type == READSTAT_TYPE_STRING) {
         retval = readstat_convert(ctx->scratch_buffer, ctx->scratch_buffer_len,
-                col_data, col_info->width, ctx->converter);
+                col_data, col_info->width, ctx->converter, ctx->handle.bad_byte);
         if (retval != READSTAT_OK) {
             if (ctx->handle.error) {
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf),
@@ -1237,7 +1237,8 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     }
 
     if ((retval = readstat_convert(ctx->table_name, sizeof(ctx->table_name),
-                hinfo->table_name, sizeof(hinfo->table_name), ctx->converter)) != READSTAT_OK) {
+                hinfo->table_name, sizeof(hinfo->table_name),
+                ctx->converter, ctx->handle.bad_byte)) != READSTAT_OK) {
         goto cleanup;
     }
 

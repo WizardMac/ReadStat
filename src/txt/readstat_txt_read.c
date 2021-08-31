@@ -25,7 +25,7 @@ static readstat_error_t handle_value(readstat_parser_t *parser, iconv_t converte
     readstat_variable_t *variable = &entry->variable;
     readstat_value_t value = { .type = variable->type };
     if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_STRING) {
-        error = readstat_convert(converted_value, 4 * len + 1, bytes, len, converter);
+        error = readstat_convert(converted_value, 4 * len + 1, bytes, len, converter, parser->handlers.bad_byte);
         if (error != READSTAT_OK)
             goto cleanup;
         value.v.string_value = converted_value;

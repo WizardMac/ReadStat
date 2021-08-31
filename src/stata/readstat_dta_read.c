@@ -47,20 +47,20 @@ static readstat_variable_t *dta_init_variable(dta_ctx_t *ctx, int i, int index_a
     readstat_convert(variable->name, sizeof(variable->name), 
             &ctx->varlist[ctx->variable_name_len*i],
             strnlen(&ctx->varlist[ctx->variable_name_len*i], ctx->variable_name_len),
-            ctx->converter);
+            ctx->converter, ctx->handle.bad_byte);
 
     if (ctx->variable_labels[ctx->variable_labels_entry_len*i]) {
         readstat_convert(variable->label, sizeof(variable->label),
                 &ctx->variable_labels[ctx->variable_labels_entry_len*i],
                 strnlen(&ctx->variable_labels[ctx->variable_labels_entry_len*i], ctx->variable_labels_entry_len),
-                ctx->converter);
+                ctx->converter, ctx->handle.bad_byte);
     }
 
     if (ctx->fmtlist[ctx->fmtlist_entry_len*i]) {
         readstat_convert(variable->format, sizeof(variable->format),
                 &ctx->fmtlist[ctx->fmtlist_entry_len*i],
                 strnlen(&ctx->fmtlist[ctx->fmtlist_entry_len*i], ctx->fmtlist_entry_len),
-                ctx->converter);
+                ctx->converter, ctx->handle.bad_byte);
         if (variable->format[0] == '%') {
             if (variable->format[1] == '-') {
                 variable->alignment = READSTAT_ALIGNMENT_LEFT;
@@ -618,7 +618,7 @@ static readstat_error_t dta_handle_row(const unsigned char *buf, dta_ctx_t *ctx)
             }
             size_t str_len = strnlen((const char *)&buf[offset], max_len);
             retval = readstat_convert(str_buf, sizeof(str_buf),
-                    (const char *)&buf[offset], str_len, ctx->converter);
+                    (const char *)&buf[offset], str_len, ctx->converter, ctx->handle.bad_byte);
             if (retval != READSTAT_OK)
                 goto cleanup;
             value.v.string_value = str_buf;
@@ -873,7 +873,7 @@ static readstat_error_t dta_read_label_and_timestamp(dta_ctx_t *ctx) {
     }
 
     if ((retval = readstat_convert(ctx->data_label, 4*label_len+1,
-                    data_label_buffer, label_len, ctx->converter)) != READSTAT_OK)
+                    data_label_buffer, label_len, ctx->converter, ctx->handle.bad_byte)) != READSTAT_OK)
         goto cleanup;
 
     if (ctx->file_is_xmlish) {
@@ -1051,7 +1051,8 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
                 char label_buf[4*8+1];
 
                 retval = readstat_convert(label_buf, sizeof(label_buf),
-                        &table_buffer[8*i], strnlen(&table_buffer[8*i], 8), ctx->converter);
+                        &table_buffer[8*i], strnlen(&table_buffer[8*i], 8),
+                        ctx->converter, ctx->handle.bad_byte);
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
@@ -1109,7 +1110,8 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
                     max_label_len = MAX_VALUE_LABEL_LEN;
                 size_t label_len = strnlen(&txt[off[i]], max_label_len);
 
-                retval = readstat_convert(utf8_buffer, utf8_buffer_len, &txt[off[i]], label_len, ctx->converter);
+                retval = readstat_convert(utf8_buffer, utf8_buffer_len, &txt[off[i]], label_len,
+                        ctx->converter, ctx->handle.bad_byte);
                 if (retval != READSTAT_OK)
                     goto cleanup;
 

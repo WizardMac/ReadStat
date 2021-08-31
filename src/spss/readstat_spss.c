@@ -148,7 +148,7 @@ readstat_missingness_t spss_missingness_for_info(spss_varinfo_t *info) {
 }
 
 readstat_variable_t *spss_init_variable_for_info(spss_varinfo_t *info, int index_after_skipping,
-        iconv_t converter) {
+        iconv_t converter, readstat_bad_byte_handler bad_byte_handler) {
     readstat_variable_t *variable = calloc(1, sizeof(readstat_variable_t));
 
     variable->index = info->index;
@@ -162,10 +162,10 @@ readstat_variable_t *spss_init_variable_for_info(spss_varinfo_t *info, int index
 
     if (info->longname[0]) {
         readstat_convert(variable->name, sizeof(variable->name),
-                info->longname, sizeof(info->longname), converter);
+                info->longname, sizeof(info->longname), converter, bad_byte_handler);
     } else {
         readstat_convert(variable->name, sizeof(variable->name),
-                info->name, sizeof(info->name), converter);
+                info->name, sizeof(info->name), converter, bad_byte_handler);
     }
     if (info->label) {
         snprintf(variable->label, sizeof(variable->label), "%s", info->label);

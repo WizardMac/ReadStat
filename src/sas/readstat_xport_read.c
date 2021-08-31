@@ -155,7 +155,7 @@ static readstat_error_t xport_read_table_name_record(xport_ctx_t *ctx) {
         goto cleanup;
 
     retval = readstat_convert(ctx->table_name, sizeof(ctx->table_name), &line[8],
-            ctx->version == 5 ? 8 : 32, ctx->converter);
+            ctx->version == 5 ? 8 : 32, ctx->converter, ctx->handle.bad_byte);
     if (retval != READSTAT_OK)
         goto cleanup;
 
@@ -172,7 +172,7 @@ static readstat_error_t xport_read_file_label_record(xport_ctx_t *ctx) {
         goto cleanup;
 
     retval = readstat_convert(ctx->file_label, sizeof(ctx->file_label), &line[32],
-            40, ctx->converter);
+            40, ctx->converter, ctx->handle.bad_byte);
     if (retval != READSTAT_OK)
         goto cleanup;
 
@@ -281,7 +281,7 @@ static readstat_error_t xport_read_obs_header_record(xport_ctx_t *ctx) {
 static readstat_error_t xport_construct_format(char *dst, size_t dst_len,
         const char *src, size_t src_len, int width, int decimals) {
     char *format = malloc(4 * src_len + 1);
-    readstat_error_t retval = readstat_convert(format, 4 * src_len + 1, src, src_len, NULL);
+    readstat_error_t retval = readstat_convert(format, 4 * src_len + 1, src, src_len, NULL, NULL);
 
     if (retval != READSTAT_OK) {
         free(format);
@@ -343,12 +343,12 @@ static readstat_error_t xport_read_labels_v8(xport_ctx_t *ctx, int label_count) 
         }
 
         retval = readstat_convert(variable->name, sizeof(variable->name),
-                name, name_len, ctx->converter);
+                name, name_len, ctx->converter, ctx->handle.bad_byte);
         if (retval != READSTAT_OK)
             goto cleanup;
 
         retval = readstat_convert(variable->label, sizeof(variable->label),
-                label, label_len, ctx->converter);
+                label, label_len, ctx->converter, ctx->handle.bad_byte);
         if (retval != READSTAT_OK)
             goto cleanup;
     }
@@ -418,12 +418,12 @@ static readstat_error_t xport_read_labels_v9(xport_ctx_t *ctx, int label_count) 
         }
 
         retval = readstat_convert(variable->name, sizeof(variable->name),
-                name, name_len, ctx->converter);
+                name, name_len, ctx->converter, ctx->handle.bad_byte);
         if (retval != READSTAT_OK)
             goto cleanup;
 
         retval = readstat_convert(variable->label, sizeof(variable->label),
-                label, label_len, ctx->converter);
+                label, label_len, ctx->converter, ctx->handle.bad_byte);
         if (retval != READSTAT_OK)
             goto cleanup;
 
@@ -472,16 +472,16 @@ static readstat_error_t xport_read_variables(xport_ctx_t *ctx) {
 
         if (ctx->version == 5) {
             retval = readstat_convert(variable->name, sizeof(variable->name),
-                    namestr.nname, sizeof(namestr.nname), ctx->converter);
+                    namestr.nname, sizeof(namestr.nname), ctx->converter, ctx->handle.bad_byte);
         } else {
             retval = readstat_convert(variable->name, sizeof(variable->name),
-                    namestr.longname, sizeof(namestr.longname), ctx->converter);
+                    namestr.longname, sizeof(namestr.longname), ctx->converter, ctx->handle.bad_byte);
         }
         if (retval != READSTAT_OK)
             goto cleanup;
 
         retval = readstat_convert(variable->label, sizeof(variable->label),
-                namestr.nlabel, sizeof(namestr.nlabel), ctx->converter);
+                namestr.nlabel, sizeof(namestr.nlabel), ctx->converter, ctx->handle.bad_byte);
         if (retval != READSTAT_OK)
             goto cleanup;
 
@@ -564,7 +564,7 @@ static readstat_error_t xport_process_row(xport_ctx_t *ctx, const char *row, siz
                 goto cleanup;
             }
             retval = readstat_convert(string, 4*variable->storage_width+1,
-                    &row[pos], variable->storage_width, ctx->converter);
+                    &row[pos], variable->storage_width, ctx->converter, ctx->handle.bad_byte);
             if (retval != READSTAT_OK)
                 goto cleanup;
 

@@ -298,6 +298,13 @@ typedef int (*readstat_value_label_handler)(const char *val_labels,
         readstat_value_t value, const char *label, void *ctx);
 typedef void (*readstat_error_handler)(const char *error_message, void *ctx);
 typedef int (*readstat_progress_handler)(double progress, void *ctx);
+typedef int (*readstat_bad_byte_handler)(char **dst_end, size_t *dst_left,
+        const char **src_end, size_t *src_left);
+
+int readstat_bad_byte_copy(char **dst_end, size_t *dst_left, const char **src_end, size_t *src_left);
+int readstat_bad_byte_replace(char **dst_end, size_t *dst_left, const char **src_end, size_t *src_left);
+int readstat_bad_byte_skip(char **dst_end, size_t *dst_left, const char **src_end, size_t *src_left);
+int readstat_bad_byte_cp1252(char **dst_end, size_t *dst_left, const char **src_end, size_t *src_left);
 
 #if defined(_MSC_VER)
 #include <BaseTsd.h>
@@ -342,6 +349,7 @@ typedef struct readstat_callbacks_s {
     readstat_value_label_handler   value_label;
     readstat_error_handler         error;
     readstat_progress_handler      progress;
+    readstat_bad_byte_handler      bad_byte;
 } readstat_callbacks_t;
 
 typedef struct readstat_parser_s {
@@ -365,6 +373,7 @@ readstat_error_t readstat_set_value_handler(readstat_parser_t *parser, readstat_
 readstat_error_t readstat_set_value_label_handler(readstat_parser_t *parser, readstat_value_label_handler value_label_handler);
 readstat_error_t readstat_set_error_handler(readstat_parser_t *parser, readstat_error_handler error_handler);
 readstat_error_t readstat_set_progress_handler(readstat_parser_t *parser, readstat_progress_handler progress_handler);
+readstat_error_t readstat_set_bad_byte_handler(readstat_parser_t *parser, readstat_bad_byte_handler bad_byte_handler);
 
 readstat_error_t readstat_set_open_handler(readstat_parser_t *parser, readstat_open_handler open_handler);
 readstat_error_t readstat_set_close_handler(readstat_parser_t *parser, readstat_close_handler close_handler);

@@ -14,6 +14,7 @@
 typedef struct sas7bcat_ctx_s {
     readstat_metadata_handler      metadata_handler;
     readstat_value_label_handler   value_label_handler;
+    readstat_bad_byte_handler      bad_byte_handler;
     void          *user_ctx;
     readstat_io_t *io;
     int            u64;
@@ -95,7 +96,8 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
         if (is_string) {
             size_t value_entry_len = 6 + lbp1[2];
             retval = readstat_convert(string_val, sizeof(string_val),
-                    &lbp1[value_entry_len-16], 16, ctx->converter);
+                    &lbp1[value_entry_len-16], 16, ctx->converter,
+                    ctx->bad_byte_handler);
             if (retval != READSTAT_OK)
                 goto cleanup;
 
@@ -120,7 +122,8 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
         if (ctx->value_label_handler) {
             label = realloc(label, 4 * label_len + 1);
             retval = readstat_convert(label, 4 * label_len + 1,
-                    &lbp2[10], label_len, ctx->converter);
+                    &lbp2[10], label_len, ctx->converter,
+                    ctx->bad_byte_handler);
             if (retval != READSTAT_OK)
                 goto cleanup;
 
@@ -162,7 +165,8 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
         label_count_used = sas_read4(&data[42+pad], ctx->bswap);
     }
 
-    if ((retval = readstat_convert(name, sizeof(name), &data[8], 8, ctx->converter)) != READSTAT_OK)
+    if ((retval = readstat_convert(name, sizeof(name), &data[8], 8, ctx->converter,
+                                   ctx->bad_byte_handler)) != READSTAT_OK)
         goto cleanup;
 
     if (pad) {
@@ -173,7 +177,8 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
         if (data_size < payload_offset + pad + 32)
             goto cleanup;
 
-        retval = readstat_convert(name, sizeof(name), &data[payload_offset+pad], 32, ctx->converter);
+        retval = readstat_convert(name, sizeof(name), &data[payload_offset+pad], 32,
+                ctx->converter, ctx->bad_byte_handler);
         if (retval != READSTAT_OK)
             goto cleanup;
         pad += 32;
@@ -372,6 +377,7 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
 
     ctx->value_label_handler = parser->handlers.value_label;
     ctx->metadata_handler = parser->handlers.metadata;
+    ctx->bad_byte_handler = parser->handlers.bad_byte;
     ctx->input_encoding = parser->input_encoding;
     ctx->output_encoding = parser->output_encoding;
     ctx->user_ctx = user_ctx;
@@ -425,7 +431,8 @@ readstat_error_t readstat_parse_sas7bcat(readstat_parser_t *parser, const char *
             .is64bit = ctx->u64
         };
         retval = readstat_convert(table_name, sizeof(table_name),
-                hinfo->table_name, sizeof(hinfo->table_name), ctx->converter);
+                hinfo->table_name, sizeof(hinfo->table_name), ctx->converter,
+                ctx->bad_byte_handler);
         if (retval != READSTAT_OK)
             goto cleanup;
 
