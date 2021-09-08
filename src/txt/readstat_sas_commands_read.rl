@@ -182,6 +182,8 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
         identifier = ( [$_A-Za-z] [_A-Za-z0-9]* ) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
 
         identifier_eval = "&"? identifier "."?;
+
+        data_identifier = ([_A-Za-z] [_A-Za-z0-9]* "." [_A-Za-z] [_A-Za-z0-9]*) >{ str_start = fpc; } %{ str_len = fpc - str_start; };
         
         integer = [0-9]+ >start_integer $incr_integer;
         
@@ -198,7 +200,7 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
 
         labelset = identifier %copy_labelset;
 
-        arg = identifier %copy_argname (whitespace* "=" whitespace* (identifier_eval | quoted_string | hex_string | integer) >start_integer %handle_arg)?;
+        arg = identifier %copy_argname (whitespace* "=" whitespace* (identifier_eval | data_identifier | quoted_string | hex_string | integer) >start_integer %handle_arg)?;
 
         args = arg ( whitespace+ arg)*;
 
@@ -253,7 +255,8 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
 
         length_spec = var whitespace+ var_len %handle_var_len;
 
-        length_cmd = "LENGTH"i whitespace+ length_spec (whitespace+ length_spec)*
+        length_cmd = "LENGTH"i (whitespace+ length_spec)*
+            (whitespace+ "DEFAULT" whitespace* "=" whitespace* integer)?
             whitespace* ";";
 
         label_spec = var whitespace* "=" whitespace* quoted_string %handle_var_label;
@@ -342,6 +345,10 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
                                        
         invalue_cmd = "INVALUE"i whitespace+ identifier whitespace+ invalue_spec (whitespace+ invalue_spec)* whitespace* ";";
 
+        tables_cmd = "TABLES"i whitespace+ identifier whitespace* ";";
+
+        proc_freq_cmd = "PROC"i whitespace+ "FREQ"i (whitespace+ args) whitespace* ";" whitespace* tables_cmd?;
+
         proc_print_cmd = "PROC"i whitespace+ "PRINT"i (whitespace+ args) (whitespace+ "(" args ")")? 
             whitespace* ";";
 
@@ -367,6 +374,7 @@ readstat_schema_t *readstat_parse_sas_commands(readstat_parser_t *parser,
             length_cmd |
             input_cmd |
             invalue_cmd |
+            proc_freq_cmd |
             proc_print_cmd |
             proc_contents_cmd |
             run_cmd;
