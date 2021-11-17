@@ -44,7 +44,7 @@ AM_ICONV
 
 AC_CANONICAL_HOST
 AS_CASE([$host],
-	[*linux*|*bsd*|*mingw*|*cygwin*], [EXTRA_LIBS="-lm"],
+	[*linux*|*bsd*|*mingw*|*cygwin*|*gnu*], [EXTRA_LIBS="-lm"],
 	[EXTRA_LIBS=""])
 AC_SUBST([EXTRA_LIBS])
 
