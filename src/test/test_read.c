@@ -182,9 +182,10 @@ static int handle_variable(int index, readstat_variable_t *variable,
 
     rt_ctx->var_index = index;
 
-    push_error_if_strings_differ(rt_ctx, column->label_set, 
-            val_labels,
-            "Column label sets");
+    if (column->label_set[0])
+        push_error_if_strings_differ(rt_ctx, column->label_set, 
+                val_labels,
+                "Column label sets");
 
     push_error_if_strings_differ(rt_ctx, column->name, 
             readstat_variable_get_name(variable),
