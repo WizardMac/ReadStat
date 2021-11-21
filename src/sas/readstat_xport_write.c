@@ -109,9 +109,60 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
         if (variable->format[0]) {
             int decimals = 0;
             int width = 0;
-            char name[24];
 
-            sscanf(variable->format, "%s%d.%d", name, &width, &decimals);
+            char name[24];
+            name[0] = '\0';
+
+            char format_data[256];
+            memcpy(&format_data, variable->format, sizeof(variable->format));
+
+            /*
+             * STATES
+             * 0 - start
+             * 1 - first number (width or decimal depending on the presence of period)
+             * 2 - period
+             * 3 - second number (width)
+             * 4 - name
+             */
+            int state = 0;
+            int j;
+
+            for (j=strlen(format_data)-1; j>=0; j--) {
+                switch(format_data[j]) {
+                case '.':
+                    if (state == 1) {
+                        sscanf(&format_data[j + 1], "%d", &decimals);
+                    }
+                    state = 2;
+                    break;
+                case '0': case '1': case '2': case '3': case '4':
+                case '5': case '6': case '7': case '8': case '9':
+                    if (state == 0) {
+                        state = 1;
+                    } else if (state == 2) {
+                        state = 3;
+                        format_data[j + 1] = '\0';
+                    }
+                    break;
+                default:
+                    if (state == 1 || state == 3) {
+                        sscanf(&format_data[j + 1], "%d", &width);
+                        format_data[j + 1] = '\0';
+                    } else if (state == 2) {
+                        format_data[j + 1] = '\0';
+                    }
+                    state = 4;
+                }
+
+                if (state == 4) {
+                    sscanf(format_data, "%s", name);
+                    break;
+                }
+            }
+
+            if (state == 1 || state == 3) {
+                sscanf(format_data, "%d", &width);
+            }
 
             copypad(namestr.nform, sizeof(namestr.nform), name);
             namestr.nfl = width;
@@ -173,31 +224,28 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
             readstat_variable_t *variable = readstat_get_variable(writer, i);
             size_t label_len = strlen(variable->label);
             size_t name_len = strlen(variable->name);
+            size_t format_len = strlen(variable->format);
             int has_long_label = 0;
             int has_long_format = 0;
-            int format_len = 0;
-            char format_name[24];
-            memset(format_name, 0, sizeof(format_name));
 
             has_long_label = (label_len > 40);
 
             if (variable->format[0]) {
-                int decimals = 2;
-                int width = 8;
-
-                int matches = sscanf(variable->format, "%s%d.%d", format_name, &width, &decimals);
-                if (matches < 1) {
-                    retval = READSTAT_ERROR_BAD_FORMAT_STRING;
-                    goto cleanup;
+                int j;
+                for (j=format_len-1; j>=0; j--) {
+                  if (!((variable->format[j] >= 48 && variable->format[j] <= 57) ||
+                          variable->format[j] == 46)) {
+                      break;
+                  }
                 }
-                format_len = strlen(format_name);
-                if (format_len > 8) {
+
+                if ((j+1) > 8) {
                     has_long_format = 1;
                 }
             }
 
             if (has_long_format) {
-                uint16_t labeldef[5] = { i+1, name_len, format_len, format_len, label_len };
+                uint16_t labeldef[5] = { i+1, name_len, label_len, format_len, format_len };
 
                 if (machine_is_little_endian()) {
                     labeldef[0] = byteswap2(labeldef[0]);
@@ -215,15 +263,15 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
-                retval = readstat_write_string(writer, format_name);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
-
-                retval = readstat_write_string(writer, format_name);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
-
                 retval = readstat_write_string(writer, variable->label);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
+                retval = readstat_write_string(writer, variable->format);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
+                retval = readstat_write_string(writer, variable->format);
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
