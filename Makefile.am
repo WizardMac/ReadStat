@@ -96,7 +96,7 @@ noinst_HEADERS = \
        src/sas/readstat_sas.h \
        src/sas/readstat_sas_rle.h \
        src/sas/readstat_xport.h \
-	   src/sas/readstat_xport_parse_format.h \
+       src/sas/readstat_xport_parse_format.h \
        src/spss/readstat_por.h \
        src/spss/readstat_por_parse.h \
        src/spss/readstat_sav.h \
