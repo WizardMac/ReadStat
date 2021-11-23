@@ -24,6 +24,7 @@ libreadstat_la_SOURCES = \
 	src/sas/readstat_xport.c \
 	src/sas/readstat_xport_read.c \
 	src/sas/readstat_xport_write.c \
+	src/sas/readstat_xport_parse_format.c \
 	src/spss/readstat_por.c \
 	src/spss/readstat_por_parse.c \
 	src/spss/readstat_por_read.c \
@@ -95,6 +96,7 @@ noinst_HEADERS = \
        src/sas/readstat_sas.h \
        src/sas/readstat_sas_rle.h \
        src/sas/readstat_xport.h \
+       src/sas/readstat_xport_parse_format.h \
        src/spss/readstat_por.h \
        src/spss/readstat_por_parse.h \
        src/spss/readstat_sav.h \
@@ -274,7 +276,8 @@ EXTRA_PROGRAMS += \
 	fuzz_grammar_por_double \
 	fuzz_grammar_sav_date \
 	fuzz_grammar_sav_time \
-	fuzz_grammar_spss_format
+	fuzz_grammar_spss_format \
+	fuzz_grammar_xport_format
 
 # Force C++ linking for fuzz targets
 nodist_EXTRA_fuzz_compression_sas_rle_SOURCES = dummy.cxx
@@ -293,6 +296,7 @@ nodist_EXTRA_fuzz_grammar_por_double_SOURCES = dummy.cxx
 nodist_EXTRA_fuzz_grammar_sav_date_SOURCES = dummy.cxx
 nodist_EXTRA_fuzz_grammar_sav_time_SOURCES = dummy.cxx
 nodist_EXTRA_fuzz_grammar_spss_format_SOURCES = dummy.cxx
+nodist_EXTRA_fuzz_grammar_xport_format_SOURCES = dummy.cxx
 
 fuzz_grammar_dta_timestamp_SOURCES = \
 	src/fuzz/fuzz_grammar_dta_timestamp.c
@@ -328,6 +332,13 @@ fuzz_grammar_spss_format_SOURCES = \
 fuzz_grammar_spss_format_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
 fuzz_grammar_spss_format_LDFLAGS = -static
 fuzz_grammar_spss_format_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
+
+fuzz_grammar_xport_format_SOURCES = \
+	src/fuzz/fuzz_grammar_xport_format.c
+
+fuzz_grammar_xport_format_LDADD = libreadstat.la @LIB_FUZZING_ENGINE@
+fuzz_grammar_xport_format_LDFLAGS = -static
+fuzz_grammar_xport_format_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99 @SANITIZERS@
 
 fuzz_format_dta_SOURCES = \
 	src/fuzz/fuzz_format.c \
