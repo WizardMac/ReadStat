@@ -7,6 +7,7 @@
 #include "../readstat_writer.h"
 #include "readstat_sas.h"
 #include "readstat_xport.h"
+#include "readstat_xport_parse_format.h"
 #include "ieee.h"
 
 #define XPORT_DEFAULT_VERISON   8
@@ -107,72 +108,26 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
         copypad(namestr.nlabel, sizeof(namestr.nlabel), variable->label);
 
         if (variable->format[0]) {
-            int decimals = 0;
+            char format_name[32];
+            format_name[0] = '\0';
+
             int width = 0;
+            int decimals = 0;
 
-            char name[24];
-            name[0] = '\0';
+            retval = xport_parse_format(variable->format, strlen(variable->format),
+                    format_name, sizeof(format_name), &width, &decimals, NULL, NULL);
+            if (retval != READSTAT_OK)
+                goto cleanup;
 
-            char format_data[256];
-            memcpy(&format_data, variable->format, sizeof(variable->format));
-
-            /*
-             * STATES
-             * 0 - start
-             * 1 - first number (width or decimal depending on the presence of period)
-             * 2 - period
-             * 3 - second number (width)
-             * 4 - name
-             */
-            int state = 0;
-            int j;
-
-            for (j=strlen(format_data)-1; j>=0; j--) {
-                switch(format_data[j]) {
-                case '.':
-                    if (state == 1) {
-                        sscanf(&format_data[j + 1], "%d", &decimals);
-                    }
-                    state = 2;
-                    break;
-                case '0': case '1': case '2': case '3': case '4':
-                case '5': case '6': case '7': case '8': case '9':
-                    if (state == 0) {
-                        state = 1;
-                    } else if (state == 2) {
-                        state = 3;
-                        format_data[j + 1] = '\0';
-                    }
-                    break;
-                default:
-                    if (state == 1 || state == 3) {
-                        sscanf(&format_data[j + 1], "%d", &width);
-                        format_data[j + 1] = '\0';
-                    } else if (state == 2) {
-                        format_data[j + 1] = '\0';
-                    }
-                    state = 4;
-                }
-
-                if (state == 4) {
-                    sscanf(format_data, "%s", name);
-                    break;
-                }
-            }
-
-            if (state == 1 || state == 3) {
-                sscanf(format_data, "%d", &width);
-            }
-
-            copypad(namestr.nform, sizeof(namestr.nform), name);
+            copypad(namestr.nform, sizeof(namestr.nform), format_name);
             namestr.nfl = width;
             namestr.nfd = decimals;
 
-            copypad(namestr.niform, sizeof(namestr.niform), name);
+            copypad(namestr.niform, sizeof(namestr.niform), format_name);
             namestr.nifl = width;
             namestr.nifd = decimals;
 
-            if (strlen(name) > 8) {
+            if (strlen(format_name) > 8) {
                 any_has_long_format = 1;
                 needs_long_record = 1;
             }
@@ -231,15 +186,18 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
             has_long_label = (label_len > 40);
 
             if (variable->format[0]) {
-                int j;
-                for (j=format_len-1; j>=0; j--) {
-                  if (!((variable->format[j] >= 48 && variable->format[j] <= 57) ||
-                          variable->format[j] == 46)) {
-                      break;
-                  }
-                }
+                char format_name[32];
+                format_name[0] = '\0';
 
-                if ((j+1) > 8) {
+                int width = 0;
+                int decimals = 0;
+
+                retval = xport_parse_format(variable->format, strlen(variable->format),
+                        format_name, sizeof(format_name), &width, &decimals, NULL, NULL);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
+                if (strlen(format_name) > 8) {
                     has_long_format = 1;
                 }
             }
