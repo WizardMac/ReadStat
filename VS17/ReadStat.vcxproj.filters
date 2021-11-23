@@ -69,6 +69,9 @@
     <ClCompile Include="..\src\sas\readstat_xport_write.c">
       <Filter>Source Files\sas</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_xport_parse_format.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\sas\ieee.c">
       <Filter>Source Files\sas</Filter>
     </ClCompile>
@@ -192,6 +195,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\sas\readstat_xport.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sas\readstat_xport_parse_format.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\spss\readstat_por.h">
