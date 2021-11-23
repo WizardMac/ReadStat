@@ -2,10 +2,11 @@
 #line 1 "src/sas/readstat_xport_parse_format.rl"
 
 #include "../readstat.h"
+#include "readstat_xport.h"
 #include "readstat_xport_parse_format.h"
 
 
-#line 9 "src/sas/readstat_xport_parse_format.c"
+#line 10 "src/sas/readstat_xport_parse_format.c"
 static const char _xport_format_parse_actions[] = {
 	0, 1, 0, 1, 1, 1, 3, 1, 
 	4, 2, 2, 0, 3, 1, 2, 0
@@ -81,26 +82,32 @@ static const int xport_format_parse_start = 3;
 static const int xport_format_parse_en_main = 3;
 
 
-#line 8 "src/sas/readstat_xport_parse_format.rl"
+#line 9 "src/sas/readstat_xport_parse_format.rl"
 
 
-readstat_error_t xport_parse_format(const char *data, size_t len,
-        char *name, size_t name_len, int *width, int *decimals,
+readstat_error_t xport_parse_format(const char *data, size_t len, xport_format_t *fmt,
         readstat_error_handler error_handler, void *user_ctx) {
+
+    fmt->name[0] = '\0';
+    fmt->width = 0;
+    fmt->decimals = 0;
+
     readstat_error_t retval = READSTAT_OK;
     const char *p = data;
     const char *pe = p + len;
     const char *eof = pe;
+
     int cs;
     unsigned int temp_val = 0;
     size_t parsed_len = 0;
+
     
-#line 99 "src/sas/readstat_xport_parse_format.c"
+#line 106 "src/sas/readstat_xport_parse_format.c"
 	{
 	cs = xport_format_parse_start;
 	}
 
-#line 104 "src/sas/readstat_xport_parse_format.c"
+#line 111 "src/sas/readstat_xport_parse_format.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -175,30 +182,30 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 0:
-#line 21 "src/sas/readstat_xport_parse_format.rl"
+#line 28 "src/sas/readstat_xport_parse_format.rl"
 	{
             temp_val = 10 * temp_val + ((*p) - '0');
         }
 	break;
 	case 1:
-#line 25 "src/sas/readstat_xport_parse_format.rl"
+#line 32 "src/sas/readstat_xport_parse_format.rl"
 	{
             parsed_len = p - data;
-            if (parsed_len < name_len) {
-                memcpy(name, data, parsed_len);
-                name[parsed_len] = '\0';
+            if (parsed_len < sizeof(fmt->name)) {
+                memcpy(fmt->name, data, parsed_len);
+                fmt->name[parsed_len] = '\0';
             }
         }
 	break;
 	case 2:
-#line 33 "src/sas/readstat_xport_parse_format.rl"
+#line 40 "src/sas/readstat_xport_parse_format.rl"
 	{ temp_val = 0; }
 	break;
 	case 3:
-#line 40 "src/sas/readstat_xport_parse_format.rl"
-	{ *width = temp_val; }
+#line 47 "src/sas/readstat_xport_parse_format.rl"
+	{ fmt->width = temp_val; }
 	break;
-#line 202 "src/sas/readstat_xport_parse_format.c"
+#line 209 "src/sas/readstat_xport_parse_format.c"
 		}
 	}
 
@@ -215,24 +222,24 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 1:
-#line 25 "src/sas/readstat_xport_parse_format.rl"
+#line 32 "src/sas/readstat_xport_parse_format.rl"
 	{
             parsed_len = p - data;
-            if (parsed_len < name_len) {
-                memcpy(name, data, parsed_len);
-                name[parsed_len] = '\0';
+            if (parsed_len < sizeof(fmt->name)) {
+                memcpy(fmt->name, data, parsed_len);
+                fmt->name[parsed_len] = '\0';
             }
         }
 	break;
 	case 3:
-#line 40 "src/sas/readstat_xport_parse_format.rl"
-	{ *width = temp_val; }
+#line 47 "src/sas/readstat_xport_parse_format.rl"
+	{ fmt->width = temp_val; }
 	break;
 	case 4:
-#line 41 "src/sas/readstat_xport_parse_format.rl"
-	{ *decimals = temp_val; }
+#line 48 "src/sas/readstat_xport_parse_format.rl"
+	{ fmt->decimals = temp_val; }
 	break;
-#line 236 "src/sas/readstat_xport_parse_format.c"
+#line 243 "src/sas/readstat_xport_parse_format.c"
 		}
 	}
 	}
@@ -240,10 +247,10 @@ _again:
 	_out: {}
 	}
 
-#line 47 "src/sas/readstat_xport_parse_format.rl"
+#line 54 "src/sas/readstat_xport_parse_format.rl"
 
 
-    if (cs < 3|| p != pe || parsed_len + 1 > name_len) {
+    if (cs < 3|| p != pe || parsed_len + 1 > sizeof(fmt->name)) {
         char error_buf[1024];
         if (error_handler) {
             snprintf(error_buf, sizeof(error_buf), "Invalid format string (length=%d): %.*s", (int)len, (int)len, data);

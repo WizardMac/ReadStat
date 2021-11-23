@@ -108,26 +108,22 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
         copypad(namestr.nlabel, sizeof(namestr.nlabel), variable->label);
 
         if (variable->format[0]) {
-            char format_name[32];
-            format_name[0] = '\0';
-
-            int width = 0;
-            int decimals = 0;
+            xport_format_t format; 
 
             retval = xport_parse_format(variable->format, strlen(variable->format),
-                    format_name, sizeof(format_name), &width, &decimals, NULL, NULL);
+                    &format, NULL, NULL);
             if (retval != READSTAT_OK)
                 goto cleanup;
 
-            copypad(namestr.nform, sizeof(namestr.nform), format_name);
-            namestr.nfl = width;
-            namestr.nfd = decimals;
+            copypad(namestr.nform, sizeof(namestr.nform), format.name);
+            namestr.nfl = format.width;
+            namestr.nfd = format.decimals;
 
-            copypad(namestr.niform, sizeof(namestr.niform), format_name);
-            namestr.nifl = width;
-            namestr.nifd = decimals;
+            copypad(namestr.niform, sizeof(namestr.niform), format.name);
+            namestr.nifl = format.width;
+            namestr.nifd = format.decimals;
 
-            if (strlen(format_name) > 8) {
+            if (strlen(format.name) > 8) {
                 any_has_long_format = 1;
                 needs_long_record = 1;
             }
@@ -186,18 +182,14 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
             has_long_label = (label_len > 40);
 
             if (variable->format[0]) {
-                char format_name[32];
-                format_name[0] = '\0';
-
-                int width = 0;
-                int decimals = 0;
+                xport_format_t format; 
 
                 retval = xport_parse_format(variable->format, strlen(variable->format),
-                        format_name, sizeof(format_name), &width, &decimals, NULL, NULL);
+                        &format, NULL, NULL);
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
-                if (strlen(format_name) > 8) {
+                if (strlen(format.name) > 8) {
                     has_long_format = 1;
                 }
             }

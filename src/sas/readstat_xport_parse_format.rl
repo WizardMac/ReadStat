@@ -1,5 +1,6 @@
 
 #include "../readstat.h"
+#include "readstat_xport.h"
 #include "readstat_xport_parse_format.h"
 
 %%{
@@ -7,16 +8,22 @@
     write data nofinal noerror;
 }%%
 
-readstat_error_t xport_parse_format(const char *data, size_t len,
-        char *name, size_t name_len, int *width, int *decimals,
+readstat_error_t xport_parse_format(const char *data, size_t len, xport_format_t *fmt,
         readstat_error_handler error_handler, void *user_ctx) {
+
+    fmt->name[0] = '\0';
+    fmt->width = 0;
+    fmt->decimals = 0;
+
     readstat_error_t retval = READSTAT_OK;
     const char *p = data;
     const char *pe = p + len;
     const char *eof = pe;
+
     int cs;
     unsigned int temp_val = 0;
     size_t parsed_len = 0;
+
     %%{
         action incr_val {
             temp_val = 10 * temp_val + (fc - '0');
@@ -24,9 +31,9 @@ readstat_error_t xport_parse_format(const char *data, size_t len,
 
         action write_name {
             parsed_len = p - data;
-            if (parsed_len < name_len) {
-                memcpy(name, data, parsed_len);
-                name[parsed_len] = '\0';
+            if (parsed_len < sizeof(fmt->name)) {
+                memcpy(fmt->name, data, parsed_len);
+                fmt->name[parsed_len] = '\0';
             }
         }
 
@@ -37,8 +44,8 @@ readstat_error_t xport_parse_format(const char *data, size_t len,
         char_name = '$' name? %write_name;
         dbl_name = name? %write_name;
 
-        width = integer %{ *width = temp_val; };
-        decimals = integer %{ *decimals = temp_val; };
+        width = integer %{ fmt->width = temp_val; };
+        decimals = integer %{ fmt->decimals = temp_val; };
 
         main := (char_name width? '.'?) | (dbl_name? (width? ('.' decimals?)?)?);
 
@@ -46,7 +53,7 @@ readstat_error_t xport_parse_format(const char *data, size_t len,
         write exec;
     }%%
 
-    if (cs < %%{ write first_final; }%%|| p != pe || parsed_len + 1 > name_len) {
+    if (cs < %%{ write first_final; }%%|| p != pe || parsed_len + 1 > sizeof(fmt->name)) {
         char error_buf[1024];
         if (error_handler) {
             snprintf(error_buf, sizeof(error_buf), "Invalid format string (length=%d): %.*s", (int)len, (int)len, data);
