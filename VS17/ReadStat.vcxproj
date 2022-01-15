@@ -206,6 +206,7 @@
     <ClCompile Include="..\src\sas\readstat_xport.c" />
     <ClCompile Include="..\src\sas\readstat_xport_read.c" />
     <ClCompile Include="..\src\sas\readstat_xport_write.c" />
+    <ClCompile Include="..\src\sas\readstat_xport_parse_format.c" />
     <ClCompile Include="..\src\spss\readstat_por.c" />
     <ClCompile Include="..\src\spss\readstat_por_parse.c" />
     <ClCompile Include="..\src\spss\readstat_por_read.c" />
@@ -243,6 +244,7 @@
     <ClInclude Include="..\src\sas\readstat_sas.h" />
     <ClInclude Include="..\src\sas\readstat_sas_rle.h" />
     <ClInclude Include="..\src\sas\readstat_xport.h" />
+    <ClInclude Include="..\src\sas\readstat_xport_parse_format.h" />
     <ClInclude Include="..\src\spss\readstat_por.h" />
     <ClInclude Include="..\src\spss\readstat_por_parse.h" />
     <ClInclude Include="..\src\spss\readstat_sav.h" />

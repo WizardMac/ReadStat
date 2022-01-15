@@ -447,7 +447,7 @@ required.
    `corpus/`. There is a subdirectory for each sub-format (`dta104`, `dta105`,
    etc.). Currently a total of 468 files are created.
 1. If fuzz-testing has been enabled, `make` will also create fourteen fuzzer
-   targets, one for each of seven file formats, five for internally used
+   targets, one for each of seven file formats, six for internally used
    grammars, and two fuzzers for testing the compression routines.
    * `fuzz_format_dta`
    * `fuzz_format_por`
@@ -461,6 +461,7 @@ required.
    * `fuzz_grammar_sav_date`
    * `fuzz_grammar_sav_time`
    * `fuzz_grammar_spss_format`
+   * `fuzz_grammar_xport_format`
    * `fuzz_compression_sas_rle`
    * `fuzz_compression_sav`
 
