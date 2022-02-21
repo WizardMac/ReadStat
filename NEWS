@@ -1,3 +1,11 @@
+New in 1.1.8:
+
+    * XPT reader/writer: Improved support for format strings #257 #258
+    * SAV/DTA writers: Improved checking of non-ASCII characters #256
+    * Build: Link to libm on GNU systems #255
+    * SAS commands: Support more syntax
+    * SPSS commands: Make file names optional
+
 New in 1.1.7:
 
     * SAV writer: Permit missing ranges for integer variables #251
