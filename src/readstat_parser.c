@@ -59,8 +59,8 @@ readstat_error_t readstat_set_progress_handler(readstat_parser_t *parser, readst
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_bad_byte_handler(readstat_parser_t *parser, readstat_bad_byte_handler bad_byte_handler) {
-    parser->handlers.bad_byte = bad_byte_handler;
+readstat_error_t readstat_set_invalid_string_handler(readstat_parser_t *parser, readstat_invalid_string_handler invalid_string_handler) {
+    parser->handlers.invalid_string = invalid_string_handler;
     return READSTAT_OK;
 }
 

@@ -35,14 +35,14 @@ readstat_error_t readstat_convert(char *dst, size_t dst_len, const char *src, si
     return READSTAT_OK;
 }
 
-int readstat_bad_byte_info(char *dst, size_t dst_len, const char *src, size_t src_len, int obs_index, readstat_variable_t *variable, void *ctx) {
+int readstat_invalid_string_info(char *dst, size_t dst_len, const char *src, size_t src_len, int obs_index, readstat_variable_t *variable, void *ctx) {
     /* show information about the invalid string and exit */
     printf("Invalid string in variable %s, row %d: \"%s\"\n", variable->name, obs_index, src);
 
     return READSTAT_HANDLER_ABORT;
 }
 
-int readstat_bad_byte_copy(char *dst, size_t dst_len, const char *src, size_t src_len, int obs_index, readstat_variable_t *variable, void *ctx) {
+int readstat_invalid_string_copy(char *dst, size_t dst_len, const char *src, size_t src_len, int obs_index, readstat_variable_t *variable, void *ctx) {
     /* copy over the string unedited and continue */
 
     /* strip off spaces from the input because the programs use ASCII space
@@ -61,14 +61,14 @@ int readstat_bad_byte_copy(char *dst, size_t dst_len, const char *src, size_t sr
     return READSTAT_HANDLER_OK;
 }
 
-int readstat_bad_byte_skip(char *dst, size_t dst_len, const char *src, size_t src_len, int obs_index, readstat_variable_t *variable, void *ctx) {
+int readstat_invalid_string_skip(char *dst, size_t dst_len, const char *src, size_t src_len, int obs_index, readstat_variable_t *variable, void *ctx) {
     /* skip the invalid string */
     dst[0] = '\0';
 
     return READSTAT_HANDLER_OK;
 }
 
-int readstat_bad_byte_utf8(char *dst, size_t dst_len, const char *src, size_t src_len, int obs_index, readstat_variable_t *variable, void *ctx) {
+int readstat_invalid_string_utf8(char *dst, size_t dst_len, const char *src, size_t src_len, int obs_index, readstat_variable_t *variable, void *ctx) {
     /* treat string as utf-8 and use the unicode replacement character for any invalid bytes */
 
     /* strip off spaces from the input because the programs use ASCII space
@@ -117,7 +117,7 @@ int readstat_bad_byte_utf8(char *dst, size_t dst_len, const char *src, size_t sr
     return READSTAT_HANDLER_OK;
 }
 
-int readstat_bad_byte_cp1252(char *dst, size_t dst_len, const char *src, size_t src_len, int obs_index, readstat_variable_t *variable, void *ctx) {
+int readstat_invalid_string_cp1252(char *dst, size_t dst_len, const char *src, size_t src_len, int obs_index, readstat_variable_t *variable, void *ctx) {
     /* try converting the rest of the string as WINDOWS-1252, common encoding error */
     while (src_len && src[src_len-1] == ' ') {
         src_len--;

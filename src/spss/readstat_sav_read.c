@@ -727,10 +727,10 @@ static readstat_error_t sav_process_row(unsigned char *buffer, size_t buffer_len
                     retval = readstat_convert(ctx->utf8_string, ctx->utf8_string_len, 
                             ctx->raw_string, raw_str_used, ctx->converter);
                     if (retval == READSTAT_ERROR_CONVERT_BAD_STRING) {
-                        if (!ctx->handle.bad_byte) {
+                        if (!ctx->handle.invalid_string) {
                             goto done;
-                        } else if (ctx->handle.bad_byte(ctx->utf8_string, ctx->utf8_string_len,
-                                ctx->raw_string, raw_str_used, ctx->current_row,
+                        } else if (ctx->handle.invalid_string(ctx->utf8_string, ctx->utf8_string_len,
+                                ctx->raw_string, raw_str_used, ctx->current_row+1,
                                 ctx->variables[var_info->index], ctx->user_ctx) != READSTAT_HANDLER_OK) {
                             retval = READSTAT_ERROR_USER_ABORT;
                             goto done;
