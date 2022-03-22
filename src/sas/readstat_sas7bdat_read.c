@@ -399,7 +399,16 @@ static readstat_error_t sas7bdat_handle_data_value(readstat_variable_t *variable
     if (col_info->type == READSTAT_TYPE_STRING) {
         retval = readstat_convert(ctx->scratch_buffer, ctx->scratch_buffer_len,
                 col_data, col_info->width, ctx->converter);
-        if (retval != READSTAT_OK) {
+        if (retval == READSTAT_ERROR_CONVERT_BAD_STRING) {
+            if (!ctx->handle.invalid_string) {
+                goto cleanup;
+            } else if (ctx->handle.invalid_string(ctx->scratch_buffer, ctx->scratch_buffer_len,
+                    col_data, col_info->width, ctx->parsed_row_count+1,
+                    variable, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+                retval = READSTAT_ERROR_USER_ABORT;
+                goto cleanup;
+            }
+        } else if (retval != READSTAT_OK) {
             if (ctx->handle.error) {
                 snprintf(ctx->error_buf, sizeof(ctx->error_buf),
                         "ReadStat: Error converting string (row=%u, col=%u) to specified encoding: %.*s",

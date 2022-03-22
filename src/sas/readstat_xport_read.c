@@ -565,8 +565,18 @@ static readstat_error_t xport_process_row(xport_ctx_t *ctx, const char *row, siz
             }
             retval = readstat_convert(string, 4*variable->storage_width+1,
                     &row[pos], variable->storage_width, ctx->converter);
-            if (retval != READSTAT_OK)
+            if (retval == READSTAT_ERROR_CONVERT_BAD_STRING) {
+                if (!ctx->handle.invalid_string) {
+                    goto cleanup;
+                } else if (ctx->handle.invalid_string(string, 4*variable->storage_width+1,
+                        &row[pos], variable->storage_width, ctx->parsed_row_count+1,
+                        variable, ctx->user_ctx) != READSTAT_HANDLER_OK) {
+                    retval = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
+                }
+            } else if (retval != READSTAT_OK) {
                 goto cleanup;
+            }
 
             value.v.string_value = string;
         } else {

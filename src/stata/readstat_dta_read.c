@@ -619,8 +619,18 @@ static readstat_error_t dta_handle_row(const unsigned char *buf, dta_ctx_t *ctx)
             size_t str_len = strnlen((const char *)&buf[offset], max_len);
             retval = readstat_convert(str_buf, sizeof(str_buf),
                     (const char *)&buf[offset], str_len, ctx->converter);
-            if (retval != READSTAT_OK)
+            if (retval == READSTAT_ERROR_CONVERT_BAD_STRING) {
+                if (!ctx->handle.invalid_string) {
+                    goto cleanup;
+                } else if (ctx->handle.invalid_string(str_buf, sizeof(str_buf),
+                        (const char *)&buf[offset], str_len, ctx->current_row+1,
+                        ctx->variables[j], ctx->user_ctx) != READSTAT_HANDLER_OK) {
+                    retval = READSTAT_ERROR_USER_ABORT;
+                    goto cleanup;
+                }
+            } else if (retval != READSTAT_OK) {
                 goto cleanup;
+            }
             value.v.string_value = str_buf;
         } else if (value.type == READSTAT_TYPE_STRING_REF) {
             dta_strl_t key = dta_interpret_strl_vo_bytes(ctx, &buf[offset]);
