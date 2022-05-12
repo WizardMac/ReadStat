@@ -5,12 +5,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler: [ clang, gcc, gcc-8, gcc-9, gcc-10 ]
+        compiler: [ clang, gcc, gcc-8, gcc-9, gcc-10, gcc-11 ]
     steps:
       - name: Add repository
         run: sudo apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - name: Install packages
-        run: sudo apt install gettext gcc-8 gcc-9 gcc-10
+        run: sudo apt install gettext gcc-8 gcc-9 gcc-10 gcc-11
       - uses: actions/checkout@v2
       - name: Autoconf
         run: autoreconf -i -f
@@ -51,6 +51,8 @@ jobs:
       MSYSTEM: MINGW64
     steps:
       - uses: actions/checkout@v2
+      - name: Install packages
+        run: C:\msys64\usr\bin\bash -c -l 'pacman --noconfirm -S --needed autotools gcc libiconv-devel'
       - name: Autoconf
         run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && autoreconf -i -f'
       - name: Configure
