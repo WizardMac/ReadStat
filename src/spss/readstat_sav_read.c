@@ -1551,19 +1551,13 @@ readstat_error_t sav_parse_timestamp(sav_ctx_t *ctx, sav_file_header_record_t *h
     readstat_error_t retval = READSTAT_OK;
     struct tm timestamp = { .tm_isdst = -1 };
 
-    if ((retval = sav_parse_time(header->creation_time, sizeof(header->creation_time),
-                    &timestamp, ctx->handle.error, ctx->user_ctx)) 
-            != READSTAT_OK)
-        goto cleanup;
+    if (sav_parse_time(header->creation_time, sizeof(header->creation_time),
+                &timestamp, ctx->handle.error, ctx->user_ctx) == READSTAT_OK &&
+        sav_parse_date(header->creation_date, sizeof(header->creation_date),
+                &timestamp, ctx->handle.error, ctx->user_ctx) == READSTAT_OK) {
+        ctx->timestamp = mktime(&timestamp);
+    }
 
-    if ((retval = sav_parse_date(header->creation_date, sizeof(header->creation_date),
-                    &timestamp, ctx->handle.error, ctx->user_ctx)) 
-            != READSTAT_OK)
-        goto cleanup;
-
-    ctx->timestamp = mktime(&timestamp);
-
-cleanup:
     return retval;
 }
 
