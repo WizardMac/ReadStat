@@ -58,6 +58,7 @@ jobs:
             autotools
             base-devel
             gcc
+            libiconv-devel
       - uses: actions/checkout@v2
       - name: Autoconf
         run: autoreconf -i -f
