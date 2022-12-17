@@ -1620,8 +1620,8 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
         ctx->row_limit = parser->row_limit;
     }
     
-    if ((retval = sav_parse_timestamp(ctx, &header)) != READSTAT_OK)
-        goto cleanup;
+    /* ignore errors */
+    sav_parse_timestamp(ctx, &header);
 
     if ((retval = sav_parse_records_pass1(ctx)) != READSTAT_OK)
         goto cleanup;
