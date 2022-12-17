@@ -5,12 +5,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler: [ clang, gcc, gcc-8, gcc-9, gcc-10, gcc-11 ]
+        compiler: [ clang, gcc, gcc-9, gcc-10, gcc-11, gcc-12 ]
     steps:
       - name: Add repository
         run: sudo apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - name: Install packages
-        run: sudo apt install gettext gcc-8 gcc-9 gcc-10 gcc-11
+        run: sudo apt install gettext gcc-9 gcc-10 gcc-11 gcc-12
       - uses: actions/checkout@v2
       - name: Autoconf
         run: autoreconf -i -f
@@ -47,19 +47,26 @@ jobs:
         run: make generate_corpus
   windows:
     runs-on: windows-latest
-    env:
-      MSYSTEM: MINGW64
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            autotools
+            base-devel
+            gcc
+            libiconv-devel
       - uses: actions/checkout@v2
-      - name: Install packages
-        run: C:\msys64\usr\bin\bash -c -l 'pacman --noconfirm -S --needed autotools gcc libiconv-devel'
       - name: Autoconf
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && autoreconf -i -f'
+        run: autoreconf -i -f
       - name: Configure
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && ./configure'
+        run: ./configure
       - name: Make
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && make'
+        run: make
       - name: Test
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && make check'
+        run: make check
       - name: Log
-        run: C:\msys64\usr\bin\bash -c -l 'cd "$GITHUB_WORKSPACE" && cat ./test-suite.log'
+        run: cat ./test-suite.log

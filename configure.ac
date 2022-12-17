@@ -59,6 +59,10 @@ AS_CASE([$host],
 	[EXTRA_LDFLAGS="$LTLIBICONV"])
 AC_SUBST([EXTRA_LDFLAGS])
 
+AS_CASE([$host],
+	[*mingw*], [CFLAGS="$CFLAGS -D_spawnv=spawnv"],
+	[CFLAGS="$CFLAGS"])
+
 AC_ARG_VAR([LIB_FUZZING_ENGINE], [Location of prebuilt fuzzing engine library])
 AC_SUBST([LIB_FUZZING_ENGINE])
 
