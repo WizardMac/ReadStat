@@ -182,6 +182,9 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
     if (data_size < payload_offset + pad)
         goto cleanup;
 
+    if (label_count_used == 0)
+        goto cleanup;
+
     if ((retval = sas7bcat_parse_value_labels(&data[payload_offset+pad], data_size - payload_offset - pad,
                     label_count_used, label_count_capacity, name, ctx)) != READSTAT_OK)
         goto cleanup;
