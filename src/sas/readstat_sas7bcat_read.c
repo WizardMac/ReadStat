@@ -169,7 +169,7 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
         pad += 16;
     }
 
-    if ((data[2] & 0x80) && !ctx->u64) { // has long name
+    if (((data[2] & 0x80) && !ctx->u64) || ((data[2] & 0x20) && ctx->u64)) { // has long name
         if (data_size < payload_offset + pad + 32)
             goto cleanup;
 
