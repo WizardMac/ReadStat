@@ -176,6 +176,15 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
         retval = readstat_convert(name, sizeof(name), &data[payload_offset+pad], 32, ctx->converter);
         if (retval != READSTAT_OK)
             goto cleanup;
+
+        // Where long names are shorter than 8 characters they may still have
+        // trailing spaces, so we need to do an extra space removal just in case
+        size_t name_len = strlen(name);
+        while (name_len && name[name_len-1] == ' ') {
+            name_len--;
+        }
+        name[name_len] = '\0';
+
         pad += 32;
     }
 
