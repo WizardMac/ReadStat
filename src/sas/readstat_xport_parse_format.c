@@ -48,7 +48,7 @@ static const char _xport_format_parse_index_offsets[] = {
 	33, 39, 45, 47, 49, 52, 58, 64
 };
 
-static const char _xport_format_parse_indicies[] = {
+static const char _xport_format_parse_indices[] = {
 	2, 0, 2, 2, 1, 4, 3, 4, 
 	4, 1, 5, 6, 8, 7, 8, 8, 
 	1, 9, 11, 10, 11, 11, 1, 1, 
@@ -169,7 +169,7 @@ _resume:
 	}
 
 _match:
-	_trans = _xport_format_parse_indicies[_trans];
+	_trans = _xport_format_parse_indices[_trans];
 	cs = _xport_format_parse_trans_targs[_trans];
 
 	if ( _xport_format_parse_trans_actions[_trans] == 0 )
