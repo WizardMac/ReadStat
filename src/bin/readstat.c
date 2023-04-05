@@ -154,7 +154,7 @@ readstat_error_t parse_file(readstat_parser_t *parser, const char *input_filenam
     return error;
 }
 
-static void print_version() {
+static void print_version(void) {
     fprintf(stdout, "ReadStat version " READSTAT_VERSION "\n");
 }
 
