@@ -42,6 +42,17 @@ AC_SUBST([SANITIZERS])
 
 AM_ICONV
 
+AC_ARG_ENABLE(
+    [spawnvfix], 
+    [AS_HELP_STRING([--disable-spawnvfix], [Do not use _spawnv=spanv define on MINGW builds because it breaks UCRT builds.])]
+)
+
+use_spawnvfix=""
+
+AS_IF([test "x$enable_spawnvfix" != "xno"], [
+  use_spawnvfix="-D_spawnv=spawnv"
+])
+
 AC_CANONICAL_HOST
 AS_CASE([$host],
 	[*linux*|*bsd*|*mingw*|*cygwin*|*gnu*], [EXTRA_LIBS="-lm"],
@@ -60,7 +71,7 @@ AS_CASE([$host],
 AC_SUBST([EXTRA_LDFLAGS])
 
 AS_CASE([$host],
-	[*mingw*], [CFLAGS="$CFLAGS -D_spawnv=spawnv"],
+	[*mingw*], [CFLAGS="$CFLAGS $use_spawnvfix"],
 	[CFLAGS="$CFLAGS"])
 
 AC_ARG_VAR([LIB_FUZZING_ENGINE], [Location of prebuilt fuzzing engine library])
