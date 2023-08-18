@@ -397,8 +397,6 @@ cleanup:
         module->finish(rs_ctx->module_ctx);
     }
 
-    free(rs_ctx);
-
     if (error != READSTAT_OK) {
         if (file_exists) {
             fprintf(stderr, "Error opening %s: File exists (Use -f to overwrite)\n", output_filename);
@@ -406,9 +404,11 @@ cleanup:
             fprintf(stderr, "Error processing %s: %s\n", rs_ctx->error_filename, readstat_error_message(error));
             unlink(output_filename);
         }
+        free(rs_ctx);
         return 1;
     }
-
+ 
+    free(rs_ctx);
     return 0;
 }
 
