@@ -96,7 +96,7 @@ int cnxptiee(const void *from_bytes, int fromtype, void *to_bytes, int totype)
     return(0);
 }
 
-int get_native() {
+int get_native(void) {
     static unsigned char float_reps[][8] = {
         {0x41,0x10,0x00,0x00,0x00,0x00,0x00,0x00},
         {0x3f,0xf0,0x00,0x00,0x00,0x00,0x00,0x00},
@@ -366,7 +366,7 @@ void ieee2xpt(unsigned char *ieee, unsigned char *xport) {
     shift = (int)
         (ieee_exp = (int)(((ieee1 >> 16) & 0x7ff0) >> 4) - 1023)
         & 3;
-    /* the ieee format has an implied "1" immdeiately to the left */
+    /* the ieee format has an implied "1" immediately to the left */
     /* of the binary point. Show it in here. */
     xport1 |= 0x00100000;
     if (shift)
