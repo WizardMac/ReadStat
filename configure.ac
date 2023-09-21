@@ -42,17 +42,6 @@ AC_SUBST([SANITIZERS])
 
 AM_ICONV
 
-AC_ARG_ENABLE(
-    [spawnvfix], 
-    [AS_HELP_STRING([--disable-spawnvfix], [Do not use _spawnv=spanv define on MINGW builds because it breaks UCRT builds.])]
-)
-
-use_spawnvfix=""
-
-AS_IF([test "x$enable_spawnvfix" != "xno"], [
-  use_spawnvfix="-D_spawnv=spawnv"
-])
-
 AC_CANONICAL_HOST
 AS_CASE([$host],
 	[*linux*|*bsd*|*mingw*|*cygwin*|*gnu*], [EXTRA_LIBS="-lm"],
@@ -71,7 +60,15 @@ AS_CASE([$host],
 AC_SUBST([EXTRA_LDFLAGS])
 
 AS_CASE([$host],
-	[*mingw*], [CFLAGS="$CFLAGS $use_spawnvfix"],
+	[*mingw*], 
+        [
+        #There is no real way to determine whether UCRT is used vs normal MINGW but one way is by checking a define in <windows.h>
+        #If we are in UCRT we do not want to set the spawnv define because it breaks the build
+        IS_UCRT=`echo '#include <windows.h>'| gcc -E -dM -  | grep -i _UCRT | xargs`
+        AS_IF([test "$IS_UCRT" == ""], [
+            CFLAGS="$CFLAGS -D_spawnv=spawnv"
+        ])
+    ],
 	[CFLAGS="$CFLAGS"])
 
 AC_ARG_VAR([LIB_FUZZING_ENGINE], [Location of prebuilt fuzzing engine library])
