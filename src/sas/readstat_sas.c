@@ -246,11 +246,6 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
     hinfo->creation_time = sas_convert_time(creation_time, creation_time_diff, epoch);
     hinfo->modification_time = sas_convert_time(modification_time, modification_time_diff, epoch);
 
-    // if (io->seek(16, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
-    //     retval = READSTAT_ERROR_SEEK;
-    //     goto cleanup;
-    // }
-
     uint32_t header_size, page_size;
 
     if (io->read(&header_size, sizeof(uint32_t), io->io_ctx) < sizeof(uint32_t)) {
