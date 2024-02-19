@@ -42,7 +42,7 @@ static void sas7bcat_ctx_free(sas7bcat_ctx_t *ctx) {
     free(ctx);
 }
 
-static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, size_t value_labels_len, 
+static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, const char *value_end, size_t value_labels_len, 
         int label_count_used, int label_count_capacity, const char *name, sas7bcat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     int i;
@@ -59,7 +59,7 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
     }
 
     /* Pass 1 -- find out the offset of the labels */
-    for (i=0; i<label_count_capacity; i++) {
+    for (i=0; i<label_count_capacity && lbp1+3<=value_end; i++) {
         if (&lbp1[3] - value_start > value_labels_len || sas_read2(&lbp1[2], ctx->bswap) < 0) {
             retval = READSTAT_ERROR_PARSE;
             goto cleanup;
@@ -187,7 +187,7 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
     if (label_count_used == 0)
         goto cleanup;
 
-    if ((retval = sas7bcat_parse_value_labels(&data[payload_offset+pad], data_size - payload_offset - pad,
+    if ((retval = sas7bcat_parse_value_labels(&data[payload_offset+pad], &data[data_size-1], data_size - payload_offset - pad,
                     label_count_used, label_count_capacity, name, ctx)) != READSTAT_OK)
         goto cleanup;
 
