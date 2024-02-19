@@ -6,7 +6,7 @@ AM_SILENT_RULES([yes])
 # Don't forget to update these too
 READSTAT_MAJOR_VERSION=1
 READSTAT_MINOR_VERSION=1
-READSTAT_MICRO_VERSION=8
+READSTAT_MICRO_VERSION=9
 
 # libtool stuff, see https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html#Updating-version-info
 READSTAT_VERSION=$READSTAT_MAJOR_VERSION.$READSTAT_MINOR_VERSION.$READSTAT_MICRO_VERSION
