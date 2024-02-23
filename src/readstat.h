@@ -298,6 +298,20 @@ typedef int (*readstat_value_label_handler)(const char *val_labels,
         readstat_value_t value, const char *label, void *ctx);
 typedef void (*readstat_error_handler)(const char *error_message, void *ctx);
 typedef int (*readstat_progress_handler)(double progress, void *ctx);
+typedef int (*readstat_invalid_string_handler)(char *dst, size_t dst_len,
+        const char *src, size_t src_len, int obs_index, readstat_variable_t *variable,
+        void *ctx);
+
+int readstat_invalid_string_info(char *dst, size_t dst_len, const char *src, size_t src_len,
+    int obs_index, readstat_variable_t *variable, void *ctx);
+int readstat_invalid_string_copy(char *dst, size_t dst_len, const char *src, size_t src_len,
+    int obs_index, readstat_variable_t *variable, void *ctx);
+int readstat_invalid_string_skip(char *dst, size_t dst_len, const char *src, size_t src_len,
+    int obs_index, readstat_variable_t *variable, void *ctx);
+int readstat_invalid_string_utf8(char *dst, size_t dst_len, const char *src, size_t src_len,
+    int obs_index, readstat_variable_t *variable, void *ctx);
+int readstat_invalid_string_cp1252(char *dst, size_t dst_len, const char *src, size_t src_len,
+    int obs_index, readstat_variable_t *variable, void *ctx);
 
 #if defined(_MSC_VER)
 #include <BaseTsd.h>
@@ -334,14 +348,15 @@ typedef struct readstat_io_s {
 } readstat_io_t;
 
 typedef struct readstat_callbacks_s {
-    readstat_metadata_handler      metadata;
-    readstat_note_handler          note;
-    readstat_variable_handler      variable;
-    readstat_fweight_handler       fweight;
-    readstat_value_handler         value;
-    readstat_value_label_handler   value_label;
-    readstat_error_handler         error;
-    readstat_progress_handler      progress;
+    readstat_metadata_handler       metadata;
+    readstat_note_handler           note;
+    readstat_variable_handler       variable;
+    readstat_fweight_handler        fweight;
+    readstat_value_handler          value;
+    readstat_value_label_handler    value_label;
+    readstat_error_handler          error;
+    readstat_progress_handler       progress;
+    readstat_invalid_string_handler invalid_string;
 } readstat_callbacks_t;
 
 typedef struct readstat_parser_s {
@@ -365,6 +380,7 @@ readstat_error_t readstat_set_value_handler(readstat_parser_t *parser, readstat_
 readstat_error_t readstat_set_value_label_handler(readstat_parser_t *parser, readstat_value_label_handler value_label_handler);
 readstat_error_t readstat_set_error_handler(readstat_parser_t *parser, readstat_error_handler error_handler);
 readstat_error_t readstat_set_progress_handler(readstat_parser_t *parser, readstat_progress_handler progress_handler);
+readstat_error_t readstat_set_invalid_string_handler(readstat_parser_t *parser, readstat_invalid_string_handler invalid_string_handler);
 
 readstat_error_t readstat_set_open_handler(readstat_parser_t *parser, readstat_open_handler open_handler);
 readstat_error_t readstat_set_close_handler(readstat_parser_t *parser, readstat_close_handler close_handler);

@@ -616,7 +616,16 @@ static readstat_error_t read_por_file_data(por_ctx_t *ctx) {
                 }
                 rs_retval = readstat_convert(output_string, sizeof(output_string),
                         input_string, strlen(input_string), ctx->converter);
-                if (rs_retval != READSTAT_OK) {
+                if (rs_retval == READSTAT_ERROR_CONVERT_BAD_STRING) {
+                    if (!ctx->handle.invalid_string) {
+                        goto cleanup;
+                    } else if (ctx->handle.invalid_string(output_string, sizeof(output_string),
+                            input_string, strlen(input_string), ctx->obs_count+1,
+                            ctx->variables[i], ctx->user_ctx) != READSTAT_HANDLER_OK) {
+                        rs_retval = READSTAT_ERROR_USER_ABORT;
+                        goto cleanup;
+                    }
+                } else if (rs_retval != READSTAT_OK) {
                     goto cleanup;
                 }
                 value.v.string_value = output_string;
