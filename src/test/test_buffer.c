@@ -2,7 +2,7 @@
 
 #include "test_buffer.h"
 
-rt_buffer_t *buffer_init() {
+rt_buffer_t *buffer_init(void) {
     rt_buffer_t *buffer = calloc(1, sizeof(rt_buffer_t));
     buffer->size = 1024;
     buffer->bytes = malloc(buffer->size);

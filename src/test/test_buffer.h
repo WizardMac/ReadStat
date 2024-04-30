@@ -10,7 +10,7 @@ typedef struct rt_buffer_ctx_s {
     size_t       pos;
 } rt_buffer_ctx_t;
 
-rt_buffer_t *buffer_init();
+rt_buffer_t *buffer_init(void);
 void buffer_reset(rt_buffer_t *buffer);
 void buffer_grow(rt_buffer_t *buffer, size_t len);
 void buffer_free(rt_buffer_t *buffer);
