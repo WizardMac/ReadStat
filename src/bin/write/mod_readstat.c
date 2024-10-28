@@ -166,6 +166,7 @@ static int handle_variable(int index, readstat_variable_t *variable,
     readstat_type_t type = readstat_variable_get_type(variable);
     const char *name = readstat_variable_get_name(variable);
     const char *label = readstat_variable_get_label(variable);
+    const char *format = readstat_variable_get_format(variable);
     size_t storage_width = readstat_variable_get_storage_width(variable);
     int display_width = readstat_variable_get_display_width(variable);
     int missing_ranges_count = readstat_variable_get_missing_ranges_count(variable);
@@ -180,6 +181,8 @@ static int handle_variable(int index, readstat_variable_t *variable,
         readstat_variable_set_label_set(new_variable, label_set);
         if (mod_ctx->is_sas7bdat) {
             readstat_variable_set_format(new_variable, val_labels);
+        } else if (mod_ctx->is_dta) {
+            readstat_variable_set_format(new_variable, format);
         }
     }
 
