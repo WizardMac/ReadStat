@@ -155,15 +155,15 @@ static int handle_variable_sav(int index, readstat_variable_t *variable, const c
             } else if (hasPrefix(vformat, "YMDHMS16") == 0) {
                 // e.g. 2013-01-31 1:02
                 format = EXTRACT_METADATA_FORMAT_DATE_TIME;
-                pattern = "yyyy-MM-dd h:mm";
+                pattern = "yyyy-MM-dd hh:mm";
             } else if (hasPrefix(vformat, "YMDHMS19") == 0) {
                 // e.g. 2013-01-31 1:02:33
                 format = EXTRACT_METADATA_FORMAT_DATE_TIME;
-                pattern = "yyyy-MM-dd h:mm:ss";
+                pattern = "yyyy-MM-dd hh:mm:ss";
             } else if (hasPrefix(vformat, "YMDHMS19.2") == 0) {
                 // e.g. 2013-01-31 1:02:33.72
                 format = EXTRACT_METADATA_FORMAT_DATE_TIME;
-                pattern = "yyyy-MM-dd h:mm:ss.SS+";
+                pattern = "yyyy-MM-dd hh:mm:ss.SS+";
             } else if (hasPrefix(vformat, "MTIME5") == 0) {
                 // e.g. 1754:36
                 format = EXTRACT_METADATA_FORMAT_TIME;
