@@ -46,6 +46,7 @@ static void produce_column_header(struct csv_metadata *c, void *s, size_t len) {
 
     extract_metadata_format_t colformat = column_format(c->json_md, column);
     c->is_date[c->columns] = colformat == EXTRACT_METADATA_FORMAT_DATE;
+    c->is_date_time[c->columns] = colformat == EXTRACT_METADATA_FORMAT_DATE_TIME;
     if (c->output_module->header) {
         c->output_module->header(c, column, var);
     }

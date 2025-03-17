@@ -193,6 +193,7 @@ void produce_column_header_dta(void *csv_metadata, const char *column, readstat_
     extract_metadata_type_t coltype = column_type(c->json_md, column, c->output_format);
     if (coltype == EXTRACT_METADATA_TYPE_NUMERIC) {
         extract_metadata_format_t colformat = column_format(c->json_md, column);
+
         switch (colformat) {
         case EXTRACT_METADATA_FORMAT_NUMBER:
         case EXTRACT_METADATA_FORMAT_PERCENT:
@@ -206,7 +207,7 @@ void produce_column_header_dta(void *csv_metadata, const char *column, readstat_
         break;
         case EXTRACT_METADATA_FORMAT_TIME:
         case EXTRACT_METADATA_FORMAT_DATE_TIME:
-            var->type = READSTAT_TYPE_INT32;
+            var->type = READSTAT_TYPE_DOUBLE;
             snprintf(var->format, sizeof(var->format), "%s", "%tC");
             // %tC => is equivalent to coordinated universal time (UTC)
         break;
@@ -385,10 +386,48 @@ static readstat_value_t value_double_dta(const char *s, size_t len, struct csv_m
     return value;
 }
 
+static readstat_value_t value_double_date_time_dta(const char *s, size_t len, struct csv_metadata *c) {
+    char *dest;
+    readstat_variable_t *var = &c->variables[c->columns];
+    double val = strtod(s, &dest);
+    if (dest == s) {
+        fprintf(stderr, "not a number: %s\n", (char*)s);
+        exit(EXIT_FAILURE);
+    }
+    int missing_ranges_count = readstat_variable_get_missing_ranges_count(var);
+    for (int i=0; i<missing_ranges_count; i++) {
+        readstat_value_t lo_val = readstat_variable_get_missing_range_lo(var, i);
+        readstat_value_t hi_val = readstat_variable_get_missing_range_hi(var, i);
+        if (readstat_value_type(lo_val) != READSTAT_TYPE_DOUBLE) {
+            fprintf(stderr, "%s:%d expected type of lo_val to be of type double. Should not happen\n", __FILE__, __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        double lo = readstat_double_value(lo_val);
+        double hi = readstat_double_value(hi_val);
+        if (val >= lo && val <= hi) {
+            readstat_value_t value = {
+                .type = READSTAT_TYPE_DOUBLE,
+                .is_tagged_missing = 1,
+                .tag = 'a' + i,
+                .v = { .double_value = val }
+                };
+            return value;
+        }
+    }
+
+    readstat_value_t value = {
+        .type = READSTAT_TYPE_DOUBLE,
+        .is_tagged_missing = 0,
+        .v = { .double_value = val }
+    };
+    return value;
+}
+
 void produce_csv_value_dta(void *csv_metadata, const char *s, size_t len) {
     struct csv_metadata *c = (struct csv_metadata *)csv_metadata;
     readstat_variable_t *var = &c->variables[c->columns];
     int is_date = c->is_date[c->columns];
+    int is_date_time = c->is_date_time[c->columns];
     int obs_index = c->rows - 1; // TODO: ???
     readstat_value_t value;
 
@@ -396,6 +435,9 @@ void produce_csv_value_dta(void *csv_metadata, const char *s, size_t len) {
         value = value_sysmiss(s, len, c);
     } else if (is_date) {
         value = value_int32_date_dta(s, len, c);
+    } else if (is_date_time) {
+        printf("WE ARE IN is_date_time, YAY!!!");
+        value = value_double_date_time_dta(s, len, c);
     } else if (var->type == READSTAT_TYPE_DOUBLE) {
         value = value_double_dta(s, len, c);
     } else if (var->type == READSTAT_TYPE_STRING) {
