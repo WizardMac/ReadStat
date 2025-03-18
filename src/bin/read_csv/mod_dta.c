@@ -193,7 +193,6 @@ void produce_column_header_dta(void *csv_metadata, const char *column, readstat_
     extract_metadata_type_t coltype = column_type(c->json_md, column, c->output_format);
     if (coltype == EXTRACT_METADATA_TYPE_NUMERIC) {
         extract_metadata_format_t colformat = column_format(c->json_md, column);
-
         switch (colformat) {
         case EXTRACT_METADATA_FORMAT_NUMBER:
         case EXTRACT_METADATA_FORMAT_PERCENT:
@@ -387,39 +386,98 @@ static readstat_value_t value_double_dta(const char *s, size_t len, struct csv_m
 }
 
 static readstat_value_t value_double_date_time_dta(const char *s, size_t len, struct csv_metadata *c) {
-    char *dest;
-    readstat_variable_t *var = &c->variables[c->columns];
-    double val = strtod(s, &dest);
-    if (dest == s) {
-        fprintf(stderr, "not a number: %s\n", (char*)s);
+    // Handle empty or NULL strings as missing values
+    if (s == NULL || len == 0 || *s == '\0') {
+        readstat_value_t value = {
+            .type = READSTAT_TYPE_DOUBLE,
+            .is_system_missing = 1,
+            .v = { .double_value = NAN }
+        };
+        return value;
+    }
+
+    // Truncate the date string to 23 characters to remove the timezone offset and
+    // microseconds, if present. STATA does not support timezones or microseconds.
+    char date_time[24];
+    strncpy(date_time, s, 23);
+    date_time[23] = '\0';
+
+    // Parse date-time components
+    int year, month, day, hour, minute, second, msecs = 0;
+    int matched = sscanf(
+        date_time,
+        "%d-%d-%d %d:%d:%d.%d",
+        &year, &month, &day, &hour, &minute, &second, &msecs
+    );
+    if (matched < 6 || matched > 8) {
+        fprintf(stderr, "%s:%d not a valid date-time: %s (expected format: yyyy-mm-dd hh:MM:SS with optional milliseconds. Datetime string is truncated at 23 characters to ignore microseconds and timezone information.)\n", __FILE__, __LINE__, date_time);
         exit(EXIT_FAILURE);
     }
-    int missing_ranges_count = readstat_variable_get_missing_ranges_count(var);
-    for (int i=0; i<missing_ranges_count; i++) {
-        readstat_value_t lo_val = readstat_variable_get_missing_range_lo(var, i);
-        readstat_value_t hi_val = readstat_variable_get_missing_range_hi(var, i);
-        if (readstat_value_type(lo_val) != READSTAT_TYPE_DOUBLE) {
-            fprintf(stderr, "%s:%d expected type of lo_val to be of type double. Should not happen\n", __FILE__, __LINE__);
-            exit(EXIT_FAILURE);
-        }
-        double lo = readstat_double_value(lo_val);
-        double hi = readstat_double_value(hi_val);
-        if (val >= lo && val <= hi) {
-            readstat_value_t value = {
-                .type = READSTAT_TYPE_DOUBLE,
-                .is_tagged_missing = 1,
-                .tag = 'a' + i,
-                .v = { .double_value = val }
-                };
-            return value;
-        }
+
+    // Get days since the epoch for the date
+    char days_since_epoch_string[11];
+    sprintf(days_since_epoch_string, "%04d-%02d-%02d", year, month, day);
+    char* dest;
+    int days_since_epoch = readstat_dta_num_days(days_since_epoch_string, &dest);
+
+    // Add the hours, minutes, and seconds to the days
+    double msecs_since_epoch = 86400000.0 * days_since_epoch + hour * 3600000.0 + minute * 60000.0 + second * 1000.0 + msecs * 1.0;
+
+    // Adjust for leap seconds; 27 have occurred as of writing this code
+    // https://en.m.wikipedia.org/wiki/Leap_second
+    typedef struct {
+        int year;
+        int month;
+        int day;
+    } leap_second_date;
+    
+    leap_second_date leap_seconds[] = {
+        {1972, 6, 30}, {1972, 12, 31},  // +2 seconds in 1972
+        {1973, 12, 31},                 // +1 second in 1973
+        {1974, 12, 31},                 // +1 second in 1974
+        {1975, 12, 31},                 // +1 second in 1975
+        {1976, 12, 31},                 // +1 second in 1976
+        {1977, 12, 31},                 // +1 second in 1977
+        {1978, 12, 31},                 // +1 second in 1978
+        {1979, 12, 31},                 // +1 second in 1979
+        {1981, 6, 30},                  // +1 second in 1981
+        {1982, 6, 30},                  // +1 second in 1982
+        {1983, 6, 30},                  // +1 second in 1983
+        {1985, 6, 30},                  // +1 second in 1985
+        {1987, 12, 31},                 // +1 second in 1987
+        {1989, 12, 31},                 // +1 second in 1989
+        {1990, 12, 31},                 // +1 second in 1990
+        {1992, 6, 30},                  // +1 second in 1992
+        {1993, 6, 30},                  // +1 second in 1993
+        {1994, 6, 30},                  // +1 second in 1994
+        {1995, 12, 31},                 // +1 second in 1995
+        {1997, 6, 30},                  // +1 second in 1997
+        {1998, 12, 31},                 // +1 second in 1998
+        {2005, 12, 31},                 // +1 second in 2005
+        {2008, 12, 31},                 // +1 second in 2008
+        {2012, 6, 30},                  // +1 second in 2012
+        {2015, 6, 30},                  // +1 second in 2015
+        {2016, 12, 31}                  // +1 second in 2016
+    };
+
+    int leap_second_count = sizeof(leap_seconds) / sizeof(leap_seconds[0]);
+    int leap_seconds_to_add = 0;
+
+    for (int i = 0; i < leap_second_count; i++) {
+        // If the date is after this leap second, add one second
+        if (
+            (year > leap_seconds[i].year) ||
+            (year == leap_seconds[i].year && month > leap_seconds[i].month) ||
+            (year == leap_seconds[i].year && month == leap_seconds[i].month && day > leap_seconds[i].day)
+        ) { leap_seconds_to_add++; }
     }
+    msecs_since_epoch += leap_seconds_to_add * 1000.0;
 
     readstat_value_t value = {
         .type = READSTAT_TYPE_DOUBLE,
-        .is_tagged_missing = 0,
-        .v = { .double_value = val }
+        .v = { .double_value = msecs_since_epoch }
     };
+
     return value;
 }
 
@@ -436,7 +494,6 @@ void produce_csv_value_dta(void *csv_metadata, const char *s, size_t len) {
     } else if (is_date) {
         value = value_int32_date_dta(s, len, c);
     } else if (is_date_time) {
-        printf("WE ARE IN is_date_time, YAY!!!");
         value = value_double_date_time_dta(s, len, c);
     } else if (var->type == READSTAT_TYPE_DOUBLE) {
         value = value_double_dta(s, len, c);

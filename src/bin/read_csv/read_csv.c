@@ -76,6 +76,7 @@ static void csv_metadata_cell(void *s, size_t len, void *data)
     if (c->rows == 0) {
         c->variables = realloc(c->variables, (c->columns+1) * sizeof(readstat_variable_t));
         c->is_date = realloc(c->is_date, (c->columns+1) * sizeof(int));
+        c->is_date_time = realloc(c->is_date_time, (c->columns+1) * sizeof(int));
         produce_column_header(c, s, len);
     } else if (c->rows >= 1 && c->handle.value && c->output_module->csv_value) {
         c->output_module->csv_value(c, s, len);
@@ -184,6 +185,10 @@ cleanup:
     if (md->is_date) {
         free(md->is_date);
         md->is_date = NULL;
+    }
+    if (md->is_date_time) {
+        free(md->is_date_time);
+        md->is_date_time = NULL;
     }
     csv_free(p);
     io->close(io->io_ctx);
