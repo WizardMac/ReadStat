@@ -399,8 +399,7 @@ static readstat_value_t value_double_date_time_dta(const char *s, size_t len, st
     // Truncate the date string to 23 characters to remove the timezone offset and
     // microseconds, if present. STATA does not support timezones or microseconds.
     char date_time[24];
-    strncpy(date_time, s, 23);
-    date_time[23] = '\0';
+    snprintf(date_time, sizeof(date_time), "%s", s);
 
     // Parse date-time components
     int year, month, day, hour, minute, second, msecs = 0;
@@ -416,7 +415,7 @@ static readstat_value_t value_double_date_time_dta(const char *s, size_t len, st
 
     // Get days since the epoch for the date
     char days_since_epoch_string[11];
-    sprintf(days_since_epoch_string, "%04d-%02d-%02d", year, month, day);
+    snprintf(days_since_epoch_string, sizeof(days_since_epoch_string), "%04d-%02d-%02d", year, month, day);
     char* dest;
     int days_since_epoch = readstat_dta_num_days(days_since_epoch_string, &dest);
 
