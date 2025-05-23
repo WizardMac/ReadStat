@@ -123,8 +123,9 @@ static readstat_error_t xport_write_variables(readstat_writer_t *writer) {
                 any_has_long_format = 1;
                 needs_long_record = 1;
             }
-        } else if (variable->display_width) {
+        } else {
             namestr.nfl = variable->display_width;
+            namestr.nfd = variable->decimals;
         }
 
         if (variable->informat[0]) {
