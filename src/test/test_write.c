@@ -115,6 +115,8 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_variable_set_label_set(variable, label_set);
         if (column->format[0])
             readstat_variable_set_format(variable, column->format);
+        if (column->informat[0])
+            readstat_variable_set_informat(variable, column->informat);
         if (column->display_width)
             readstat_variable_set_display_width(variable, column->display_width);
 

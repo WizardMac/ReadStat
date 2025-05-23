@@ -922,6 +922,14 @@ static rt_test_group_t _test_groups[] = {
                 }
             },
             {
+                .label = "SAS informats",
+                .test_formats = RT_FORMAT_XPORT_8,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .informat = "10.3" },
+                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .informat = "$CHAR3" }
+                }
+            },
+            {
                 .label = "SAS long format",
                 .test_formats = RT_FORMAT_SAS7BDAT | RT_FORMAT_XPORT_8,
                 .columns = {

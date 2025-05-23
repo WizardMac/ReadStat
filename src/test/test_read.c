@@ -200,6 +200,11 @@ static int handle_variable(int index, readstat_variable_t *variable,
                 readstat_variable_get_format(variable),
                 "Column formats");
 
+    if (column->informat[0])
+        push_error_if_strings_differ(rt_ctx, column->informat,
+                readstat_variable_get_informat(variable),
+                "Column informats");
+
     if (column->display_width)
         push_error_if_doubles_differ(rt_ctx, column->display_width,
                 readstat_variable_get_display_width(variable),
