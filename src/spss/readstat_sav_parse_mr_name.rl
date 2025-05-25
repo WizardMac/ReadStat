@@ -81,9 +81,7 @@
         }
         memcpy(subvar, start, len);
         subvar[len] = '\0';
-        start = p + 1;
-        
-        
+        start = p + 1;    
         char **new_subvariables = readstat_realloc(mr_subvariables, sizeof(char *) * (mr_subvar_count + 1));
         if (new_subvariables == NULL) {
             free(subvar);
@@ -94,7 +92,7 @@
         mr_subvariables[mr_subvar_count++] = subvar;
     }
 
-    nc = (alnum | '_'); # name character
+    nc = (alnum | '_' | '.' ); # name character (including dots)
     name = nc+ '=' > extract_mr_name;
     type = ('C' | 'D'){1} > extract_mr_type;
     counted_value = digit* ' ' > extract_counted_value;
