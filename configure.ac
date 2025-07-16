@@ -1,5 +1,6 @@
 # Update this with each release. Be sure to change VS17/PropertySheet.props too
 AC_INIT([ReadStat],[1.1.9],[https://github.com/WizardMac/ReadStat/issues],[readstat],[https://github.com/WizardMac/ReadStat])
+AC_CONFIG_MACRO_DIRS([m4])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
 
@@ -39,8 +40,6 @@ AC_ARG_ENABLE([fuzz-testing], AS_HELP_STRING([--enable-fuzz-testing], ["Enable f
     fuzzer=no])
 AM_CONDITIONAL([FUZZER_ENABLED], test "x$fuzzer" = "xyes")
 AC_SUBST([SANITIZERS])
-
-AM_ICONV
 
 AC_CANONICAL_HOST
 AS_CASE([$host],
