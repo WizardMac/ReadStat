@@ -1364,7 +1364,7 @@ static readstat_error_t sav_parse_records_pass1(sav_ctx_t *ctx) {
                     retval = sav_parse_machine_integer_info_record(data_buf, data_len, ctx);
                     if (retval != READSTAT_OK)
                         goto cleanup;
-                } else if (subtype == SAV_RECORD_SUBTYPE_MULTIPLE_RESPONSE_SETS) {
+                } else if (subtype == SAV_RECORD_SUBTYPE_MULTIPLE_RESPONSE_SETS || subtype == SAV_RECORD_SUBTYPE_MULTIPLE_RESPONSE_SETS_V14) {
                     if (ctx->mr_sets != NULL) {
                         retval = READSTAT_ERROR_BAD_MR_STRING;
                         goto cleanup;
