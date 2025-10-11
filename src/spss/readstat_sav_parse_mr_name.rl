@@ -110,9 +110,9 @@
     subvariable = (nc+ end >extract_subvar);
 
     # Define patterns for each type
-    c_pattern = c_type counted_value label subvariable+;
-    d_pattern = d_type counted_value label subvariable+;
-    e_pattern = e_type e_params counted_value label subvariable+;
+    c_pattern = c_type counted_value label subvariable* end*;
+    d_pattern = d_type counted_value label subvariable* end*;
+    e_pattern = e_type e_params counted_value label subvariable* end*;
     
     # Main pattern is one of the type patterns
     main := name (c_pattern | d_pattern | e_pattern);
