@@ -1365,13 +1365,35 @@ static readstat_error_t sav_parse_records_pass1(sav_ctx_t *ctx) {
                     if (retval != READSTAT_OK)
                         goto cleanup;
                 } else if (subtype == SAV_RECORD_SUBTYPE_MULTIPLE_RESPONSE_SETS || subtype == SAV_RECORD_SUBTYPE_MULTIPLE_RESPONSE_SETS_V14) {
-                    if (ctx->mr_sets != NULL) {
-                        retval = READSTAT_ERROR_BAD_MR_STRING;
-                        goto cleanup;
-                    }
+                    // Files may contain multiple MR set records (subtype 7 and/or 19)
+                    // Save existing MR sets to merge with new ones
+                    mr_set_t *old_mr_sets = ctx->mr_sets;
+                    size_t old_count = ctx->multiple_response_sets_length;
+
+                    // Reset context to load new MR sets
+                    ctx->mr_sets = NULL;
+                    ctx->multiple_response_sets_length = 0;
+
                     retval = sav_read_multiple_response_sets(data_len, ctx);
                     if (retval != READSTAT_OK)
                         goto cleanup;
+
+                    // Merge with existing MR sets if any
+                    if (old_mr_sets != NULL && old_count > 0) {
+                        size_t total_count = old_count + ctx->multiple_response_sets_length;
+                        mr_set_t *merged = readstat_realloc(old_mr_sets, total_count * sizeof(mr_set_t));
+                        if (merged == NULL) {
+                            retval = READSTAT_ERROR_MALLOC;
+                            goto cleanup;
+                        }
+
+                        // Append new MR sets after existing ones
+                        memcpy(merged + old_count, ctx->mr_sets, ctx->multiple_response_sets_length * sizeof(mr_set_t));
+                        free(ctx->mr_sets);
+
+                        ctx->mr_sets = merged;
+                        ctx->multiple_response_sets_length = total_count;
+                    }
                 } else {
                     if (io->seek(data_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
                         retval = READSTAT_ERROR_SEEK;
