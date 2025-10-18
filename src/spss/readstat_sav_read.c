@@ -1383,14 +1383,21 @@ static readstat_error_t sav_parse_records_pass1(sav_ctx_t *ctx) {
                     ctx->multiple_response_sets_length = 0;
 
                     retval = sav_read_multiple_response_sets(data_len, ctx);
-                    if (retval != READSTAT_OK)
+                    if (retval != READSTAT_OK) {
+                        // Restore old MR sets to context so they get cleaned up properly
+                        ctx->mr_sets = old_mr_sets;
+                        ctx->multiple_response_sets_length = old_count;
                         goto cleanup;
+                    }
 
                     // Merge with existing MR sets if any
                     if (old_mr_sets != NULL && old_count > 0) {
                         size_t total_count = old_count + ctx->multiple_response_sets_length;
                         mr_set_t *merged = readstat_realloc(old_mr_sets, total_count * sizeof(mr_set_t));
                         if (merged == NULL) {
+                            // Restore old MR sets to context so they get cleaned up properly
+                            ctx->mr_sets = old_mr_sets;
+                            ctx->multiple_response_sets_length = old_count;
                             retval = READSTAT_ERROR_MALLOC;
                             goto cleanup;
                         }

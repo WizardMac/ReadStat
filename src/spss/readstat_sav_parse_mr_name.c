@@ -512,5 +512,23 @@ _again:
     (void)mr_parser_en_main;
 
 cleanup:
+    if (retval != READSTAT_OK && *mr_sets != NULL) {
+        // Free all successfully parsed MR sets
+        for (size_t i = 0; i < *n_mr_lines; i++) {
+            if ((*mr_sets)[i].name != NULL) free((*mr_sets)[i].name);
+            if ((*mr_sets)[i].label != NULL) free((*mr_sets)[i].label);
+            if ((*mr_sets)[i].subvariables != NULL) {
+                for (size_t j = 0; j < (*mr_sets)[i].num_subvars; j++) {
+                    if ((*mr_sets)[i].subvariables[j] != NULL) {
+                        free((*mr_sets)[i].subvariables[j]);
+                    }
+                }
+                free((*mr_sets)[i].subvariables);
+            }
+        }
+        free(*mr_sets);
+        *mr_sets = NULL;
+        *n_mr_lines = 0;
+    }
     return retval;
 }
