@@ -981,9 +981,17 @@ static readstat_error_t sav_parse_machine_integer_info_record(const void *data, 
         // but the field only has room for two bytes). So to prevent the client
         // from receiving an invalid byte sequence, we ram everything through
         // our iconv machinery.
-        iconv_t converter = iconv_open(dst_charset, src_charset);
+
+        // Try with //IGNORE suffix first to handle invalid byte sequences gracefully
+        char dst_with_ignore[256];
+        snprintf(dst_with_ignore, sizeof(dst_with_ignore), "%s//IGNORE", dst_charset);
+        iconv_t converter = iconv_open(dst_with_ignore, src_charset);
         if (converter == (iconv_t)-1) {
-            return READSTAT_ERROR_UNSUPPORTED_CHARSET;
+            // Fallback to without //IGNORE if not supported
+            converter = iconv_open(dst_charset, src_charset);
+            if (converter == (iconv_t)-1) {
+                return READSTAT_ERROR_UNSUPPORTED_CHARSET;
+            }
         }
         if (ctx->converter) {
             iconv_close(ctx->converter);
