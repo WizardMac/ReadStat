@@ -15,15 +15,31 @@ readstat_error_t readstat_convert(char *dst, size_t dst_len, const char *src, si
     } else if (converter) {
         size_t dst_left = dst_len - 1;
         char *dst_end = dst;
-        size_t status = iconv(converter, (readstat_iconv_inbuf_t)&src, &src_len, &dst_end, &dst_left);
-        if (status == (size_t)-1) {
-            if (errno == E2BIG) {
-                return READSTAT_ERROR_CONVERT_LONG_STRING;
-            } else if (errno == EILSEQ) {
-                return READSTAT_ERROR_CONVERT_BAD_STRING;
-            } else if (errno != EINVAL) { /* EINVAL indicates improper truncation; accept it */
-                return READSTAT_ERROR_CONVERT;
+
+        /* Try conversion, with retry logic for invalid sequences */
+        while (src_len > 0) {
+            size_t status = iconv(converter, (readstat_iconv_inbuf_t)&src, &src_len, &dst_end, &dst_left);
+
+            if (status == (size_t)-1) {
+                if (errno == E2BIG) {
+                    return READSTAT_ERROR_CONVERT_LONG_STRING;
+                } else if (errno == EILSEQ) {
+                    /* Invalid byte sequence - replace with '?' and continue.
+                     * This handles files with encoding errors more gracefully
+                     * than failing completely. */
+                    if (src_len > 0 && dst_left > 0) {
+                        *dst_end++ = '?';
+                        dst_left--;
+                        src++;
+                        src_len--;
+                        continue;
+                    }
+                    break;
+                } else if (errno != EINVAL) { /* EINVAL indicates improper truncation; accept it */
+                    return READSTAT_ERROR_CONVERT;
+                }
             }
+            break;
         }
         dst[dst_len - dst_left - 1] = '\0';
     } else if (src_len + 1 > dst_len) {
