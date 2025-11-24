@@ -10,7 +10,7 @@ jobs:
       - name: Add repository
         run: sudo apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - name: Install packages
-        run: sudo apt install gettext gcc-9 gcc-10 gcc-11 gcc-12
+        run: sudo apt install gcc-9 gcc-10 gcc-11 gcc-12
       - uses: actions/checkout@v2
       - name: Autoconf
         run: autoreconf -i -f
@@ -46,7 +46,7 @@ jobs:
         run: brew install automake libtool
       - uses: actions/checkout@v2
       - name: Autoconf
-        run: autoreconf -i -f -I $(brew --prefix)/share/gettext/m4
+        run: autoreconf -i -f
       - name: Configure
         run: ./configure
         env:
