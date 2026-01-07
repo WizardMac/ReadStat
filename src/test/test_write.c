@@ -89,8 +89,8 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
 
         size_t max_len = 0;
         if (column->type == READSTAT_TYPE_STRING) {
-            if (column->storage_width > 0) {
-                max_len = column->storage_width;
+            if (column->user_width > 0) {
+                max_len = column->user_width;
             } else {
                 max_len = 8;
                 for (i=0; i<file->rows; i++) {

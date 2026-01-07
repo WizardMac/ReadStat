@@ -1761,7 +1761,7 @@ static rt_test_group_t _test_groups[] = {
                     {
                         .name = "VAR1",
                         .type = READSTAT_TYPE_STRING,
-                        .storage_width = 9,
+                        .user_width = 9,
                         .label_set = "labels0"
                     }
                 }
