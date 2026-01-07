@@ -94,14 +94,28 @@
 
     nc = (alnum | '_' | '.' ); # name character (including dots)
     name = nc+ '=' > extract_mr_name;
-    type = ('C' | 'D'){1} > extract_mr_type;
+    
+    # Define types
+    c_type = 'C' > extract_mr_type;
+    d_type = 'D' > extract_mr_type;
+    e_type = 'E' > extract_mr_type;
+    
+    # For type E, we need an optional pattern for the additional parameters
+    e_params = ' ' ('1' | '11') ' ';
+    
     counted_value = digit* ' ' > extract_counted_value;
     label = digit+ ' '+ > extract_label;
 
     end = (space | '\0'); # subvar token terminator
     subvariable = (nc+ end >extract_subvar);
 
-    main := name type counted_value label subvariable+;
+    # Define patterns for each type
+    c_pattern = c_type counted_value label subvariable* end*;
+    d_pattern = d_type counted_value label subvariable* end*;
+    e_pattern = e_type e_params counted_value label subvariable* end*;
+    
+    # Main pattern is one of the type patterns
+    main := name (c_pattern | d_pattern | e_pattern);
 
     write data nofinal noerror;
 }%%
@@ -142,7 +156,7 @@ readstat_error_t extract_mr_data(const char *line, mr_set_t *result) {
     result->counted_value = mr_counted_value;
     result->subvariables = mr_subvariables;
     result->num_subvars = mr_subvar_count;
-    if (result->type == 'D') {
+    if (result->type == 'D' || result->type == 'E') {
         result->is_dichotomy = 1;
     }
 
@@ -221,5 +235,23 @@ readstat_error_t parse_mr_string(const char *line, mr_set_t **mr_sets, size_t *n
     (void)mr_parser_en_main;
 
 cleanup:
+    if (retval != READSTAT_OK && *mr_sets != NULL) {
+        // Free all successfully parsed MR sets
+        for (size_t i = 0; i < *n_mr_lines; i++) {
+            if ((*mr_sets)[i].name != NULL) free((*mr_sets)[i].name);
+            if ((*mr_sets)[i].label != NULL) free((*mr_sets)[i].label);
+            if ((*mr_sets)[i].subvariables != NULL) {
+                for (size_t j = 0; j < (*mr_sets)[i].num_subvars; j++) {
+                    if ((*mr_sets)[i].subvariables[j] != NULL) {
+                        free((*mr_sets)[i].subvariables[j]);
+                    }
+                }
+                free((*mr_sets)[i].subvariables);
+            }
+        }
+        free(*mr_sets);
+        *mr_sets = NULL;
+        *n_mr_lines = 0;
+    }
     return retval;
 }

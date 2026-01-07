@@ -981,6 +981,9 @@ static readstat_error_t sav_parse_machine_integer_info_record(const void *data, 
         // but the field only has room for two bytes). So to prevent the client
         // from receiving an invalid byte sequence, we ram everything through
         // our iconv machinery.
+
+        // Invalid byte sequences are now handled in readstat_convert() by
+        // skipping bad bytes, which works cross-platform (unlike //IGNORE)
         iconv_t converter = iconv_open(dst_charset, src_charset);
         if (converter == (iconv_t)-1) {
             return READSTAT_ERROR_UNSUPPORTED_CHARSET;
@@ -1364,14 +1367,43 @@ static readstat_error_t sav_parse_records_pass1(sav_ctx_t *ctx) {
                     retval = sav_parse_machine_integer_info_record(data_buf, data_len, ctx);
                     if (retval != READSTAT_OK)
                         goto cleanup;
-                } else if (subtype == SAV_RECORD_SUBTYPE_MULTIPLE_RESPONSE_SETS) {
-                    if (ctx->mr_sets != NULL) {
-                        retval = READSTAT_ERROR_BAD_MR_STRING;
+                } else if (subtype == SAV_RECORD_SUBTYPE_MULTIPLE_RESPONSE_SETS || subtype == SAV_RECORD_SUBTYPE_MULTIPLE_RESPONSE_SETS_V14) {
+                    // Files may contain multiple MR set records (subtype 7 and/or 19)
+                    // Save existing MR sets to merge with new ones
+                    mr_set_t *old_mr_sets = ctx->mr_sets;
+                    size_t old_count = ctx->multiple_response_sets_length;
+
+                    // Reset context to load new MR sets
+                    ctx->mr_sets = NULL;
+                    ctx->multiple_response_sets_length = 0;
+
+                    retval = sav_read_multiple_response_sets(data_len, ctx);
+                    if (retval != READSTAT_OK) {
+                        // Restore old MR sets to context so they get cleaned up properly
+                        ctx->mr_sets = old_mr_sets;
+                        ctx->multiple_response_sets_length = old_count;
                         goto cleanup;
                     }
-                    retval = sav_read_multiple_response_sets(data_len, ctx);
-                    if (retval != READSTAT_OK)
-                        goto cleanup;
+
+                    // Merge with existing MR sets if any
+                    if (old_mr_sets != NULL && old_count > 0) {
+                        size_t total_count = old_count + ctx->multiple_response_sets_length;
+                        mr_set_t *merged = readstat_realloc(old_mr_sets, total_count * sizeof(mr_set_t));
+                        if (merged == NULL) {
+                            // Restore old MR sets to context so they get cleaned up properly
+                            ctx->mr_sets = old_mr_sets;
+                            ctx->multiple_response_sets_length = old_count;
+                            retval = READSTAT_ERROR_MALLOC;
+                            goto cleanup;
+                        }
+
+                        // Append new MR sets after existing ones
+                        memcpy(merged + old_count, ctx->mr_sets, ctx->multiple_response_sets_length * sizeof(mr_set_t));
+                        free(ctx->mr_sets);
+
+                        ctx->mr_sets = merged;
+                        ctx->multiple_response_sets_length = total_count;
+                    }
                 } else {
                     if (io->seek(data_len, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
                         retval = READSTAT_ERROR_SEEK;
