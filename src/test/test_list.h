@@ -1737,6 +1737,34 @@ static rt_test_group_t _test_groups[] = {
                         .label_set = "labels0"
                     }
                 }
+            },
+
+            {
+                .label = "SAV long string value label key too long",
+                .write_error = READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_SAV,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "labels0",
+                        .type = READSTAT_TYPE_STRING,
+                        .value_labels_count = 1,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "0123456789ABCDEFG" } },
+                                .label = "Too long key"
+                            }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .storage_width = 9,
+                        .label_set = "labels0"
+                    }
+                }
             }
         }
     },

@@ -928,6 +928,11 @@ static readstat_error_t sav_emit_long_string_value_labels_record(readstat_writer
                 if (label_len > MAX_VALUE_LABEL_SIZE)
                     label_len = MAX_VALUE_LABEL_SIZE;
 
+                if (r_value_label->string_key_len > storage_width) {
+                    retval = READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
+                    goto cleanup;
+                }
+
                 info_header.count += sizeof(int32_t); // value length
                 info_header.count += storage_width;
                 info_header.count += sizeof(int32_t); // label length
