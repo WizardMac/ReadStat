@@ -114,6 +114,7 @@ typedef struct sas_text_ref_s {
 #define SAS_DEFAULT_FILE_VERSION  9
 
 extern unsigned char sas7bdat_magic_number[32];
+extern unsigned char sas7bdat_magic_number_alt[32];
 extern unsigned char sas7bcat_magic_number[32];
 
 uint64_t sas_read8(const char *data, int bswap);
