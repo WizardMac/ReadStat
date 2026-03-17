@@ -923,6 +923,17 @@ static rt_test_group_t _test_groups[] = {
                 }
             },
             {
+                .label = "XPORT v5 column name is too long",
+                .write_error = READSTAT_ERROR_NAME_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_XPORT_5,
+                .columns = {
+                    {
+                        .name = "VAR123456",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
+            },
+            {
                 .label = "POR column name is too long",
                 .write_error = READSTAT_ERROR_NAME_IS_TOO_LONG,
                 .test_formats = RT_FORMAT_POR,
