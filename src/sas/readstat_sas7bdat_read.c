@@ -380,6 +380,9 @@ static readstat_error_t sas7bdat_parse_column_format_subheader(const char *subhe
     if (ctx->u64) {
         ctx->col_info[ctx->col_formats_count-1].format_width = sas_read2(&subheader[24], ctx->bswap);
         ctx->col_info[ctx->col_formats_count-1].format_digits = sas_read2(&subheader[26], ctx->bswap);
+    } else {
+        ctx->col_info[ctx->col_formats_count-1].format_width = sas_read2(&subheader[12], ctx->bswap);
+        ctx->col_info[ctx->col_formats_count-1].format_digits = sas_read2(&subheader[14], ctx->bswap);
     }
     ctx->col_info[ctx->col_formats_count-1].format_ref = sas7bdat_parse_text_ref(
             ctx->u64 ? &subheader[46] : &subheader[34], ctx);
