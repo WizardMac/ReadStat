@@ -55,8 +55,11 @@ int main(int argc, char *argv[]) {
     int g, t, a, f;
 
     for (g=0; g<sizeof(_test_groups)/sizeof(_test_groups[0]); g++) {
-        for (t=0; t<MAX_TESTS_PER_GROUP && _test_groups[g].tests[t].label[0]; t++) {
+        for (t=0; t<MAX_TESTS_PER_GROUP; t++) {
             rt_test_file_t *file = &_test_groups[g].tests[t];
+            if (!(file->label[0] || file->resource_name[0]))
+                break;
+
             for (a=0; a<sizeof(_test_args)/sizeof(_test_args[0]); a++) {
                 rt_test_args_t *args = &_test_args[a];
                 rt_parse_ctx_t *parse_ctx = parse_ctx_init(buffer, file, args);
@@ -68,15 +71,21 @@ int main(int argc, char *argv[]) {
                     int old_errors_count = parse_ctx->errors_count;
                     parse_ctx_reset(parse_ctx, f);
 
-                    error = write_file_to_buffer(file, buffer, f);
-                    if (error != file->write_error) {
-                        push_error_if_codes_differ(parse_ctx, file->write_error, error);
-                        error = READSTAT_OK;
-                        continue;
-                    }
-                    if (error != READSTAT_OK) {
-                        error = READSTAT_OK;
-                        continue;
+                    if (file->resource_name[0] == '\0') {
+                        error = write_file_to_buffer(file, buffer, f);
+                        if (error != file->write_error) {
+                            push_error_if_codes_differ(parse_ctx, file->write_error, error);
+                            error = READSTAT_OK;
+                            continue;
+                        }
+                        if (error != READSTAT_OK) {
+                            error = READSTAT_OK;
+                            continue;
+                        }
+                    } else {
+                        error = buffer_read_from_resource(buffer, file->resource_name);
+                        if (error != READSTAT_OK)
+                            break;
                     }
 
                     error = read_file(parse_ctx, f);
@@ -108,9 +117,10 @@ int main(int argc, char *argv[]) {
 cleanup:
     if (error != READSTAT_OK) {
         dump_buffer(buffer, f);
+        rt_test_file_t *file = &_test_groups[g].tests[t];
+        char *test_name = file->label[0] ? file->label : file->resource_name;
         printf("Error running test \"%s\" (format=%s): %s\n", 
-                _test_groups[g].tests[t].label,
-                file_extension(f), readstat_error_message(error));
+                test_name, file_extension(f), readstat_error_message(error));
         buffer_free(buffer);
         return 1;
     }

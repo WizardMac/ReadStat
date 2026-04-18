@@ -66,6 +66,8 @@ typedef struct rt_test_file_s {
     long                string_refs_count;
 
     char                fweight[RT_MAX_STRING];
+
+    char                resource_name[80];
 } rt_test_file_t;
 
 typedef struct rt_test_group_s {

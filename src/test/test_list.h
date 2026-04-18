@@ -2325,6 +2325,66 @@ static rt_test_group_t _test_groups[] = {
                 }
             }
         }
+    },
+
+    {
+        .label = "Resource tests",
+        .tests = {
+            {
+                .resource_name = "datetime.sas7bdat",
+                .table_name = "DATETIME",
+                .test_formats = RT_FORMAT_SAS7BDAT_32BIT_COMP_NONE,
+                .rows = 3,
+                .columns_count = 5,
+                .columns = {
+                    {
+                        .name = "Date1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 5 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 5 } }
+                        }
+                    },
+                    {
+                        .name = "Date2",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 3 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 3 } }
+                        }
+                    },
+                    {
+                        .name = "DateTime",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -8907752836 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 9538991236 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -8907752836 } }
+                        }
+                    },
+                    {
+                        .name = "DateTimeHi",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -8907752836.85477447509766 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 9538991236.85477447509766 } }
+                        }
+                    },
+                    {
+                        .name = "Taiw",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -17532 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -17532 } }
+                        }
+                    }
+                }
+            }
+        }
     }
 };
 

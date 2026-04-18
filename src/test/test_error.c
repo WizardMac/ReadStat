@@ -181,7 +181,9 @@ static void print_value(readstat_value_t value) {
 
 void print_error(rt_error_t *error) {
     if (error->file) {
-        printf("Test \"%s\" failed: %s\n", error->file->label, error->msg);
+        rt_test_file_t *file = error->file;
+        char *test_name = file->label[0] ? file->label : file->resource_name;
+        printf("Test \"%s\" failed: %s\n", test_name, error->msg);
     } else {
         printf("Test failed: %s\n", error->msg);
     }
