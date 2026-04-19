@@ -54,20 +54,15 @@ AS_CASE([$host],
 AC_SUBST([EXTRA_WARNINGS])
 
 AS_CASE([$host],
-	[*mingw*|*cygwin*], [EXTRA_LDFLAGS="$LTLIBICONV -no-undefined"],
-	[EXTRA_LDFLAGS="$LTLIBICONV"])
+	[*mingw*|*cygwin*], [EXTRA_LDFLAGS="-liconv -no-undefined"],
+	[EXTRA_LDFLAGS=""])
 AC_SUBST([EXTRA_LDFLAGS])
 
 AS_CASE([$host],
-	[*mingw*], 
-        [
-        #There is no real way to determine whether UCRT is used vs normal MINGW but one way is by checking a define in <windows.h>
-        #If we are in UCRT we do not want to set the spawnv define because it breaks the build
-        IS_UCRT=`echo '#include <windows.h>'| gcc -E -dM -  | grep -i _UCRT | xargs`
-        AS_IF([test "$IS_UCRT" == ""], [
-            CFLAGS="$CFLAGS -D_spawnv=spawnv"
-        ])
-    ],
+	[*mingw*],
+	[
+		AC_CHECK_FUNCS([_spawnv], [], [CFLAGS="$CFLAGS -D_spawnv=spawnv"])
+	],
 	[CFLAGS="$CFLAGS"])
 
 AC_ARG_VAR([LIB_FUZZING_ENGINE], [Location of prebuilt fuzzing engine library])
