@@ -14,11 +14,13 @@ config.log
 config.status
 config.sub
 configure
+configure~
 depcomp
 install-sh
 libreadstat.la
 libtool
 ltmain.sh
+m4/
 Makefile
 Makefile.in
 missing
@@ -31,6 +33,7 @@ test_readstat
 *.log
 *.trs
 test_csv_to_dta*
+.vs/
 .vscode/
 *.swp
 dev/

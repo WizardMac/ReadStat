@@ -11,7 +11,7 @@ jobs:
         run: sudo apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - name: Install packages
         run: sudo apt install gcc-9 gcc-10 gcc-11 gcc-12
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
@@ -44,7 +44,7 @@ jobs:
     steps:
       - name: Install packages
         run: brew install automake libtool
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
@@ -83,7 +83,7 @@ jobs:
             base-devel
             gcc
             libiconv-devel
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
