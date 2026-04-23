@@ -2126,6 +2126,29 @@ static rt_test_group_t _test_groups[] = {
     },
 
     {
+        .label = "Bug fixes",
+        .tests = {
+            {
+                .label = "Floating point numbers that may collide with SAS subheader signatures",
+                .test_formats = RT_FORMAT_SAS7BDAT_64BIT,
+                .rows = 4,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = { 
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.0010449746331455659 } },   // F7 F7 F7 F7 F0 1E 51 3F
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -1.3177858745490654e-51 } }, // F9 FF FF FF 00 8E 5F B5
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4.4841929648653507e-13 } }   // FD FF FF FF 00 8E 5F 3D
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    {
         .label = "Generic tests",
         .tests = {
             {

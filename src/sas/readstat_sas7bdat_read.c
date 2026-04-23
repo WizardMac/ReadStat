@@ -626,30 +626,31 @@ static readstat_error_t sas7bdat_parse_subheader_compressed(const char *subheade
     return sas7bdat_parse_subheader_rle(subheader, len, ctx);
 }
 
-static readstat_error_t sas7bdat_parse_subheader(uint32_t signature, const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
+static readstat_error_t sas7bdat_parse_subheader(sas_subheader_type_t subheader_type, const char *subheader,
+        size_t len, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
 
     if (len < 2 + ctx->subheader_signature_size) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
-    if (signature == SAS_SUBHEADER_SIGNATURE_ROW_SIZE) {
+    if (subheader_type == SAS_SUBHEADER_TYPE_ROW_SIZE) {
         retval = sas7bdat_parse_row_size_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE) {
+    } else if (subheader_type == SAS_SUBHEADER_TYPE_COLUMN_SIZE) {
         retval = sas7bdat_parse_column_size_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COUNTS) {
+    } else if (subheader_type == SAS_SUBHEADER_TYPE_COUNTS) {
         /* void */
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
+    } else if (subheader_type == SAS_SUBHEADER_TYPE_COLUMN_TEXT) {
         retval = sas7bdat_parse_column_text_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_NAME) {
+    } else if (subheader_type == SAS_SUBHEADER_TYPE_COLUMN_NAME) {
         retval = sas7bdat_parse_column_name_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_ATTRS) {
+    } else if (subheader_type == SAS_SUBHEADER_TYPE_COLUMN_ATTRS) {
         retval = sas7bdat_parse_column_attributes_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT) {
+    } else if (subheader_type == SAS_SUBHEADER_TYPE_COLUMN_FORMAT) {
         retval = sas7bdat_parse_column_format_subheader(subheader, len, ctx);
-    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_LIST) {
+    } else if (subheader_type == SAS_SUBHEADER_TYPE_COLUMN_LIST) {
         /* void */
-    } else if ((signature & SAS_SUBHEADER_SIGNATURE_COLUMN_MASK) == SAS_SUBHEADER_SIGNATURE_COLUMN_MASK) {
+    } else if (subheader_type == SAS_SUBHEADER_TYPE_UNKNOWN) {
         /* void */
     } else {
         retval = READSTAT_ERROR_PARSE;
@@ -804,12 +805,49 @@ cleanup:
     return retval;
 }
 
-static int sas7bdat_signature_is_recognized(uint32_t signature) {
-    return (signature == SAS_SUBHEADER_SIGNATURE_ROW_SIZE ||
-            signature == SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE ||
-            signature == SAS_SUBHEADER_SIGNATURE_COUNTS ||
-            signature == SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT ||
-            (signature & SAS_SUBHEADER_SIGNATURE_COLUMN_MASK) == SAS_SUBHEADER_SIGNATURE_COLUMN_MASK);
+static sas_subheader_type_t sas7bdat_parse_subheader_type_32(uint32_t signature) {
+    switch (signature) {
+        case SAS_SUBHEADER_SIGNATURE_ROW_SIZE:
+            return SAS_SUBHEADER_TYPE_ROW_SIZE;
+        case SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE:
+            return SAS_SUBHEADER_TYPE_COLUMN_SIZE;
+        case SAS_SUBHEADER_SIGNATURE_COUNTS:
+            return SAS_SUBHEADER_TYPE_COUNTS;
+        case SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT:
+            return SAS_SUBHEADER_TYPE_COLUMN_FORMAT;
+        case SAS_SUBHEADER_SIGNATURE_COLUMN_ATTRS:
+            return SAS_SUBHEADER_TYPE_COLUMN_ATTRS;
+        case SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT:
+            return SAS_SUBHEADER_TYPE_COLUMN_TEXT;
+        case SAS_SUBHEADER_SIGNATURE_COLUMN_LIST:
+            return SAS_SUBHEADER_TYPE_COLUMN_LIST;
+        case SAS_SUBHEADER_SIGNATURE_COLUMN_NAME:
+            return SAS_SUBHEADER_TYPE_COLUMN_NAME;
+        default:
+            if ((signature & SAS_SUBHEADER_SIGNATURE_COLUMN_MASK) == SAS_SUBHEADER_SIGNATURE_COLUMN_MASK) {
+                return SAS_SUBHEADER_TYPE_UNKNOWN;
+            }
+            return SAS_SUBHEADER_TYPE_DATA;
+    }
+}
+
+static sas_subheader_type_t sas7bdat_parse_subheader_type(const char* subheader, sas7bdat_ctx_t* ctx) {
+    if (!ctx->u64) {
+        uint32_t signature_32 = sas_read4(subheader, ctx->bswap);
+        return sas7bdat_parse_subheader_type_32(signature_32);
+    }
+
+    uint64_t signature = sas_read8(subheader, ctx->bswap);
+    if (signature == SAS_SUBHEADER_SIGNATURE_ROW_SIZE) {
+        return SAS_SUBHEADER_TYPE_ROW_SIZE;
+    } else if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_SIZE) {
+        return SAS_SUBHEADER_TYPE_COLUMN_SIZE;
+    } else if ((signature & SAS_SUBHEADER_SIGNATURE_64BIT_MASK) != SAS_SUBHEADER_SIGNATURE_64BIT_MASK) {
+        return SAS_SUBHEADER_TYPE_DATA;
+    }
+
+    uint32_t lower_bytes = (uint32_t)(signature & SAS_SUBHEADER_SIGNATURE_32BIT_MASK);
+    return sas7bdat_parse_subheader_type_32(lower_bytes);
 }
 
 static readstat_error_t sas7bdat_parse_subheader_pointer(const char *shp, size_t shp_size,
@@ -875,8 +913,6 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
 
     for (i=0; i<subheader_count; i++) {
         subheader_pointer_t shp_info = { 0 };
-        uint32_t signature = 0;
-        size_t signature_len = ctx->subheader_signature_size;
         if ((retval = sas7bdat_parse_subheader_pointer(shp, page + page_size - shp, &shp_info, ctx)) != READSTAT_OK) {
             goto cleanup;
         }
@@ -885,12 +921,9 @@ static readstat_error_t sas7bdat_parse_page_pass1(const char *page, size_t page_
                 goto cleanup;
             }
             if (shp_info.compression == SAS_COMPRESSION_NONE) {
-                signature = sas_read4(page + shp_info.offset, ctx->bswap);
-                if (!ctx->little_endian && signature == -1 && signature_len == 8) {
-                    signature = sas_read4(page + shp_info.offset + 4, ctx->bswap);
-                }
-                if (signature == SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
-                    if ((retval = sas7bdat_parse_subheader(signature, page + shp_info.offset, shp_info.len, ctx))
+                sas_subheader_type_t subheader_type = sas7bdat_parse_subheader_type(page + shp_info.offset, ctx);
+                if (subheader_type == SAS_SUBHEADER_TYPE_COLUMN_TEXT) {
+                    if ((retval = sas7bdat_parse_subheader(subheader_type, page + shp_info.offset, shp_info.len, ctx))
                             != READSTAT_OK) {
                         goto cleanup;
                     }
@@ -937,7 +970,6 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
 
         for (i=0; i<subheader_count; i++) {
             subheader_pointer_t shp_info = { 0 };
-            uint32_t signature = 0;
             if ((retval = sas7bdat_parse_subheader_pointer(shp, page + page_size - shp, &shp_info, ctx)) != READSTAT_OK) {
                 goto cleanup;
             }
@@ -946,11 +978,8 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
                     goto cleanup;
                 }
                 if (shp_info.compression == SAS_COMPRESSION_NONE) {
-                    signature = sas_read4(page + shp_info.offset, ctx->bswap);
-                    if (!ctx->little_endian && signature == -1 && ctx->u64) {
-                        signature = sas_read4(page + shp_info.offset + 4, ctx->bswap);
-                    }
-                    if (shp_info.is_compressed_data && !sas7bdat_signature_is_recognized(signature)) {
+                    sas_subheader_type_t subheader_type = sas7bdat_parse_subheader_type(page + shp_info.offset, ctx);
+                    if (shp_info.is_compressed_data && subheader_type == SAS_SUBHEADER_TYPE_DATA) {
                         if (shp_info.len != ctx->row_length) {
                             retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
                             goto cleanup;
@@ -962,8 +991,8 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
                             goto cleanup;
                         }
                     } else {
-                        if (signature != SAS_SUBHEADER_SIGNATURE_COLUMN_TEXT) {
-                            if ((retval = sas7bdat_parse_subheader(signature, page + shp_info.offset, shp_info.len, ctx)) != READSTAT_OK) {
+                        if (subheader_type != SAS_SUBHEADER_TYPE_COLUMN_TEXT) {
+                            if ((retval = sas7bdat_parse_subheader(subheader_type, page + shp_info.offset, shp_info.len, ctx)) != READSTAT_OK) {
                                 goto cleanup;
                             }
                         }
