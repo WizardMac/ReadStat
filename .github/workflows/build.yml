@@ -26,7 +26,7 @@ jobs:
         continue-on-error: true
       - name: Upload test log
         if: steps.make-check.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-suite-log-linux-${{ matrix.compiler }}
           path: test-suite.log
@@ -59,7 +59,7 @@ jobs:
         continue-on-error: true
       - name: Upload test log
         if: steps.make-check.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-suite-log-macos-${{ matrix.compiler }}
           path: test-suite.log
@@ -96,7 +96,7 @@ jobs:
         continue-on-error: true
       - name: Upload test log
         if: steps.make-check.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-suite-log-windows
           path: test-suite.log
