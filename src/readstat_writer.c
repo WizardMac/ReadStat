@@ -386,8 +386,9 @@ void readstat_label_string_value(readstat_label_set_t *label_set, const char *va
     readstat_value_label_t *new_value_label = readstat_add_value_label(label_set, label);
     if (value && strlen(value)) {
         new_value_label->string_key_len = strlen(value);
-        new_value_label->string_key = malloc(new_value_label->string_key_len);
-        memcpy(new_value_label->string_key, value, new_value_label->string_key_len);
+        new_value_label->string_key = malloc(new_value_label->string_key_len + 1);
+        if (new_value_label->string_key == NULL) return;
+        memcpy(new_value_label->string_key, value, new_value_label->string_key_len + 1);
     }
 }
 
