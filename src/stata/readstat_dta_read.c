@@ -36,8 +36,13 @@ static readstat_error_t dta_update_progress(dta_ctx_t *ctx) {
 }
 
 static readstat_variable_t *dta_init_variable(dta_ctx_t *ctx, int i, int index_after_skipping,
-        readstat_type_t type, size_t max_len) {
+        readstat_type_t type, size_t max_len, readstat_error_t *out_retval) {
     readstat_variable_t *variable = calloc(1, sizeof(readstat_variable_t));
+
+    if (variable == NULL) {
+        if (out_retval) *out_retval = READSTAT_ERROR_MALLOC;
+        return NULL;
+    }
 
     variable->type = type;
     variable->index = i;
@@ -952,7 +957,9 @@ static readstat_error_t dta_handle_variables(dta_ctx_t *ctx) {
             max_len = 0;
         }
 
-        ctx->variables[i] = dta_init_variable(ctx, i, index_after_skipping, type, max_len);
+        ctx->variables[i] = dta_init_variable(ctx, i, index_after_skipping, type, max_len, &retval);
+        if (ctx->variables[i] == NULL)
+            goto cleanup;
 
         const char *value_labels = NULL;
 

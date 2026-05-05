@@ -281,6 +281,7 @@ static readstat_error_t xport_read_obs_header_record(xport_ctx_t *ctx) {
 static readstat_error_t xport_construct_format(char *dst, size_t dst_len,
         const char *src, size_t src_len, int width, int decimals) {
     char *format = malloc(4 * src_len + 1);
+    if (format == NULL) return READSTAT_ERROR_MALLOC;
     readstat_error_t retval = readstat_convert(format, 4 * src_len + 1, src, src_len, NULL);
 
     if (retval != READSTAT_OK) {

@@ -513,6 +513,7 @@ static readstat_error_t sas7bdat_parse_subheader_rdc(const char *subheader, size
     readstat_error_t retval = READSTAT_OK;
     const unsigned char *input = (const unsigned char *)subheader;
     char *buffer = malloc(ctx->row_length);
+    if (buffer == NULL) return READSTAT_ERROR_MALLOC;
     char *output = buffer;
     while (input + 2 <= (const unsigned char *)subheader + len) {
         int i;
@@ -1210,6 +1211,11 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     sas7bdat_ctx_t  *ctx = calloc(1, sizeof(sas7bdat_ctx_t));
     sas_header_info_t  *hinfo = calloc(1, sizeof(sas_header_info_t));
+
+    if (ctx == NULL || hinfo == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
 
     ctx->handle = parser->handlers;
     ctx->input_encoding = parser->input_encoding;
