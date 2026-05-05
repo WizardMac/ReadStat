@@ -45,7 +45,7 @@ static readstat_error_t xport_update_progress(xport_ctx_t *ctx) {
     return io->update(ctx->file_size, ctx->handle.progress, ctx->user_ctx, io->io_ctx);
 }
 
-static xport_ctx_t *xport_ctx_init() {
+static xport_ctx_t *xport_ctx_init(void) {
     xport_ctx_t *ctx = calloc(1, sizeof(xport_ctx_t));
     return ctx;
 }
@@ -281,6 +281,7 @@ static readstat_error_t xport_read_obs_header_record(xport_ctx_t *ctx) {
 static readstat_error_t xport_construct_format(char *dst, size_t dst_len,
         const char *src, size_t src_len, int width, int decimals) {
     char *format = malloc(4 * src_len + 1);
+    if (format == NULL) return READSTAT_ERROR_MALLOC;
     readstat_error_t retval = readstat_convert(format, 4 * src_len + 1, src, src_len, NULL);
 
     if (retval != READSTAT_OK) {
@@ -332,8 +333,14 @@ static readstat_error_t xport_read_labels_v8(xport_ctx_t *ctx, int label_count) 
             goto cleanup;
         }
 
-        name = realloc(name, name_len + 1);
-        label = realloc(label, label_len + 1);
+        char *tmp_name = realloc(name, name_len + 1);
+        if (tmp_name == NULL) { retval = READSTAT_ERROR_MALLOC; goto cleanup; }
+        name = tmp_name;
+
+        char *tmp_label = realloc(label, label_len + 1);
+        if (tmp_label == NULL) { retval = READSTAT_ERROR_MALLOC; goto cleanup; }
+        label = tmp_label;
+
         readstat_variable_t *variable = ctx->variables[index-1];
 
         if (read_bytes(ctx, name, name_len) != name_len ||
@@ -402,10 +409,21 @@ static readstat_error_t xport_read_labels_v9(xport_ctx_t *ctx, int label_count) 
             goto cleanup;
         }
 
-        name = realloc(name, name_len + 1);
-        label = realloc(label, label_len + 1);
-        format = realloc(format, format_len + 1);
-        informat = realloc(informat, informat_len + 1);
+        char *tmp_name = realloc(name, name_len + 1);
+        if (tmp_name == NULL) { retval = READSTAT_ERROR_MALLOC; goto cleanup; }
+        name = tmp_name;
+
+        char *tmp_label = realloc(label, label_len + 1);
+        if (tmp_label == NULL) { retval = READSTAT_ERROR_MALLOC; goto cleanup; }
+        label = tmp_label;
+
+        char *tmp_format = realloc(format, format_len + 1);
+        if (tmp_format == NULL) { retval = READSTAT_ERROR_MALLOC; goto cleanup; }
+        format = tmp_format;
+
+        char *tmp_informat = realloc(informat, informat_len + 1);
+        if (tmp_informat == NULL) { retval = READSTAT_ERROR_MALLOC; goto cleanup; }
+        informat = tmp_informat;
 
         readstat_variable_t *variable = ctx->variables[index-1];
 

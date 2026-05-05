@@ -214,7 +214,9 @@ static readstat_error_t maybe_read_string(por_ctx_t *ctx, char *data, size_t len
     
     if (string_length > ctx->string_buffer_len) {
         ctx->string_buffer_len = string_length;
-        ctx->string_buffer = realloc(ctx->string_buffer, ctx->string_buffer_len);
+        unsigned char *new_string_buf = realloc(ctx->string_buffer, ctx->string_buffer_len);
+        if (new_string_buf == NULL) { retval = READSTAT_ERROR_MALLOC; goto cleanup; }
+        ctx->string_buffer = new_string_buf;
         memset(ctx->string_buffer, 0, ctx->string_buffer_len);
     }
     
@@ -372,6 +374,10 @@ static readstat_error_t read_missing_value_record(por_ctx_t *ctx) {
     }
     varinfo = &ctx->varinfo[ctx->var_offset];
 
+    if (varinfo->n_missing_values >= 3) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
     if (varinfo->type == READSTAT_TYPE_DOUBLE) {
         if ((retval = read_double(ctx, &varinfo->missing_double_values[varinfo->n_missing_values])) != READSTAT_OK) {
             goto cleanup;
@@ -381,10 +387,6 @@ static readstat_error_t read_missing_value_record(por_ctx_t *ctx) {
                         sizeof(varinfo->missing_string_values[varinfo->n_missing_values]))) != READSTAT_OK) {
             goto cleanup;
         }
-    }
-    if (varinfo->n_missing_values > 2) {
-        retval = READSTAT_ERROR_PARSE;
-        goto cleanup;
     }
     varinfo->n_missing_values++;
 
@@ -519,8 +521,11 @@ static readstat_error_t read_variable_label_record(por_ctx_t *ctx) {
         goto cleanup;
     }
 
-    varinfo->label = realloc(varinfo->label, 4*strlen(string) + 1);
-    retval = readstat_convert(varinfo->label, 4*strlen(string) + 1, string, strlen(string), ctx->converter);
+    size_t label_alloc_len = 4*strlen(string) + 1;
+    char *new_label = realloc(varinfo->label, label_alloc_len);
+    if (new_label == NULL) { retval = READSTAT_ERROR_MALLOC; goto cleanup; }
+    varinfo->label = new_label;
+    retval = readstat_convert(varinfo->label, label_alloc_len, string, strlen(string), ctx->converter);
 
 cleanup:
     return retval;
@@ -682,8 +687,7 @@ readstat_error_t read_version_and_timestamp(por_ctx_t *ctx) {
         goto cleanup;
     }
     if (sscanf(string, "%02d%02d%02d", &timestamp.tm_hour, &timestamp.tm_min, &timestamp.tm_sec) != 3) {
-        retval = READSTAT_ERROR_BAD_TIMESTAMP_STRING;
-        goto cleanup;
+        /* optional */
     }
 
     timestamp.tm_year -= 1900;
