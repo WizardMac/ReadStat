@@ -327,7 +327,7 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
         goto cleanup;
     }
     // revision_tag is usually M, but J has been observed in the wild (not created with SAS?)
-    if (revision_tag != 'M' && revision_tag != 'J') {
+    if ((major == '8' || major == '9') && revision_tag != 'M' && revision_tag != 'J') {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
