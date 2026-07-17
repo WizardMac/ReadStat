@@ -1268,26 +1268,58 @@ static readstat_error_t dta_write_double(void *row, const readstat_variable_t *v
     return dta_write_raw_double(row, value);
 }
 
+/* Chops a UTF-8 string, if necessary, to fit in str2045 STATA size */
+static size_t dta_utf8_safe_length(const char *value, size_t max_len) {
+    size_t p = max_len;
+
+    /* Back up past any continuation bytes that straddle the cut point. */
+    while (p > 0 && ((unsigned char)value[p] & 0xC0) == 0x80)
+        p--;
+
+    /* p is now at a non-continuation byte (ASCII or lead byte).  Determine
+     * whether the full sequence starting at p fits within max_len. */
+    if (p < max_len) {
+        unsigned char b = (unsigned char)value[p];
+        size_t seq_len;
+        if      ((b & 0x80) == 0x00) seq_len = 1;  /* ASCII */
+        else if ((b & 0xE0) == 0xC0) seq_len = 2;
+        else if ((b & 0xF0) == 0xE0) seq_len = 3;
+        else if ((b & 0xF8) == 0xF0) seq_len = 4;
+        else                          seq_len = 1;  /* invalid; treat as single byte */
+
+        if (p + seq_len <= max_len)
+            p += seq_len;  /* full sequence fits */
+        /* else: incomplete sequence — leave p before the lead byte */
+    }
+
+    return p;
+}
+
 static readstat_error_t dta_write_string(void *row, const readstat_variable_t *var, const char *value) {
     size_t max_len = var->storage_width;
     if (value == NULL || value[0] == '\0') {
         memset(row, '\0', max_len);
     } else {
         size_t value_len = strlen(value);
-        if (value_len > max_len)
-            return READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
-
-        strncpy((char *)row, value, max_len);
+        if (value_len > max_len) {
+            /* The string's UTF-8 byte length exceeds the column width (e.g. a
+             * near-2045-character string whose Unicode bytes push it over the
+             * str2045 cap). Truncate at the last valid UTF-8 boundary so the
+             * row is preserved rather than dropped. */
+            size_t safe_len = dta_utf8_safe_length(value, max_len);
+            memset(row, '\0', max_len);
+            memcpy((char *)row, value, safe_len);
+        } else {
+            strncpy((char *)row, value, max_len);
+        }
     }
     return READSTAT_OK;
 }
 
 static readstat_error_t dta_118_write_string_ref(void *row, const readstat_variable_t *var, readstat_string_ref_t *ref) {
-    if (ref == NULL)
-        return READSTAT_ERROR_STRING_REF_IS_REQUIRED;
-
-    int16_t v = ref->first_v;
-    int64_t o = ref->first_o;
+    /* A NULL ref encodes a missing strL: write (v=0, o=0). */
+    int16_t v = ref ? ref->first_v : 0;
+    int64_t o = ref ? ref->first_o : 0;
     char *row_bytes = (char *)row;
     memcpy(&row_bytes[0], &v, sizeof(int16_t));
     if (!machine_is_little_endian()) {
@@ -1298,11 +1330,9 @@ static readstat_error_t dta_118_write_string_ref(void *row, const readstat_varia
 }
 
 static readstat_error_t dta_117_write_string_ref(void *row, const readstat_variable_t *var, readstat_string_ref_t *ref) {
-    if (ref == NULL)
-        return READSTAT_ERROR_STRING_REF_IS_REQUIRED;
-
-    int32_t v = ref->first_v;
-    int32_t o = ref->first_o;
+    /* A NULL ref encodes a missing strL: write (v=0, o=0). */
+    int32_t v = ref ? ref->first_v : 0;
+    int32_t o = ref ? ref->first_o : 0;
     char *row_bytes = (char *)row;
     memcpy(&row_bytes[0], &v, sizeof(int32_t));
     memcpy(&row_bytes[4], &o, sizeof(int32_t));
