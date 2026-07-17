@@ -20,11 +20,58 @@ static void handle_missing_discrete(struct context *ctx, readstat_variable_t *va
     for (int i=0; i<missing_ranges_count; i++) {
         readstat_value_t lo_val = readstat_variable_get_missing_range_lo(variable, i);
         readstat_value_t hi_val = readstat_variable_get_missing_range_hi(variable, i);
+        readstat_type_t lo_type = readstat_value_type(lo_val);
+        
         if (i>=1) {
             fprintf(ctx->fp, ", ");
         }
 
-        if (readstat_value_type(lo_val) == READSTAT_TYPE_DOUBLE) {
+        if (lo_type == READSTAT_TYPE_STRING) {
+            const char *lo = readstat_string_value(lo_val);
+            const char *hi = readstat_string_value(hi_val);
+            if (strcmp(lo, hi) == 0) {
+                fprintf(ctx->fp, "\"%s\"", lo);
+            } else {
+                fprintf(stderr, "%s:%d column %s unsupported string range lo '%s' hi '%s'\n", __FILE__, __LINE__, variable->name, lo, hi);
+                exit(EXIT_FAILURE);
+            }
+        } else if (lo_type == READSTAT_TYPE_INT8) {
+            char lo = readstat_int8_value(lo_val);
+            char hi = readstat_int8_value(hi_val);
+            if (lo == hi) {
+                fprintf(ctx->fp, "%d", (int)lo);
+            } else {
+                fprintf(stderr, "%s:%d column %s unsupported lo %d hi %d\n", __FILE__, __LINE__, variable->name, (int)lo, (int)hi);
+                exit(EXIT_FAILURE);
+            }
+        } else if (lo_type == READSTAT_TYPE_INT16) {
+            int16_t lo = readstat_int16_value(lo_val);
+            int16_t hi = readstat_int16_value(hi_val);
+            if (lo == hi) {
+                fprintf(ctx->fp, "%d", (int)lo);
+            } else {
+                fprintf(stderr, "%s:%d column %s unsupported lo %d hi %d\n", __FILE__, __LINE__, variable->name, (int)lo, (int)hi);
+                exit(EXIT_FAILURE);
+            }
+        } else if (lo_type == READSTAT_TYPE_INT32) {
+            int32_t lo = readstat_int32_value(lo_val);
+            int32_t hi = readstat_int32_value(hi_val);
+            if (lo == hi) {
+                fprintf(ctx->fp, "%d", lo);
+            } else {
+                fprintf(stderr, "%s:%d column %s unsupported lo %d hi %d\n", __FILE__, __LINE__, variable->name, lo, hi);
+                exit(EXIT_FAILURE);
+            }
+        } else if (lo_type == READSTAT_TYPE_FLOAT) {
+            float lo = readstat_float_value(lo_val);
+            float hi = readstat_float_value(hi_val);
+            if (lo == hi) {
+                fprintf(ctx->fp, "%g", lo);
+            } else {
+                fprintf(stderr, "%s:%d column %s unsupported lo %f hi %f\n", __FILE__, __LINE__, variable->name, lo, hi);
+                exit(EXIT_FAILURE);
+            }
+        } else if (lo_type == READSTAT_TYPE_DOUBLE) {
             double lo = readstat_double_value(lo_val);
             double hi = readstat_double_value(hi_val);
             if (lo == hi && spss_date) {
@@ -42,7 +89,7 @@ static void handle_missing_discrete(struct context *ctx, readstat_variable_t *va
                 exit(EXIT_FAILURE);
             }
         } else {
-            fprintf(stderr, "%s:%d unsupported missing type\n", __FILE__, __LINE__);
+            fprintf(stderr, "%s:%d unsupported missing type %d\n", __FILE__, __LINE__, lo_type);
             exit(EXIT_FAILURE);
         }
     }
@@ -58,11 +105,53 @@ static void handle_missing_range(struct context *ctx, readstat_variable_t *varia
     for (int i=0; i<missing_ranges_count; i++) {
         readstat_value_t lo_val = readstat_variable_get_missing_range_lo(variable, i);
         readstat_value_t hi_val = readstat_variable_get_missing_range_hi(variable, i);
+        readstat_type_t lo_type = readstat_value_type(lo_val);
+        
         if (i>=1) {
             fprintf(ctx->fp, ", ");
         }
 
-        if (readstat_value_type(lo_val) == READSTAT_TYPE_DOUBLE) {
+        if (lo_type == READSTAT_TYPE_STRING) {
+            const char *lo = readstat_string_value(lo_val);
+            const char *hi = readstat_string_value(hi_val);
+            if (strcmp(lo, hi) == 0) {
+                fprintf(ctx->fp, "\"discrete-value\": \"%s\"", lo);
+            } else {
+                fprintf(ctx->fp, "\"low\": \"%s\", \"high\": \"%s\"", lo, hi);
+            }
+        } else if (lo_type == READSTAT_TYPE_INT8) {
+            char lo = readstat_int8_value(lo_val);
+            char hi = readstat_int8_value(hi_val);
+            if (lo == hi) {
+                fprintf(ctx->fp, "\"discrete-value\": %d", (int)lo);
+            } else {
+                fprintf(ctx->fp, "\"low\": %d, \"high\": %d", (int)lo, (int)hi);
+            }
+        } else if (lo_type == READSTAT_TYPE_INT16) {
+            int16_t lo = readstat_int16_value(lo_val);
+            int16_t hi = readstat_int16_value(hi_val);
+            if (lo == hi) {
+                fprintf(ctx->fp, "\"discrete-value\": %d", (int)lo);
+            } else {
+                fprintf(ctx->fp, "\"low\": %d, \"high\": %d", (int)lo, (int)hi);
+            }
+        } else if (lo_type == READSTAT_TYPE_INT32) {
+            int32_t lo = readstat_int32_value(lo_val);
+            int32_t hi = readstat_int32_value(hi_val);
+            if (lo == hi) {
+                fprintf(ctx->fp, "\"discrete-value\": %d", lo);
+            } else {
+                fprintf(ctx->fp, "\"low\": %d, \"high\": %d", lo, hi);
+            }
+        } else if (lo_type == READSTAT_TYPE_FLOAT) {
+            float lo = readstat_float_value(lo_val);
+            float hi = readstat_float_value(hi_val);
+            if (lo == hi) {
+                fprintf(ctx->fp, "\"discrete-value\": %g", lo);
+            } else {
+                fprintf(ctx->fp, "\"low\": %g, \"high\": %g", lo, hi);
+            }
+        } else if (lo_type == READSTAT_TYPE_DOUBLE) {
             double lo = readstat_double_value(lo_val);
             double hi = readstat_double_value(hi_val);
             if (spss_date) {
@@ -91,7 +180,7 @@ static void handle_missing_range(struct context *ctx, readstat_variable_t *varia
                 }
             }
         } else {
-            fprintf(stderr, "%s:%d unsupported missing type\n", __FILE__, __LINE__);
+            fprintf(stderr, "%s:%d unsupported missing type %d\n", __FILE__, __LINE__, lo_type);
             exit(EXIT_FAILURE);
         }
     }
@@ -106,12 +195,55 @@ void add_missing_values(struct context *ctx, readstat_variable_t *variable) {
     
     int is_range = 0;
     int discrete = 0;
-    int only_double = 1;
+    int supported_type = 1;
 
     for (int i=0; i<missing_ranges_count; i++) {
         readstat_value_t lo_val = readstat_variable_get_missing_range_lo(variable, i);
         readstat_value_t hi_val = readstat_variable_get_missing_range_hi(variable, i);
-        if (readstat_value_type(lo_val) == READSTAT_TYPE_DOUBLE && readstat_value_type(hi_val) == READSTAT_TYPE_DOUBLE) {
+        readstat_type_t lo_type = readstat_value_type(lo_val);
+        
+        // Check if types are supported (STRING, INT8, INT16, INT32, FLOAT, DOUBLE)
+        if (lo_type == READSTAT_TYPE_STRING) {
+            const char *lo = readstat_string_value(lo_val);
+            const char *hi = readstat_string_value(hi_val);
+            if (strcmp(lo, hi) != 0) {
+                is_range = 1;
+            } else {
+                discrete = 1;
+            }
+        } else if (lo_type == READSTAT_TYPE_INT8) {
+            char lo = readstat_int8_value(lo_val);
+            char hi = readstat_int8_value(hi_val);
+            if (lo != hi) {
+                is_range = 1;
+            } else {
+                discrete = 1;
+            }
+        } else if (lo_type == READSTAT_TYPE_INT16) {
+            int16_t lo = readstat_int16_value(lo_val);
+            int16_t hi = readstat_int16_value(hi_val);
+            if (lo != hi) {
+                is_range = 1;
+            } else {
+                discrete = 1;
+            }
+        } else if (lo_type == READSTAT_TYPE_INT32) {
+            int32_t lo = readstat_int32_value(lo_val);
+            int32_t hi = readstat_int32_value(hi_val);
+            if (lo != hi) {
+                is_range = 1;
+            } else {
+                discrete = 1;
+            }
+        } else if (lo_type == READSTAT_TYPE_FLOAT) {
+            float lo = readstat_float_value(lo_val);
+            float hi = readstat_float_value(hi_val);
+            if (lo != hi) {
+                is_range = 1;
+            } else {
+                discrete = 1;
+            }
+        } else if (lo_type == READSTAT_TYPE_DOUBLE) {
             double lo = readstat_double_value(lo_val);
             double hi = readstat_double_value(hi_val);
             if (lo != hi) {
@@ -120,12 +252,12 @@ void add_missing_values(struct context *ctx, readstat_variable_t *variable) {
                 discrete = 1;
             }
         } else {
-            only_double = 0;
+            supported_type = 0;
         }
     }
 
-    if (!only_double) {
-        fprintf(stderr, "%s:%d only implemented double support for missing values\n", __FILE__, __LINE__);
+    if (!supported_type) {
+        fprintf(stderr, "%s:%d unsupported type for missing values\n", __FILE__, __LINE__);
         exit(EXIT_FAILURE);
     }
 

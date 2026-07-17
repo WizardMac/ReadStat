@@ -372,6 +372,10 @@ static readstat_error_t read_missing_value_record(por_ctx_t *ctx) {
     }
     varinfo = &ctx->varinfo[ctx->var_offset];
 
+    if (varinfo->n_missing_values >= 3) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
     if (varinfo->type == READSTAT_TYPE_DOUBLE) {
         if ((retval = read_double(ctx, &varinfo->missing_double_values[varinfo->n_missing_values])) != READSTAT_OK) {
             goto cleanup;
@@ -381,10 +385,6 @@ static readstat_error_t read_missing_value_record(por_ctx_t *ctx) {
                         sizeof(varinfo->missing_string_values[varinfo->n_missing_values]))) != READSTAT_OK) {
             goto cleanup;
         }
-    }
-    if (varinfo->n_missing_values > 2) {
-        retval = READSTAT_ERROR_PARSE;
-        goto cleanup;
     }
     varinfo->n_missing_values++;
 
@@ -682,8 +682,7 @@ readstat_error_t read_version_and_timestamp(por_ctx_t *ctx) {
         goto cleanup;
     }
     if (sscanf(string, "%02d%02d%02d", &timestamp.tm_hour, &timestamp.tm_min, &timestamp.tm_sec) != 3) {
-        retval = READSTAT_ERROR_BAD_TIMESTAMP_STRING;
-        goto cleanup;
+        /* optional */
     }
 
     timestamp.tm_year -= 1900;

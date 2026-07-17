@@ -10,8 +10,8 @@ jobs:
       - name: Add repository
         run: sudo apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - name: Install packages
-        run: sudo apt install gettext gcc-9 gcc-10 gcc-11 gcc-12
-      - uses: actions/checkout@v2
+        run: sudo apt install gcc-9 gcc-10 gcc-11 gcc-12
+      - uses: actions/checkout@v6
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
@@ -21,9 +21,21 @@ jobs:
       - name: Make
         run: make
       - name: Run tests
+        id: make-check
         run: make check
+        continue-on-error: true
+      - name: Upload test log
+        if: steps.make-check.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-suite-log-linux-${{ matrix.compiler }}
+          path: test-suite.log
+          retention-days: 5
       - name: Generate corpus
         run: make generate_corpus
+      - name: Fail if tests failed
+        if: steps.make-check.outcome == 'failure'
+        run: exit 1
   macos:
     runs-on: macos-latest
     strategy:
@@ -32,7 +44,7 @@ jobs:
     steps:
       - name: Install packages
         run: brew install automake libtool
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
@@ -42,9 +54,21 @@ jobs:
       - name: Make
         run: make
       - name: Run tests
+        id: make-check
         run: make check
+        continue-on-error: true
+      - name: Upload test log
+        if: steps.make-check.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-suite-log-macos-${{ matrix.compiler }}
+          path: test-suite.log
+          retention-days: 5
       - name: Generate corpus
         run: make generate_corpus
+      - name: Fail if tests failed
+        if: steps.make-check.outcome == 'failure'
+        run: exit 1
   windows:
     runs-on: windows-latest
     defaults:
@@ -59,7 +83,7 @@ jobs:
             base-devel
             gcc
             libiconv-devel
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Autoconf
         run: autoreconf -i -f
       - name: Configure
@@ -67,6 +91,16 @@ jobs:
       - name: Make
         run: make
       - name: Test
+        id: make-check
         run: make check
-      - name: Log
-        run: cat ./test-suite.log
+        continue-on-error: true
+      - name: Upload test log
+        if: steps.make-check.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-suite-log-windows
+          path: test-suite.log
+          retention-days: 5
+      - name: Fail if tests failed
+        if: steps.make-check.outcome == 'failure'
+        run: exit 1

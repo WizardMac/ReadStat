@@ -66,6 +66,7 @@ Language Bindings
 * Perl 6: [ReadStat.pm6](https://github.com/WizardMac/ReadStat.pm6)
 * Python: [pyreadstat](https://github.com/Roche/pyreadstat)
 * R: [haven](https://github.com/tidyverse/haven)
+* DuckDB: [`read_stat`](<https://github.com/mettekou/duckdb-read-stat>)
 
 
 Docker

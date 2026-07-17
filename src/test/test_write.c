@@ -89,19 +89,23 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
 
         size_t max_len = 0;
         if (column->type == READSTAT_TYPE_STRING) {
-            max_len = 8;
-            for (i=0; i<file->rows; i++) {
-                const char *value = readstat_string_value(column->values[i]);
-                if (value) {
-                    size_t len = strlen(value);
-                    if (len > max_len)
-                        max_len = len;
+            if (column->user_width > 0) {
+                max_len = column->user_width;
+            } else {
+                max_len = 8;
+                for (i=0; i<file->rows; i++) {
+                    const char *value = readstat_string_value(column->values[i]);
+                    if (value) {
+                        size_t len = strlen(value);
+                        if (len > max_len)
+                            max_len = len;
+                    }
                 }
-            }
-            if (label_set) {
-                for (i=0; i<label_set->value_labels_count; i++) {
-                    if (label_set->value_labels[i].string_key_len > max_len)
-                        max_len = label_set->value_labels[i].string_key_len;
+                if (label_set) {
+                    for (i=0; i<label_set->value_labels_count; i++) {
+                        if (label_set->value_labels[i].string_key_len > max_len)
+                            max_len = label_set->value_labels[i].string_key_len;
+                    }
                 }
             }
         }

@@ -1,5 +1,6 @@
 # Update this with each release. Be sure to change VS17/PropertySheet.props too
 AC_INIT([ReadStat],[1.1.9],[https://github.com/WizardMac/ReadStat/issues],[readstat],[https://github.com/WizardMac/ReadStat])
+AC_CONFIG_MACRO_DIRS([m4])
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_SILENT_RULES([yes])
 
@@ -40,8 +41,6 @@ AC_ARG_ENABLE([fuzz-testing], AS_HELP_STRING([--enable-fuzz-testing], ["Enable f
 AM_CONDITIONAL([FUZZER_ENABLED], test "x$fuzzer" = "xyes")
 AC_SUBST([SANITIZERS])
 
-AM_ICONV
-
 AC_CANONICAL_HOST
 AS_CASE([$host],
 	[*linux*|*bsd*|*mingw*|*cygwin*|*gnu*], [EXTRA_LIBS="-lm"],
@@ -55,20 +54,15 @@ AS_CASE([$host],
 AC_SUBST([EXTRA_WARNINGS])
 
 AS_CASE([$host],
-	[*mingw*|*cygwin*], [EXTRA_LDFLAGS="$LTLIBICONV -no-undefined"],
-	[EXTRA_LDFLAGS="$LTLIBICONV"])
+	[*mingw*|*cygwin*], [EXTRA_LDFLAGS="-liconv -no-undefined"],
+	[EXTRA_LDFLAGS=""])
 AC_SUBST([EXTRA_LDFLAGS])
 
 AS_CASE([$host],
-	[*mingw*], 
-        [
-        #There is no real way to determine whether UCRT is used vs normal MINGW but one way is by checking a define in <windows.h>
-        #If we are in UCRT we do not want to set the spawnv define because it breaks the build
-        IS_UCRT=`echo '#include <windows.h>'| gcc -E -dM -  | grep -i _UCRT | xargs`
-        AS_IF([test "$IS_UCRT" == ""], [
-            CFLAGS="$CFLAGS -D_spawnv=spawnv"
-        ])
-    ],
+	[*mingw*],
+	[
+		AC_CHECK_FUNCS([_spawnv], [], [CFLAGS="$CFLAGS -D_spawnv=spawnv"])
+	],
 	[CFLAGS="$CFLAGS"])
 
 AC_ARG_VAR([LIB_FUZZING_ENGINE], [Location of prebuilt fuzzing engine library])
