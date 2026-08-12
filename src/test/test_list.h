@@ -2383,6 +2383,160 @@ static rt_test_group_t _test_groups[] = {
                         }
                     }
                 }
+            },
+
+            {
+                .resource_name = "compression_type_0x02.sas7bdat",
+                .label = "SAS file with moved uncompressed row",
+                .test_formats = RT_FORMAT_SAS7BDAT_64BIT_COMP_NONE,
+                .rows = 5,
+                .columns_count = 3,
+                .columns = {
+                    {
+                        .name = "id",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 3 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 5 } }
+                        }
+                    },
+                    {
+                        .name = "category",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_1" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_2" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_3" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_4" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_5" } }
+                        }
+                    },
+                    {
+                        .name = "payload_to_update",
+                        .type = READSTAT_TYPE_STRING,
+                        .skip_value_comparison = 1
+                    }
+                }
+            },
+
+            {
+                .resource_name = "compression_type_0x06.sas7bdat",
+                .label = "SAS file with moved compressed row",
+                .test_formats = RT_FORMAT_SAS7BDAT_64BIT_COMP_ROWS,
+                .rows = 5,
+                .columns_count = 3,
+                .columns = {
+                    {
+                        .name = "id",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 3 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 5 } }
+                        }
+                    },
+                    {
+                        .name = "category",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_1" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_2" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_3" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_4" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_5" } }
+                        }
+                    },
+                    {
+                        .name = "payload_to_update",
+                        .type = READSTAT_TYPE_STRING,
+                        .skip_value_comparison = 1
+                    }
+                }
+            },
+
+            {
+                .resource_name = "compression_type_0x09.sas7bdat",
+                .label = "SAS file with unreferenced uncompressed row",
+                .test_formats = RT_FORMAT_SAS7BDAT_64BIT_COMP_NONE,
+                .rows = 4,
+                .columns_count = 3,
+                .columns = {
+                    {
+                        .name = "id",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 5 } }
+                        }
+                    },
+                    {
+                        .name = "category",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_1" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_2" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_4" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_5" } }
+                        }
+                    },
+                    {
+                        .name = "payload_to_update",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } }
+                        }
+                    }
+                }
+            },
+
+            {
+                .resource_name = "compression_type_0x0d.sas7bdat",
+                .label = "SAS file with unreferenced compressed row",
+                .test_formats = RT_FORMAT_SAS7BDAT_64BIT_COMP_ROWS,
+                .rows = 4,
+                .columns_count = 3,
+                .columns = {
+                    {
+                        .name = "id",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 5 } }
+                        }
+                    },
+                    {
+                        .name = "category",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_1" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_2" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_4" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "CATEGORY_5" } }
+                        }
+                    },
+                    {
+                        .name = "payload_to_update",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } }
+                        }
+                    }
+                }
             }
         }
     }

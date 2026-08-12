@@ -82,7 +82,12 @@ endif
 
 dist_man1_MANS = man/readstat.man man/extract_metadata.man
 
-EXTRA_DIST = resources/datetime.sas7bdat
+EXTRA_DIST = \
+	resources/datetime.sas7bdat \
+	resources/compression_type_0x02.sas7bdat \
+	resources/compression_type_0x06.sas7bdat \
+	resources/compression_type_0x09.sas7bdat \
+	resources/compression_type_0x0d.sas7bdat
 
 include_HEADERS = src/readstat.h
 

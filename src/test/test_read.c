@@ -265,14 +265,16 @@ static int handle_value(int obs_index, readstat_variable_t *variable, readstat_v
 
     rt_column_t *column = &rt_ctx->file->columns[rt_ctx->var_index];
 
-    if (column->type == READSTAT_TYPE_STRING_REF) {
-        push_error_if_strings_differ(rt_ctx,
-                rt_ctx->file->string_refs[readstat_int32_value(column->values[file_obs_index])],
-                readstat_string_value(value), "String ref values");
-    } else {
-        push_error_if_values_differ(rt_ctx, 
-                column->values[file_obs_index],
-                value, "Data values");
+    if (!column->skip_value_comparison) {
+        if (column->type == READSTAT_TYPE_STRING_REF) {
+            push_error_if_strings_differ(rt_ctx,
+                    rt_ctx->file->string_refs[readstat_int32_value(column->values[file_obs_index])],
+                    readstat_string_value(value), "String ref values");
+        } else {
+            push_error_if_values_differ(rt_ctx,
+                    column->values[file_obs_index],
+                    value, "Data values");
+        }
     }
 
     return READSTAT_HANDLER_OK;

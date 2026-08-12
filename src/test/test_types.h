@@ -42,6 +42,8 @@ typedef struct rt_column_s {
     long                    missing_ranges_count;
 
     char                    label_set[RT_MAX_STRING];
+
+    int                     skip_value_comparison;
 } rt_column_t;
 
 typedef struct rt_test_file_s {
