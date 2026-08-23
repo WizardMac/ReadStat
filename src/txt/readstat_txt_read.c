@@ -27,8 +27,17 @@ static readstat_error_t handle_value(readstat_parser_t *parser, iconv_t converte
     if (readstat_type_class(variable->type) == READSTAT_TYPE_CLASS_STRING) {
         converted_value = malloc(4*len+1);
         error = readstat_convert(converted_value, 4 * len + 1, bytes, len, converter);
-        if (error != READSTAT_OK)
+        if (error == READSTAT_ERROR_CONVERT_BAD_STRING) {
+            if (!parser->handlers.invalid_string) {
+                goto cleanup;
+            } else if (parser->handlers.invalid_string(converted_value, 4 * len + 1,
+                    bytes, len, obs_index+1, variable, ctx) != READSTAT_HANDLER_OK) {
+                error = READSTAT_ERROR_USER_ABORT;
+                goto cleanup;
+            }
+        } else if (error != READSTAT_OK) {
             goto cleanup;
+        }
         value.v.string_value = converted_value;
     } else {
         char *endptr = NULL;
