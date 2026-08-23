@@ -1088,12 +1088,11 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
         if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_MIX) {
             /* HACK - this is supposed to obey 8-byte boundaries but
              * some files created by Stat/Transfer don't. So verify that the
-             * padding is { 0, 0, 0, 0 } or { ' ', ' ', ' ', ' ' } (or that
+             * padding is { 0, 0, 0, 0 } or { ' ', ' ', ' ', ' ' } (and that
              * the file is not from Stat/Transfer) before skipping it */
             if ((shp-page)%8 == 4 && shp + 4 <= page + page_size &&
-                    (*(uint32_t *)shp == 0x00000000 ||
-                     *(uint32_t *)shp == 0x20202020 ||
-                     ctx->vendor != READSTAT_VENDOR_STAT_TRANSFER)) {
+		(*(uint32_t *)shp == 0x00000000 || *(uint32_t *)shp == 0x20202020) &&
+		ctx->vendor != READSTAT_VENDOR_STAT_TRANSFER) {
                 data = shp + 4;
             } else {
                 data = shp;
