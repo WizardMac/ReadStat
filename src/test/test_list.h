@@ -674,6 +674,34 @@ static rt_test_group_t _test_groups[] = {
                         }
                     }
                 }
+            },
+
+            {
+                .label = "Empty SAS file with metadata spill-over beyond first page",
+                .test_formats = RT_FORMAT_SAS7BDAT,
+                .rows = 0,
+                .columns = {
+                    { .name = "one_of_many_long_column_names_1", .label = "Label for column 1", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_2", .label = "Label for column 2", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_3", .label = "Label for column 3", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_4", .label = "Label for column 4", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_5", .label = "Label for column 5", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_6", .label = "Label for column 6", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_7", .label = "Label for column 7", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_8", .label = "Label for column 8", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_9", .label = "Label for column 9", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_10", .label = "Label for column 10", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_11", .label = "Label for column 11", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_12", .label = "Label for column 12", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_13", .label = "Label for column 13", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_14", .label = "Label for column 14", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_15", .label = "Label for column 15", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_16", .label = "Label for column 16", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_17", .label = "Label for column 17", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_18", .label = "Label for column 18", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_19", .label = "Label for column 19", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_20", .label = "Label for column 20", .format = "$CHAR8", .type = READSTAT_TYPE_STRING }
+                }
             }
         }
     },

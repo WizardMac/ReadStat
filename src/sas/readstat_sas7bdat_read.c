@@ -1404,7 +1404,7 @@ static readstat_error_t sas7bdat_parse_all_pages_pass2(sas7bdat_ctx_t *ctx) {
             }
             goto cleanup;
         }
-        if (ctx->parsed_row_count == ctx->row_limit)
+        if (ctx->row_limit > 0 && ctx->parsed_row_count == ctx->row_limit)
             break;
     }
 cleanup:

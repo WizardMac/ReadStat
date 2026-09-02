@@ -1,7 +1,7 @@
 #include <time.h>
 
 #define RT_MAX_ROWS                 10
-#define RT_MAX_COLS                 10
+#define RT_MAX_COLS                 20
 #define RT_MAX_LABEL_SETS            2
 #define RT_MAX_NOTES                 2
 #define RT_MAX_STRING_REFS           3

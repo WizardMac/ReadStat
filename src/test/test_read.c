@@ -191,6 +191,11 @@ static int handle_variable(int index, readstat_variable_t *variable,
             readstat_variable_get_name(variable),
             "Column names");
 
+    push_error_if_doubles_differ(rt_ctx,
+            readstat_type_class(column->type),
+            readstat_type_class(readstat_variable_get_type(variable)),
+            "Column type class");
+
     push_error_if_strings_differ(rt_ctx, column->label,
             readstat_variable_get_label(variable),
             "Column labels");
