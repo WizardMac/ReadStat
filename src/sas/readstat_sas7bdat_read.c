@@ -749,12 +749,13 @@ static readstat_variable_t *sas7bdat_init_variable(sas7bdat_ctx_t *ctx, int i,
         goto cleanup;
     }
     size_t len = strlen(variable->format);
-    if (ctx->col_info[i].format_width) {
-        len += snprintf(variable->format + len, sizeof(variable->format) - len,
+    if (ctx->col_info[i].format_width && len < sizeof(variable->format) - 1) {
+        snprintf(variable->format + len, sizeof(variable->format) - len,
                 "%d", ctx->col_info[i].format_width);
+        len = strlen(variable->format);
     }
-    if (len && ctx->col_info[i].format_digits) {
-        len += snprintf(variable->format + len, sizeof(variable->format) - len,
+    if (len && ctx->col_info[i].format_digits && len < sizeof(variable->format) - 1) {
+        snprintf(variable->format + len, sizeof(variable->format) - len,
                 ".%d", ctx->col_info[i].format_digits);
     }
     if (len) { // TODO where is the informat saved?
