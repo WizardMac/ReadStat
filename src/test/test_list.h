@@ -823,6 +823,21 @@ static rt_test_group_t _test_groups[] = {
                         .label_set = "somelbl"
                     }
                 }
+            },
+            {
+                .label = "UTF-8 note",
+                .test_formats = RT_FORMAT_DTA_118_AND_NEWER,
+                .rows = 0,
+                .notes_count = 1,
+                .notes = {
+                    "Stra" "\xc3\x9f" "e"
+                },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_DOUBLE
+                    }
+                }
             }
         }
     },
