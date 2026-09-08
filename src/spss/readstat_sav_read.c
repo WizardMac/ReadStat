@@ -216,8 +216,10 @@ static readstat_error_t sav_skip_variable_record(sav_ctx_t *ctx) {
     }
     if (variable.n_missing_values) {
         int n_missing_values = ctx->bswap ? byteswap4(variable.n_missing_values) : variable.n_missing_values;
-        if (io->seek(abs(n_missing_values) * sizeof(double), READSTAT_SEEK_CUR, io->io_ctx) == -1) {
-            retval = READSTAT_ERROR_SEEK;
+        int n_mv_abs = (n_missing_values < 0) ? -n_missing_values : n_missing_values;
+        if (n_mv_abs > 3) { retval = READSTAT_ERROR_PARSE; goto cleanup; }
+        if (io->seek((off_t)n_mv_abs * sizeof(double), READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+            retval = READSTAT_ERROR_READ;
             goto cleanup;
         }
     }
@@ -239,6 +241,11 @@ static readstat_error_t sav_read_variable_label(spss_varinfo_t *info, sav_ctx_t 
 
     if (label_len == 0)
         goto cleanup;
+
+    if (label_len > 0xFFFF) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
+    }
 
     label_capacity = (label_len + 3) / 4 * 4;
     if ((label_buf = readstat_malloc(label_capacity)) == NULL) {
@@ -650,9 +657,9 @@ static readstat_error_t sav_skip_document_record(sav_ctx_t *ctx) {
     }
     if (ctx->bswap)
         n_lines = byteswap4(n_lines);
-    if (io->seek(n_lines * SPSS_DOC_LINE_SIZE, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
-        retval = READSTAT_ERROR_SEEK;
-        goto cleanup;
+    if (n_lines > 0x3FFFFFF) { retval = READSTAT_ERROR_PARSE; goto cleanup; }
+    if (io->seek((off_t)n_lines * SPSS_DOC_LINE_SIZE, READSTAT_SEEK_CUR, io->io_ctx) == -1) {
+        retval = READSTAT_ERROR_READ; goto cleanup;
     }
     
 cleanup:
@@ -1142,7 +1149,7 @@ static readstat_error_t sav_parse_long_string_value_labels_record(const void *da
 
         for (i=0; i<label_count; i++) {
             uint32_t value_len = 0, label_len = 0;
-            uint32_t value_buffer_len = 0, label_buffer_len = 0;
+            size_t value_buffer_len = 0, label_buffer_len = 0;
 
             if (data_ptr + sizeof(uint32_t) > data_end) {
                 retval = READSTAT_ERROR_PARSE;
@@ -1155,7 +1162,8 @@ static readstat_error_t sav_parse_long_string_value_labels_record(const void *da
 
             data_ptr += sizeof(uint32_t);
 
-            value_buffer_len = value_len*4+1;
+            if (value_len > 0xFFFFFF) { retval = READSTAT_ERROR_PARSE; goto cleanup; }
+            value_buffer_len = (size_t)value_len*4+1;
             value_buffer = readstat_realloc(value_buffer, value_buffer_len);
             if (value_buffer == NULL) {
                 retval = READSTAT_ERROR_MALLOC;
@@ -1184,7 +1192,8 @@ static readstat_error_t sav_parse_long_string_value_labels_record(const void *da
 
             data_ptr += sizeof(uint32_t);
 
-            label_buffer_len = label_len*4+1;
+            if (label_len > 0xFFFFFF) { retval = READSTAT_ERROR_PARSE; goto cleanup; }
+            label_buffer_len = (size_t)label_len*4+1;
             label_buffer = readstat_realloc(label_buffer, label_buffer_len);
             if (label_buffer == NULL) {
                 retval = READSTAT_ERROR_MALLOC;
@@ -1351,6 +1360,10 @@ static readstat_error_t sav_parse_records_pass1(sav_ctx_t *ctx) {
                 uint32_t subtype = extra_info[0];
                 size_t size = extra_info[1];
                 size_t count = extra_info[2];
+                if (size > 0 && count > 0x7FFFFFFF / size) {
+                    retval = READSTAT_ERROR_PARSE;
+                    goto cleanup;
+                }
                 data_len = size * count;
                 if (subtype == SAV_RECORD_SUBTYPE_INTEGER_INFO) {
                     if (data_len > sizeof(data_buf)) {
@@ -1447,6 +1460,10 @@ static readstat_error_t sav_parse_records_pass2(sav_ctx_t *ctx) {
                 uint32_t subtype = extra_info[0];
                 size_t size = extra_info[1];
                 size_t count = extra_info[2];
+                if (size > 0 && count > 0x7FFFFFFF / size) {
+                    retval = READSTAT_ERROR_PARSE;
+                    goto cleanup;
+                }
                 data_len = size * count;
                 if (data_buf_capacity < data_len) {
                     if ((data_buf = readstat_realloc(data_buf, data_buf_capacity = data_len)) == NULL) {
