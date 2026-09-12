@@ -682,7 +682,12 @@ static readstat_error_t dta_old_emit_value_labels(readstat_writer_t *writer, dta
         if (retval != READSTAT_OK)
             goto cleanup;
 
-        label_buffer = realloc(label_buffer, table_len);
+        char *new_label_buffer = realloc(label_buffer, table_len);
+        if (new_label_buffer == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        label_buffer = new_label_buffer;
         memset(label_buffer, 0, table_len);
 
         for (j=0; j<r_label_set->value_labels_count; j++) {
@@ -727,6 +732,10 @@ static readstat_error_t dta_emit_value_labels(readstat_writer_t *writer, dta_ctx
     int32_t *val = NULL;
     char *txt = NULL;
     char *labname = calloc(1, ctx->value_label_table_labname_len + ctx->value_label_table_padding_len);
+    if (labname == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
 
     retval = dta_write_tag(writer, ctx, "<value_labels>");
     if (retval != READSTAT_OK)
@@ -735,11 +744,17 @@ static readstat_error_t dta_emit_value_labels(readstat_writer_t *writer, dta_ctx
     for (i=0; i<writer->label_sets_count; i++) {
         readstat_label_set_t *r_label_set = readstat_get_label_set(writer, i);
         int32_t n = r_label_set->value_labels_count;
-        int32_t txtlen = 0;
+        int64_t txtlen64 = 0;
         for (j=0; j<n; j++) {
             readstat_value_label_t *value_label = readstat_get_value_label(r_label_set, j);
-            txtlen += value_label->label_len + 1;
+            txtlen64 += value_label->label_len + 1;
         }
+        if (8 + 8LL*n + txtlen64 > INT32_MAX) {
+            /* The table length and text length are stored as int32 */
+            retval = READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
+            goto cleanup;
+        }
+        int32_t txtlen = txtlen64;
 
         retval = dta_write_tag(writer, ctx, "<lbl>");
         if (retval != READSTAT_OK)
@@ -773,9 +788,22 @@ static readstat_error_t dta_emit_value_labels(readstat_writer_t *writer, dta_ctx
             continue;
         }
 
-        off = realloc(off, 4*n);
-        val = realloc(val, 4*n);
-        txt = realloc(txt, txtlen);
+        void *new_buf = NULL;
+        if ((new_buf = realloc(off, 4*n)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        off = new_buf;
+        if ((new_buf = realloc(val, 4*n)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        val = new_buf;
+        if ((new_buf = realloc(txt, txtlen)) == NULL) {
+            retval = READSTAT_ERROR_MALLOC;
+            goto cleanup;
+        }
+        txt = new_buf;
 
         readstat_off_t offset = 0;
 
