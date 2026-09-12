@@ -444,6 +444,22 @@ static readstat_error_t dta_read_strls(dta_ctx_t *ctx) {
             if (strl.type != DTA_GSO_TYPE_ASCII)
                 continue;
 
+            readstat_off_t pos = io->seek(0, READSTAT_SEEK_CUR, io->io_ctx);
+            if (pos == -1) {
+                retval = READSTAT_ERROR_SEEK;
+                goto cleanup;
+            }
+            if (strl.len > ctx->file_size - pos) {
+                if (ctx->handle.error) {
+                    snprintf(ctx->error_buf, sizeof(ctx->error_buf),
+                            "strL length (%zu) exceeds remaining file size (%" PRId64 ")",
+                            strl.len, (int64_t)(ctx->file_size - pos));
+                    ctx->handle.error(ctx->error_buf, ctx->user_ctx);
+                }
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
+
             if (ctx->strls_count == ctx->strls_capacity) {
                 ctx->strls_capacity *= 2;
                 if ((ctx->strls = readstat_realloc(ctx->strls, sizeof(dta_strl_t *) * ctx->strls_capacity)) == NULL) {
