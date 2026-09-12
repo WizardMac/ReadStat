@@ -510,7 +510,7 @@ _again:
     if (cs < 11|| p != pe) {
         if (ctx->handle.error) {
             snprintf(error_buf, sizeof(error_buf), "Error parsing string \"%.*s\" around byte #%ld/%d, character %c", 
-                    count, (char *)data, (long)(p - c_data), count, *p);
+                    count, (char *)data, (long)(p - c_data), count, p < pe ? *p : '?');
             ctx->handle.error(error_buf, ctx->user_ctx);
         }
         retval = READSTAT_ERROR_PARSE;
