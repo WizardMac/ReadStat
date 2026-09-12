@@ -34,7 +34,7 @@
 
 typedef struct sav_varnames_s {
     char    shortname[9];
-    char    stem[6];
+    char   *ghostnames; /* One 9-byte entry per segment; entry 0 is unused */
 } sav_varnames_t;
 
 static long readstat_label_set_number_short_variables(readstat_label_set_t *r_label_set) {
@@ -92,15 +92,8 @@ static size_t sav_format_variable_name(char *output, size_t output_len,
 
 static size_t sav_format_ghost_variable_name(char *output, size_t output_len,
         sav_varnames_t *varnames, unsigned int segment) {
-    snprintf(output, output_len, "%s", varnames->stem);
-    size_t len = strlen(output);
-    int letter = segment % 36;
-    if (letter < 10) {
-        output[len++] = '0' + letter;
-    } else {
-        output[len++] = 'A' + (letter - 10);
-    }
-    return len;
+    snprintf(output, output_len, "%s", &varnames->ghostnames[segment * sizeof(varnames->shortname)]);
+    return strlen(output);
 }
 
 static int sav_variable_segments(readstat_type_t type, size_t user_width) {
@@ -1296,29 +1289,82 @@ static readstat_error_t sav_variable_ok(const readstat_variable_t *variable) {
     return sav_validate_name_chars(variable->name, 1);
 }
 
+/* Write stem followed by a base-36 counter into output, truncating the stem so
+ * the result fits in the 8-character short name limit, and advance the counter
+ * until the name is not already in the table. */
+static void sav_generate_unique_name(char *output, size_t output_len, const char *stem,
+        unsigned int *counter, ck_hash_table_t *table) {
+    do {
+        char suffix[9];
+        int len = 0;
+        unsigned int n = (*counter)++;
+        do {
+            int digit = n % 36;
+            suffix[len++] = digit < 10 ? '0' + digit : 'A' + (digit - 10);
+            n /= 36;
+        } while (n);
+        suffix[len] = '\0';
+        for (int j=0; j<len/2; j++) {
+            char tmp = suffix[j];
+            suffix[j] = suffix[len-1-j];
+            suffix[len-1-j] = tmp;
+        }
+        snprintf(output, output_len, "%.*s%s", 8 - len, stem, suffix);
+    } while (ck_str_hash_lookup(output, table));
+}
+
+static void sav_varnames_free(sav_varnames_t *varnames, long count) {
+    if (varnames == NULL)
+        return;
+    for (long i=0; i<count; i++) {
+        free(varnames[i].ghostnames);
+    }
+    free(varnames);
+}
+
 static sav_varnames_t *sav_varnames_init(readstat_writer_t *writer) {
     sav_varnames_t *varnames = calloc(writer->variables_count, sizeof(sav_varnames_t));
-
-    ck_hash_table_t *table = ck_hash_table_init(writer->variables_count, 8);
+    size_t name_count = 0;
     int i, k;
+    for (i=0; i<writer->variables_count; i++) {
+        readstat_variable_t *r_variable = readstat_get_variable(writer, i);
+        name_count += sav_variable_segments(r_variable->type, r_variable->user_width);
+    }
+
+    ck_hash_table_t *table = ck_hash_table_init(name_count, 8);
+    unsigned int fallback_counter = 1;
     for (i=0; i<writer->variables_count; i++) {
         readstat_variable_t *r_variable = readstat_get_variable(writer, i);
         const char *name = r_variable->name;
         char *shortname = varnames[i].shortname;
-        char *stem = varnames[i].stem;
         snprintf(shortname, sizeof(varnames[0].shortname), "%.8s", name);
         for (k=0; shortname[k]; k++) { // upcase
             shortname[k] = toupper(shortname[k]);
         }
         if (ck_str_hash_lookup(shortname, table)) {
-            snprintf(shortname, sizeof(varnames[0].shortname), "V%d_A", ((unsigned int)i+1)%100000);
+            sav_generate_unique_name(shortname, sizeof(varnames[0].shortname), "V", &fallback_counter, table);
         }
         ck_str_hash_insert(shortname, r_variable, table);
+    }
 
-        if (r_variable->user_width <= MAX_STRING_SIZE)
+    /* Ghost (segment) names are assigned in a second pass, after every real
+     * short name is in the table, so that they can never shadow a real variable
+     * or each other. */
+    for (i=0; i<writer->variables_count; i++) {
+        readstat_variable_t *r_variable = readstat_get_variable(writer, i);
+        int n_segments = sav_variable_segments(r_variable->type, r_variable->user_width);
+        if (n_segments <= 1)
             continue;
 
-        snprintf(stem, sizeof(varnames[0].stem), "%.5s", shortname); // conflict resolution?
+        varnames[i].ghostnames = calloc(n_segments, sizeof(varnames[0].shortname));
+        char stem[6];
+        snprintf(stem, sizeof(stem), "%.5s", varnames[i].shortname);
+        unsigned int segment_counter = 1;
+        for (k=1; k<n_segments; k++) {
+            char *ghostname = &varnames[i].ghostnames[k * sizeof(varnames[0].shortname)];
+            sav_generate_unique_name(ghostname, sizeof(varnames[0].shortname), stem, &segment_counter, table);
+            ck_str_hash_insert(ghostname, r_variable, table);
+        }
     }
     ck_hash_table_free(table);
     return varnames;
@@ -1385,7 +1431,7 @@ static readstat_error_t sav_begin_data(void *writer_ctx) {
         goto cleanup;
 
 cleanup:
-    free(varnames);
+    sav_varnames_free(varnames, writer->variables_count);
     if (retval == READSTAT_OK) {
         size_t row_bound = sav_compressed_row_bound(writer->row_len);
         if (writer->compression == READSTAT_COMPRESS_ROWS) {
