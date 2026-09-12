@@ -76,12 +76,14 @@ static void readstat_label_set_free(readstat_label_set_t *label_set) {
     free(label_set);
 }
 
-static void readstat_copy_label(readstat_value_label_t *value_label, const char *label) {
+static readstat_error_t readstat_copy_label(readstat_value_label_t *value_label, const char *label) {
     if (label && strlen(label)) {
         value_label->label_len = strlen(label);
-        value_label->label = malloc(value_label->label_len);
-        memcpy(value_label->label, label, value_label->label_len);
+        value_label->label = malloc(value_label->label_len + 1);
+        if (value_label->label == NULL) return READSTAT_ERROR_MALLOC;
+        memcpy(value_label->label, label, value_label->label_len + 1);
     }
+    return READSTAT_OK;
 }
 
 static readstat_value_label_t *readstat_add_value_label(readstat_label_set_t *label_set, const char *label) {
@@ -92,7 +94,8 @@ static readstat_value_label_t *readstat_add_value_label(readstat_label_set_t *la
     }
     readstat_value_label_t *new_value_label = &label_set->value_labels[label_set->value_labels_count++];
     memset(new_value_label, 0, sizeof(readstat_value_label_t));
-    readstat_copy_label(new_value_label, label);
+    if (readstat_copy_label(new_value_label, label) != READSTAT_OK)
+        return NULL;
     return new_value_label;
 }
 
@@ -357,8 +360,9 @@ void readstat_label_string_value(readstat_label_set_t *label_set, const char *va
     readstat_value_label_t *new_value_label = readstat_add_value_label(label_set, label);
     if (value && strlen(value)) {
         new_value_label->string_key_len = strlen(value);
-        new_value_label->string_key = malloc(new_value_label->string_key_len);
-        memcpy(new_value_label->string_key, value, new_value_label->string_key_len);
+        new_value_label->string_key = malloc(new_value_label->string_key_len + 1);
+        if (new_value_label->string_key == NULL) return;
+        memcpy(new_value_label->string_key, value, new_value_label->string_key_len + 1);
     }
 }
 
