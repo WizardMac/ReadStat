@@ -1504,6 +1504,44 @@ static rt_test_group_t _test_groups[] = {
             },
 
             {
+                .label = "Multiple SAS label sets",
+                .test_formats = RT_FORMAT_SAS7BCAT,
+                .label_sets_count = 2,
+                .label_sets = {
+                    {
+                        .name = "OneTwo",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1.0 } },
+                                .label = "One"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2.0 } },
+                                .label = "Two"
+                            }
+                        }
+                    },
+                    {
+                        .name = "ThreeFour",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 3.0 } },
+                                .label = "Three"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4.0 } },
+                                .label = "Four"
+                            }
+                        }
+                    }
+                }
+            },
+
+            {
                 .label = "DTA ancient value labels",
                 .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
                 .test_formats = RT_FORMAT_DTA_104,
@@ -2575,6 +2613,64 @@ static rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } }
+                        }
+                    }
+                }
+            },
+
+            {
+                .resource_name = "format_with_default_32bit.sas7bcat",
+                .test_formats = RT_FORMAT_SAS7BCAT_32BIT,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "$YESNO",
+                        .type = READSTAT_TYPE_STRING,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = {
+                                    .type = READSTAT_TYPE_STRING,
+                                    .v = { .string_value = "Yes, I could not agree more" }
+                                },
+                                .label = "True"
+                            },
+                            {
+                                .value = {
+                                    .type = READSTAT_TYPE_STRING,
+                                    .v = { .string_value = "No, not really" }
+                                },
+                                .label = "False"
+                            }
+                        }
+                    }
+                }
+            },
+
+            {
+                .resource_name = "format_with_default_64bit.sas7bcat",
+                .test_formats = RT_FORMAT_SAS7BCAT_64BIT,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "$YESNO",
+                        .type = READSTAT_TYPE_STRING,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = {
+                                    .type = READSTAT_TYPE_STRING,
+                                    .v = { .string_value = "Yes, I could not agree more" }
+                                },
+                                .label = "True"
+                            },
+                            {
+                                .value = {
+                                    .type = READSTAT_TYPE_STRING,
+                                    .v = { .string_value = "No, not really" }
+                                },
+                                .label = "False"
+                            }
                         }
                     }
                 }

@@ -39,8 +39,10 @@ char *file_extension(long format) {
         return "zsav";
     if (format == RT_FORMAT_POR)
         return "por";
-    if (format == RT_FORMAT_SAS7BCAT)
+    if (format == RT_FORMAT_SAS7BCAT_32BIT)
         return "sas7bcat";
+    if (format == RT_FORMAT_SAS7BCAT_64BIT)
+        return "sas7bcat64";
     if (format == RT_FORMAT_SAS7BDAT_32BIT_COMP_NONE)
         return "sas7bdat32";
     if (format == RT_FORMAT_SAS7BDAT_32BIT_COMP_ROWS)

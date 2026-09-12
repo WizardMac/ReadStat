@@ -168,6 +168,7 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_writer_set_file_format_is_64bit(writer, !!(format & RT_FORMAT_SAS7BDAT_64BIT));
         error = readstat_begin_writing_sas7bdat(writer, buffer, file->rows);
     } else if ((format & RT_FORMAT_SAS7BCAT)) {
+        readstat_writer_set_file_format_is_64bit(writer, !!(format & RT_FORMAT_SAS7BCAT_64BIT));
         error = readstat_begin_writing_sas7bcat(writer, buffer);
     } else if ((format & RT_FORMAT_XPORT)) {
         readstat_writer_set_file_format_version(writer, sas_file_format_version(format));
