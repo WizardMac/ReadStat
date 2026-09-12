@@ -426,7 +426,10 @@ static readstat_error_t dta_read_strls(dta_ctx_t *ctx) {
         goto cleanup;
 
     ctx->strls_capacity = 100;
-    ctx->strls = readstat_malloc(ctx->strls_capacity * sizeof(dta_strl_t *));
+    if ((ctx->strls = readstat_malloc(ctx->strls_capacity * sizeof(dta_strl_t *))) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
 
     while (1) {
         char tag[3];
@@ -461,11 +464,17 @@ static readstat_error_t dta_read_strls(dta_ctx_t *ctx) {
             }
 
             if (ctx->strls_count == ctx->strls_capacity) {
-                ctx->strls_capacity *= 2;
-                if ((ctx->strls = readstat_realloc(ctx->strls, sizeof(dta_strl_t *) * ctx->strls_capacity)) == NULL) {
+                /* Every entry corresponds to a GSO record already read from the
+                 * file, so the pointer array is bounded by the file size. Use
+                 * plain realloc rather than the capped readstat_realloc, which
+                 * fails at around 1.6 million strLs. */
+                dta_strl_t **new_strls = realloc(ctx->strls, sizeof(dta_strl_t *) * ctx->strls_capacity * 2);
+                if (new_strls == NULL) {
                     retval = READSTAT_ERROR_MALLOC;
                     goto cleanup;
                 }
+                ctx->strls = new_strls;
+                ctx->strls_capacity *= 2;
             }
 
             dta_strl_t *strl_ptr = readstat_malloc(sizeof(dta_strl_t) + strl.len);
