@@ -189,6 +189,7 @@ static readstat_error_t dta_read_expansion_fields(dta_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
     char *buffer = NULL;
+    char *note_buffer = NULL;
 
     if (ctx->expansion_len_len == 0)
         return READSTAT_OK;
@@ -276,7 +277,17 @@ static readstat_error_t dta_read_expansion_fields(dta_ctx_t *ctx) {
             int index = 0;
             if (strncmp(&buffer[0], "_dta", 4) == 0 &&
                     sscanf(&buffer[ctx->ch_metadata_len], "note%d", &index) == 1) {
-                if (ctx->handle.note(index, &buffer[2*ctx->ch_metadata_len], ctx->user_ctx) != READSTAT_HANDLER_OK) {
+                const char *note = &buffer[2*ctx->ch_metadata_len];
+                size_t note_len = strlen(note);
+                if ((note_buffer = readstat_realloc(note_buffer, 4*note_len+1)) == NULL) {
+                    retval = READSTAT_ERROR_MALLOC;
+                    goto cleanup;
+                }
+                retval = readstat_convert(note_buffer, 4*note_len+1, note, note_len, ctx->converter);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
+                if (ctx->handle.note(index, note_buffer, ctx->user_ctx) != READSTAT_HANDLER_OK) {
                     retval = READSTAT_ERROR_USER_ABORT;
                     goto cleanup;
                 }
@@ -296,6 +307,8 @@ static readstat_error_t dta_read_expansion_fields(dta_ctx_t *ctx) {
 cleanup:
     if (buffer)
         free(buffer);
+    if (note_buffer)
+        free(note_buffer);
 
     return retval;
 }
