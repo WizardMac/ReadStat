@@ -6,7 +6,7 @@
 #define RT_MAX_NOTES                 2
 #define RT_MAX_STRING_REFS           3
 #define RT_MAX_NOTE_SIZE           120
-#define RT_MAX_VALUE_LABELS          2
+#define RT_MAX_VALUE_LABELS          4
 #define RT_MAX_STRING               64
 #define RT_MAX_VALUE_LABEL_STRING  121
 #define MAX_TESTS_PER_GROUP 20

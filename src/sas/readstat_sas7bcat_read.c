@@ -43,7 +43,8 @@ static void sas7bcat_ctx_free(sas7bcat_ctx_t *ctx) {
 }
 
 static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, size_t value_labels_len, 
-        int label_count_used, int label_count_capacity, const char *name, sas7bcat_ctx_t *ctx) {
+        int label_count_used, int label_count_capacity, int string_offset, const char *name,
+        sas7bcat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     int i;
     const char *lbp1 = value_start;
@@ -52,6 +53,7 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
     int bswap_doubles = machine_is_little_endian();
     int is_string = (name[0] == '$');
     char *label = NULL;
+    char *string_val = NULL;
 
     if (value_offset == NULL) {
         retval = READSTAT_ERROR_MALLOC;
@@ -91,11 +93,23 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
             goto cleanup;
         }
         readstat_value_t value = { .type = is_string ? READSTAT_TYPE_STRING : READSTAT_TYPE_DOUBLE };
-        char string_val[4*16+1];
         if (is_string) {
             size_t value_entry_len = 6 + sas_read2(&lbp1[2], ctx->bswap);
-            retval = readstat_convert(string_val, sizeof(string_val),
-                    &lbp1[value_entry_len-16], 16, ctx->converter);
+            size_t string_start = 22 + string_offset;
+            if (string_start > value_entry_len ||
+                    &lbp1[value_entry_len] - value_start > value_labels_len) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
+            size_t string_len = value_entry_len - string_start;
+            char *new_string_val = realloc(string_val, 4 * string_len + 1);
+            if (new_string_val == NULL) {
+                retval = READSTAT_ERROR_MALLOC;
+                goto cleanup;
+            }
+            string_val = new_string_val;
+            retval = readstat_convert(string_val, 4 * string_len + 1,
+                    &lbp1[string_start], string_len, ctx->converter);
             if (retval != READSTAT_OK)
                 goto cleanup;
 
@@ -145,6 +159,7 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
 
 cleanup:
     free(label);
+    free(string_val);
     free(value_offset);
     return retval;
 }
@@ -155,6 +170,7 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
     size_t pad = 0;
     uint64_t label_count_capacity = 0;
     uint64_t label_count_used = 0;
+    int string_offset = 0;
     int payload_offset = 106;
     uint16_t flags = 0;
     char name[4*32+1];
@@ -165,13 +181,26 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
     flags = sas_read2(&data[2], ctx->bswap);
     pad = (flags & 0x08) ? 4 : 0; // might be 0x10, not sure
     if (ctx->u64) {
+        if (data_size < 128 + pad)
+            goto cleanup;
         label_count_capacity = sas_read8(&data[42+pad], ctx->bswap);
         label_count_used = sas_read8(&data[50+pad], ctx->bswap);
+        /* Nonzero when the format's values are strings longer than 16 bytes,
+         * which shifts each value one byte to the right and NUL-pads it */
+        string_offset = sas_read4(&data[124+pad], ctx->bswap);
 
         payload_offset += 32;
     } else {
+        if (data_size < 106 + pad)
+            goto cleanup;
         label_count_capacity = sas_read4(&data[38+pad], ctx->bswap);
         label_count_used = sas_read4(&data[42+pad], ctx->bswap);
+        string_offset = sas_read2(&data[104+pad], ctx->bswap);
+    }
+
+    if (string_offset < 0) {
+        retval = READSTAT_ERROR_PARSE;
+        goto cleanup;
     }
 
     if ((retval = readstat_convert(name, sizeof(name), &data[8], 8, ctx->converter)) != READSTAT_OK)
@@ -198,7 +227,7 @@ static readstat_error_t sas7bcat_parse_block(const char *data, size_t data_size,
         goto cleanup;
 
     if ((retval = sas7bcat_parse_value_labels(&data[payload_offset+pad], data_size - payload_offset - pad,
-                    label_count_used, label_count_capacity, name, ctx)) != READSTAT_OK)
+                    label_count_used, label_count_capacity, string_offset, name, ctx)) != READSTAT_OK)
         goto cleanup;
 
 cleanup:

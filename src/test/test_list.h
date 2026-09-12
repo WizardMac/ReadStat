@@ -1480,7 +1480,7 @@ static rt_test_group_t _test_groups[] = {
                     {
                         .name = "$StringLabelSet",
                         .type = READSTAT_TYPE_STRING,
-                        .value_labels_count = 2,
+                        .value_labels_count = 4,
                         .value_labels = {
                             {
                                 .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "1" } },
@@ -1489,6 +1489,14 @@ static rt_test_group_t _test_groups[] = {
                             {
                                 .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "2" } },
                                 .label = "Two"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "elevenchars" } },
+                                .label = "Eleven characters"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "sixteencharsXXXX" } },
+                                .label = "Sixteen characters"
                             },
                         }
                     }
