@@ -38,9 +38,15 @@
         }
         memcpy(n_dig_str, start, n_cv_digs);
         n_dig_str[n_cv_digs] = '\0';
-        int n_digs = strtol(n_dig_str, NULL, 10);
+        long n_digs = strtol(n_dig_str, NULL, 10);
         free(n_dig_str);
         if (n_digs != 0) {
+            /* The counted value follows the separator at p and must fit
+             * inside the line (pe points one past the terminating NUL). */
+            if (n_digs < 0 || n_digs > pe - p - 2) {
+                retval = READSTAT_ERROR_BAD_MR_STRING;
+                goto cleanup;
+            }
             char *cv = (char *)readstat_malloc(n_digs + 1);
             if (cv == NULL) {
                 retval = READSTAT_ERROR_MALLOC;
@@ -66,8 +72,14 @@
         }
         memcpy(lbl_len_str, start, p - start);
         lbl_len_str[p - start] = '\0';
-        int len = strtol(lbl_len_str, NULL, 10);
+        long len = strtol(lbl_len_str, NULL, 10);
         free(lbl_len_str);
+        /* The label follows the separator at p and must fit inside the line
+         * (pe points one past the terminating NUL). */
+        if (len < 0 || len > pe - p - 2) {
+            retval = READSTAT_ERROR_BAD_MR_STRING;
+            goto cleanup;
+        }
         size_t dst_len = 4 * len + 1;  // UTF-8 expansion: up to 4 bytes per char
         mr_label = (char *)readstat_malloc(dst_len);
         if (mr_label == NULL) {
