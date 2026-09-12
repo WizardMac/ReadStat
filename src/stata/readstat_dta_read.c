@@ -1175,6 +1175,8 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
         goto cleanup;
     }
 
+    ctx->file_size = file_size;
+
     if (strncmp(magic, "<sta", 4) == 0) {
         dta_header64_t header;
         if ((retval = dta_read_xmlish_header(ctx, &header)) != READSTAT_OK) {
@@ -1195,7 +1197,6 @@ readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path,
     }
 
     ctx->user_ctx = user_ctx;
-    ctx->file_size = file_size;
     ctx->handle = parser->handlers;
     if (parser->row_offset > 0)
         ctx->row_offset = parser->row_offset;

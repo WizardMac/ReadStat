@@ -182,6 +182,18 @@ readstat_error_t dta_ctx_init(dta_ctx_t *ctx, uint32_t nvar, uint64_t nobs,
     }
 
     if (ctx->nvar > 0) {
+        if (ctx->file_size > 0) {
+            /* Every variable has a mandatory entry in each descriptor list, so
+             * a variable count whose descriptors alone exceed the file size
+             * cannot be read. Reject it here rather than allocating for it. */
+            size_t bytes_per_var = ctx->typlist_entry_len + ctx->variable_name_len
+                + ctx->fmtlist_entry_len + ctx->lbllist_entry_len + ctx->variable_labels_entry_len
+                + (ds_format < 119 ? sizeof(int16_t) : sizeof(int32_t));
+            if ((uint64_t)ctx->nvar * bytes_per_var > ctx->file_size) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
+            }
+        }
         ctx->typlist_len = ctx->nvar * sizeof(uint16_t);
         ctx->varlist_len = ctx->variable_name_len * ctx->nvar * sizeof(char);
         ctx->fmtlist_len = ctx->fmtlist_entry_len * ctx->nvar * sizeof(char);
