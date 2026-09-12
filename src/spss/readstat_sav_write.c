@@ -1309,7 +1309,7 @@ static void sav_generate_unique_name(char *output, size_t output_len, const char
             suffix[j] = suffix[len-1-j];
             suffix[len-1-j] = tmp;
         }
-        snprintf(output, output_len, "%.*s%s", 8 - len, stem, suffix);
+        snprintf(output, output_len, "%.*s%.*s", 8 - len, stem, len, suffix);
     } while (ck_str_hash_lookup(output, table));
 }
 
