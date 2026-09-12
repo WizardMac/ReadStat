@@ -63,8 +63,7 @@ int portable_main(int argc, char *argv[]);
     // should often be the current local encoding (generally UTF-8).
     int main(int argc, char *argv[])
     {
-        portable_main(argc, argv);
-        return 0;
+        return portable_main(argc, argv);
     }
 #endif
 
