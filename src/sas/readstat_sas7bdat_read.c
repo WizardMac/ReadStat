@@ -15,6 +15,7 @@
 typedef struct col_info_s {
     sas_text_ref_t  name_ref;
     sas_text_ref_t  format_ref;
+    sas_text_ref_t  informat_ref;
     sas_text_ref_t  label_ref;
 
     int         index;
@@ -23,6 +24,8 @@ typedef struct col_info_s {
     int         type;
     int         format_width;
     int         format_digits;
+    int         informat_width;
+    int         informat_digits;
 } col_info_t;
 
 typedef struct subheader_pointer_s {
@@ -397,16 +400,23 @@ static readstat_error_t sas7bdat_parse_column_format_subheader(const char *subhe
     if ((retval = sas7bdat_realloc_col_info(ctx, ctx->col_formats_count)) != READSTAT_OK)
         goto cleanup;
 
+    col_info_t *col_info = &ctx->col_info[ctx->col_formats_count-1];
     if (ctx->u64) {
-        ctx->col_info[ctx->col_formats_count-1].format_width = sas_read2(&subheader[24], ctx->bswap);
-        ctx->col_info[ctx->col_formats_count-1].format_digits = sas_read2(&subheader[26], ctx->bswap);
+        col_info->format_width = sas_read2(&subheader[24], ctx->bswap);
+        col_info->format_digits = sas_read2(&subheader[26], ctx->bswap);
+        col_info->informat_width = sas_read2(&subheader[28], ctx->bswap);
+        col_info->informat_digits = sas_read2(&subheader[30], ctx->bswap);
     } else {
-        ctx->col_info[ctx->col_formats_count-1].format_width = sas_read2(&subheader[12], ctx->bswap);
-        ctx->col_info[ctx->col_formats_count-1].format_digits = sas_read2(&subheader[14], ctx->bswap);
+        col_info->format_width = sas_read2(&subheader[12], ctx->bswap);
+        col_info->format_digits = sas_read2(&subheader[14], ctx->bswap);
+        col_info->informat_width = sas_read2(&subheader[16], ctx->bswap);
+        col_info->informat_digits = sas_read2(&subheader[18], ctx->bswap);
     }
-    ctx->col_info[ctx->col_formats_count-1].format_ref = sas7bdat_parse_text_ref(
+    col_info->informat_ref = sas7bdat_parse_text_ref(
+            ctx->u64 ? &subheader[40] : &subheader[28], ctx);
+    col_info->format_ref = sas7bdat_parse_text_ref(
             ctx->u64 ? &subheader[46] : &subheader[34], ctx);
-    ctx->col_info[ctx->col_formats_count-1].label_ref = sas7bdat_parse_text_ref(
+    col_info->label_ref = sas7bdat_parse_text_ref(
             ctx->u64 ? &subheader[52] : &subheader[40], ctx);
 
 cleanup:
@@ -727,6 +737,22 @@ static readstat_error_t sas7bdat_validate_column(col_info_t *col_info) {
     return READSTAT_OK;
 }
 
+static readstat_error_t sas7bdat_construct_format(char *dst, size_t dst_len,
+        sas_text_ref_t text_ref, int width, int digits, sas7bdat_ctx_t *ctx) {
+    readstat_error_t retval = sas7bdat_copy_text_ref(dst, dst_len, text_ref, ctx);
+    if (retval != READSTAT_OK)
+        return retval;
+
+    size_t len = strlen(dst);
+    if (width) {
+        len += snprintf(dst + len, dst_len - len, "%d", width);
+    }
+    if (len && digits) {
+        len += snprintf(dst + len, dst_len - len, ".%d", digits);
+    }
+    return READSTAT_OK;
+}
+
 static readstat_variable_t *sas7bdat_init_variable(sas7bdat_ctx_t *ctx, int i, 
         int index_after_skipping, readstat_error_t *out_retval) {
     readstat_error_t retval = READSTAT_OK;
@@ -744,21 +770,15 @@ static readstat_variable_t *sas7bdat_init_variable(sas7bdat_ctx_t *ctx, int i,
                     ctx->col_info[i].name_ref, ctx)) != READSTAT_OK) {
         goto cleanup;
     }
-    if ((retval = sas7bdat_copy_text_ref(variable->format, sizeof(variable->format),
-                    ctx->col_info[i].format_ref, ctx)) != READSTAT_OK) {
+    if ((retval = sas7bdat_construct_format(variable->format, sizeof(variable->format),
+                    ctx->col_info[i].format_ref, ctx->col_info[i].format_width,
+                    ctx->col_info[i].format_digits, ctx)) != READSTAT_OK) {
         goto cleanup;
     }
-    size_t len = strlen(variable->format);
-    if (ctx->col_info[i].format_width) {
-        len += snprintf(variable->format + len, sizeof(variable->format) - len,
-                "%d", ctx->col_info[i].format_width);
-    }
-    if (len && ctx->col_info[i].format_digits) {
-        len += snprintf(variable->format + len, sizeof(variable->format) - len,
-                ".%d", ctx->col_info[i].format_digits);
-    }
-    if (len) { // TODO where is the informat saved?
-        readstat_variable_set_informat(variable, variable->format);
+    if ((retval = sas7bdat_construct_format(variable->informat, sizeof(variable->informat),
+                    ctx->col_info[i].informat_ref, ctx->col_info[i].informat_width,
+                    ctx->col_info[i].informat_digits, ctx)) != READSTAT_OK) {
+        goto cleanup;
     }
     if ((retval = sas7bdat_copy_text_ref(variable->label, sizeof(variable->label), 
                     ctx->col_info[i].label_ref, ctx)) != READSTAT_OK) {

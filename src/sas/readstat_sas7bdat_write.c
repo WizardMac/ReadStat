@@ -295,9 +295,17 @@ static sas7bdat_subheader_t *sas7bdat_col_format_subheader_init(readstat_variabl
             SAS_SUBHEADER_SIGNATURE_COLUMN_FORMAT,
             hinfo->u64 ? 64 : 52);
     const char *format = readstat_variable_get_format(variable);
+    const char *informat = readstat_variable_get_informat(variable);
     const char *label = readstat_variable_get_label(variable);
+    off_t informat_offset = hinfo->u64 ? 40 : 28;
     off_t format_offset = hinfo->u64 ? 46 : 34;
     off_t label_offset = hinfo->u64 ? 52 : 40;
+    if (informat) {
+        sas_text_ref_t text_ref = sas7bdat_make_text_ref(column_text_array, informat);
+        memcpy(&subheader->data[informat_offset+0], &text_ref.index, sizeof(uint16_t));
+        memcpy(&subheader->data[informat_offset+2], &text_ref.offset, sizeof(uint16_t));
+        memcpy(&subheader->data[informat_offset+4], &text_ref.length, sizeof(uint16_t));
+    }
     if (format) {
         sas_text_ref_t text_ref = sas7bdat_make_text_ref(column_text_array, format);
         memcpy(&subheader->data[format_offset+0], &text_ref.index, sizeof(uint16_t));

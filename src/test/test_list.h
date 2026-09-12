@@ -1110,7 +1110,7 @@ static rt_test_group_t _test_groups[] = {
             },
             {
                 .label = "SAS informats",
-                .test_formats = RT_FORMAT_XPORT_8,
+                .test_formats = RT_FORMAT_SAS7BDAT | RT_FORMAT_XPORT_8,
                 .columns = {
                     { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .informat = "10.3" },
                     { .name = "VAR2", .type = READSTAT_TYPE_STRING, .informat = "$CHAR3" }
@@ -2375,6 +2375,7 @@ static rt_test_group_t _test_groups[] = {
                 .columns = {
                     {
                         .name = "Date1",
+                        .informat = "F8",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 5 } },
@@ -2384,6 +2385,7 @@ static rt_test_group_t _test_groups[] = {
                     },
                     {
                         .name = "Date2",
+                        .informat = "F8",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 3 } },
@@ -2393,6 +2395,7 @@ static rt_test_group_t _test_groups[] = {
                     },
                     {
                         .name = "DateTime",
+                        .informat = "DATETIME19",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -8907752836 } },
@@ -2402,6 +2405,7 @@ static rt_test_group_t _test_groups[] = {
                     },
                     {
                         .name = "DateTimeHi",
+                        .informat = "23.9",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -8907752836.85477447509766 } },
@@ -2411,6 +2415,7 @@ static rt_test_group_t _test_groups[] = {
                     },
                     {
                         .name = "Taiw",
+                        .informat = "F8",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -17532 } },
