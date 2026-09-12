@@ -159,7 +159,9 @@ static readstat_error_t sas7bcat_begin_data(void *writer_ctx) {
 
         xlsr[50] = 'O';
 
-        block_off += blocks[i]->len;
+        /* Each block on the data page is preceded by a 16-byte block header,
+         * which the offsets stored in the XLSR entries must account for */
+        block_off += 16 + blocks[i]->len;
 
         xlsr += 212;
     }
