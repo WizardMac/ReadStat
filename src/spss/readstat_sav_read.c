@@ -216,6 +216,10 @@ static readstat_error_t sav_skip_variable_record(sav_ctx_t *ctx) {
     }
     if (variable.n_missing_values) {
         int n_missing_values = ctx->bswap ? byteswap4(variable.n_missing_values) : variable.n_missing_values;
+        if (n_missing_values > 3 || n_missing_values < -3) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
         if (io->seek(abs(n_missing_values) * sizeof(double), READSTAT_SEEK_CUR, io->io_ctx) == -1) {
             retval = READSTAT_ERROR_SEEK;
             goto cleanup;
