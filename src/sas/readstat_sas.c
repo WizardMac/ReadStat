@@ -99,7 +99,7 @@ static readstat_charset_entry_t _charset_table[] = {
     { .code = 126,   .name = "WINDOWS-936" }, // "zwin"
     { .code = 128,   .name = "CP1381" }, // "zpce"
     { .code = 134,   .name = "EUC-JP" },
-    { .code = 136,   .name = "CP949" },
+    { .code = 136,   .name = "CP932" }, // "ms-932" in SAS
     { .code = 137,   .name = "CP942" },
     { .code = 138,   .name = "CP932" }, // "shift-jis" in SAS
     { .code = 140,   .name = "EUC-KR" },
