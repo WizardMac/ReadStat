@@ -46,6 +46,7 @@ typedef struct sas_header_info_s {
     int64_t  subheader_pointer_size;
     int64_t  page_count;
     int64_t  header_size;
+    uint32_t page_number_mask;
     time_t   creation_time;
     time_t   modification_time;
     char     table_name[32];

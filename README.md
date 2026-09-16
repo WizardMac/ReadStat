@@ -21,8 +21,11 @@ Supported metadata formats include:
 * SPSS: .sps (command file)
 
 There is also write support for all the data formats, but not the metadata
-formats. *The produced SAS7BDAT files still cannot be read by SAS*, but feel
-free to contribute your binary-format expertise here.
+formats. The SAS7BDAT writer follows the file layout that SAS 9.4 itself
+produces (as documented by the sas7bdat specification and the
+[FredHutch/sas7bdat](https://github.com/FredHutch/sas7bdat) writer), but it has
+not been verified against a SAS installation; reports of success or failure
+opening its output in SAS are welcome.
 
 For reading in R data files, please see the related
 [librdata](https://github.com/WizardMac/librdata) project.

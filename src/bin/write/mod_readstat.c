@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -69,6 +70,34 @@ static int accept_file(const char *filename) {
             rs_ends_with(filename, ".xpt"));
 }
 
+/* Derives a SAS member name from a path: the base name without extension,
+ * upper-cased, with characters SAS does not allow in names replaced by
+ * underscores, and truncated to 32 characters. */
+static void set_table_name_from_filename(const char *filename, char *table_name, size_t table_name_len) {
+    const char *base = filename;
+    const char *p;
+    size_t len = 0;
+    for (p=filename; *p; p++) {
+        if (*p == '/' || *p == '\\')
+            base = p + 1;
+    }
+    for (p=base; *p && *p != '.' && len + 1 < table_name_len; p++) {
+        unsigned char c = (unsigned char)*p;
+        if (isalnum(c)) {
+            table_name[len++] = toupper(c);
+        } else {
+            table_name[len++] = '_';
+        }
+    }
+    if (len == 0) {
+        snprintf(table_name, table_name_len, "DATASET");
+        return;
+    }
+    if (isdigit((unsigned char)table_name[0]))
+        table_name[0] = '_';
+    table_name[len] = '\0';
+}
+
 static void *ctx_init(const char *filename) {
     mod_readstat_ctx_t *mod_ctx = malloc(sizeof(mod_readstat_ctx_t));
     mod_ctx->label_set_dict = ck_hash_table_init(1024, 16);
@@ -86,6 +115,12 @@ static void *ctx_init(const char *filename) {
 
     mod_ctx->writer = readstat_writer_init();
     readstat_writer_set_file_label(mod_ctx->writer, "Created by ReadStat <https://github.com/WizardMac/ReadStat>");
+    if (mod_ctx->is_sas7bdat) {
+        /* SAS expects the member name stored in the file to match the file name */
+        char table_name[33];
+        set_table_name_from_filename(filename, table_name, sizeof(table_name));
+        readstat_writer_set_table_name(mod_ctx->writer, table_name);
+    }
     readstat_set_data_writer(mod_ctx->writer, &write_data);
 
     return mod_ctx;
