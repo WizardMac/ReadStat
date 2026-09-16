@@ -55,6 +55,7 @@ static readstat_charset_entry_t _charset_table[] = {
     { .code = 35,    .name = "ISO-8859-7" },
     { .code = 36,    .name = "ISO-8859-8" },
     { .code = 37,    .name = "ISO-8859-9" },
+    { .code = 38,    .name = "ISO-8859-10" },
     { .code = 39,    .name = "ISO-8859-11" },
     { .code = 40,    .name = "ISO-8859-15" },
     { .code = 41,    .name = "CP437" },
