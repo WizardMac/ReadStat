@@ -131,5 +131,14 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_BAD_STRING_WIDTH)
         return "A provided string width is not valid for the file format";
 
+    if (error_code == READSTAT_ERROR_LABEL_IS_TOO_LONG)
+        return "A provided label is too long for the file format";
+
+    if (error_code == READSTAT_ERROR_DUPLICATE_VALUE_LABEL)
+        return "A value label set defines the same value more than once";
+
+    if (error_code == READSTAT_ERROR_UNUSED_STRING_REF)
+        return "A registered string reference was never inserted into any row";
+
     return "Unknown error";
 }
