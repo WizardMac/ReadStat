@@ -1,4 +1,4 @@
-
+#define _XOPEN_SOURCE 700 /* for localtime_r */
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>

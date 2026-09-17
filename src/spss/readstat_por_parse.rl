@@ -24,7 +24,7 @@ ssize_t readstat_por_parse_double(const char *data, size_t len, double *result,
     /* Significant digits of the mantissa, most significant first; leading
      * zeros are dropped and digits beyond POR_PARSE_MAX_DIGITS are folded
      * into the scale. */
-    unsigned char digits[POR_PARSE_MAX_DIGITS];
+    unsigned char digits[POR_PARSE_MAX_DIGITS] = { 0 };
     size_t n_digits = 0;
     long scale = 0;
     long exp = 0;
