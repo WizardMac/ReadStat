@@ -294,7 +294,17 @@ readstat_error_t readstat_write_space_padded_string(readstat_writer_t *writer, c
     return readstat_write_spaces(writer, max_len - len);
 }
 
+/* Once the first row has been begun (or readstat_end_writing called on an
+ * empty data set) the file header, row layout, and section offsets have been
+ * computed from the registered metadata, so nothing more may be added */
+static int readstat_writer_data_has_begun(readstat_writer_t *writer) {
+    return writer->row != NULL;
+}
+
 readstat_label_set_t *readstat_add_label_set(readstat_writer_t *writer, readstat_type_t type, const char *name) {
+    if (readstat_writer_data_has_begun(writer))
+        return NULL;
+
     if (writer->label_sets_count == writer->label_sets_capacity) {
         writer->label_sets_capacity *= 2;
         writer->label_sets = realloc(writer->label_sets, 
@@ -370,6 +380,9 @@ void readstat_label_tagged_value(readstat_label_set_t *label_set, char tag, cons
 }
 
 readstat_variable_t *readstat_add_variable(readstat_writer_t *writer, const char *name, readstat_type_t type, size_t width) {
+    if (readstat_writer_data_has_begun(writer))
+        return NULL;
+
     if (writer->variables_count == writer->variables_capacity) {
         writer->variables_capacity *= 2;
         writer->variables = realloc(writer->variables,
@@ -408,12 +421,21 @@ static void readstat_append_string_ref(readstat_writer_t *writer, readstat_strin
 }
 
 readstat_string_ref_t *readstat_add_string_ref(readstat_writer_t *writer, const char *string) {
+    if (readstat_writer_data_has_begun(writer))
+        return NULL;
+
     readstat_string_ref_t *ref = readstat_string_ref_init(string);
+    if (ref == NULL)
+        return NULL;
+
     readstat_append_string_ref(writer, ref);
     return ref;
 }
 
 void readstat_add_note(readstat_writer_t *writer, const char *note) {
+    if (readstat_writer_data_has_begun(writer))
+        return;
+
     if (writer->notes_count == writer->notes_capacity) {
         writer->notes_capacity *= 2;
         writer->notes = realloc(writer->notes,
