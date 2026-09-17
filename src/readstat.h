@@ -118,6 +118,8 @@ typedef struct mr_set_s {
     int    counted_value;
     char **subvariables;
     int    num_subvars;
+    char  *counted_string;      /* counted value as written, e.g. "Yes" for string sets */
+    int    label_from_var_label; /* subtype 19 sets with LABELSOURCE=VARLABEL */
 } mr_set_t;
 
 typedef struct readstat_metadata_s {
