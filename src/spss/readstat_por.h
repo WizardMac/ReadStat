@@ -39,6 +39,8 @@ ssize_t por_utf8_decode(
         const char *input, size_t input_len,
         char *output, size_t output_len,
         uint8_t *lookup, size_t lookup_len);
+/* Number of code points in a UTF-8 string, or -1 if it is malformed */
+ssize_t por_utf8_count(const char *input, size_t input_len);
 /* Exact base-30 expansion of a finite, nonzero double: fills trigs with
  * digit values 0-29 (most significant first, no leading zeros) and sets
  * *out_trig_places to the number of digits before the radix point (which may

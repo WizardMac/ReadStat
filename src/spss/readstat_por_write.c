@@ -21,6 +21,10 @@
 /* Longest number field: sign, digits, radix point or exponent sign, up to
  * three exponent digits, slash, and a terminating NUL */
 #define POR_NUMBER_FIELD_WIDTH  (POR_BASE30_PRECISION + 8)
+/* Widest string variable the format allows */
+#define POR_MAX_STRING_WIDTH  255
+/* Longest UTF-8 encoding of a character in the portable character set */
+#define POR_MAX_UTF8_CHAR_LEN 3
 /* Exact expansion of a denormal needs about 870 trigesimals */
 #define POR_MAX_TRIGS         1200
 
@@ -65,26 +69,48 @@ static readstat_error_t por_write_bytes(readstat_writer_t *writer, const void *b
     return readstat_write_bytes_as_lines(writer, bytes, len, 80, "\r\n");
 }
 
-static readstat_error_t por_write_string_n(readstat_writer_t *writer, por_write_ctx_t *ctx, 
-        const char *string, size_t input_len) {
+/* Converts a UTF-8 string to the portable character set. Every code point
+ * becomes one byte, so the output is never longer than the input. On success
+ * the caller owns *out_string. */
+static readstat_error_t por_convert_string(readstat_writer_t *writer, por_write_ctx_t *ctx,
+        const char *string, size_t input_len, char **out_string, size_t *out_len) {
     char error_buf[1024];
     readstat_error_t retval = READSTAT_OK;
-    char *por_string = malloc(input_len);
-    ssize_t output_len = por_utf8_decode(string, input_len, por_string, input_len,
+    char *por_string = malloc(input_len ? input_len : 1);
+    ssize_t output_len = 0;
+    if (por_string == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
+    output_len = por_utf8_decode(string, input_len, por_string, input_len,
             ctx->unicode2byte, ctx->unicode2byte_len);
     if (output_len == -1) {
         if (writer->error_handler) {
-            snprintf(error_buf, sizeof(error_buf), "Error converting string (length=%" PRId64 "): %.*s", 
+            snprintf(error_buf, sizeof(error_buf), "Error converting string (length=%" PRId64 "): %.*s",
                     (int64_t)input_len, (int)input_len, string);
             writer->error_handler(error_buf, writer->user_ctx);
         }
         retval = READSTAT_ERROR_CONVERT;
         goto cleanup;
     }
-    retval = por_write_bytes(writer, por_string, output_len);
+    *out_string = por_string;
+    *out_len = output_len;
+    por_string = NULL;
 cleanup:
     if (por_string)
         free(por_string);
+    return retval;
+}
+
+static readstat_error_t por_write_string_n(readstat_writer_t *writer, por_write_ctx_t *ctx,
+        const char *string, size_t input_len) {
+    readstat_error_t retval = READSTAT_OK;
+    char *por_string = NULL;
+    size_t output_len = 0;
+    if ((retval = por_convert_string(writer, ctx, string, input_len, &por_string, &output_len)) != READSTAT_OK)
+        return retval;
+    retval = por_write_bytes(writer, por_string, output_len);
+    free(por_string);
     return retval;
 }
 
@@ -230,13 +256,25 @@ static readstat_error_t por_write_double(readstat_writer_t *writer, por_write_ct
     return por_write_string_n(writer, ctx, string, bytes_written);
 }
 
-static readstat_error_t por_write_string_field_n(readstat_writer_t *writer, por_write_ctx_t *ctx, 
+static readstat_error_t por_write_string_field_n(readstat_writer_t *writer, por_write_ctx_t *ctx,
         const char *string, size_t len) {
-    readstat_error_t error = por_write_double(writer, ctx, len);
-    if (error != READSTAT_OK)
+    readstat_error_t error = READSTAT_OK;
+    char *por_string = NULL;
+    size_t output_len = 0;
+
+    /* The length prefix counts characters in the file's character set, not
+     * UTF-8 bytes, so convert first */
+    if ((error = por_convert_string(writer, ctx, string, len, &por_string, &output_len)) != READSTAT_OK)
         return error;
 
-    return por_write_string_n(writer, ctx, string, len);
+    if ((error = por_write_double(writer, ctx, output_len)) != READSTAT_OK)
+        goto cleanup;
+
+    error = por_write_bytes(writer, por_string, output_len);
+
+cleanup:
+    free(por_string);
+    return error;
 }
 
 static readstat_error_t por_write_string_field(readstat_writer_t *writer, por_write_ctx_t *ctx, const char *string) {
@@ -251,7 +289,7 @@ static por_write_ctx_t *por_write_ctx_init(void) {
         if (por_unicode_lookup[i] > max_unicode)
             max_unicode = por_unicode_lookup[i];
     }
-    ctx->unicode2byte = malloc(max_unicode+1);
+    ctx->unicode2byte = calloc(max_unicode+1, 1);
     ctx->unicode2byte_len = max_unicode+1;
 
     for (i=0; i<sizeof(por_unicode_lookup)/sizeof(por_unicode_lookup[0]); i++) {
@@ -581,6 +619,13 @@ static readstat_error_t por_emit_missing_values_records(readstat_writer_t *write
     return por_emit_missing_string_values_records(writer, ctx, r_variable);
 }
 
+/* Declared width of a string variable in characters. A zero width (an
+ * all-empty column) is written as width one, like the other writers' default
+ * widths; empty values are written as a single space. */
+static size_t por_string_width(size_t user_width) {
+    return user_width == 0 ? 1 : user_width;
+}
+
 static readstat_error_t por_emit_variable_records(readstat_writer_t *writer,
         por_write_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
@@ -593,9 +638,9 @@ static readstat_error_t por_emit_variable_records(readstat_writer_t *writer,
         if ((retval = por_write_tag(writer, ctx, '7')) != READSTAT_OK)
             break;
 
-        retval = por_write_double(writer, ctx, 
+        retval = por_write_double(writer, ctx,
                 (r_variable->type == READSTAT_TYPE_STRING) ?
-                r_variable->user_width : 0);
+                por_string_width(r_variable->user_width) : 0);
         if (retval != READSTAT_OK)
             break;
 
@@ -675,6 +720,11 @@ cleanup:
 
 static readstat_error_t por_emit_document_record(readstat_writer_t *writer, por_write_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
+
+    /* The document record is optional; PSPP omits it when there are no
+     * document lines */
+    if (writer->notes_count == 0)
+        return READSTAT_OK;
 
     if ((retval = por_write_tag(writer, ctx, 'E')) != READSTAT_OK)
         goto cleanup;
@@ -764,12 +814,19 @@ cleanup:
 
 static size_t por_variable_width(readstat_type_t type, size_t user_width) {
     if (type == READSTAT_TYPE_STRING) {
-        return POR_NUMBER_FIELD_WIDTH + user_width;
+        /* Length prefix plus the value, which is held as UTF-8 until the row
+         * is converted */
+        if (user_width > POR_MAX_STRING_WIDTH)
+            user_width = POR_MAX_STRING_WIDTH;
+        return POR_NUMBER_FIELD_WIDTH + POR_MAX_UTF8_CHAR_LEN * por_string_width(user_width);
     }
     return POR_NUMBER_FIELD_WIDTH;
 }
 
 static readstat_error_t por_variable_ok(const readstat_variable_t *variable) {
+    if (variable->type == READSTAT_TYPE_STRING && variable->user_width > POR_MAX_STRING_WIDTH)
+        return READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
+
     return validate_variable_name(readstat_variable_get_name(variable));
 }
 
@@ -807,20 +864,29 @@ static readstat_error_t por_write_missing_string(void *row, const readstat_varia
 
 static readstat_error_t por_write_string_value(void *row, const readstat_variable_t *var, const char *string) {
     size_t len = strlen(string);
+    ssize_t char_count = 0;
+    ssize_t prefix_len = 0;
     if (len == 0) {
         string = " ";
         len = 1;
     }
-    size_t storage_width = readstat_variable_get_storage_width(var);
-    if (len > storage_width) {
-        len = storage_width;
-    }
-    ssize_t bytes_written = por_write_double_to_buffer(row, POR_NUMBER_FIELD_WIDTH, len, POR_BASE30_PRECISION);
-    if (bytes_written == -1) {
-        return READSTAT_ERROR_WRITE;
-    }
+    /* The declared width and the length prefix count characters in the
+     * file's character set; the UTF-8 bytes stay in the row until
+     * por_write_row converts them */
+    char_count = por_utf8_count(string, len);
+    if (char_count == -1)
+        return READSTAT_ERROR_CONVERT_BAD_STRING;
+    if (char_count > por_string_width(var->user_width))
+        return READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
 
-    strncpy(((char *)row) + bytes_written, string, len);
+    prefix_len = por_write_double_to_buffer(row, POR_NUMBER_FIELD_WIDTH, char_count, POR_BASE30_PRECISION);
+    if (prefix_len == -1)
+        return READSTAT_ERROR_WRITE;
+
+    if (prefix_len + len > var->storage_width)
+        return READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
+
+    memcpy(((char *)row) + prefix_len, string, len);
     return READSTAT_OK;
 }
 

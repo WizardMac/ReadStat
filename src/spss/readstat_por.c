@@ -39,6 +39,11 @@ int8_t por_ascii_lookup[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0 };
 
+/* Unicode code points for the portable character set, indexed by position
+ * in the file's 256-byte translation table. See "Portable File Characters"
+ * in the PSPP developer documentation: 131 is the solid vertical pipe, 143
+ * the broken vertical pipe, 151 the pound sign, and 167-176 are the
+ * superscript digits 0-9. */
 uint16_t por_unicode_lookup[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -54,9 +59,9 @@ uint16_t por_unicode_lookup[256] = {
     'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
     'u', 'v', 'w', 'x', 'y', 'z', ' ', '.', '<', '(',
     '+', '|', '&', '[', ']', '!', '$', '*', ')', ';',
-    '^', '-', '/', 0x00A3, ',', '%', '_', '>', '?', 0x2018,
-    ':', 0x00A6, '@', 0x2019, '=', '"', 0x2264, 0x25A1, 0x00B1, 0x25A0,
-    0x00B0, 0x2020, '~', 0x2013, 0x2514, 0x250C, 0x2265, 0x2070, 0x2071, 0x00B2,
+    '^', '-', '/', 0x00A6, ',', '%', '_', '>', '?', 0x2018,
+    ':', 0x00A3, '@', 0x2019, '=', '"', 0x2264, 0x25A1, 0x00B1, 0x25A0,
+    0x00B0, 0x2020, '~', 0x2013, 0x2514, 0x250C, 0x2265, 0x2070, 0x00B9, 0x00B2,
     0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079, 0x2518, 0x2510, 0x2260,
     0x2014, 0x207D, 0x207E, 0x2E38, '{', '}', '\\', 0x00A2, 0x2022, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -102,10 +107,67 @@ void por_ctx_free(por_ctx_t *ctx) {
     free(ctx);
 }
 
-ssize_t por_utf8_encode(const unsigned char *input, size_t input_len, 
+/* Decodes one UTF-8 sequence. Returns the number of bytes consumed, or 0 if
+ * the input does not start with a well-formed sequence. */
+static size_t por_utf8_read_char(const unsigned char *input, size_t input_len, uint32_t *out_codepoint) {
+    unsigned char lead = input[0];
+    uint32_t codepoint = 0;
+    size_t char_len = 0;
+    size_t i;
+
+    if (lead < 0x80) {
+        *out_codepoint = lead;
+        return 1;
+    } else if ((lead & 0xE0) == 0xC0) {
+        char_len = 2;
+        codepoint = lead & 0x1F;
+    } else if ((lead & 0xF0) == 0xE0) {
+        char_len = 3;
+        codepoint = lead & 0x0F;
+    } else if ((lead & 0xF8) == 0xF0) {
+        char_len = 4;
+        codepoint = lead & 0x07;
+    } else {
+        return 0;
+    }
+    if (input_len < char_len)
+        return 0;
+
+    for (i=1; i<char_len; i++) {
+        if ((input[i] & 0xC0) != 0x80)
+            return 0;
+        codepoint = (codepoint << 6) | (input[i] & 0x3F);
+    }
+    if ((char_len == 2 && codepoint < 0x80) ||
+            (char_len == 3 && codepoint < 0x800) ||
+            (char_len == 4 && codepoint < 0x10000) ||
+            codepoint > 0x10FFFF ||
+            (codepoint >= 0xD800 && codepoint <= 0xDFFF)) {
+        return 0; /* overlong, surrogate, or out of range */
+    }
+    *out_codepoint = codepoint;
+    return char_len;
+}
+
+ssize_t por_utf8_count(const char *input, size_t input_len) {
+    const unsigned char *bytes = (const unsigned char *)input;
+    size_t offset = 0;
+    ssize_t count = 0;
+    while (offset < input_len) {
+        uint32_t codepoint = 0;
+        size_t char_len = por_utf8_read_char(bytes + offset, input_len - offset, &codepoint);
+        if (char_len == 0)
+            return -1;
+        offset += char_len;
+        count++;
+    }
+    return count;
+}
+
+ssize_t por_utf8_encode(const unsigned char *input, size_t input_len,
         char *output, size_t output_len, uint16_t lookup[256]) {
-    int offset = 0;
-    int i;
+    size_t offset = 0;
+    size_t i;
     for (i=0; i<input_len; i++) {
         uint16_t codepoint = lookup[input[i]];
 
@@ -120,24 +182,21 @@ ssize_t por_utf8_encode(const unsigned char *input, size_t input_len,
         } else if (codepoint <= 0x7F) {
             if (offset + 1 > output_len)
                 return offset;
-            
+
             output[offset++] = codepoint;
+        } else if (codepoint <= 0x07FF) {
+            if (offset + 2 > output_len)
+                return offset;
+
+            output[offset++] = 0xC0 | (codepoint >> 6);
+            output[offset++] = 0x80 | (codepoint & 0x3F);
         } else {
-            if (codepoint <= 0x07FF) {
-                if (offset + 2 > output_len)
-                    return offset;
-            } else /* if (codepoint <= 0xFFFF) */{
-                if (offset + 3 > output_len)
-                    return offset;
-            }
-            /* TODO - For some reason that replacement character isn't recognized
-             * by some systems, so be prepared to insert an ASCII space instead */
-            int printed = snprintf(output + offset, output_len - offset, "%lc", codepoint);
-            if (printed > 0) {
-                offset += printed;
-            } else {
-                output[offset++] = ' ';
-            }
+            if (offset + 3 > output_len)
+                return offset;
+
+            output[offset++] = 0xE0 | (codepoint >> 12);
+            output[offset++] = 0x80 | ((codepoint >> 6) & 0x3F);
+            output[offset++] = 0x80 | (codepoint & 0x3F);
         }
     }
     return offset;
@@ -147,31 +206,23 @@ ssize_t por_utf8_decode(
         const char *input, size_t input_len,
         char *output, size_t output_len,
         uint8_t *lookup, size_t lookup_len) {
-    int offset = 0;
-    wchar_t codepoint = 0;
-    while (1) {
-        int char_len = 0;
-        if (offset + 1 > output_len)
-            return offset;
+    const unsigned char *bytes = (const unsigned char *)input;
+    size_t in_offset = 0;
+    size_t out_offset = 0;
+    while (in_offset < input_len) {
+        uint32_t codepoint = 0;
+        size_t char_len = por_utf8_read_char(bytes + in_offset, input_len - in_offset, &codepoint);
+        if (char_len == 0)
+            return -1;
+        if (codepoint >= lookup_len || lookup[codepoint] == 0)
+            return -1;
+        if (out_offset + 1 > output_len)
+            return -1;
 
-        unsigned char val = *input;
-
-        if (val >= 0x20 && val < 0x7F) {
-            if (!lookup[val])
-                return -1;
-            output[offset++] = lookup[val];
-            input++;
-        } else {
-            int conversions = sscanf(input, "%lc%n", &codepoint, &char_len);
-
-            if (conversions == 0 || codepoint >= lookup_len || lookup[codepoint] == 0) {
-                return -1;
-            }
-            output[offset++] = lookup[codepoint];
-            input += char_len;
-        }
+        output[out_offset++] = lookup[codepoint];
+        in_offset += char_len;
     }
-    return offset;
+    return out_offset;
 }
 
 /* Arbitrary-precision arithmetic for exact base-30 <-> binary conversion.
