@@ -2242,6 +2242,108 @@ static rt_test_group_t _test_groups[] = {
     },
 
     {
+        .label = "POR tests",
+        .tests = {
+            {
+                .label = "POR numbers round-trip exactly",
+                .test_formats = RT_FORMAT_POR,
+                .rows = 10,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -0.1234567 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1e19 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1e-75 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1.7976931348623157e+308 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4.9406564584124654e-324 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 0.1 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1.0/3.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 9007199254740994.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 123456789012345678.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -1e300 } }
+                        }
+                    },
+                    { /* written before VAR1 in each row; an overflow from VAR1 would clobber it */
+                        .name = "VAR2",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 7.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 7.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 7.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 7.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 7.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 7.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 7.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 7.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 7.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 7.0 } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "POR string value longer than declared width",
+                .write_error = READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_POR,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 4,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "abcdefgh" } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "POR string width over 255",
+                .write_error = READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_POR,
+                .rows = 0,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 256
+                    }
+                }
+            },
+            {
+                /* The pound sign is written as '#', which SPSS also uses for
+                 * it, and read back as '#'; the value is not compared but
+                 * the neighboring column must survive the conversion. */
+                .label = "POR non-ASCII string value",
+                .test_formats = RT_FORMAT_POR,
+                .rows = 2,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 4,
+                        .skip_value_comparison = 1,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "\xc2\xa3\xc2\xa3\xc2\xa3\xc2\xa3" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "a\xc2\xa3" "b" } }
+                        }
+                    },
+                    {
+                        .name = "VAR2",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 42.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -0.5 } }
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    {
         .label = "Generic tests",
         .tests = {
             {
