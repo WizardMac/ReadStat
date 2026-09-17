@@ -84,6 +84,11 @@ dist_man1_MANS = man/readstat.man man/extract_metadata.man
 
 EXTRA_DIST = \
 	resources/datetime.sas7bdat \
+	resources/strl_119.dta \
+	resources/binary_strl_118.dta \
+	resources/trailing_blanks_118.dta \
+	resources/value_labels_108.dta \
+	resources/value_labels_105.dta \
 	resources/compression_type_0x02.sas7bdat \
 	resources/compression_type_0x06.sas7bdat \
 	resources/compression_type_0x09.sas7bdat \

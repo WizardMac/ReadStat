@@ -2847,6 +2847,154 @@ static rt_test_group_t _test_groups[] = {
         .label = "Resource tests",
         .tests = {
             {
+                .resource_name = "strl_119.dta",
+                /* DTA 119 strL references use a 3-byte v and 5-byte o */
+                .test_formats = RT_FORMAT_DTA_119,
+                .timestamp = { .tm_year = 117, .tm_mon = 2, .tm_mday = 10, .tm_hour = 14, .tm_min = 23 },
+                .rows = 2,
+                .columns_count = 2,
+                .columns = {
+                    {
+                        .name = "a",
+                        .type = READSTAT_TYPE_INT8,
+                        .format = "%8.0g",
+                        .values = {
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 1 } },
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 2 } }
+                        }
+                    },
+                    {
+                        .name = "s",
+                        .type = READSTAT_TYPE_STRING,
+                        .format = "%9s",
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "third" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "fourth" } }
+                        }
+                    }
+                }
+            },
+
+            {
+                .resource_name = "binary_strl_118.dta",
+                /* DTA binary strL (GSO type 129) does not derail the strL scan */
+                .test_formats = RT_FORMAT_DTA_118,
+                .timestamp = { .tm_year = 117, .tm_mon = 2, .tm_mday = 10, .tm_hour = 14, .tm_min = 23 },
+                .rows = 2,
+                .columns_count = 2,
+                .columns = {
+                    {
+                        .name = "a",
+                        .type = READSTAT_TYPE_INT8,
+                        .format = "%8.0g",
+                        .values = {
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 1 } },
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 2 } }
+                        }
+                    },
+                    {
+                        .name = "s",
+                        .type = READSTAT_TYPE_STRING,
+                        .format = "%9s",
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "bin" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "hello" } }
+                        }
+                    }
+                }
+            },
+
+            {
+                .resource_name = "trailing_blanks_118.dta",
+                /* DTA trailing blanks in str# values are significant */
+                .test_formats = RT_FORMAT_DTA_118,
+                .timestamp = { .tm_year = 117, .tm_mon = 2, .tm_mday = 10, .tm_hour = 14, .tm_min = 23 },
+                .rows = 3,
+                .columns_count = 1,
+                .columns = {
+                    {
+                        .name = "s",
+                        .type = READSTAT_TYPE_STRING,
+                        .format = "%9s",
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "a     " } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "b  " } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } }
+                        }
+                    }
+                }
+            },
+
+            {
+                .resource_name = "value_labels_108.dta",
+                /* DTA 108 value labels use a 9-byte label name */
+                .test_formats = RT_FORMAT_DTA_108,
+                .label = "Test label",
+                .timestamp = { .tm_year = 117, .tm_mon = 2, .tm_mday = 10, .tm_hour = 14, .tm_min = 23 },
+                .rows = 2,
+                .columns_count = 1,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "yesno",
+                        .type = READSTAT_TYPE_INT32,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            { .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 1 } }, .label = "yes" },
+                            { .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 2 } }, .label = "no" }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "a",
+                        .type = READSTAT_TYPE_INT8,
+                        .format = "%8.0g",
+                        .label = "A var",
+                        .label_set = "yesno",
+                        .values = {
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 1 } },
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 2 } }
+                        }
+                    }
+                }
+            },
+
+            {
+                .resource_name = "value_labels_105.dta",
+                /* DTA 105 value labels use the int16 code table layout */
+                .test_formats = RT_FORMAT_DTA_105,
+                .label = "Test label",
+                .timestamp = { .tm_year = 117, .tm_mon = 2, .tm_mday = 10, .tm_hour = 14, .tm_min = 23 },
+                .rows = 2,
+                .columns_count = 1,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "yesno",
+                        .type = READSTAT_TYPE_INT32,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            { .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 1 } }, .label = "yes" },
+                            { .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 2 } }, .label = "no" }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "a",
+                        .type = READSTAT_TYPE_INT8,
+                        .format = "%8.0g",
+                        .label = "A var",
+                        .label_set = "yesno",
+                        .values = {
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 1 } },
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 2 } }
+                        }
+                    }
+                }
+            },
+            {
                 .resource_name = "datetime.sas7bdat",
                 .table_name = "DATETIME",
                 .test_formats = RT_FORMAT_SAS7BDAT_32BIT_COMP_NONE,
