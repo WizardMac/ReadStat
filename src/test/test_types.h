@@ -7,7 +7,7 @@
 #define RT_MAX_STRING_REFS           3
 #define RT_MAX_NOTE_SIZE           120
 #define RT_MAX_VALUE_LABELS          4
-#define RT_MAX_STRING               64
+#define RT_MAX_STRING               96
 #define RT_MAX_VALUE_LABEL_STRING  121
 #define MAX_TESTS_PER_GROUP 20
 
@@ -51,7 +51,7 @@ typedef struct rt_test_file_s {
     readstat_error_t    write_error;
     long                test_formats;
 
-    char                label[80];
+    char                label[128];
     char                table_name[32];
     struct tm           timestamp;
     long                rows;

@@ -160,6 +160,12 @@ static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
 
 static int handle_note(int index, const char *note, void *ctx) {
     rt_parse_ctx_t *rt_ctx = (rt_parse_ctx_t *)ctx;
+    /* Stata's _dta[note0] holds the note count; it is bookkeeping, not a
+     * note, and must not be delivered. (SPSS note indices start at 0.) */
+    if (index == 0 && (rt_ctx->file_format & RT_FORMAT_DTA)) {
+        push_error_if_strings_differ(rt_ctx, NULL, note, "Note 0 (count) delivered as a note");
+        return READSTAT_HANDLER_OK;
+    }
     push_error_if_strings_differ(rt_ctx, rt_ctx->file->notes[rt_ctx->notes_count++],
             note, "Note");
 
@@ -273,8 +279,13 @@ static int handle_value(int obs_index, readstat_variable_t *variable, readstat_v
 
     if (!column->skip_value_comparison) {
         if (column->type == READSTAT_TYPE_STRING_REF) {
-            push_error_if_strings_differ(rt_ctx,
-                    rt_ctx->file->string_refs[readstat_int32_value(column->values[file_obs_index])],
+            /* A missing value is written as the empty string reference and
+             * read back as NULL or "" */
+            readstat_value_t expected = column->values[file_obs_index];
+            const char *expected_string = NULL;
+            if (!readstat_value_is_system_missing(expected))
+                expected_string = rt_ctx->file->string_refs[readstat_int32_value(expected)];
+            push_error_if_strings_differ(rt_ctx, expected_string,
                     readstat_string_value(value), "String ref values");
         } else {
             push_error_if_values_differ(rt_ctx,
