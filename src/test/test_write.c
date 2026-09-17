@@ -33,7 +33,24 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
     readstat_set_data_writer(writer, &write_data);
     if ((format & RT_FORMAT_SAS7BCAT)) {
         strncpy(file->label, "", 1);
-    } else readstat_writer_set_file_label(writer, file->label);
+    } else {
+        /* Test labels double as dataset labels; cut them to what the format
+         * allows, the same way the read side compares them */
+        char file_label[RT_MAX_STRING];
+        size_t max_label_len = sizeof(file_label) - 1;
+        if (file->write_error == READSTAT_ERROR_LABEL_IS_TOO_LONG) {
+            /* The test wants the over-long label to reach the writer */
+        } else if ((format & (RT_FORMAT_DTA_104 | RT_FORMAT_DTA_105))) {
+            max_label_len = 31;
+        } else if ((format & RT_FORMAT_DTA_117_AND_OLDER)) {
+            max_label_len = 80;
+        }
+        snprintf(file_label, sizeof(file_label), "%.*s", (int)max_label_len, file->label);
+        /* Readers trim trailing blanks, so don't end the cut label on one */
+        while (file_label[0] && file_label[strlen(file_label)-1] == ' ')
+            file_label[strlen(file_label)-1] = '\0';
+        readstat_writer_set_file_label(writer, file_label);
+    }
     readstat_writer_set_table_name(writer, file->table_name);
     readstat_writer_set_error_handler(writer, &handle_error);
     if (file->timestamp.tm_year) {

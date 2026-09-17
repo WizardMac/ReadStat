@@ -139,7 +139,16 @@ static int handle_metadata(readstat_metadata_t *metadata, void *ctx) {
                 "Number of observations");
     }
 
-    push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->label, file_label, 
+    /* The write side cuts the label to the format's limit and drops trailing
+     * blanks (readers trim them); expect the same here */
+    char expected_label[RT_MAX_STRING];
+    snprintf(expected_label, sizeof(expected_label), "%.*s",
+            (int)(rt_ctx->max_file_label_len-1), rt_ctx->file->label);
+    if ((rt_ctx->file_format & RT_FORMAT_DTA)) {
+        while (expected_label[0] && expected_label[strlen(expected_label)-1] == ' ')
+            expected_label[strlen(expected_label)-1] = '\0';
+    }
+    push_error_if_strings_differ_n(rt_ctx, expected_label, file_label,
             rt_ctx->max_file_label_len-1, "File labels");
     if (table_name == NULL || strcmp(table_name, "DATASET") != 0) {
         push_error_if_strings_differ_n(rt_ctx, rt_ctx->file->table_name, table_name, 
