@@ -125,5 +125,11 @@ const char *readstat_error_message(readstat_error_t error_code) {
     if (error_code == READSTAT_ERROR_BAD_MR_STRING)
         return "A multi-response set record is invalid";
 
+    if (error_code == READSTAT_ERROR_MISSING_RANGES_NOT_SUPPORTED)
+        return "The file format does not support missing value ranges for this variable type";
+
+    if (error_code == READSTAT_ERROR_BAD_STRING_WIDTH)
+        return "A provided string width is not valid for the file format";
+
     return "Unknown error";
 }

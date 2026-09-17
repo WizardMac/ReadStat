@@ -1049,7 +1049,15 @@ static rt_test_group_t _test_groups[] = {
                 .test_formats = RT_FORMAT_SPSS | RT_FORMAT_DTA | RT_FORMAT_XPORT,
                 .columns = {
                     { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .display_width = 12 },
-                    { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .display_width = 100 },
+                    { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .display_width = 100 }
+                }
+            },
+            {
+                /* POR is excluded: it has no display width record, and the A
+                 * format width must equal the string width */
+                .label = "String display width",
+                .test_formats = RT_FORMAT_SAV | RT_FORMAT_DTA | RT_FORMAT_XPORT,
+                .columns = {
                     { .name = "VAR3", .type = READSTAT_TYPE_STRING, .display_width = 255 },
                     { .name = "VAR4", .type = READSTAT_TYPE_STRING, .display_width = 1000 }
                 }
@@ -1196,6 +1204,95 @@ static rt_test_group_t _test_groups[] = {
     },
 
     {
+        .label = "SAV string widths",
+        .tests = {
+            {
+                .label = "SAV value longer than declared width",
+                .write_error = READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_SAV,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 10,
+                        .values = {
+                            /* 12 bytes: fits the 16-byte storage width but not the declared width */
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "0123456789AB" } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "SAV very long string value longer than declared width",
+                .write_error = READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_SAV,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 300,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v =
+                                { .string_value = /* 304 bytes: equal to the segmented storage width */
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+
+                                    "0123"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "SAV very long string value at declared width",
+                .test_formats = RT_FORMAT_SAV,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 300,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v =
+                                { .string_value = /* 300 bytes */
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                    "0123456789" "0123456789" "0123456789" "0123456789" "0123456789"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "SAV zero-width string",
+                .write_error = READSTAT_ERROR_BAD_STRING_WIDTH,
+                .test_formats = RT_FORMAT_SAV,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .zero_width = 1
+                    }
+                }
+            }
+        }
+    },
+    {
         .label = "Missing value definitions",
         .tests = {
             {
@@ -1261,18 +1358,114 @@ static rt_test_group_t _test_groups[] = {
                         .name = "VAR3",
                         .type = READSTAT_TYPE_DOUBLE,
                         .missing_ranges_count = 1,
-                        .missing_ranges = { 
+                        .missing_ranges = {
                             { .lo = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -100.0 } },
                               .hi = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 100.0 } } }
                         }
-                    },
+                    }
+                }
+            },
+            {
+                .label = "SAV string missing range",
+                .write_error = READSTAT_ERROR_MISSING_RANGES_NOT_SUPPORTED,
+                .test_formats = RT_FORMAT_SAV,
+                .columns = {
                     {
                         .name = "VAR4",
                         .type = READSTAT_TYPE_STRING,
                         .missing_ranges_count = 1,
-                        .missing_ranges = { 
+                        .missing_ranges = {
                             { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "AAA" } },
                               .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "ZZZ" } } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "SAV long string missing range",
+                .write_error = READSTAT_ERROR_MISSING_RANGES_NOT_SUPPORTED,
+                .test_formats = RT_FORMAT_SAV,
+                .columns = {
+                    {
+                        .name = "VAR4",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 20,
+                        .missing_ranges_count = 2,
+                        .missing_ranges = {
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "MISSING" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "AAA" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "ZZZ" } } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "SAV too many missing values for short strings",
+                .write_error = READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS,
+                .test_formats = RT_FORMAT_SAV,
+                .columns = {
+                    {
+                        .name = "VAR4",
+                        .type = READSTAT_TYPE_STRING,
+                        .missing_ranges_count = 4,
+                        .missing_ranges = {
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M0" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M0" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M1" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M1" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M2" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M2" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M3" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M3" } } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "SAV too many missing values for long strings",
+                .write_error = READSTAT_ERROR_TOO_MANY_MISSING_VALUE_DEFINITIONS,
+                .test_formats = RT_FORMAT_SAV,
+                .columns = {
+                    {
+                        .name = "VAR4",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 20,
+                        .missing_ranges_count = 4,
+                        .missing_ranges = {
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M0" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M0" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M1" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M1" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M2" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M2" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M3" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M3" } } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "SAV three missing values for long strings",
+                .test_formats = RT_FORMAT_SAV,
+                .rows = 2,
+                .columns = {
+                    {
+                        .name = "VAR4",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 20,
+                        .missing_ranges_count = 3,
+                        .missing_ranges = {
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M0" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M0" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M1" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M1" } } },
+                            { .lo = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M2" } },
+                              .hi = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M2" } } }
+                        },
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "M1" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "NOT MISSING" } }
                         }
                     }
                 }
@@ -1893,6 +2086,76 @@ static rt_test_group_t _test_groups[] = {
                         .type = READSTAT_TYPE_STRING,
                         .user_width = 9,
                         .label_set = "labels0"
+                    }
+                }
+            },
+
+            {
+                .label = "SAV INT8 value labels",
+                .test_formats = RT_FORMAT_SAV,
+                .rows = 2,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "labels0",
+                        .type = READSTAT_TYPE_INT8,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 1 } },
+                                .label = "One"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_INT8, .v = { .i8_value = -2 } },
+                                .label = "Minus two"
+                            }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_INT8,
+                        .label_set = "labels0",
+                        .values = {
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = 1 } },
+                            { .type = READSTAT_TYPE_INT8, .v = { .i8_value = -2 } }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "SAV INT16 value labels",
+                .test_formats = RT_FORMAT_SAV,
+                .rows = 2,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "labels0",
+                        .type = READSTAT_TYPE_INT16,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 1000 } },
+                                .label = "One thousand"
+                            },
+                            {
+                                .value = { .type = READSTAT_TYPE_INT16, .v = { .i16_value = -2000 } },
+                                .label = "Minus two thousand"
+                            }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_INT16,
+                        .label_set = "labels0",
+                        .values = {
+                            { .type = READSTAT_TYPE_INT16, .v = { .i16_value = 1000 } },
+                            { .type = READSTAT_TYPE_INT16, .v = { .i16_value = -2000 } }
+                        }
                     }
                 }
             }

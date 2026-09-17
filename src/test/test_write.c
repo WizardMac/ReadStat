@@ -60,7 +60,13 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
                 readstat_label_double_value(r_label_set, 
                         readstat_double_value(label_set->value_labels[i].value),
                         label_set->value_labels[i].label);
-            } else if (label_set->type == READSTAT_TYPE_INT32) {
+            } else if (label_set->type == READSTAT_TYPE_FLOAT) {
+                readstat_label_double_value(r_label_set, 
+                        readstat_float_value(label_set->value_labels[i].value),
+                        label_set->value_labels[i].label);
+            } else if (label_set->type == READSTAT_TYPE_INT32 ||
+                    label_set->type == READSTAT_TYPE_INT16 ||
+                    label_set->type == READSTAT_TYPE_INT8) {
                 readstat_label_int32_value(r_label_set, 
                         readstat_int32_value(label_set->value_labels[i].value),
                         label_set->value_labels[i].label);
@@ -88,7 +94,9 @@ readstat_error_t write_file_to_buffer(rt_test_file_t *file, rt_buffer_t *buffer,
         readstat_label_set_t *label_set = (readstat_label_set_t *)ck_str_hash_lookup(column->label_set, label_sets);
 
         size_t max_len = 0;
-        if (column->type == READSTAT_TYPE_STRING) {
+        if (column->type == READSTAT_TYPE_STRING && column->zero_width) {
+            max_len = 0;
+        } else if (column->type == READSTAT_TYPE_STRING) {
             if (column->user_width > 0) {
                 max_len = column->user_width;
             } else {

@@ -30,6 +30,7 @@ typedef struct rt_column_s {
     char                    informat[RT_MAX_STRING];
     int                     display_width;
     int                     user_width;
+    int                     zero_width; /* pass width 0 to readstat_add_variable */
     readstat_alignment_t    alignment;
     readstat_measure_t      measure;
     readstat_type_t         type;
@@ -38,7 +39,7 @@ typedef struct rt_column_s {
     struct {
         readstat_value_t    lo;
         readstat_value_t    hi;
-    } missing_ranges[3];
+    } missing_ranges[4];
     long                    missing_ranges_count;
 
     char                    label_set[RT_MAX_STRING];
