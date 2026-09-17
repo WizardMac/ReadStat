@@ -543,13 +543,18 @@ static unsigned char sas7bdat_read_bitmap(const unsigned char *bitmap, int index
 }
 
 static readstat_error_t sas7bdat_parse_rows(const char *data, size_t len,
-        const unsigned char *deleted_bitmap, sas7bdat_ctx_t *ctx) {
+        const unsigned char *deleted_bitmap, uint32_t deleted_bitmap_row_count, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
-    int i;
+    uint32_t i;
     size_t row_offset=0;
     for (i=0; i<ctx->page_row_count && ctx->parsed_row_count < ctx->row_limit; i++) {
         if (row_offset + ctx->row_length > len) {
             retval = READSTAT_ERROR_ROW_WIDTH_MISMATCH;
+            goto cleanup;
+        }
+        if (deleted_bitmap != NULL && i >= deleted_bitmap_row_count) {
+            /* The page claims more rows than the deleted-row bitmap covers */
+            retval = READSTAT_ERROR_PARSE;
             goto cleanup;
         }
         if (deleted_bitmap != NULL && sas7bdat_read_bitmap(deleted_bitmap, i)) {
@@ -1044,7 +1049,8 @@ cleanup:
 }
 
 static readstat_error_t sas7bdat_parse_deleted_row_bitmap(const char *page, const char *data,
-        size_t page_size, const unsigned char **deleted_row_bitmap, sas7bdat_ctx_t *ctx) {
+        size_t page_size, const unsigned char **deleted_row_bitmap, uint32_t *deleted_row_bitmap_row_count,
+        sas7bdat_ctx_t *ctx) {
     uint64_t page_unused_bytes;
     if (ctx->u64) {
         page_unused_bytes = sas_read8(&page[24], ctx->bswap);
@@ -1059,6 +1065,7 @@ static readstat_error_t sas7bdat_parse_deleted_row_bitmap(const char *page, cons
         return READSTAT_ERROR_PARSE;
     }
     *deleted_row_bitmap = (const unsigned char *)data + deleted_row_bitmap_offset;
+    *deleted_row_bitmap_row_count = row_count;
     return READSTAT_OK;
 }
 
@@ -1275,13 +1282,15 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
         }
         if (ctx->handle.value) {
             const unsigned char *deleted_row_bitmap = NULL;
+            uint32_t deleted_row_bitmap_row_count = 0;
             if (page_type & SAS_PAGE_TYPE_DELETED_ROWS) {
                 if ((retval = sas7bdat_parse_deleted_row_bitmap(page, data, page_size,
-                        &deleted_row_bitmap, ctx)) != READSTAT_OK) {
+                        &deleted_row_bitmap, &deleted_row_bitmap_row_count, ctx)) != READSTAT_OK) {
                     goto cleanup;
                 }
             }
-            retval = sas7bdat_parse_rows(data, page + page_size - data, deleted_row_bitmap, ctx);
+            retval = sas7bdat_parse_rows(data, page + page_size - data,
+                    deleted_row_bitmap, deleted_row_bitmap_row_count, ctx);
         }
     } 
 cleanup:

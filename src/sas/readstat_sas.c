@@ -312,7 +312,12 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
     }
     char major, revision_tag;
     int minor, revision;
-    if (sscanf(header_end.release, "%c.%04d%c%1d", &major, &minor, &revision_tag, &revision) != 4) {
+    /* The release field is not NUL-terminated in the file; copy it into a
+     * terminated buffer before handing it to sscanf, which calls strlen on it. */
+    char release[sizeof(header_end.release)+1];
+    memcpy(release, header_end.release, sizeof(header_end.release));
+    release[sizeof(header_end.release)] = '\0';
+    if (sscanf(release, "%c.%04d%c%1d", &major, &minor, &revision_tag, &revision) != 4) {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
