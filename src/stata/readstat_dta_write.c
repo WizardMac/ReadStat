@@ -647,64 +647,73 @@ cleanup:
     return retval;
 }
 
+/* Formats 105 and earlier: n (int16), 9-byte label name, 1 byte of padding,
+ * n int16 codes, then n 8-byte labels (the layout pandas and R foreign use). */
 static readstat_error_t dta_old_emit_value_labels(readstat_writer_t *writer, dta_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     int i, j;
-    char labname[12+2];
-    char *label_buffer = NULL;
+    char labname[9+1];
+    char *table_buffer = NULL;
     for (i=0; i<writer->label_sets_count; i++) {
         readstat_label_set_t *r_label_set = readstat_get_label_set(writer, i);
-        int32_t max_value = 0;
-        for (j=0; j<r_label_set->value_labels_count; j++) {
+        int32_t n = r_label_set->value_labels_count;
+        size_t table_len = 10 * n;
+        if (n > INT16_MAX) {
+            retval = READSTAT_ERROR_TOO_MANY_COLUMNS;
+            goto cleanup;
+        }
+        for (j=0; j<n; j++) {
             readstat_value_label_t *value_label = readstat_get_value_label(r_label_set, j);
             if (value_label->tag) {
                 retval = READSTAT_ERROR_TAGGED_VALUES_NOT_SUPPORTED;
                 goto cleanup;
             }
-            if (value_label->int32_key < 0 || value_label->int32_key > 1024) {
+            if (value_label->int32_key < INT16_MIN || value_label->int32_key > INT16_MAX) {
                 retval = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE;
                 goto cleanup;
             }
-            if (value_label->int32_key > max_value) {
-                max_value = value_label->int32_key;
-            }
         }
-        int16_t table_len = 8*(max_value + 1);
-        retval = readstat_write_bytes(writer, &table_len, sizeof(int16_t));
+        int16_t n16 = n;
+        retval = readstat_write_bytes(writer, &n16, sizeof(int16_t));
         if (retval != READSTAT_OK)
             goto cleanup;
 
         memset(labname, 0, sizeof(labname));
-        strncpy(labname, r_label_set->name, ctx->value_label_table_labname_len);
+        strncpy(labname, r_label_set->name, ctx->value_label_table_labname_len - 1);
 
-        retval = readstat_write_bytes(writer, labname, ctx->value_label_table_labname_len 
+        retval = readstat_write_bytes(writer, labname, ctx->value_label_table_labname_len
                 + ctx->value_label_table_padding_len);
         if (retval != READSTAT_OK)
             goto cleanup;
 
-        char *new_label_buffer = realloc(label_buffer, table_len);
-        if (new_label_buffer == NULL) {
+        if (n == 0)
+            continue;
+
+        char *new_table_buffer = realloc(table_buffer, table_len);
+        if (new_table_buffer == NULL) {
             retval = READSTAT_ERROR_MALLOC;
             goto cleanup;
         }
-        label_buffer = new_label_buffer;
-        memset(label_buffer, 0, table_len);
+        table_buffer = new_table_buffer;
+        memset(table_buffer, 0, table_len);
 
-        for (j=0; j<r_label_set->value_labels_count; j++) {
+        for (j=0; j<n; j++) {
             readstat_value_label_t *value_label = readstat_get_value_label(r_label_set, j);
+            int16_t code = value_label->int32_key;
             size_t len = value_label->label_len;
             if (len > 8)
                 len = 8;
-            memcpy(&label_buffer[8*value_label->int32_key], value_label->label, len);
+            memcpy(&table_buffer[2*j], &code, sizeof(int16_t));
+            memcpy(&table_buffer[2*n + 8*j], value_label->label, len);
         }
 
-        retval = readstat_write_bytes(writer, label_buffer, table_len);
+        retval = readstat_write_bytes(writer, table_buffer, table_len);
         if (retval != READSTAT_OK)
             goto cleanup;
     }
 cleanup:
-    if (label_buffer)
-        free(label_buffer);
+    if (table_buffer)
+        free(table_buffer);
 
     return retval;
 }
@@ -1325,6 +1334,29 @@ static readstat_error_t dta_118_write_string_ref(void *row, const readstat_varia
     return READSTAT_OK;
 }
 
+static readstat_error_t dta_119_write_string_ref(void *row, const readstat_variable_t *var, readstat_string_ref_t *ref) {
+    if (ref == NULL)
+        return READSTAT_ERROR_STRING_REF_IS_REQUIRED;
+
+    /* 3-byte v followed by 5-byte o, in machine byte order */
+    uint32_t v = ref->first_v;
+    uint64_t o = ref->first_o;
+    unsigned char *row_bytes = (unsigned char *)row;
+    int i;
+    if (machine_is_little_endian()) {
+        for (i=0; i<3; i++)
+            row_bytes[i] = (v >> (8*i)) & 0xFF;
+        for (i=0; i<5; i++)
+            row_bytes[3+i] = (o >> (8*i)) & 0xFF;
+    } else {
+        for (i=0; i<3; i++)
+            row_bytes[i] = (v >> (8*(2-i))) & 0xFF;
+        for (i=0; i<5; i++)
+            row_bytes[3+i] = (o >> (8*(4-i))) & 0xFF;
+    }
+    return READSTAT_OK;
+}
+
 static readstat_error_t dta_117_write_string_ref(void *row, const readstat_variable_t *var, readstat_string_ref_t *ref) {
     if (ref == NULL)
         return READSTAT_ERROR_STRING_REF_IS_REQUIRED;
@@ -1461,7 +1493,9 @@ readstat_error_t readstat_begin_writing_dta(readstat_writer_t *writer, void *use
         writer->callbacks.variable_ok = &dta_old_variable_ok;
     }
 
-    if (writer->version >= 118) {
+    if (writer->version >= 119) {
+        writer->callbacks.write_string_ref = &dta_119_write_string_ref;
+    } else if (writer->version == 118) {
         writer->callbacks.write_string_ref = &dta_118_write_string_ref;
     } else if (writer->version == 117) {
         writer->callbacks.write_string_ref = &dta_117_write_string_ref;

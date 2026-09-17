@@ -360,6 +360,20 @@ static dta_strl_t dta_interpret_strl_vo_bytes(dta_ctx_t *ctx, const unsigned cha
                     + ((uint64_t)vo_bytes[6] << 32)
                     + ((uint64_t)vo_bytes[7] << 40));
         }
+    } else if (ctx->strl_v_len == 3) {
+        /* Format 119 and later: 3-byte v followed by 5-byte o */
+        int i;
+        if (ctx->endianness == READSTAT_ENDIAN_BIG) {
+            strl.v = ((uint32_t)vo_bytes[0] << 16) + ((uint32_t)vo_bytes[1] << 8) + vo_bytes[2];
+            for (i=3; i<8; i++) {
+                strl.o = (strl.o << 8) + vo_bytes[i];
+            }
+        } else {
+            strl.v = vo_bytes[0] + ((uint32_t)vo_bytes[1] << 8) + ((uint32_t)vo_bytes[2] << 16);
+            for (i=7; i>=3; i--) {
+                strl.o = (strl.o << 8) + vo_bytes[i];
+            }
+        }
     } else if (ctx->strl_v_len == 4) {
         uint32_t v, o;
 
@@ -1045,20 +1059,18 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
 
     while (1) {
         size_t len = 0;
-        char labname[129];
+        char labname[129+1];
         uint32_t i = 0, n = 0;
 
         if (ctx->value_label_table_len_len == 2) {
-            int16_t table_header_len;
-            if (io->read(&table_header_len, sizeof(int16_t), io->io_ctx) < sizeof(int16_t))
+            /* Formats 105 and earlier: n (int16), labname, 1 byte of padding,
+             * n int16 codes, then n 8-byte labels */
+            uint16_t n16;
+            if (io->read(&n16, sizeof(uint16_t), io->io_ctx) < sizeof(uint16_t))
                 break;
 
-            len = table_header_len;
-
-            if (ctx->bswap)
-                len = byteswap2(table_header_len);
-
-            n = len / 8;
+            n = ctx->bswap ? byteswap2(n16) : n16;
+            len = 10 * n;
         } else {
             if (dta_read_tag(ctx, "<lbl>") != READSTAT_OK) {
                 break;
@@ -1076,9 +1088,13 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
 
         if (io->read(labname, ctx->value_label_table_labname_len, io->io_ctx) < ctx->value_label_table_labname_len)
             break;
+        labname[ctx->value_label_table_labname_len] = '\0';
 
         if (io->seek(ctx->value_label_table_padding_len, READSTAT_SEEK_CUR, io->io_ctx) == -1)
             break;
+
+        if (len == 0)
+            continue;
 
         if ((table_buffer = readstat_realloc(table_buffer, len)) == NULL) {
             retval = READSTAT_ERROR_MALLOC;
@@ -1091,11 +1107,18 @@ static readstat_error_t dta_handle_value_labels(dta_ctx_t *ctx) {
 
         if (ctx->value_label_table_len_len == 2) {
             for (i=0; i<n; i++) {
-                readstat_value_t value = { .v = { .i32_value = i }, .type = READSTAT_TYPE_INT32 };
+                int16_t code = 0;
                 char label_buf[4*8+1];
+                const char *label_bytes = &table_buffer[2*n + 8*i];
+
+                memcpy(&code, &table_buffer[2*i], sizeof(int16_t));
+                if (ctx->bswap)
+                    code = byteswap2(code);
+
+                readstat_value_t value = { .v = { .i32_value = code }, .type = READSTAT_TYPE_INT32 };
 
                 retval = readstat_convert(label_buf, sizeof(label_buf),
-                        &table_buffer[8*i], strnlen(&table_buffer[8*i], 8), ctx->converter);
+                        label_bytes, strnlen(label_bytes, 8), ctx->converter);
                 if (retval != READSTAT_OK)
                     goto cleanup;
 

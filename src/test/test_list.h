@@ -1785,7 +1785,7 @@ static rt_test_group_t _test_groups[] = {
             {
                 .label = "DTA ancient value labels",
                 .write_error = READSTAT_ERROR_NUMERIC_VALUE_IS_OUT_OF_RANGE,
-                .test_formats = RT_FORMAT_DTA_104,
+                .test_formats = RT_FORMAT_DTA_104 | RT_FORMAT_DTA_105,
                 .label_sets_count = 1,
                 .label_sets = {
                     {
@@ -1794,7 +1794,8 @@ static rt_test_group_t _test_groups[] = {
                         .value_labels_count = 1,
                         .value_labels = {
                             {
-                                .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = -1 } },
+                                /* Codes are int16 in formats 105 and earlier */
+                                .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 40000 } },
                                 .label = "One"
                             }
                         }
@@ -1844,8 +1845,36 @@ static rt_test_group_t _test_groups[] = {
             },
 
             {
+                .label = "DTA ancient short value labels",
+                .test_formats = RT_FORMAT_DTA_104 | RT_FORMAT_DTA_105,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "somelbl",
+                        .type = READSTAT_TYPE_INT32,
+                        .value_labels_count = 2,
+                        .value_labels = {
+                            /* Labels are 8 bytes in formats 105 and earlier */
+                            { .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = -1 } },
+                              .label = "Neg One" },
+
+                            { .value = { .type = READSTAT_TYPE_INT32, .v = { .i32_value = 1 } },
+                              .label = "Pos One" }
+                        }
+                    }
+                },
+                .columns = {
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_INT32,
+                        .label_set = "somelbl"
+                    }
+                }
+            },
+
+            {
                 .label = "DTA negative value labels",
-                .test_formats = RT_FORMAT_DTA_105_AND_NEWER,
+                .test_formats = RT_FORMAT_DTA_108_AND_NEWER,
                 .label_sets_count = 1,
                 .label_sets = {
                     {
