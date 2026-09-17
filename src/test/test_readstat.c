@@ -1,6 +1,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <errno.h>
 #if !defined(_MSC_VER)
@@ -88,6 +90,10 @@ int main(int argc, char *argv[]) {
                         if (error != READSTAT_OK) {
                             error = READSTAT_OK;
                             continue;
+                        }
+                        if (file->unknown_row_count && (f & RT_FORMAT_SAV) && buffer->used >= 84) {
+                            int32_t unknown = -1;
+                            memcpy(&buffer->bytes[80], &unknown, sizeof(unknown));
                         }
                     } else {
                         error = buffer_read_from_resource(buffer, file->resource_name);

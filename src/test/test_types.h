@@ -69,6 +69,10 @@ typedef struct rt_test_file_s {
 
     char                fweight[RT_MAX_STRING];
 
+    /* SAV only: after writing, overwrite the header's case count with -1
+     * (unknown) so the reader must find the rows by itself */
+    int                 unknown_row_count;
+
     char                resource_name[80];
 } rt_test_file_t;
 

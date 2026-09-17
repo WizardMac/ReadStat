@@ -34,6 +34,43 @@ static rt_test_group_t _test_groups[] = {
     },
 
     {
+        .label = "SAV unknown row count",
+        .tests = {
+            {
+                .label = "Header case count of -1 with several rows",
+                .test_formats = RT_FORMAT_SAV,
+                .unknown_row_count = 1,
+                .rows = 5,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 2.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 3.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 5.0 } }
+                        }
+                    },
+                    {
+                        .name = "VAR2",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 10,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "one" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "two" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "three" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "four" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "five" } }
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    {
         .label = "Notes",
         .tests = {
             {
