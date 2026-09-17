@@ -105,7 +105,9 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_TOO_MANY_COLUMNS,
     READSTAT_ERROR_NAME_IS_ZERO_LENGTH,
     READSTAT_ERROR_BAD_TIMESTAMP_VALUE,
-    READSTAT_ERROR_BAD_MR_STRING
+    READSTAT_ERROR_BAD_MR_STRING,
+    READSTAT_ERROR_MISSING_RANGES_NOT_SUPPORTED,
+    READSTAT_ERROR_BAD_STRING_WIDTH
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);
