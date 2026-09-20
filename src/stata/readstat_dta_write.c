@@ -155,7 +155,12 @@ static readstat_error_t dta_emit_header_time_stamp(readstat_writer_t *writer, dt
     if (writer->timestamp != 0) {
         time_t now = writer->timestamp;
         struct tm time_buf;
+#if !defined _MSC_VER
         struct tm *time_s = localtime_r(&now, &time_buf);
+#else
+        errno_t time_err = localtime_s(&time_buf, &now);
+        struct tm *time_s = (time_err == 0) ? &time_buf : NULL;
+#endif
 
         if (!time_s || time_s->tm_mon < 0 || time_s->tm_mon > 11) {
             error = READSTAT_ERROR_BAD_TIMESTAMP_VALUE;
