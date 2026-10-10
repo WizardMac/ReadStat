@@ -38,6 +38,31 @@ static rt_test_group_t _test_groups[] = {
     },
 
     {
+        .label = "XPORT blank rows",
+        .tests = {
+            {
+                /* V8 records the row count, so trailing all-blank rows
+                 * are data rather than end-of-file padding */
+                .label = "XPORT v8 trailing blank rows",
+                .test_formats = RT_FORMAT_XPORT_8,
+                .rows = 3,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .label = "String variable",
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Hello" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } }
+                        }
+                    }
+                }
+            },
+        }
+    },
+
+    {
         .label = "SAV unknown row count",
         .tests = {
             {
@@ -3852,4 +3877,3 @@ static rt_test_group_t _test_groups[] = {
         }
     }
 };
-
