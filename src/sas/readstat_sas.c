@@ -484,10 +484,11 @@ readstat_error_t sas_write_header(readstat_writer_t *writer, sas_header_info_t *
     sas_write_padded_ascii((char *)&header[off+56], 16, "x86_64", '\0'); /* OS name */
 
     /* Bytes 288-303 are a password checksum. The first 4 bytes are the low
-     * 32 bits of the creation time (as stored, in native byte order). For a
-     * dataset without passwords, each of the next three 4-byte fields is
-     * those bytes XORed with "LNoe". This holds in every SAS-written file
-     * we have examined. */
+     * 32 bits of the creation time (as stored, in native byte order). The
+     * next three 4-byte fields correspond to SAS's three dataset passwords
+     * (READ=, WRITE= and ALTER=). For a dataset without passwords, each one
+     * is the first 4 bytes XORed with "LNoe". This holds in every
+     * SAS-written file we have examined. */
     const unsigned char *salt = (const unsigned char *)&creation_time;
     if (!machine_is_little_endian())
         salt += 4;
