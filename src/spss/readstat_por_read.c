@@ -214,10 +214,10 @@ static readstat_error_t maybe_read_string(por_ctx_t *ctx, char *data, size_t len
     string_length = (size_t)value;
     
     if (string_length > ctx->string_buffer_len) {
-        ctx->string_buffer_len = string_length;
-        unsigned char *new_string_buf = realloc(ctx->string_buffer, ctx->string_buffer_len);
+        unsigned char *new_string_buf = realloc(ctx->string_buffer, string_length);
         if (new_string_buf == NULL) { retval = READSTAT_ERROR_MALLOC; goto cleanup; }
         ctx->string_buffer = new_string_buf;
+        ctx->string_buffer_len = string_length;
         memset(ctx->string_buffer, 0, ctx->string_buffer_len);
     }
     
