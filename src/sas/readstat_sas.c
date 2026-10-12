@@ -12,6 +12,7 @@
 #include "../readstat_iconv.h"
 #include "../readstat_convert.h"
 #include "../readstat_writer.h"
+#include "../readstat_strings.h"
 
 #define SAS_FILE_HEADER_SIZE_32BIT 1024
 #define SAS_FILE_HEADER_SIZE_64BIT 8192
@@ -601,6 +602,39 @@ readstat_error_t sas_validate_tag(char tag) {
         return READSTAT_OK;
 
     return READSTAT_ERROR_TAGGED_VALUE_IS_OUT_OF_RANGE;
+}
+
+static int sas_compare_names(const void *elem1, const void *elem2) {
+    return strcasecmp(*(const char **)elem1, *(const char **)elem2);
+}
+
+/* SAS variable names are case-insensitive, so "name" and "Name" collide. */
+readstat_error_t sas_validate_unique_names(readstat_writer_t *writer) {
+    readstat_error_t retval = READSTAT_OK;
+    const char **names = NULL;
+    int i;
+
+    if (writer->variables_count < 2)
+        goto cleanup;
+
+    if ((names = malloc(writer->variables_count * sizeof(const char *))) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
+    for (i=0; i<writer->variables_count; i++) {
+        names[i] = readstat_variable_get_name(readstat_get_variable(writer, i));
+    }
+    qsort(names, writer->variables_count, sizeof(const char *), &sas_compare_names);
+    for (i=1; i<writer->variables_count; i++) {
+        if (strcasecmp(names[i-1], names[i]) == 0) {
+            retval = READSTAT_ERROR_DUPLICATE_VARIABLE_NAME;
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    free(names);
+    return retval;
 }
 
 void sas_assign_tag(readstat_value_t *value, uint8_t tag) {

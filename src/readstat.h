@@ -110,7 +110,8 @@ typedef enum readstat_error_e {
     READSTAT_ERROR_BAD_STRING_WIDTH,
     READSTAT_ERROR_LABEL_IS_TOO_LONG,
     READSTAT_ERROR_DUPLICATE_VALUE_LABEL,
-    READSTAT_ERROR_UNUSED_STRING_REF
+    READSTAT_ERROR_UNUSED_STRING_REF,
+    READSTAT_ERROR_DUPLICATE_VARIABLE_NAME
 } readstat_error_t;
 
 const char *readstat_error_message(readstat_error_t error_code);

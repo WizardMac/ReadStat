@@ -1023,6 +1023,26 @@ static rt_test_group_t _test_groups[] = {
                 }
             },
             {
+                .label = "SAS column names differ only in case",
+                .write_error = READSTAT_ERROR_DUPLICATE_VARIABLE_NAME,
+                .test_formats = RT_FORMAT_SAS,
+                .rows = 0,
+                .columns = {
+                    {
+                        .name = "name",
+                        .type = READSTAT_TYPE_STRING
+                    },
+                    {
+                        .name = "var1",
+                        .type = READSTAT_TYPE_DOUBLE
+                    },
+                    {
+                        .name = "Name",
+                        .type = READSTAT_TYPE_STRING
+                    }
+                }
+            },
+            {
                 .label = "SAS column name is too long",
                 .write_error = READSTAT_ERROR_NAME_IS_TOO_LONG,
                 .test_formats = RT_FORMAT_SAS,
