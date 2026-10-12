@@ -17,11 +17,11 @@ extern "C" {
 #include <math.h>
 #include <stdio.h>
 
-enum {
-    READSTAT_HANDLER_OK,
-    READSTAT_HANDLER_ABORT,
-    READSTAT_HANDLER_SKIP_VARIABLE
-};
+/* Handler return codes. These are plain ints, matching the handlers' return
+ * type, so that C++ lambdas returning them convert to handler pointers. */
+#define READSTAT_HANDLER_OK             0
+#define READSTAT_HANDLER_ABORT          1
+#define READSTAT_HANDLER_SKIP_VARIABLE  2
 
 typedef enum readstat_type_e {
     READSTAT_TYPE_STRING,
