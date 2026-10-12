@@ -1350,7 +1350,7 @@ static rt_test_group_t _test_groups[] = {
                 .columns = {
                     { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "F6.4" },
                     { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .format = "F8.2" },
-                    { .name = "VAR3", .type = READSTAT_TYPE_STRING, .format = "A12" }
+                    { .name = "VAR3", .type = READSTAT_TYPE_STRING, .format = "A12", .user_width = 12 }
                 }
             },
             {
