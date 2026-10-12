@@ -150,6 +150,10 @@ typedef struct readstat_metadata_s {
  */
 int readstat_get_row_count(readstat_metadata_t *metadata);
 int readstat_get_var_count(readstat_metadata_t *metadata);
+/* DTA, SAV, POR and XPORT files store the timestamp as a wall-clock time with
+ * no time zone. ReadStat interprets it in the local time zone (mktime), so the
+ * same file gives different values on machines in different zones; set TZ
+ * for consistent results. The writers likewise use localtime. */
 time_t readstat_get_creation_time(readstat_metadata_t *metadata);
 time_t readstat_get_modified_time(readstat_metadata_t *metadata);
 int readstat_get_file_format_version(readstat_metadata_t *metadata);
@@ -300,6 +304,8 @@ const char *readstat_variable_get_informat(const readstat_variable_t *variable);
 readstat_type_t readstat_variable_get_type(const readstat_variable_t *variable);
 readstat_type_class_t readstat_variable_get_type_class(const readstat_variable_t *variable);
 size_t readstat_variable_get_storage_width(const readstat_variable_t *variable);
+/* For SPSS files the display width is the "Columns" property. The "Width"
+ * property is part of the format; see readstat_variable_get_format (e.g. "F5.0"). */
 int readstat_variable_get_display_width(const readstat_variable_t *variable);
 readstat_measure_t readstat_variable_get_measure(const readstat_variable_t *variable);
 readstat_alignment_t readstat_variable_get_alignment(const readstat_variable_t *variable);
@@ -559,6 +565,8 @@ void readstat_variable_set_informat(readstat_variable_t *variable, const char *i
 void readstat_variable_set_label_set(readstat_variable_t *variable, readstat_label_set_t *label_set);
 void readstat_variable_set_measure(readstat_variable_t *variable, readstat_measure_t measure);
 void readstat_variable_set_alignment(readstat_variable_t *variable, readstat_alignment_t alignment);
+/* For SPSS files this sets the "Columns" property; set "Width" with
+ * readstat_variable_set_format. */
 void readstat_variable_set_display_width(readstat_variable_t *variable, int display_width);
 readstat_error_t readstat_variable_add_missing_double_value(readstat_variable_t *variable, double value);
 readstat_error_t readstat_variable_add_missing_double_range(readstat_variable_t *variable, double lo, double hi);
