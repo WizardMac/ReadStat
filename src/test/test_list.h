@@ -3893,6 +3893,42 @@ static rt_test_group_t _test_groups[] = {
                         }
                     }
                 }
+            },
+
+            {
+                .resource_name = "sav_missing_continuations.sav",
+                /* IBM SPSS Modeler omits the continuation records after an
+                 * A16 string, but the case data still holds 16 bytes (#319) */
+                .test_formats = RT_FORMAT_SAV_COMP_ROWS,
+                .label = "SPSS",
+                .rows = 2,
+                .columns_count = 3,
+                .columns = {
+                    {
+                        .name = "num1",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 12.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 213.0 } }
+                        }
+                    },
+                    {
+                        .name = "string1",
+                        .type = READSTAT_TYPE_STRING,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "randomstring1234" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "gamma" } }
+                        }
+                    },
+                    {
+                        .name = "num2",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .values = {
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 34.0 } },
+                            { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 12.0 } }
+                        }
+                    }
+                }
             }
         }
     }

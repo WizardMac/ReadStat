@@ -94,7 +94,8 @@ EXTRA_DIST = \
 	resources/compression_type_0x09.sas7bdat \
 	resources/compression_type_0x0d.sas7bdat \
 	resources/format_with_default_32bit.sas7bcat \
-	resources/format_with_default_64bit.sas7bcat
+	resources/format_with_default_64bit.sas7bcat \
+	resources/sav_missing_continuations.sav
 
 include_HEADERS = src/readstat.h
 

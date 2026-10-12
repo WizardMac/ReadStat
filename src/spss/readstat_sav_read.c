@@ -345,6 +345,22 @@ static readstat_error_t sav_read_variable_missing_values(spss_varinfo_t *info, s
     return sav_read_variable_missing_string_values(info, ctx);
 }
 
+/* Some writers (e.g. IBM SPSS Modeler) omit the type -1 continuation
+ * records that normally follow a string variable wider than 8 bytes,
+ * even though the case data still contains ceil(width/8) 8-byte
+ * columns. Synthesize the missing columns so that data offsets line up. */
+static void sav_synthesize_missing_continuations(sav_ctx_t *ctx) {
+    if (ctx->var_index == 0)
+        return;
+    spss_varinfo_t *info = ctx->varinfo[ctx->var_index-1];
+    if (info->type == READSTAT_TYPE_STRING && info->width == 1 &&
+            info->string_length > 8 && info->string_length <= 255) {
+        int needed = (info->string_length + 7) / 8;
+        ctx->var_offset += needed - 1;
+        info->width = needed;
+    }
+}
+
 static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
     readstat_io_t *io = ctx->io;
     sav_variable_record_t variable = { 0 };
@@ -387,6 +403,8 @@ static readstat_error_t sav_read_variable_record(sav_ctx_t *ctx) {
         ctx->varinfo[ctx->var_index-1]->width++;
         return retval;
     }
+
+    sav_synthesize_missing_continuations(ctx);
 
     if ((info = readstat_calloc(1, sizeof(spss_varinfo_t))) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
@@ -722,6 +740,7 @@ static readstat_error_t sav_read_dictionary_termination_record(sav_ctx_t *ctx) {
     int32_t filler;
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = ctx->io;
+    sav_synthesize_missing_continuations(ctx);
     if (io->read(&filler, sizeof(int32_t), io->io_ctx) < sizeof(int32_t)) {
         retval = READSTAT_ERROR_READ;
     }
