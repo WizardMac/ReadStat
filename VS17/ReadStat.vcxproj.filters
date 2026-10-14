@@ -99,6 +99,15 @@
     <ClCompile Include="..\src\spss\readstat_spss_parse.c">
       <Filter>Source Files\spss</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_zsav_compress.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_zsav_read.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\spss\readstat_zsav_write.c">
+      <Filter>Source Files\spss</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\spss\readstat_por.c">
       <Filter>Source Files\spss</Filter>
     </ClCompile>

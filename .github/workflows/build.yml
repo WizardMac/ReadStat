@@ -69,7 +69,7 @@ jobs:
       - name: Fail if tests failed
         if: steps.make-check.outcome == 'failure'
         run: exit 1
-  windows:
+  windows_msys:
     runs-on: windows-latest
     defaults:
       run:
@@ -97,6 +97,75 @@ jobs:
       - name: Upload test log
         if: steps.make-check.outcome == 'failure'
         uses: actions/upload-artifact@v7
+        with:
+          name: test-suite-log-windows
+          path: test-suite.log
+          retention-days: 5
+      - name: Fail if tests failed
+        if: steps.make-check.outcome == 'failure'
+        run: exit 1
+  windows_msvc:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install dependencies
+        run: |
+          vcpkg install gettext libiconv libcsv libxlsxwriter zlib --triplet x64-windows
+          vcpkg integrate install
+
+      - name: Fix library filename and paths for MSVC
+        shell: pwsh
+        run: |
+          $libDir = "C:\vcpkg\installed\x64-windows\lib"
+  
+          if (Test-Path "$libDir\iconv.lib") {
+              Copy-Item "$libDir\iconv.lib" "$libDir\libiconv.lib" -Force
+          }
+  
+          # Depending on the zlib port version, the import library is named
+          # z.lib, zlib1.lib or zlibd.lib/zlib1d.lib; the projects link
+          # against zlib.lib/zlibd.lib
+          if (Test-Path "$libDir\z.lib") {
+              Copy-Item "$libDir\z.lib" "$libDir\zlib.lib" -Force
+          }
+          if (Test-Path "$libDir\zd.lib") {
+              Copy-Item "$libDir\zd.lib" "$libDir\zlibd.lib" -Force
+          }
+          if (Test-Path "$libDir\zlib1.lib") {
+              Copy-Item "$libDir\zlib1.lib" "$libDir\zlib.lib" -Force
+          }
+          if (Test-Path "$libDir\zlib1d.lib") {
+              Copy-Item "$libDir\zlib1d.lib" "$libDir\zlibd.lib" -Force
+          }
+  
+          if (-not (Test-Path "$libDir\zlib.lib")) {
+              Write-Host "##vso[task.logissue type=error]zlib.lib not found in $libDir after fix step"
+              Get-ChildItem $libDir -Filter *.lib | Select-Object -ExpandProperty Name
+              exit 1
+          }
+
+      - name: Build
+        run: |
+          MSBuild ./VS17/ReadStat.sln /p:Configuration=Release /p:Platform=x64 /nologo
+     
+      - name: Test
+        id: make-check
+        shell: pwsh
+        env:
+          PATH: C:\vcpkg\installed\x64-windows\bin;${{ env.PATH }}
+        run: |
+            ./VS17/x64/Release/ReadStat_App.exe
+            ./VS17/x64/Release/ReadStat_Test_double_decimals.exe
+            ./VS17/x64/Release/ReadStat_Test_dta_days.exe
+            ./VS17/x64/Release/ReadStat_Test_sav_date.exe
+            ./VS17/x64/Release/ReadStat_Test_readstat.exe
+        continue-on-error: true
+      - name: Upload test log
+        if: steps.make-check.outcome == 'failure'
+        uses: actions/upload-artifact@v4
         with:
           name: test-suite-log-windows
           path: test-suite.log
