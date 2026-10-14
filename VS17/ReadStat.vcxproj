@@ -23,32 +23,32 @@
     <ProjectGuid>{7D9D3258-8850-466E-8A74-4F8025E6FA49}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ReadStat</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>$(LatestTargetPlatformVersion)</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -105,7 +105,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\iconv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VcpkgRoot)\installed\$(VcpkgTriplet)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ObjectFileName>$(IntDir)FakePath\%(RelativeDir)</ObjectFileName>
       <AssemblerListingLocation>$(IntDir)FakePath\%(RelativeDir)\</AssemblerListingLocation>
     </ClCompile>
@@ -124,7 +124,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\iconv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VcpkgRoot)\installed\$(VcpkgTriplet)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ObjectFileName>$(IntDir)FakePath\%(RelativeDir)</ObjectFileName>
       <AssemblerListingLocation>$(IntDir)FakePath\%(RelativeDir)\</AssemblerListingLocation>
     </ClCompile>
@@ -150,7 +150,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\iconv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VcpkgRoot)\installed\$(VcpkgTriplet)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ObjectFileName>$(IntDir)FakePath\%(RelativeDir)</ObjectFileName>
       <AssemblerListingLocation>$(IntDir)FakePath\%(RelativeDir)\</AssemblerListingLocation>
     </ClCompile>
@@ -173,7 +173,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile />
       <PrecompiledHeaderOutputFile />
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\iconv\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VcpkgRoot)\installed\$(VcpkgTriplet)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ObjectFileName>$(IntDir)FakePath\%(RelativeDir)</ObjectFileName>
       <AssemblerListingLocation>$(IntDir)FakePath\%(RelativeDir)\</AssemblerListingLocation>
     </ClCompile>
@@ -220,6 +220,9 @@
     <ClCompile Include="..\src\spss\readstat_sav_write.c" />
     <ClCompile Include="..\src\spss\readstat_spss.c" />
     <ClCompile Include="..\src\spss\readstat_spss_parse.c" />
+    <ClCompile Include="..\src\spss\readstat_zsav_compress.c" />
+    <ClCompile Include="..\src\spss\readstat_zsav_read.c" />
+    <ClCompile Include="..\src\spss\readstat_zsav_write.c" />
     <ClCompile Include="..\src\stata\readstat_dta.c" />
     <ClCompile Include="..\src\stata\readstat_dta_parse_timestamp.c" />
     <ClCompile Include="..\src\stata\readstat_dta_read.c" />
