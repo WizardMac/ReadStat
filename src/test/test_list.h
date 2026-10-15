@@ -59,6 +59,26 @@ static rt_test_group_t _test_groups[] = {
                     }
                 }
             },
+            {
+                /* Without a row count, blank rows at least a line wide
+                 * cannot be padding */
+                .label = "XPORT v5 trailing blank rows of a full line",
+                .test_formats = RT_FORMAT_XPORT_5,
+                .rows = 3,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .label = "String variable",
+                        .user_width = 80,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Hello" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } },
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } }
+                        }
+                    }
+                }
+            },
         }
     },
 
