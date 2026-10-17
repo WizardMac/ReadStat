@@ -575,8 +575,8 @@ cleanup:
 static readstat_error_t sas7bdat_parse_subheader_rdc(const char *subheader, size_t len, sas7bdat_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     const unsigned char *input = (const unsigned char *)subheader;
-    char *buffer = malloc(ctx->row_length);
-    if (buffer == NULL) return READSTAT_ERROR_MALLOC;
+    char *buffer = ctx->row;
+    if (buffer == NULL) return READSTAT_ERROR_PARSE;
     char *output = buffer;
     while (input + 2 <= (const unsigned char *)subheader + len) {
         int i;
@@ -656,8 +656,6 @@ static readstat_error_t sas7bdat_parse_subheader_rdc(const char *subheader, size
     }
     retval = sas7bdat_parse_single_row(buffer, ctx);
 cleanup:
-    free(buffer);
-
     return retval;
 }
 
