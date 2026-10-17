@@ -171,6 +171,10 @@ readstat_error_t zsav_read_compressed_data(sav_ctx_t *ctx,
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
+                retval = sav_update_progress(ctx);
+                if (retval != READSTAT_OK)
+                    goto cleanup;
+
                 uncompressed_offset = 0;
             }
 
