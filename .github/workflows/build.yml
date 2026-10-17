@@ -71,18 +71,25 @@ jobs:
         run: exit 1
   windows_msys:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - msystem: MSYS
+            packages: autotools base-devel gcc libiconv-devel zlib-devel
+          - msystem: MINGW64
+            packages: autotools base-devel mingw-w64-x86_64-gcc mingw-w64-x86_64-libiconv mingw-w64-x86_64-zlib
+          - msystem: UCRT64
+            packages: autotools base-devel mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-libiconv mingw-w64-ucrt-x86_64-zlib
     defaults:
       run:
         shell: msys2 {0}
     steps:
       - uses: msys2/setup-msys2@v2
         with:
+          msystem: ${{ matrix.msystem }}
           update: true
-          install: >-
-            autotools
-            base-devel
-            gcc
-            libiconv-devel
+          install: ${{ matrix.packages }}
       - uses: actions/checkout@v6
       - name: Autoconf
         run: autoreconf -i -f
@@ -98,7 +105,7 @@ jobs:
         if: steps.make-check.outcome == 'failure'
         uses: actions/upload-artifact@v7
         with:
-          name: test-suite-log-windows
+          name: test-suite-log-windows-${{ matrix.msystem }}
           path: test-suite.log
           retention-days: 5
       - name: Fail if tests failed
@@ -107,7 +114,7 @@ jobs:
   windows_msvc:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - uses: ilammy/msvc-dev-cmd@v1
 
