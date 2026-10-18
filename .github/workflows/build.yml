@@ -159,24 +159,25 @@ jobs:
           MSBuild ./VS17/ReadStat.sln /p:Configuration=Release /p:Platform=x64 /nologo
      
       - name: Test
-        id: make-check
         shell: pwsh
         env:
           PATH: C:\vcpkg\installed\x64-windows\bin;${{ env.PATH }}
         run: |
-            ./VS17/x64/Release/ReadStat_App.exe
-            ./VS17/x64/Release/ReadStat_Test_double_decimals.exe
-            ./VS17/x64/Release/ReadStat_Test_dta_days.exe
-            ./VS17/x64/Release/ReadStat_Test_sav_date.exe
-            ./VS17/x64/Release/ReadStat_Test_readstat.exe
-        continue-on-error: true
-      - name: Upload test log
-        if: steps.make-check.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-suite-log-windows
-          path: test-suite.log
-          retention-days: 5
-      - name: Fail if tests failed
-        if: steps.make-check.outcome == 'failure'
-        run: exit 1
+          # pwsh only fails the step on the last command's exit code, so
+          # check each executable explicitly
+          $failed = @()
+          ./VS17/x64/Release/ReadStat_App.exe --version
+          if ($LASTEXITCODE -ne 0) { $failed += "ReadStat_App" }
+          $tests = @("double_decimals", "dta_days", "sav_date", "readstat")
+          foreach ($test in $tests) {
+            Write-Host "Running $test..."
+            & "./VS17/x64/Release/ReadStat_Test_$test.exe"
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "::error::$test exited with code $LASTEXITCODE"
+              $failed += $test
+            }
+          }
+          if ($failed.Count -gt 0) {
+            Write-Host "Failed: $($failed -join ', ')"
+            exit 1
+          }
