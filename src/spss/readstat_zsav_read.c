@@ -138,6 +138,10 @@ readstat_error_t zsav_read_compressed_data(sav_ctx_t *ctx,
             goto cleanup;
         }
 
+        retval = sav_update_progress(ctx);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+
         uncompressed_block_len = entry->uncompressed_size;
         if ((uncompressed_block = readstat_realloc(uncompressed_block, uncompressed_block_len)) == NULL) {
             retval = READSTAT_ERROR_MALLOC;
@@ -168,10 +172,6 @@ readstat_error_t zsav_read_compressed_data(sav_ctx_t *ctx,
 
             if (state.status == SAV_ROW_STREAM_FINISHED_ROW) {
                 retval = row_handler(uncompressed_row, uncompressed_row_len, ctx);
-                if (retval != READSTAT_OK)
-                    goto cleanup;
-
-                retval = sav_update_progress(ctx);
                 if (retval != READSTAT_OK)
                     goto cleanup;
 
