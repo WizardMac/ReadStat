@@ -21,6 +21,7 @@
 #include "test_read.h"
 #include "test_write.h"
 #include "test_list.h"
+#include "test_txt.h"
 
 static rt_test_args_t _test_args[] = {
     {
@@ -58,6 +59,9 @@ static void dump_buffer(rt_buffer_t *buffer, long format) {
 }
 
 int main(int argc, char *argv[]) {
+    if (test_parse_txt_schema_bounds() != 0)
+        return 1;
+
     rt_buffer_t *buffer = buffer_init();
     readstat_error_t error = READSTAT_OK;
 

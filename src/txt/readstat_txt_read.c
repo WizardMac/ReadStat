@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <limits.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
@@ -163,6 +164,36 @@ cleanup:
     return retval;
 }
 
+/* readstat_parse_txt indexes line_lens by each entry's row and copies col + len
+ * bytes out of line_buffer, so every entry must fit inside the observation */
+static readstat_error_t txt_check_schema(readstat_parser_t *parser,
+        readstat_schema_t *schema, void *user_ctx) {
+    char error_buf[1024];
+    int i;
+    if (schema->rows_per_observation == 0 || schema->rows_per_observation > INT_MAX) {
+        snprintf(error_buf, sizeof(error_buf), "Invalid number of lines per observation (%u)",
+                schema->rows_per_observation);
+        goto error;
+    }
+    for (i=0; i<schema->entry_count; i++) {
+        readstat_schema_entry_t *entry = &schema->entries[i];
+        if (entry->row >= schema->rows_per_observation ||
+                entry->len > UINT32_MAX - entry->col) {
+            snprintf(error_buf, sizeof(error_buf),
+                    "Variable %s lies outside the bounds of an observation (line %u of %u, column %u, width %u)",
+                    entry->variable.name, entry->row + 1, schema->rows_per_observation,
+                    entry->col + 1, entry->len);
+            goto error;
+        }
+    }
+    return READSTAT_OK;
+
+error:
+    if (parser->handlers.error)
+        parser->handlers.error(error_buf, user_ctx);
+    return READSTAT_ERROR_PARSE;
+}
+
 readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filename, 
         readstat_schema_t *schema, void *user_ctx) {
     readstat_error_t retval = READSTAT_OK;
@@ -174,6 +205,9 @@ readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filen
     size_t line_buffer_len = 0;
     char  *line_buffer = NULL;
     txt_ctx_t ctx = { .schema = schema };
+
+    if ((retval = txt_check_schema(parser, schema, user_ctx)) != READSTAT_OK)
+        return retval;
 
     if (parser->output_encoding && parser->input_encoding) {
         ctx.converter = iconv_open(parser->output_encoding, parser->input_encoding);
@@ -189,7 +223,7 @@ readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filen
         goto cleanup;
     }
     
-    if ((line_lens = malloc(schema->rows_per_observation * sizeof(size_t))) == NULL) {
+    if ((line_lens = calloc(schema->rows_per_observation, sizeof(size_t))) == NULL) {
         retval = READSTAT_ERROR_MALLOC;
         goto cleanup;
     }
@@ -209,6 +243,11 @@ readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filen
             line_buffer_len = line_lens[i];
     }
     
+    if (line_buffer_len > SIZE_MAX - 2) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
+
     line_buffer_len += 2; /* CRLF */
     
     if ((line_buffer = malloc(line_buffer_len)) == NULL) {
