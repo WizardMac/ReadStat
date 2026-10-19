@@ -373,8 +373,8 @@ typedef struct readstat_parser_s {
     readstat_io_t          *io;
     const char             *input_encoding;
     const char             *output_encoding;
-    long                    row_limit;
-    long                    row_offset;
+    int64_t                 row_limit;
+    int64_t                 row_offset;
 } readstat_parser_t;
 
 readstat_parser_t *readstat_parser_init(void);
@@ -405,8 +405,8 @@ readstat_error_t readstat_set_file_character_encoding(readstat_parser_t *parser,
 // Defaults to UTF-8. Pass in NULL to disable transliteration.
 readstat_error_t readstat_set_handler_character_encoding(readstat_parser_t *parser, const char *encoding);
 
-readstat_error_t readstat_set_row_limit(readstat_parser_t *parser, long row_limit);
-readstat_error_t readstat_set_row_offset(readstat_parser_t *parser, long row_offset);
+readstat_error_t readstat_set_row_limit(readstat_parser_t *parser, int64_t row_limit);
+readstat_error_t readstat_set_row_offset(readstat_parser_t *parser, int64_t row_offset);
 
 /* Parse binary / portable files */
 readstat_error_t readstat_parse_dta(readstat_parser_t *parser, const char *path, void *user_ctx);
