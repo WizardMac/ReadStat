@@ -83,8 +83,8 @@ typedef struct rt_test_group_s {
 } rt_test_group_t;
 
 typedef struct rt_test_args_s {
-    long             row_limit;
-    long             row_offset;    
+    int64_t          row_limit;
+    int64_t          row_offset;
 } rt_test_args_t;
 
 

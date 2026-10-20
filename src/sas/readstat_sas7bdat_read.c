@@ -53,9 +53,9 @@ typedef struct sas7bdat_ctx_s {
     uint32_t        parsed_row_count;
     uint32_t        parsed_deleted_row_count;
     uint32_t        column_count;
-    uint32_t        row_limit;
+    int64_t         row_limit;
     uint32_t        deleted_row_count;
-    uint32_t        row_offset;
+    int64_t         row_offset;
 
     uint64_t        header_size;
     uint64_t        page_count;
@@ -1574,7 +1574,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     if (ctx->handle.value && ctx->parsed_row_count != ctx->row_limit) {
         retval = READSTAT_ERROR_ROW_COUNT_MISMATCH;
         if (ctx->handle.error) {
-            snprintf(ctx->error_buf, sizeof(ctx->error_buf), "ReadStat: Expected %d rows in file, found %d",
+            snprintf(ctx->error_buf, sizeof(ctx->error_buf), "ReadStat: Expected %" PRId64 " rows in file, found %" PRIu32,
                     ctx->row_limit, ctx->parsed_row_count);
             ctx->handle.error(ctx->error_buf, ctx->user_ctx);
         }
