@@ -16,7 +16,7 @@
 
 #define SAS_FILE_HEADER_SIZE_32BIT 1024
 #define SAS_FILE_HEADER_SIZE_64BIT 8192
-#define SAS_DEFAULT_PAGE_SIZE      4096
+#define SAS_DEFAULT_PAGE_SIZE      65536
 
 unsigned char sas7bdat_magic_number[32] = {
     0x00, 0x00, 0x00, 0x00,   0x00, 0x00, 0x00, 0x00,
