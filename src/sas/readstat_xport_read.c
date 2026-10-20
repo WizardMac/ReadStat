@@ -314,6 +314,8 @@ static readstat_error_t xport_construct_format(char *dst, size_t dst_len,
     }
     if (decimals) {
         pos += snprintf(pos, dst_len-(pos-dst), ".%d", decimals);
+    } else if (width) {
+        pos += snprintf(pos, dst_len-(pos-dst), ".");
     }
 
     free(format);
