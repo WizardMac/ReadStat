@@ -602,7 +602,7 @@ static readstat_error_t sas7bdat_add_column_names(readstat_writer_t *writer, sas
 
 static int sas7bdat_name_needs_quoting(const char *name) {
     size_t i;
-    if (!isalpha((unsigned char)name[0]))
+    if (!isalpha((unsigned char)name[0]) && name[0] != '_')
         return 1;
     for (i=1; name[i]; i++) {
         if (!isalnum((unsigned char)name[i]) && name[i] != '_')
