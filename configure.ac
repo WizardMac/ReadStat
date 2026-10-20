@@ -55,6 +55,7 @@ AC_SUBST([EXTRA_WARNINGS])
 
 AS_CASE([$host],
 	[*mingw*|*cygwin*], [EXTRA_LDFLAGS="-liconv -no-undefined"],
+	[*darwin*], [EXTRA_LDFLAGS="-liconv"],
 	[EXTRA_LDFLAGS=""])
 AC_SUBST([EXTRA_LDFLAGS])
 
