@@ -1363,14 +1363,34 @@ static readstat_error_t sas7bdat_write_int8(void *row, const readstat_variable_t
     return sas7bdat_write_double(row, var, value);
 }
 
+static unsigned char sas7bdat_missing_tag_code(char tag) {
+    if (tag == '.')
+        return 1;
+    if (tag == '_')
+        return 0;
+
+    return (unsigned char)(tag - 'A' + 2);
+}
+
 static readstat_error_t sas7bdat_write_missing_tagged_raw(void *row, const readstat_variable_t *var, char tag) {
     union {
-        double dval;
-        char   chars[8];
+        double        dval;
+        unsigned char chars[8];
     } nan_value;
+    unsigned char tag_code = sas7bdat_missing_tag_code(tag);
+    unsigned char stored_tag = (unsigned char)~tag_code;
 
-    nan_value.dval = NAN;
-    nan_value.chars[machine_is_little_endian() ? 5 : 2] = ~tag;
+    nan_value.dval = 0;
+    if (machine_is_little_endian()) {
+        nan_value.chars[5] = stored_tag;
+        nan_value.chars[6] = 0xFF;
+        nan_value.chars[7] = 0xFF;
+    } else {
+        nan_value.chars[0] = 0xFF;
+        nan_value.chars[1] = 0xFF;
+        nan_value.chars[2] = stored_tag;
+    }
+
     return sas7bdat_write_double(row, var, nan_value.dval);
 }
 
