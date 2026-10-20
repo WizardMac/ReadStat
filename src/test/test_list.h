@@ -1479,7 +1479,7 @@ static rt_test_group_t _test_groups[] = {
                 .test_formats = RT_FORMAT_SAS,
                 .columns = {
                     { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "10.3", .label_set = "10.3" },
-                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .format = "$CHAR3", .label_set = "$CHAR3" }
+                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .format = "$CHAR3.", .label_set = "$CHAR3." }
                 }
             },
             {
@@ -1487,7 +1487,7 @@ static rt_test_group_t _test_groups[] = {
                 .test_formats = RT_FORMAT_SAS7BDAT | RT_FORMAT_XPORT_8,
                 .columns = {
                     { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .informat = "10.3" },
-                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .informat = "$CHAR3" }
+                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .informat = "$CHAR3." }
                 }
             },
             {
@@ -1503,9 +1503,9 @@ static rt_test_group_t _test_groups[] = {
                 .columns = {
                     { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "10.3", .label_set = "10.3" },
                     { .name = "VAR2", .type = READSTAT_TYPE_DOUBLE, .format = "F", .label_set = "F" },
-                    { .name = "VAR3", .type = READSTAT_TYPE_STRING, .format = "$CHAR3", .label_set = "$CHAR3" },
+                    { .name = "VAR3", .type = READSTAT_TYPE_STRING, .format = "$CHAR3.", .label_set = "$CHAR3." },
                     { .name = "VAR4", .type = READSTAT_TYPE_STRING, .format = "COMMA10.3", .label_set = "COMMA10.3" },
-                    { .name = "VAR5", .type = READSTAT_TYPE_DOUBLE, .format = "YYQP1", .label_set = "YYQP1" }
+                    { .name = "VAR5", .type = READSTAT_TYPE_DOUBLE, .format = "YYQP1.", .label_set = "YYQP1." }
                 }
             },
             {
