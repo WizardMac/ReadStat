@@ -284,7 +284,7 @@ static int handle_value(int obs_index, readstat_variable_t *old_variable, readst
 
     if (readstat_value_is_system_missing(value)) {
         error = readstat_insert_missing_value(writer, variable);
-    } else if (mod_ctx->is_dta && readstat_value_is_tagged_missing(value)) {
+    } else if ((mod_ctx->is_dta || mod_ctx->is_sas7bdat) && readstat_value_is_tagged_missing(value)) {
         error = readstat_insert_tagged_missing_value(writer, variable, value.tag);
     } else if (type == READSTAT_TYPE_STRING) {
         error = readstat_insert_string_value(writer, variable, readstat_string_value(value));
