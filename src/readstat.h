@@ -354,7 +354,7 @@ typedef int (*readstat_open_handler)(const char *path, void *io_ctx);
 typedef int (*readstat_close_handler)(void *io_ctx);
 typedef readstat_off_t (*readstat_seek_handler)(readstat_off_t offset, readstat_io_flags_t whence, void *io_ctx);
 typedef ssize_t (*readstat_read_handler)(void *buf, size_t nbyte, void *io_ctx);
-typedef readstat_error_t (*readstat_update_handler)(long file_size, readstat_progress_handler progress_handler, void *user_ctx, void *io_ctx);
+typedef readstat_error_t (*readstat_update_handler)(readstat_off_t file_size, readstat_progress_handler progress_handler, void *user_ctx, void *io_ctx);
 
 typedef struct readstat_io_s {
     readstat_open_handler          open;
