@@ -812,26 +812,26 @@ static rt_test_group_t _test_groups[] = {
                 .test_formats = RT_FORMAT_SAS7BDAT,
                 .rows = 0,
                 .columns = {
-                    { .name = "one_of_many_long_column_names_1", .label = "Label for column 1", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_2", .label = "Label for column 2", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_3", .label = "Label for column 3", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_4", .label = "Label for column 4", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_5", .label = "Label for column 5", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_6", .label = "Label for column 6", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_7", .label = "Label for column 7", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_8", .label = "Label for column 8", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_9", .label = "Label for column 9", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_10", .label = "Label for column 10", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_11", .label = "Label for column 11", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_12", .label = "Label for column 12", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_13", .label = "Label for column 13", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_14", .label = "Label for column 14", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_15", .label = "Label for column 15", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_16", .label = "Label for column 16", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_17", .label = "Label for column 17", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_18", .label = "Label for column 18", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_19", .label = "Label for column 19", .format = "$CHAR8", .type = READSTAT_TYPE_STRING },
-                    { .name = "one_of_many_long_column_names_20", .label = "Label for column 20", .format = "$CHAR8", .type = READSTAT_TYPE_STRING }
+                    { .name = "one_of_many_long_column_names_1", .label = "Label for column 1", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_2", .label = "Label for column 2", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_3", .label = "Label for column 3", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_4", .label = "Label for column 4", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_5", .label = "Label for column 5", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_6", .label = "Label for column 6", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_7", .label = "Label for column 7", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_8", .label = "Label for column 8", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_9", .label = "Label for column 9", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_10", .label = "Label for column 10", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_11", .label = "Label for column 11", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_12", .label = "Label for column 12", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_13", .label = "Label for column 13", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_14", .label = "Label for column 14", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_15", .label = "Label for column 15", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_16", .label = "Label for column 16", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_17", .label = "Label for column 17", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_18", .label = "Label for column 18", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_19", .label = "Label for column 19", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING },
+                    { .name = "one_of_many_long_column_names_20", .label = "Label for column 20", .format = "$CHAR8.", .type = READSTAT_TYPE_STRING }
                 }
             }
         }
@@ -1483,6 +1483,22 @@ static rt_test_group_t _test_groups[] = {
                 }
             },
             {
+                .label = "SAS7BDAT format without width",
+                .test_formats = RT_FORMAT_SAS7BDAT,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "DOLLAR.", .informat = "BEST." },
+                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .format = "$UPCASE.", .informat = "$CHAR." },
+                }
+            },
+            {
+                .label = "SAS 32-character format names",
+                .test_formats = RT_FORMAT_SAS7BDAT | RT_FORMAT_XPORT_8,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEF12.2" },
+                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .format = "$ABCDEFGHIJKLMNOPQRSTUVWXYZABCDE8." },
+                }
+            },
+            {
                 .label = "SAS informats",
                 .test_formats = RT_FORMAT_SAS7BDAT | RT_FORMAT_XPORT_8,
                 .columns = {
@@ -1509,13 +1525,43 @@ static rt_test_group_t _test_groups[] = {
                 }
             },
             {
-                .label = "XPT bad formats",
+                .label = "SAS format with two dots",
                 .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
-                .test_formats = RT_FORMAT_XPORT_5 | RT_FORMAT_XPORT_8,
+                .test_formats = RT_FORMAT_SAS,
                 .columns = {
-                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "10.3.", .label_set = "10.3." },
-                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .format = "$CHAR3.1", .label_set = "$CHAR3.1" },
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "10.3.", .label_set = "10.3." }
+                }
+            },
+            {
+                .label = "SAS character format with digits",
+                .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
+                .test_formats = RT_FORMAT_SAS,
+                .columns = {
+                    { .name = "VAR2", .type = READSTAT_TYPE_STRING, .format = "$CHAR3.1", .label_set = "$CHAR3.1" }
+                }
+            },
+            {
+                .label = "SAS format with negative digits",
+                .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
+                .test_formats = RT_FORMAT_SAS,
+                .columns = {
                     { .name = "VAR3", .type = READSTAT_TYPE_DOUBLE, .format = "YYQ-1", .label_set = "YYQ-1" }
+                }
+            },
+            {
+                .label = "SAS7BDAT format with digits but no width",
+                .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
+                .test_formats = RT_FORMAT_SAS7BDAT,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = ".2", .label_set = ".2" }
+                }
+            },
+            {
+                .label = "Too long SAS7BDAT format name",
+                .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
+                .test_formats = RT_FORMAT_SAS7BDAT,
+                .columns = {
+                    { .name = "VAR1", .type = READSTAT_TYPE_DOUBLE, .format = "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFG12.2" }
                 }
             }
         }
@@ -3652,7 +3698,8 @@ static rt_test_group_t _test_groups[] = {
                 .columns = {
                     {
                         .name = "Date1",
-                        .informat = "F8",
+                        .format = "YYMMDD10.",
+                        .informat = "F8.",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 5 } },
@@ -3662,7 +3709,8 @@ static rt_test_group_t _test_groups[] = {
                     },
                     {
                         .name = "Date2",
-                        .informat = "F8",
+                        .format = "DATE7.",
+                        .informat = "F8.",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 3 } },
@@ -3672,7 +3720,8 @@ static rt_test_group_t _test_groups[] = {
                     },
                     {
                         .name = "DateTime",
-                        .informat = "DATETIME19",
+                        .format = "DATETIME19.",
+                        .informat = "DATETIME19.",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -8907752836 } },
@@ -3682,6 +3731,7 @@ static rt_test_group_t _test_groups[] = {
                     },
                     {
                         .name = "DateTimeHi",
+                        .format = "DATETIME28.9",
                         .informat = "23.9",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
@@ -3692,7 +3742,8 @@ static rt_test_group_t _test_groups[] = {
                     },
                     {
                         .name = "Taiw",
-                        .informat = "F8",
+                        .format = "MINGUO10.",
+                        .informat = "F8.",
                         .type = READSTAT_TYPE_DOUBLE,
                         .values = { 
                             { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = -17532 } },

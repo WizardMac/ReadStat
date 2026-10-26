@@ -9,7 +9,7 @@
 #define RT_MAX_VALUE_LABELS          4
 #define RT_MAX_STRING               96
 #define RT_MAX_VALUE_LABEL_STRING  121
-#define MAX_TESTS_PER_GROUP 20
+#define MAX_TESTS_PER_GROUP         22
 
 
 typedef struct rt_label_set_s {
