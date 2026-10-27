@@ -898,8 +898,8 @@ static void sas7bdat_fill_row_size_subheader(readstat_writer_t *writer, sas7bdat
     w2(&d[len-58], ctx->max_name_len);
     w2(&d[len-56], ctx->max_label_len);
     w2(&d[len-42], ctx->compressed ? 0 : ctx->rows_per_data_page);
-    wint(ctx, &d[OFF(ctx, 444, 776)], writer->row_count);
-    d[len-13] = 1;
+    wint(ctx, &d[OFF(ctx, 448, 776)], writer->row_count);
+    d[len-13] = OFF(ctx, 5, 1);
 }
 
 static void sas7bdat_fill_counts_subheader(sas7bdat_write_ctx_t *ctx) {
