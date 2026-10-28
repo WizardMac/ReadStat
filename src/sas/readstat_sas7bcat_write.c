@@ -81,7 +81,7 @@ static sas7bcat_block_t *sas7bcat_block_for_label_set(
 
     for (j=0; j<r_label_set->value_labels_count; j++) {
         readstat_value_label_t *value_label = readstat_get_value_label(r_label_set, j);
-        int16_t value_entry_len = value_entry_size - 6;
+        size_t value_entry_len = value_entry_size - 6;
         int32_t index = j;
         memcpy(&lbp1[10], &index, sizeof(int32_t));
         if (r_label_set->type == READSTAT_TYPE_STRING) {
@@ -107,7 +107,8 @@ static sas7bcat_block_t *sas7bcat_block_for_label_set(
             memcpy(&lbp1[22], &big_endian_value, sizeof(uint64_t));
         }
 
-        memcpy(&lbp1[2], &value_entry_len, sizeof(int16_t));
+        int16_t value_entry_len16 = (int16_t)value_entry_len;
+        memcpy(&lbp1[2], &value_entry_len16, sizeof(int16_t));
         lbp1 += 6 + value_entry_len;
     }
 
@@ -117,7 +118,7 @@ static sas7bcat_block_t *sas7bcat_block_for_label_set(
 
         int16_t label_len = value_label->label_len;
         memcpy(&lbp2[8], &label_len, sizeof(int16_t));
-        memcpy(&lbp2[10], value_label->label, label_len);
+        memcpy(&lbp2[10], value_label->label, value_label->label_len);
 
         lbp2 += 8 + 2 + value_label->label_len + 1;
     }
@@ -182,20 +183,21 @@ static readstat_error_t sas7bcat_begin_data(void *writer_ctx) {
 
     char *xlsr = &page[xlsr_offset];
     int64_t block_idx = 4;
-    int16_t block_off = 16;
+    size_t block_off = 16;
     for (i=0; i<writer->label_sets_count; i++) {
         if (xlsr + xlsr_size > page + hinfo->page_size)
             break;
 
         memcpy(&xlsr[0], "XLSR", 4);
 
+        int16_t block_off16 = (int16_t)block_off;
         if (writer->is_64bit) {
             memcpy(&xlsr[8], &block_idx, sizeof(int64_t));
-            memcpy(&xlsr[16], &block_off, sizeof(int16_t));
+            memcpy(&xlsr[16], &block_off16, sizeof(int16_t));
         } else {
             int32_t block_idx32 = (int32_t)block_idx;
             memcpy(&xlsr[4], &block_idx32, sizeof(int32_t));
-            memcpy(&xlsr[8], &block_off, sizeof(int16_t));
+            memcpy(&xlsr[8], &block_off16, sizeof(int16_t));
         }
 
         xlsr[xlsr_O_offset] = 'O';
