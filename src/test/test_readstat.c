@@ -19,6 +19,7 @@
 #include "test_error.h"
 #include "test_readstat.h"
 #include "test_read.h"
+#include "test_sas.h"
 #include "test_write.h"
 #include "test_list.h"
 
@@ -138,6 +139,9 @@ cleanup:
         return 1;
     }
     buffer_free(buffer);
+
+    if (test_sas7bcat_large_label_sets() != 0)
+        return 1;
 
     return 0;
 }
