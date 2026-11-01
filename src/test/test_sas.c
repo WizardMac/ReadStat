@@ -90,11 +90,13 @@ static int sas7bcat_handle_value_label(const char *val_labels, readstat_value_t 
     rt_sas7bcat_ctx_t *rt_ctx = (rt_sas7bcat_ctx_t *)ctx;
     const char *expected_label = NULL;
     char expected[32];
+    char set;
+    int name_len = 0;
 
     if (rt_ctx->test_case == RT_SAS7BCAT_LABEL_SETS_PAST_32K) {
-        if (strlen(val_labels) == 4 && strncmp(val_labels, "SET", 3) == 0) {
+        if (sscanf(val_labels, "SET%c.%n", &set, &name_len) == 1 && name_len && !val_labels[name_len]) {
             snprintf(expected, sizeof(expected), "Label %d of set %c",
-                    (int)readstat_double_value(value), val_labels[3]);
+                    (int)readstat_double_value(value), set);
             expected_label = expected;
         }
     } else if (rt_ctx->test_case == RT_SAS7BCAT_LONG_LABEL) {
