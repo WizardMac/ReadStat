@@ -2287,7 +2287,7 @@ static rt_test_group_t _test_groups[] = {
                 .label_sets_count = 1,
                 .label_sets = {
                     {
-                        .name = "LabelSet",
+                        .name = "LabelSet.",
                         .type = READSTAT_TYPE_DOUBLE,
                         .value_labels_count = 2,
                         .value_labels = {
@@ -2310,7 +2310,7 @@ static rt_test_group_t _test_groups[] = {
                 .label_sets_count = 1,
                 .label_sets = {
                     {
-                        .name = "$StringLabelSet",
+                        .name = "$StringLabelSet.",
                         .type = READSTAT_TYPE_STRING,
                         .value_labels_count = 4,
                         .value_labels = {
@@ -2341,7 +2341,7 @@ static rt_test_group_t _test_groups[] = {
                 .label_sets_count = 2,
                 .label_sets = {
                     {
-                        .name = "OneTwo",
+                        .name = "OneTwo.",
                         .type = READSTAT_TYPE_DOUBLE,
                         .value_labels_count = 2,
                         .value_labels = {
@@ -2356,7 +2356,7 @@ static rt_test_group_t _test_groups[] = {
                         }
                     },
                     {
-                        .name = "ThreeFour",
+                        .name = "ThreeFour.",
                         .type = READSTAT_TYPE_DOUBLE,
                         .value_labels_count = 2,
                         .value_labels = {
@@ -2367,6 +2367,125 @@ static rt_test_group_t _test_groups[] = {
                             {
                                 .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 4.0 } },
                                 .label = "Four"
+                            }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "SAS string value labels with dotted long name",
+                .test_formats = RT_FORMAT_SAS7BCAT,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "$ABCDEFGHIJKLMNOPQRSTUVWXYZABCDE.",
+                        .type = READSTAT_TYPE_STRING,
+                        .value_labels_count = 1,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "A" } },
+                                .label = "Apple"
+                            }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "SAS catalog format name with width",
+                .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
+                .test_formats = RT_FORMAT_SAS7BCAT,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "MYFMT8.",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .value_labels_count = 1,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1.0 } },
+                                .label = "One"
+                            }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "SAS catalog format name with width and digits",
+                .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
+                .test_formats = RT_FORMAT_SAS7BCAT,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "MYFMT8.2",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .value_labels_count = 1,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1.0 } },
+                                .label = "One"
+                            }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "SAS catalog numeric format with $ name",
+                .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
+                .test_formats = RT_FORMAT_SAS7BCAT,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "$MYFMT.",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .value_labels_count = 1,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1.0 } },
+                                .label = "One"
+                            }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "SAS catalog string format without $ name",
+                .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
+                .test_formats = RT_FORMAT_SAS7BCAT,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "MYFMT",
+                        .type = READSTAT_TYPE_STRING,
+                        .value_labels_count = 1,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_STRING, .v = { .string_value = "A" } },
+                                .label = "Apple"
+                            }
+                        }
+                    }
+                }
+            },
+
+            {
+                .label = "Too long SAS catalog format name",
+                .write_error = READSTAT_ERROR_BAD_FORMAT_STRING,
+                .test_formats = RT_FORMAT_SAS7BCAT,
+                .label_sets_count = 1,
+                .label_sets = {
+                    {
+                        .name = "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFG",
+                        .type = READSTAT_TYPE_DOUBLE,
+                        .value_labels_count = 1,
+                        .value_labels = {
+                            {
+                                .value = { .type = READSTAT_TYPE_DOUBLE, .v = { .double_value = 1.0 } },
+                                .label = "One"
                             }
                         }
                     }
@@ -3914,7 +4033,7 @@ static rt_test_group_t _test_groups[] = {
                 .label_sets_count = 1,
                 .label_sets = {
                     {
-                        .name = "$YESNO",
+                        .name = "$YESNO.",
                         .type = READSTAT_TYPE_STRING,
                         .value_labels_count = 2,
                         .value_labels = {
@@ -3943,7 +4062,7 @@ static rt_test_group_t _test_groups[] = {
                 .label_sets_count = 1,
                 .label_sets = {
                     {
-                        .name = "$YESNO",
+                        .name = "$YESNO.",
                         .type = READSTAT_TYPE_STRING,
                         .value_labels_count = 2,
                         .value_labels = {

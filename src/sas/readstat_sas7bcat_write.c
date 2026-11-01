@@ -14,18 +14,58 @@ typedef struct sas7bcat_block_s {
     char    data[1]; // Flexible array; use [1] for C++-98 compatibility
 } sas7bcat_block_t;
 
+/* Validates a catalog format name such as "MYFMT", "MYFMT.", "$MYFMT" or
+ * "$MYFMT." and returns the length of the name without the trailing dot.
+ * Widths and decimals are not part of a format's name in a catalog, so a name
+ * ending in a digit is rejected, as are names whose '$' prefix doesn't match
+ * the type of the label set. */
+static readstat_error_t sas7bcat_validate_format_name(readstat_label_set_t *r_label_set,
+        size_t *name_len_out) {
+    const char *name = r_label_set->name;
+    size_t len = strlen(name);
+    size_t i = 0;
+
+    if (len && name[len-1] == '.')
+        len--;
+
+    if (len > 32)
+        return READSTAT_ERROR_BAD_FORMAT_STRING;
+
+    int is_string = (len > 0 && name[0] == '$');
+    if (is_string != (r_label_set->type == READSTAT_TYPE_STRING))
+        return READSTAT_ERROR_BAD_FORMAT_STRING;
+    if (is_string)
+        i++;
+
+    if (i == len)
+        return READSTAT_ERROR_BAD_FORMAT_STRING;
+
+    char c = name[i];
+    if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_'))
+        return READSTAT_ERROR_BAD_FORMAT_STRING;
+
+    for (i++; i<len; i++) {
+        c = name[i];
+        if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                    (c >= '0' && c <= '9') || c == '_'))
+            return READSTAT_ERROR_BAD_FORMAT_STRING;
+    }
+
+    if (name[len-1] >= '0' && name[len-1] <= '9')
+        return READSTAT_ERROR_BAD_FORMAT_STRING;
+
+    *name_len_out = len;
+    return READSTAT_OK;
+}
+
 static sas7bcat_block_t *sas7bcat_block_for_label_set(
-        readstat_label_set_t *r_label_set, readstat_writer_t *writer) {
+        readstat_label_set_t *r_label_set, size_t name_len, readstat_writer_t *writer) {
     size_t len = 106;
-    size_t name_len = strlen(r_label_set->name);
     int j;
     char name[32];
 
     if (name_len > 8) {
         len += 32; // long name
-        if (name_len > 32) {
-            name_len = 32;
-        }
     }
     if (writer->is_64bit) {
         len += 32;
@@ -147,11 +187,15 @@ static readstat_error_t sas7bcat_begin_data(void *writer_ctx) {
 
     int i;
     sas_header_info_t *hinfo = sas_header_info_init(writer, writer->is_64bit);
-    sas7bcat_block_t **blocks = malloc(writer->label_sets_count * sizeof(sas7bcat_block_t));
+    sas7bcat_block_t **blocks = calloc(writer->label_sets_count, sizeof(sas7bcat_block_t *));
     char *page = malloc(hinfo->page_size);
 
     for (i=0; i<writer->label_sets_count; i++) {
-        blocks[i] = sas7bcat_block_for_label_set(writer->label_sets[i], writer);
+        size_t name_len = 0;
+        retval = sas7bcat_validate_format_name(writer->label_sets[i], &name_len);
+        if (retval != READSTAT_OK)
+            goto cleanup;
+        blocks[i] = sas7bcat_block_for_label_set(writer->label_sets[i], name_len, writer);
     }
 
     hinfo->page_count = 4;
