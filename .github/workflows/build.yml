@@ -5,12 +5,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler: [ clang, gcc, gcc-9, gcc-10, gcc-11, gcc-12 ]
+        compiler: [ clang, gcc, gcc-11, gcc-12, gcc-13, gcc-14 ]
     steps:
       - name: Add repository
         run: sudo apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
       - name: Install packages
-        run: sudo apt install gcc-9 gcc-10 gcc-11 gcc-12
+        run: sudo apt install gcc-11 gcc-12 gcc-13 gcc-14
       - uses: actions/checkout@v6
       - name: Autoconf
         run: autoreconf -i -f
