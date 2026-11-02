@@ -1,0 +1,11 @@
+{"type": "SAS", "variables": [
+ {"type": "NUMERIC", "name": "id", "label": "Identifier"},
+ {"type": "NUMERIC", "name": "amount", "format": "CURRENCY", "decimals": 2},
+ {"type": "NUMERIC", "name": "pct", "format": "PERCENT", "decimals": 1},
+ {"type": "NUMERIC", "name": "score", "missing": {"type": "DISCRETE", "values": [-9, 999]},
+   "categories": [{"code": 3, "label": "Three"}]},
+ {"type": "NUMERIC", "name": "born", "format": "DATE", "missing": {"type": "RANGE", "low": "1959-01-01", "high": "1959-12-31"}},
+ {"type": "NUMERIC", "name": "stamp", "format": "DATE_TIME"},
+ {"type": "NUMERIC", "name": "clock", "format": "TIME"},
+ {"type": "STRING", "name": "name", "label": "Name"}
+]}

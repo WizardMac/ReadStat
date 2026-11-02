@@ -7,6 +7,7 @@
 
 #include "../../readstat.h"
 
+#include "../util/file_format.h"
 #include "../util/readstat_dta_days.h"
 #include "json_metadata.h"
 #include "read_module.h"
@@ -15,6 +16,7 @@
 #include "mod_csv.h"
 #include "mod_dta.h"
 #include "mod_sav.h"
+#include "mod_sas7bdat.h"
 
 #define UNUSED(x) (void)(x)
 
@@ -66,7 +68,10 @@ static void produce_column_header(struct csv_metadata *c, void *s, size_t len) {
     }
 
     if (c->handle.variable) {
-        c->handle.variable(c->columns, var, column, c->user_ctx);
+        /* SAS names a variable's value labels by its format, as the SAS
+         * readers report them */
+        const char *val_labels = c->output_format == RS_FORMAT_SAS_DATA ? var->format : column;
+        c->handle.variable(c->columns, var, val_labels, c->user_ctx);
     }
 }
 
@@ -111,7 +116,8 @@ readstat_error_t readstat_parse_csv(readstat_parser_t *parser,
     readstat_io_t *io = parser->io;
     size_t file_size = 0;
     size_t bytes_read;
-    struct csv_parser csvparser;
+    /* Zeroed so that cleanup can call csv_free() before csv_init() has run */
+    struct csv_parser csvparser = { 0 };
     struct csv_parser *p = &csvparser;
     char buf[BUFSIZ];
     size_t* column_width = md->column_width;
@@ -123,8 +129,8 @@ readstat_error_t readstat_parse_csv(readstat_parser_t *parser,
     md->user_ctx = user_ctx;
     md->handle = parser->handlers;
 
-    rs_read_module_t modules[3] = { rs_read_mod_csv, rs_read_mod_dta, rs_read_mod_sav };
-    if ((md->output_module = rs_read_module_for_filename(modules, 3, md->output_format)) == NULL) {
+    rs_read_module_t modules[4] = { rs_read_mod_csv, rs_read_mod_dta, rs_read_mod_sav, rs_read_mod_sas7bdat };
+    if ((md->output_module = rs_read_module_for_filename(modules, 4, md->output_format)) == NULL) {
         fprintf(stderr, "Unsupported file format\n");
         retval = READSTAT_ERROR_WRITE;
         goto cleanup;

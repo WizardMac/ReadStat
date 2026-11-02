@@ -45,9 +45,12 @@ gen.json
 extract_metadata
 test_sav_date
 test_double_decimals
+dump_sas7bdat
 generate_corpus
 *.csv
 *.json
+!resources/csv_to_sas7bdat.csv
+!resources/csv_to_sas7bdat.json
 *.py
 *.tar.gz
 *.zip

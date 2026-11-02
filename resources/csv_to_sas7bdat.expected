@@ -1,0 +1,40 @@
+variable id format=BEST12. label=Identifier
+variable amount format=F12.2 label=
+variable pct format=F11.1 label=
+variable score format=BEST12. label=
+variable born format=DATE9. label=
+variable stamp format=DATETIME19. label=
+variable clock format=TIME8. label=
+variable name format= label=Name
+0 id 1
+0 amount 12.5
+0 pct 25
+0 score 3
+0 born 21974
+0 stamp 1898603130.25
+0 clock 29700
+0 name "Zoë"
+1 id 2
+1 amount .
+1 pct 50
+1 score .A
+1 born .A
+1 stamp 1
+1 clock 86399.5
+1 name ""
+2 id 3
+2 amount -0.75
+2 pct .
+2 score .B
+2 born .
+2 stamp 1798847999
+2 clock .
+2 name "a, b"
+3 id 4
+3 amount 1000
+3 pct 100
+3 score 7
+3 born 0
+3 stamp .
+3 clock 0
+3 name "plain"
