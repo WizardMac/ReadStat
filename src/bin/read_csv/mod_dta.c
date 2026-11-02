@@ -151,7 +151,8 @@ static void produce_missingness_discrete_dta(struct csv_metadata *c, jsmntok_t* 
             dta_add_missing_date(var, get_dta_days_from_token(js, missing_value_token));
         } else if (var->type == READSTAT_TYPE_DOUBLE) {
             dta_add_missing_double(var, get_double_from_token(js, missing_value_token));
-        } else if (var->type == READSTAT_TYPE_STRING) {
+        } else if (var->type == READSTAT_TYPE_STRING ||
+                   var->type == READSTAT_TYPE_STRING_REF) {
         } else {
             fprintf(stderr, "%s:%d Unsupported column type %d\n", __FILE__, __LINE__, var->type);
             exit(EXIT_FAILURE);
@@ -302,7 +303,8 @@ void produce_value_label_dta(void *csv_metadata, const char* column) {
             produce_value_label_int32_date_dta(column, c, code, label);
         } else if (coltype == READSTAT_TYPE_DOUBLE) {
             produce_value_label_double_dta(column, c, code, label);
-        } else if (coltype == READSTAT_TYPE_STRING) {
+        } else if (coltype == READSTAT_TYPE_STRING ||
+                   coltype == READSTAT_TYPE_STRING_REF) {
         } else {
             fprintf(stderr, "%s:%d unsupported column type %d for value label for column %s\n", __FILE__, __LINE__, coltype, column);
             exit(EXIT_FAILURE);
@@ -496,7 +498,8 @@ void produce_csv_value_dta(void *csv_metadata, const char *s, size_t len) {
         value = value_double_date_time_dta(s, len, c);
     } else if (var->type == READSTAT_TYPE_DOUBLE) {
         value = value_double_dta(s, len, c);
-    } else if (var->type == READSTAT_TYPE_STRING) {
+    } else if (var->type == READSTAT_TYPE_STRING ||
+               var->type == READSTAT_TYPE_STRING_REF) {
         value = value_string(s, len, c);
     } else {
         fprintf(stderr, "%s:%d unsupported variable type %d\n", __FILE__, __LINE__, var->type);
