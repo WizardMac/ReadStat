@@ -6,6 +6,9 @@
         },
         {
             "$ref": "#/definitions/STATA"
+        },
+        {
+            "$ref": "#/definitions/SAS"
         }
     ],
     "definitions": {
@@ -473,6 +476,192 @@
             "required": [
                 "type",
                 "values"
+            ],
+            "additionalProperties": false
+        },
+        "SAS": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "SAS"
+                    ]
+                },
+                "separator": {
+                    "enum": [
+                        ",",
+                        ";",
+                        "\t"
+                    ]
+                },
+                "variables": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "oneOf": [
+                            {
+                                "$ref": "#/definitions/SAS-NUMERIC"
+                            },
+                            {
+                                "$ref": "#/definitions/SAS-STRING"
+                            }
+                        ]
+                    }
+                }
+            },
+            "additionalProperties": false
+        },
+        "SAS-NUMERIC": {
+            "properties": {
+                "type": {
+                    "enum": [
+                        "NUMERIC"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32,
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                },
+                "label": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 256
+                },
+                "format": {
+                    "description": "DATE is written as days since 1960-01-01 with format DATE9., DATE_TIME as seconds since 1960-01-01 00:00:00 (no leap seconds) with DATETIME19., and TIME as seconds since midnight with TIME8. NUMBER, PERCENT and CURRENCY are written unscaled with format Fw.d, or BEST12. without decimals.",
+                    "enum": [
+                        "NUMBER",
+                        "PERCENT",
+                        "CURRENCY",
+                        "DATE",
+                        "TIME",
+                        "DATE_TIME",
+                        "UNSPECIFIED"
+                    ]
+                },
+                "pattern": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "decimals": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 16
+                },
+                "categories": {
+                    "description": "Accepted so that one metadata file can serve every format, but not written: a sas7bdat file keeps value labels in a separate SAS catalog.",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "code": {
+                                "type": "number"
+                            },
+                            "label": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "code",
+                            "label"
+                        ],
+                        "additionalProperties": false
+                    }
+                },
+                "missing": {
+                    "description": "Matching values are written as SAS special missing values, assigned .A, .B, ... in order: one per DISCRETE value, or one for the RANGE and one for its discrete-value.",
+                    "type": "object",
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/SAS-NUMERIC-DISCRETE"
+                        },
+                        {
+                            "$ref": "#/definitions/NUMERIC-RANGE"
+                        },
+                        {
+                            "$ref": "#/definitions/DATE-RANGE"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "type",
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "SAS-NUMERIC-DISCRETE": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "enum": [
+                        "DISCRETE"
+                    ]
+                },
+                "values": {
+                    "description": "Numbers, or yyyy-mm-dd strings for DATE columns",
+                    "type": "array",
+                    "items": {
+                        "type": [
+                            "number",
+                            "string"
+                        ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "uniqueItems": true
+                }
+            },
+            "required": [
+                "type",
+                "values"
+            ],
+            "additionalProperties": false
+        },
+        "SAS-STRING": {
+            "properties": {
+                "type": {
+                    "enum": [
+                        "STRING"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32,
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                },
+                "label": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 256
+                },
+                "categories": {
+                    "description": "Accepted so that one metadata file can serve every format, but not written: a sas7bdat file keeps value labels in a separate SAS catalog.",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "code": {
+                                "type": "string"
+                            },
+                            "label": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "code",
+                            "label"
+                        ],
+                        "additionalProperties": false
+                    }
+                }
+            },
+            "required": [
+                "type",
+                "name"
             ],
             "additionalProperties": false
         }
