@@ -296,6 +296,9 @@ static int handle_value(int obs_index, readstat_variable_t *variable, readstat_v
                 expected_string = rt_ctx->file->string_refs[readstat_int32_value(expected)];
             push_error_if_strings_differ(rt_ctx, expected_string,
                     readstat_string_value(value), "String ref values");
+        } else if (column->truncated_values[file_obs_index]) {
+            push_error_if_strings_differ(rt_ctx, column->truncated_values[file_obs_index],
+                    readstat_string_value(value), "Truncated string values");
         } else {
             push_error_if_values_differ(rt_ctx,
                     column->values[file_obs_index],
