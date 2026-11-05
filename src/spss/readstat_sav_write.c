@@ -993,7 +993,12 @@ static readstat_error_t sav_emit_long_string_value_labels_record(readstat_writer
             if (storage_width <= 8)
                 continue;
 
-            space_buffer = realloc(space_buffer, user_width);
+            char *new_space_buffer = realloc(space_buffer, user_width);
+            if (new_space_buffer == NULL) {
+                retval = READSTAT_ERROR_MALLOC;
+                goto cleanup;
+            }
+            space_buffer = new_space_buffer;
             memset(space_buffer, ' ', user_width);
 
             retval = readstat_write_bytes(writer, &name_len, sizeof(int32_t));
