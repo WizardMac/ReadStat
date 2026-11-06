@@ -15,6 +15,7 @@
 #include "../stata/readstat_dta.h"
 
 #include "test_buffer.h"
+#include "test_buffer_io.h"
 #include "test_types.h"
 #include "test_error.h"
 #include "test_readstat.h"
@@ -40,6 +41,47 @@ static rt_test_args_t _test_args[] = {
         .row_offset = 4,
     }
 };
+
+static int test_txt_schema_bounds(void) {
+    char data[] = "hello\nworld\n";
+    rt_buffer_t buffer = { .bytes = data, .size = sizeof(data)-1, .used = sizeof(data)-1 };
+    rt_buffer_ctx_t buffer_ctx = { .buffer = &buffer };
+    readstat_schema_entry_t entry = { .row = 1, .col = 0, .len = 5 };
+    readstat_schema_t schema = { .rows_per_observation = 1, .entry_count = 1, .entries = &entry };
+    readstat_error_t error = READSTAT_OK;
+
+    readstat_parser_t *parser = readstat_parser_init();
+    readstat_set_open_handler(parser, rt_open_handler);
+    readstat_set_close_handler(parser, rt_close_handler);
+    readstat_set_seek_handler(parser, rt_seek_handler);
+    readstat_set_read_handler(parser, rt_read_handler);
+    readstat_set_update_handler(parser, rt_update_handler);
+    readstat_set_io_ctx(parser, &buffer_ctx);
+
+    /* Row past the declared number of lines per observation */
+    error = readstat_parse_txt(parser, NULL, &schema, NULL);
+    if (error != READSTAT_ERROR_PARSE) {
+        printf("Expected a parse error for an out-of-range row, got: %s\n",
+                readstat_error_message(error));
+        readstat_parser_free(parser);
+        return 1;
+    }
+
+    /* Column whose end does not fit in 32 bits */
+    entry.row = 0;
+    entry.col = UINT32_MAX;
+    buffer_ctx.pos = 0;
+    error = readstat_parse_txt(parser, NULL, &schema, NULL);
+    if (error != READSTAT_ERROR_PARSE) {
+        printf("Expected a parse error for an out-of-range column, got: %s\n",
+                readstat_error_message(error));
+        readstat_parser_free(parser);
+        return 1;
+    }
+
+    readstat_parser_free(parser);
+    return 0;
+}
 
 static void dump_buffer(rt_buffer_t *buffer, long format) {
     char filename[128];
@@ -141,6 +183,9 @@ cleanup:
     buffer_free(buffer);
 
     if (test_sas7bcat_large_label_sets() != 0)
+        return 1;
+
+    if (test_txt_schema_bounds() != 0)
         return 1;
 
     return 0;

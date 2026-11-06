@@ -200,6 +200,11 @@ readstat_error_t readstat_parse_txt(readstat_parser_t *parser, const char *filen
     
     for (i=0; i<schema->entry_count; i++) {
         readstat_schema_entry_t *entry = &schema->entries[i];
+        if (entry->row >= schema->rows_per_observation ||
+                entry->len > UINT32_MAX - entry->col) {
+            retval = READSTAT_ERROR_PARSE;
+            goto cleanup;
+        }
         if (line_lens[entry->row] < entry->col + entry->len)
             line_lens[entry->row] = entry->col + entry->len;
     }
