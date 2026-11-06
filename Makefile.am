@@ -163,6 +163,7 @@ noinst_HEADERS = \
        src/test/test_readstat.h \
        src/test/test_sas.h \
        src/test/test_sav.h \
+       src/test/test_txt.h \
        src/test/test_types.h \
        src/test/test_write.h
 
@@ -232,6 +233,7 @@ test_readstat_SOURCES = \
 	src/test/test_readstat.c \
 	src/test/test_sas.c \
 	src/test/test_sav.c \
+	src/test/test_txt.c \
 	src/test/test_write.c
 
 test_readstat_LDADD = libreadstat.la
