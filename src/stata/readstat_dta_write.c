@@ -1571,16 +1571,54 @@ static readstat_error_t dta_write_double(void *row, const readstat_variable_t *v
     return dta_write_raw_double(row, value);
 }
 
+/* Chops a UTF-8 string, if necessary, to fit in str2045 STATA size */
+static size_t dta_utf8_safe_length(const char *value, size_t max_len) {
+    size_t p = max_len;
+
+    /* Back up past any continuation bytes that straddle the cut point. */
+    while (p > 0 && ((unsigned char)value[p] & 0xC0) == 0x80)
+        p--;
+
+    /* p is now at a non-continuation byte (ASCII or lead byte).  Determine
+     * whether the full sequence starting at p fits within max_len. */
+    if (p < max_len) {
+        unsigned char b = (unsigned char)value[p];
+        size_t seq_len;
+        if      ((b & 0x80) == 0x00) seq_len = 1;  /* ASCII */
+        else if ((b & 0xE0) == 0xC0) seq_len = 2;
+        else if ((b & 0xF0) == 0xE0) seq_len = 3;
+        else if ((b & 0xF8) == 0xF0) seq_len = 4;
+        else                          seq_len = 1;  /* invalid; treat as single byte */
+
+        if (p + seq_len <= max_len)
+            p += seq_len;  /* full sequence fits */
+        /* else: incomplete sequence — leave p before the lead byte */
+    }
+
+    return p;
+}
+
 static readstat_error_t dta_write_string(void *row, const readstat_variable_t *var, const char *value) {
     size_t max_len = var->storage_width;
     if (value == NULL || value[0] == '\0') {
         memset(row, '\0', max_len);
     } else {
         size_t value_len = strlen(value);
-        if (value_len > max_len)
-            return READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
+        if (value_len > max_len) {
+            /* A width the caller chose is a hard limit */
+            if (var->user_width != 0)
+                return READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG;
 
-        strncpy((char *)row, value, max_len);
+            /* Width 0 asks for the format's maximum (str2045 in 117 and
+             * later), which a near-2045-character string can still exceed
+             * once its UTF-8 bytes are counted. Truncate at the last valid
+             * UTF-8 boundary so the row is preserved rather than dropped. */
+            size_t safe_len = dta_utf8_safe_length(value, max_len);
+            memset(row, '\0', max_len);
+            memcpy((char *)row, value, safe_len);
+        } else {
+            strncpy((char *)row, value, max_len);
+        }
     }
     return READSTAT_OK;
 }
