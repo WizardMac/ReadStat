@@ -110,12 +110,12 @@ readstat_error_t readstat_set_handler_character_encoding(readstat_parser_t *pars
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_row_limit(readstat_parser_t *parser, long row_limit) {
+readstat_error_t readstat_set_row_limit(readstat_parser_t *parser, int64_t row_limit) {
     parser->row_limit = row_limit;
     return READSTAT_OK;
 }
 
-readstat_error_t readstat_set_row_offset(readstat_parser_t *parser, long row_offset) {
+readstat_error_t readstat_set_row_offset(readstat_parser_t *parser, int64_t row_offset) {
     parser->row_offset = row_offset;
     return READSTAT_OK;
 }

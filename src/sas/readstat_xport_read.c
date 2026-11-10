@@ -28,8 +28,8 @@ typedef struct xport_ctx_s {
 
     long           obs_count; /* from OBSV8 header; 0 if unknown */
     int            var_count;
-    int            row_limit;
-    int            row_offset;
+    int64_t        row_limit;
+    int64_t        row_offset;
     size_t         row_length;
     int            parsed_row_count;
     char           file_label[256*4+1];
