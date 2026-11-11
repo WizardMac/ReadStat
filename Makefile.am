@@ -21,6 +21,7 @@ libreadstat_la_SOURCES = \
 	src/sas/readstat_sas7bdat_read.c \
 	src/sas/readstat_sas7bdat_write.c \
 	src/sas/readstat_sas_rle.c \
+	src/sas/readstat_sas_rdc.c \
 	src/sas/readstat_xport.c \
 	src/sas/readstat_xport_read.c \
 	src/sas/readstat_xport_write.c \
@@ -111,6 +112,7 @@ noinst_HEADERS = \
        src/sas/ieee.h \
        src/sas/readstat_sas.h \
        src/sas/readstat_sas_rle.h \
+       src/sas/readstat_sas_rdc.h \
        src/sas/readstat_xport.h \
        src/sas/readstat_xport_parse_format.h \
        src/spss/readstat_por.h \

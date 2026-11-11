@@ -215,8 +215,8 @@ static rt_test_group_t _test_groups[] = {
             },
 
             {
-                .label = "SAS7BDAT RLE compression",
-                .test_formats = RT_FORMAT_SAS7BDAT_COMP_ROWS,
+                .label = "SAS7BDAT RLE and RDC compression",
+                .test_formats = RT_FORMAT_SAS7BDAT_COMP,
                 .rows = 10,
                 .columns = {
                     {
