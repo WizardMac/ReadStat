@@ -81,6 +81,9 @@
     <ClCompile Include="..\src\sas\readstat_sas_rle.c">
       <Filter>Source Files\sas</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\sas\readstat_sas_rdc.c">
+      <Filter>Source Files\sas</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\sas\readstat_sas7bcat_read.c">
       <Filter>Source Files\sas</Filter>
     </ClCompile>
@@ -204,6 +207,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\sas\readstat_sas_rle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\sas\readstat_sas_rdc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\sas\readstat_xport.h">

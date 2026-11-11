@@ -47,10 +47,14 @@ char *file_extension(long format) {
         return "sas7bdat32";
     if (format == RT_FORMAT_SAS7BDAT_32BIT_COMP_ROWS)
         return "sas7bdat32row";
+    if (format == RT_FORMAT_SAS7BDAT_32BIT_COMP_BINARY)
+        return "sas7bdat32bin";
     if (format == RT_FORMAT_SAS7BDAT_64BIT_COMP_NONE)
         return "sas7bdat64";
     if (format == RT_FORMAT_SAS7BDAT_64BIT_COMP_ROWS)
         return "sas7bdat64row";
+    if (format == RT_FORMAT_SAS7BDAT_64BIT_COMP_BINARY)
+        return "sas7bdat64bin";
     if (format == RT_FORMAT_XPORT_5)
         return "xpt5";
     if (format == RT_FORMAT_XPORT_8)
