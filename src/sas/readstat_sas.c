@@ -318,14 +318,8 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
         retval = READSTAT_ERROR_READ;
         goto cleanup;
     }
-    char major, revision_tag, revision;
-    int minor;
-    /* The release field is not NUL-terminated in the file; copy it into a
-     * terminated buffer before handing it to sscanf, which calls strlen on it. */
-    char release[sizeof(header_end.release)+1];
-    memcpy(release, header_end.release, sizeof(header_end.release));
-    release[sizeof(header_end.release)] = '\0';
-    if (sscanf(release, "%c.%04d%c%c", &major, &minor, &revision_tag, &revision) != 4) {
+    char major = header_end.release[0];
+    if (header_end.release[1] != '.') {
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
@@ -340,29 +334,7 @@ readstat_error_t sas_read_header(readstat_io_t *io, sas_header_info_t *hinfo,
         retval = READSTAT_ERROR_PARSE;
         goto cleanup;
     }
-    // revision_tag is usually M, but J has been observed in the wild (not created with SAS?)
-    // files have also been observed with TK in place of the revision details.
-    if ((major == '8' || major == '9') && revision_tag != 'M' && revision_tag != 'J' && revision_tag != 'T') {
-        retval = READSTAT_ERROR_PARSE;
-        goto cleanup;
-    }
-    hinfo->minor_version = minor;
-    if (revision >= '0' && revision <= '9') {
-        hinfo->revision = revision - '0';
-    } else if (revision_tag == 'T' && revision == 'K') {
-        // files have been observed with TK in place of the revision details.
-        hinfo->revision = 0;
-    } else {
-        retval = READSTAT_ERROR_PARSE;
-        goto cleanup;
-    }
 
-    if ((major == '8' || major == '9') && minor == 0 && hinfo->revision == 0) {
-        /* A bit of a hack, but most SAS installations are running a minor update */
-        hinfo->vendor = READSTAT_VENDOR_STAT_TRANSFER;
-    } else {
-        hinfo->vendor = READSTAT_VENDOR_SAS;
-    }
     if (io->seek(hinfo->header_size, READSTAT_SEEK_SET, io->io_ctx) == -1) {
         retval = READSTAT_ERROR_SEEK;
         if (error_handler) {
