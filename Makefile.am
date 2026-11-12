@@ -96,7 +96,11 @@ EXTRA_DIST = \
 	resources/compression_type_0x0d.sas7bdat \
 	resources/format_with_default_32bit.sas7bcat \
 	resources/format_with_default_64bit.sas7bcat \
-	resources/sav_missing_continuations.sav
+	resources/sav_missing_continuations.sav \
+	resources/csv_to_sas7bdat.csv \
+	resources/csv_to_sas7bdat.json \
+	resources/csv_to_sas7bdat.expected \
+	src/test/test_csv_to_sas7bdat.sh
 
 include_HEADERS = src/readstat.h
 
@@ -139,6 +143,7 @@ noinst_HEADERS = \
        src/bin/read_csv/mod_csv.h \
        src/bin/read_csv/mod_dta.h \
        src/bin/read_csv/mod_sav.h \
+       src/bin/read_csv/mod_sas7bdat.h \
        src/bin/read_csv/read_csv.h \
        src/bin/read_csv/read_module.h \
        src/bin/read_csv/value.h \
@@ -179,6 +184,7 @@ readstat_SOURCES = \
 	src/bin/read_csv/mod_csv.c \
 	src/bin/read_csv/mod_dta.c \
 	src/bin/read_csv/mod_sav.c \
+	src/bin/read_csv/mod_sas7bdat.c \
 	src/bin/read_csv/value.c \
 	src/bin/write/double_decimals.c \
 	src/bin/write/mod_csv.c \
@@ -261,6 +267,16 @@ test_double_decimals_CFLAGS = -g -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors
 
 
 TESTS = test_readstat test_dta_days test_sav_date test_double_decimals
+
+if HAVE_CSVREADER
+check_PROGRAMS += dump_sas7bdat
+
+dump_sas7bdat_SOURCES = src/test/dump_sas7bdat.c
+dump_sas7bdat_LDADD = libreadstat.la
+dump_sas7bdat_CFLAGS = -Wall @EXTRA_WARNINGS@ -Werror -pedantic-errors -std=c99
+
+TESTS += src/test/test_csv_to_sas7bdat.sh
+endif
 
 EXTRA_PROGRAMS = \
     generate_corpus

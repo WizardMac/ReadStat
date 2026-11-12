@@ -138,7 +138,9 @@ CSV input is supported together with a metadata file describing the data:
 
     readstat <input file.csv> <input metadata.json> <output file>
 
-The `<output file>` should end with `.dta`, `.sav`, or `.csv`.
+The `<output file>` should end with `.dta`, `.sav`, `.sas7bdat`, or `.csv`.
+A `.sas7bdat` file cannot hold value labels, which SAS keeps in a separate
+catalog, so any `categories` in the metadata are not written to it.
 
 The `<input file.csv>` is a regular CSV file.
 

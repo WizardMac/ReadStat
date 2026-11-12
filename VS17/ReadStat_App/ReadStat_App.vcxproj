@@ -25,6 +25,7 @@
     <ClCompile Include="..\..\src\bin\read_csv\mod_csv.c" />
     <ClCompile Include="..\..\src\bin\read_csv\mod_dta.c" />
     <ClCompile Include="..\..\src\bin\read_csv\mod_sav.c" />
+    <ClCompile Include="..\..\src\bin\read_csv\mod_sas7bdat.c" />
     <ClCompile Include="..\..\src\bin\read_csv\value.c" />
     <ClCompile Include="..\..\src\bin\util\readstat_dta_days.c" />
     <ClCompile Include="..\..\src\bin\util\readstat_sav_date.c" />
@@ -43,6 +44,7 @@
     <ClInclude Include="..\..\src\bin\read_csv\mod_csv.h" />
     <ClInclude Include="..\..\src\bin\read_csv\mod_dta.h" />
     <ClInclude Include="..\..\src\bin\read_csv\mod_sav.h" />
+    <ClInclude Include="..\..\src\bin\read_csv\mod_sas7bdat.h" />
     <ClInclude Include="..\..\src\bin\read_csv\read_csv.h" />
     <ClInclude Include="..\..\src\bin\read_csv\read_module.h" />
     <ClInclude Include="..\..\src\bin\read_csv\value.h" />

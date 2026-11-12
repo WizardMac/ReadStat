@@ -45,6 +45,9 @@
     <ClCompile Include="..\..\src\bin\read_csv\mod_sav.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\bin\read_csv\mod_sas7bdat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\bin\read_csv\value.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -93,6 +96,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\bin\read_csv\mod_sav.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bin\read_csv\mod_sas7bdat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\bin\read_csv\read_csv.h">
