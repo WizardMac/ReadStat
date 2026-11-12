@@ -58,7 +58,14 @@ static ssize_t txt_getdelim(char ** restrict linep, size_t * restrict linecapp,
     ssize_t bytes_read = 0;
     while ((bytes_read = io->read(&value_buffer[i], 1, io->io_ctx)) == 1 && value_buffer[i++] != delimiter) {
         if (i == value_buffer_len) {
-            value_buffer = realloc(value_buffer, value_buffer_len *= 2);
+            char *new_value_buffer = realloc(value_buffer, value_buffer_len * 2);
+            if (new_value_buffer == NULL) {
+                *linep = value_buffer;
+                *linecapp = value_buffer_len;
+                return -2;
+            }
+            value_buffer = new_value_buffer;
+            value_buffer_len *= 2;
         }
     }
     *linep = value_buffer;
@@ -89,6 +96,10 @@ static readstat_error_t txt_parse_delimited(readstat_parser_t *parser,
 
             if (chars_read == -1) {
                 retval = READSTAT_ERROR_READ;
+                goto cleanup;
+            }
+            if (chars_read == -2) {
+                retval = READSTAT_ERROR_MALLOC;
                 goto cleanup;
             }
             if (parser->handlers.value && !entry->skip) {

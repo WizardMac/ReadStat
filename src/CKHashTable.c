@@ -227,11 +227,20 @@ int ck_str_n_hash_insert(const char *key, size_t keylen, const void *value, ck_h
         ck_hash_entry_t *entry = &table->entries[hash_key];
         char *this_key = &table->keys[entry->key_offset];
         if (entry->key_length == 0) {
-            table->count++;
-            while (table->keys_used + keylen > table->keys_capacity) {
-                table->keys_capacity *= 2;
-                table->keys = realloc(table->keys, table->keys_capacity);
+            if (table->keys_used + keylen > table->keys_capacity) {
+                size_t new_capacity = table->keys_capacity;
+                while (table->keys_used + keylen > new_capacity) {
+                    if (new_capacity > SIZE_MAX / 2)
+                        return 0;
+                    new_capacity *= 2;
+                }
+                char *new_keys = realloc(table->keys, new_capacity);
+                if (new_keys == NULL)
+                    return 0;
+                table->keys = new_keys;
+                table->keys_capacity = new_capacity;
             }
+            table->count++;
             memcpy(table->keys + table->keys_used, key, keylen);
             entry->key_offset = table->keys_used;
             entry->key_length = keylen;
