@@ -147,9 +147,10 @@ static size_t sas_rle_measure_copy_run(size_t copy_run) {
 
 static size_t sas_rle_copy_run(unsigned char *output_buf, size_t offset,
         const unsigned char *copy, size_t copy_run) {
-    unsigned char *out = output_buf + offset;
     if (output_buf == NULL)
         return sas_rle_measure_copy_run(copy_run);
+
+    unsigned char *out = output_buf + offset;
 
     while (copy_run >= MAX_COPY_RUN) {
         *out++ = (SAS_RLE_COMMAND_COPY64 << 4) + 0x0F;
@@ -191,9 +192,10 @@ static size_t sas_rle_measure_insert_run(unsigned char last_byte, size_t insert_
 }
 
 static size_t sas_rle_insert_run(unsigned char *output_buf, size_t offset, unsigned char last_byte, size_t insert_run) {
-    unsigned char *out = output_buf + offset;
     if (output_buf == NULL)
         return sas_rle_measure_insert_run(last_byte, insert_run);
+
+    unsigned char *out = output_buf + offset;
 
     if (sas_rle_is_special_byte(last_byte)) {
         if (insert_run > 17) {
