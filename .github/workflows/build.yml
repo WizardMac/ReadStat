@@ -7,10 +7,9 @@ jobs:
       matrix:
         compiler: [ clang, gcc, gcc-11, gcc-12, gcc-13, gcc-14 ]
     steps:
-      - name: Add repository
-        run: sudo apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-      - name: Install packages
-        run: sudo apt install gcc-11 gcc-12 gcc-13 gcc-14
+      - name: Install compiler
+        if: startsWith(matrix.compiler, 'gcc-')
+        run: sudo apt install ${{ matrix.compiler }}
       - uses: actions/checkout@v6
       - name: Autoconf
         run: autoreconf -i -f
