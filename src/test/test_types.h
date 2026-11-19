@@ -35,6 +35,9 @@ typedef struct rt_column_s {
     readstat_measure_t      measure;
     readstat_type_t         type;
     readstat_value_t        values[RT_MAX_ROWS];
+    /* Strings the writer truncates: compare these, rather than values, with
+     * what is read back */
+    const char             *truncated_values[RT_MAX_ROWS];
 
     struct {
         readstat_value_t    lo;

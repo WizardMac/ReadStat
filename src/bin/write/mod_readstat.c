@@ -208,7 +208,13 @@ static int handle_variable(int index, readstat_variable_t *variable,
     readstat_alignment_t alignment = readstat_variable_get_alignment(variable);
     readstat_measure_t measure = readstat_variable_get_measure(variable);
     // TODO format translation (readstat_variable_get_format + readstat_variable_set_format)
-    
+
+    /* Stata strings top out at str2045. Width 0 asks the writer for that
+     * maximum, and lets it truncate longer values at a UTF-8 character
+     * boundary instead of rejecting the whole variable. */
+    if (mod_ctx->is_dta && type == READSTAT_TYPE_STRING && storage_width > 2045)
+        storage_width = 0;
+
     readstat_variable_t *new_variable = readstat_add_variable(writer, name, type, storage_width);
 
     if (val_labels) {

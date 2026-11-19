@@ -5,6 +5,11 @@
 #define RT_UTF8_SZ4 "\xc3\x9f\xc3\x9f\xc3\x9f\xc3\x9f"
 #define RT_UTF8_SZ32 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4
 
+/* 2040 ASCII bytes, for values near Stata's 2045-byte string limit */
+#define RT_X40 "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+#define RT_X200 RT_X40 RT_X40 RT_X40 RT_X40 RT_X40
+#define RT_X2040 RT_X200 RT_X200 RT_X200 RT_X200 RT_X200 RT_X200 RT_X200 RT_X200 RT_X200 RT_X200 RT_X40
+
 static rt_test_group_t _test_groups[] = {
     {
         .label = "Table name",
@@ -1724,6 +1729,63 @@ static rt_test_group_t _test_groups[] = {
                         .user_width = 2045,
                         .values = {
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "wide" } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "DTA over-long UTF-8 string at default width is truncated",
+                .test_formats = RT_FORMAT_DTA_117_AND_NEWER,
+                .rows = 3,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .zero_width = 1,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "short" } },
+                            /* 2045 characters in 2046 bytes: the 2-byte character straddles the limit */
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = RT_X2040 "xxxx" "\xc3\xa9" } },
+                            /* 2044 characters in 2046 bytes: the 3-byte character straddles the limit */
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = RT_X2040 "xxx" "\xe2\x82\xac" } }
+                        },
+                        .truncated_values = {
+                            NULL,
+                            RT_X2040 "xxxx",
+                            RT_X2040 "xxx"
+                        }
+                    }
+                }
+            },
+            {
+                .label = "DTA string value longer than declared width",
+                .write_error = READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_DTA,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 10,
+                        .values = {
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = "0123456789A" } }
+                        }
+                    }
+                }
+            },
+            {
+                .label = "DTA UTF-8 string value longer than declared width of 2045",
+                .write_error = READSTAT_ERROR_STRING_VALUE_IS_TOO_LONG,
+                .test_formats = RT_FORMAT_DTA_117_AND_NEWER,
+                .rows = 1,
+                .columns = {
+                    {
+                        .name = "VAR1",
+                        .type = READSTAT_TYPE_STRING,
+                        .user_width = 2045,
+                        .values = {
+                            /* 2045 characters in 2046 bytes */
+                            { .type = READSTAT_TYPE_STRING, .v = { .string_value = RT_X2040 "xxxx" "\xc3\xa9" } }
                         }
                     }
                 }
