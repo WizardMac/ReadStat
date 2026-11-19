@@ -49,8 +49,52 @@ Installation on Windows
 --
 
 ReadStat now includes a Microsoft Visual Studio project file that includes
-build targets for the library and tests. See the [VS17](./VS17) folder in
-the downloaded release for a "one-click" Windows build.
+build targets for the library and tests. See the [VS17](./VS17) folder for
+the Windows build.
+
+The Visual Studio projects get their dependencies (iconv, zlib) exclusively
+from [vcpkg](https://vcpkg.io/), using the [vcpkg.json](./vcpkg.json)
+manifest in the repository root; separately built libraries in custom
+folders are not supported. Visual Studio 2022 and later ship with vcpkg:
+
+1. In the Visual Studio Installer, make sure the "vcpkg package manager"
+   component is installed (it is part of the "Desktop development with C++"
+   workload).
+2. Once, in a Developer PowerShell, enable the MSBuild integration:
+
+       vcpkg integrate install
+
+3. Open `VS17/ReadStat.sln` and build. The first build of each platform
+   downloads and builds the dependencies, which can take ten minutes or
+   more.
+
+MSBuild then finds the headers, links the libraries and copies the DLLs next
+to the executables automatically. To build from a developer command prompt
+instead:
+
+    MSBuild VS17\ReadStat.sln /p:Configuration=Release /p:Platform=x64
+
+The Visual Studio build of the `readstat` command-line tool leaves out two
+optional features: reading CSV files (needs libcsv) and writing Excel files
+(needs libxlsxwriter). The manifest provides them as the vcpkg features
+`csv` and `xlsx`. To enable them:
+
+* Enable the vcpkg feature, e.g. by adding
+  `<VcpkgAdditionalInstallOptions>--x-feature=csv --x-feature=xlsx</VcpkgAdditionalInstallOptions>`
+  to the `Vcpkg` property group in `VS17/PropertySheet.props`.
+* For CSV input: define `HAVE_CSVREADER=1` and add
+  `src/bin/read_csv/read_csv.c` to `VS17/ReadStat_App/ReadStat_App.vcxproj`.
+* For XLSX output: define `HAVE_XLSXWRITER=1` and add
+  `src/bin/write/mod_xlsx.c` to the same project.
+
+The libraries are linked automatically through the vcpkg integration.
+
+The `builtin-baseline` in `vcpkg.json` pins the vcpkg version, and with it
+the library versions, for local and CI builds. It can be bumped by running
+`vcpkg x-update-baseline` in the repository root with a standalone vcpkg
+installation (the one bundled with Visual Studio cannot do this). Commit the
+updated `vcpkg.json`; the CI build then shows whether new library versions
+need changes.
 
 Alternatively, you can build ReadStat on the command line using an
 [msys2](https://msys2.github.io/) environment. After installing msys2,
