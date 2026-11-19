@@ -163,7 +163,12 @@ static readstat_error_t sas7bcat_parse_value_labels(const char *value_start, siz
             label_len = value_start + value_labels_len - &lbp2[10];
         }
         if (ctx->value_label_handler && !is_default_label) {
-            label = realloc(label, 4 * label_len + 1);
+            char *new_label = realloc(label, 4 * label_len + 1);
+            if (new_label == NULL) {
+                retval = READSTAT_ERROR_MALLOC;
+                goto cleanup;
+            }
+            label = new_label;
             retval = readstat_convert(label, 4 * label_len + 1,
                     &lbp2[10], label_len, ctx->converter);
             if (retval != READSTAT_OK)
