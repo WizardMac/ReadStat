@@ -5,6 +5,17 @@
 #define RT_UTF8_SZ4 "\xc3\x9f\xc3\x9f\xc3\x9f\xc3\x9f"
 #define RT_UTF8_SZ32 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4 RT_UTF8_SZ4
 
+/* 4000 non-repeating characters; C99 limits string literals to 4095 */
+#define RT_TEST4     "test"
+#define RT_TEST16    RT_TEST4 RT_TEST4 RT_TEST4 RT_TEST4
+#define RT_TEST64    RT_TEST16 RT_TEST16 RT_TEST16 RT_TEST16
+#define RT_TEST256   RT_TEST64 RT_TEST64 RT_TEST64 RT_TEST64
+#define RT_TEST1024  RT_TEST256 RT_TEST256 RT_TEST256 RT_TEST256
+#define RT_TEST4000  RT_TEST1024 RT_TEST1024 RT_TEST1024 RT_TEST256 RT_TEST256 RT_TEST256 \
+                     RT_TEST64 RT_TEST64 RT_TEST16 RT_TEST16
+#define RT_TEST4000_VALUE { .type = READSTAT_TYPE_STRING, .v = { .string_value = RT_TEST4000 } }
+#define RT_EMPTY_VALUE    { .type = READSTAT_TYPE_STRING, .v = { .string_value = "" } }
+
 static rt_test_group_t _test_groups[] = {
     {
         .label = "Table name",
@@ -256,6 +267,30 @@ static rt_test_group_t _test_groups[] = {
                             { .type = READSTAT_TYPE_STRING, .v = { .string_value = "Fchars->GGGGGGGGGGGGGGGGGGGGGGGGGGGGG<-- here" } }
                         }
                     }
+                }
+            },
+
+            {
+                /* Adjacent non-repeating columns form one long literal run:
+                 * row 1 has 20000 bytes (a 16447-byte copy plus a remainder),
+                 * row 2 has 12000 bytes (a single 0x2X copy). The trailing
+                 * blank column makes the rows compressible at all. */
+                .label = "SAS7BDAT RLE and RDC long literal runs",
+                .test_formats = RT_FORMAT_SAS7BDAT_COMP,
+                .rows = 2,
+                .columns = {
+                    { .name = "S1", .type = READSTAT_TYPE_STRING,
+                      .values = { RT_TEST4000_VALUE, RT_TEST4000_VALUE } },
+                    { .name = "S2", .type = READSTAT_TYPE_STRING,
+                      .values = { RT_TEST4000_VALUE, RT_TEST4000_VALUE } },
+                    { .name = "S3", .type = READSTAT_TYPE_STRING,
+                      .values = { RT_TEST4000_VALUE, RT_TEST4000_VALUE } },
+                    { .name = "S4", .type = READSTAT_TYPE_STRING,
+                      .values = { RT_TEST4000_VALUE, RT_EMPTY_VALUE } },
+                    { .name = "S5", .type = READSTAT_TYPE_STRING,
+                      .values = { RT_TEST4000_VALUE, RT_EMPTY_VALUE } },
+                    { .name = "S6", .type = READSTAT_TYPE_STRING, .user_width = 4000,
+                      .values = { RT_EMPTY_VALUE, RT_EMPTY_VALUE } }
                 }
             }
         }
