@@ -801,6 +801,9 @@ static readstat_error_t por_end_data(void *writer_ctx) {
     readstat_writer_t *writer = (readstat_writer_t *)writer_ctx;
     readstat_error_t error = READSTAT_OK;
 
+    if (writer->module_ctx == NULL)
+        return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
+
     if ((error = por_write_tag(writer, writer->module_ctx, 'Z')) != READSTAT_OK)
         goto cleanup;
 
@@ -809,6 +812,7 @@ static readstat_error_t por_end_data(void *writer_ctx) {
 
 cleanup:
     por_write_ctx_free(writer->module_ctx);
+    writer->module_ctx = NULL;
     return error;
 }
 
