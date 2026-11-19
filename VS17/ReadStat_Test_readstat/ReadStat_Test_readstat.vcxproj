@@ -192,6 +192,7 @@
     <ClInclude Include="..\..\src\test\test_readstat.h" />
     <ClInclude Include="..\..\src\test\test_sas.h" />
     <ClInclude Include="..\..\src\test\test_sav.h" />
+    <ClInclude Include="..\..\src\test\test_txt.h" />
     <ClInclude Include="..\..\src\test\test_types.h" />
     <ClInclude Include="..\..\src\test\test_write.h" />
   </ItemGroup>
@@ -204,6 +205,7 @@
     <ClCompile Include="..\..\src\test\test_readstat.c" />
     <ClCompile Include="..\..\src\test\test_sas.c" />
     <ClCompile Include="..\..\src\test\test_sav.c" />
+    <ClCompile Include="..\..\src\test\test_txt.c" />
     <ClCompile Include="..\..\src\test\test_write.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
