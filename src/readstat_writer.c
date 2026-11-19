@@ -715,6 +715,11 @@ readstat_error_t readstat_end_row(readstat_writer_t *writer) {
     if (!writer->initialized)
         return READSTAT_ERROR_WRITER_NOT_INITIALIZED;
 
+    /* The header already declares row_count rows, and the module context may
+     * be gone after readstat_end_writing */
+    if (writer->current_row >= writer->row_count)
+        return READSTAT_ERROR_ROW_COUNT_MISMATCH;
+
     readstat_error_t error = writer->callbacks.write_row(writer, writer->row, writer->row_len);
     if (error == READSTAT_OK)
         writer->current_row++;

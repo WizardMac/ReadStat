@@ -83,6 +83,53 @@ static int test_txt_schema_bounds(void) {
     return 0;
 }
 
+static ssize_t test_write_data(const void *bytes, size_t len, void *ctx) {
+    rt_buffer_t *buffer = (rt_buffer_t *)ctx;
+    buffer_grow(buffer, len);
+    if (buffer->bytes == NULL)
+        return -1;
+    memcpy(buffer->bytes + buffer->used, bytes, len);
+    buffer->used += len;
+    return len;
+}
+
+/* A row after the declared row count, e.g. from a reader whose row count was
+ * truncated, must be refused rather than reach a module context that
+ * readstat_end_writing has already freed */
+static int test_write_row_after_end(void) {
+    rt_buffer_t *buffer = buffer_init();
+    readstat_writer_t *writer = readstat_writer_init();
+    readstat_error_t error = READSTAT_OK;
+    int failed = 0;
+
+    readstat_set_data_writer(writer, &test_write_data);
+    readstat_variable_t *variable = readstat_add_variable(writer, "VAR1", READSTAT_TYPE_STRING, 8);
+
+    if ((error = readstat_begin_writing_por(writer, buffer, 1)) != READSTAT_OK ||
+            (error = readstat_begin_row(writer)) != READSTAT_OK ||
+            (error = readstat_insert_string_value(writer, variable, "abc")) != READSTAT_OK ||
+            (error = readstat_end_row(writer)) != READSTAT_OK ||
+            (error = readstat_end_writing(writer)) != READSTAT_OK) {
+        printf("Error writing POR file: %s\n", readstat_error_message(error));
+        failed = 1;
+        goto cleanup;
+    }
+
+    readstat_begin_row(writer);
+    readstat_insert_string_value(writer, variable, "def");
+    error = readstat_end_row(writer);
+    if (error != READSTAT_ERROR_ROW_COUNT_MISMATCH) {
+        printf("Expected a row count error for a row after the end, got: %s\n",
+                readstat_error_message(error));
+        failed = 1;
+    }
+
+cleanup:
+    readstat_writer_free(writer);
+    buffer_free(buffer);
+    return failed;
+}
+
 static void dump_buffer(rt_buffer_t *buffer, long format) {
     char filename[128];
 #if !defined _MSC_VER
@@ -186,6 +233,9 @@ cleanup:
         return 1;
 
     if (test_txt_schema_bounds() != 0)
+        return 1;
+
+    if (test_write_row_after_end() != 0)
         return 1;
 
     return 0;
