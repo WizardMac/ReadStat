@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "dependencies": [
+    "libiconv",
+    "zlib"
+  ],
+  "features": {
+    "csv": {
+      "description": "CSV input for the readstat command-line tool",
+      "dependencies": [ "libcsv" ]
+    },
+    "xlsx": {
+      "description": "XLSX output for the readstat command-line tool",
+      "dependencies": [ "libxlsxwriter" ]
+    }
+  },
+  "builtin-baseline": "2ebb714221ad4e482e596d64c129f63fbbfb3fd5"
+}

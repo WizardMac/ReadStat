@@ -48,6 +48,8 @@ test_double_decimals
 generate_corpus
 *.csv
 *.json
+!vcpkg.json
+vcpkg_installed/
 *.py
 *.tar.gz
 *.zip

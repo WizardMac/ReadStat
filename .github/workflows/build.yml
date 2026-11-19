@@ -121,8 +121,7 @@ jobs:
         id: vcpkg-key
         shell: pwsh
         run: |
-          $commit = git -C "$env:VCPKG_INSTALLATION_ROOT" rev-parse --short HEAD
-          "key=vcpkg-${{ runner.os }}-$env:ImageVersion-$commit" >> $env:GITHUB_OUTPUT
+          "key=vcpkg-${{ runner.os }}-$env:ImageVersion-x64-windows-release-${{ hashFiles('vcpkg.json') }}" >> $env:GITHUB_OUTPUT
 
       - name: Cache vcpkg binaries
         uses: actions/cache@v6
@@ -131,48 +130,27 @@ jobs:
           key: ${{ steps.vcpkg-key.outputs.key }}
           restore-keys: vcpkg-${{ runner.os }}-
 
-      - name: Install dependencies
+      - name: Set up vcpkg at the manifest baseline
+        shell: pwsh
         run: |
-          vcpkg install gettext libiconv libcsv libxlsxwriter zlib --triplet x64-windows
+          # The runner's vcpkg clone may predate the builtin-baseline in
+          # vcpkg.json. vcpkg reads the port version database from the
+          # working tree, so fetching alone is not enough: check out the
+          # baseline and bootstrap the matching vcpkg tool.
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $baseline = (Get-Content vcpkg.json -Raw | ConvertFrom-Json).'builtin-baseline'
+          git -C "$env:VCPKG_INSTALLATION_ROOT" fetch --quiet origin $baseline
+          git -C "$env:VCPKG_INSTALLATION_ROOT" checkout --quiet --force $baseline
+          & "$env:VCPKG_INSTALLATION_ROOT\bootstrap-vcpkg.bat" -disableMetrics
           vcpkg integrate install
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v3
 
-      - name: Fix library filename and paths for MSVC
-        shell: pwsh
-        run: |
-          $libDir = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\lib"
-
-          if (Test-Path "$libDir\iconv.lib") {
-              Copy-Item "$libDir\iconv.lib" "$libDir\libiconv.lib" -Force
-          }
-  
-          # Depending on the zlib port version, the import library is named
-          # z.lib, zlib1.lib or zlibd.lib/zlib1d.lib; the projects link
-          # against zlib.lib/zlibd.lib
-          if (Test-Path "$libDir\z.lib") {
-              Copy-Item "$libDir\z.lib" "$libDir\zlib.lib" -Force
-          }
-          if (Test-Path "$libDir\zd.lib") {
-              Copy-Item "$libDir\zd.lib" "$libDir\zlibd.lib" -Force
-          }
-          if (Test-Path "$libDir\zlib1.lib") {
-              Copy-Item "$libDir\zlib1.lib" "$libDir\zlib.lib" -Force
-          }
-          if (Test-Path "$libDir\zlib1d.lib") {
-              Copy-Item "$libDir\zlib1d.lib" "$libDir\zlibd.lib" -Force
-          }
-  
-          if (-not (Test-Path "$libDir\zlib.lib")) {
-              Write-Host "##vso[task.logissue type=error]zlib.lib not found in $libDir after fix step"
-              Get-ChildItem $libDir -Filter *.lib | Select-Object -ExpandProperty Name
-              exit 1
-          }
-
       - name: Build
         run: |
-          MSBuild ./VS17/ReadStat.sln /p:Configuration=Release /p:Platform=x64 /nologo
+          MSBuild ./VS17/ReadStat.sln /p:Configuration=Release /p:Platform=x64 /p:VcpkgTriplet=x64-windows-release /nologo
      
       - name: Test
         shell: pwsh
