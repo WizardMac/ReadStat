@@ -73,6 +73,13 @@ static void produce_column_header(struct csv_metadata *c, void *s, size_t len) {
 static void csv_metadata_cell(void *s, size_t len, void *data)
 {
     struct csv_metadata *c = (struct csv_metadata *)data;
+    if (c->rows >= 1 && c->columns >= c->_columns) {
+        /* The per-column arrays are sized from the header row */
+        c->too_many_columns = 1;
+        c->open_row = 1;
+        c->columns++;
+        return;
+    }
     if (c->rows == 0) {
         c->variables = realloc(c->variables, (c->columns+1) * sizeof(readstat_variable_t));
         c->is_date = realloc(c->is_date, (c->columns+1) * sizeof(int));
@@ -117,6 +124,7 @@ readstat_error_t readstat_parse_csv(readstat_parser_t *parser,
     size_t* column_width = md->column_width;
     md->pass = column_width ? 2 : 1;
     md->open_row = 0;
+    md->too_many_columns = 0;
     md->columns = 0;
     md->_rows = md->rows;
     md->rows = 0;
@@ -164,6 +172,11 @@ readstat_error_t readstat_parse_csv(readstat_parser_t *parser,
         }
     }
     csv_fini(p, csv_metadata_cell, csv_metadata_row, md);
+    if (md->too_many_columns) {
+        fprintf(stderr, "Error while parsing file: row has more columns than the header\n");
+        retval = READSTAT_ERROR_COLUMN_COUNT_MISMATCH;
+        goto cleanup;
+    }
     if (!md->open_row) {
         md->rows--;
     }

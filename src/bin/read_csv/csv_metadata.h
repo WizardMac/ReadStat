@@ -8,6 +8,7 @@ typedef struct csv_metadata {
     int output_format;
     size_t* column_width;
     int open_row;
+    int too_many_columns;
     readstat_callbacks_t handle;
     void *user_ctx;
     readstat_variable_t *variables;
