@@ -1785,7 +1785,7 @@ readstat_error_t readstat_parse_sav(readstat_parser_t *parser, const char *path,
     if (parser->row_offset > 0)
         ctx->row_offset = parser->row_offset;
     if (ctx->record_count >= 0) {
-        int record_count_after_skipping = ctx->record_count - ctx->row_offset;
+        int64_t record_count_after_skipping = ctx->record_count - ctx->row_offset;
         if (record_count_after_skipping < 0) {
             record_count_after_skipping = 0;
             ctx->row_offset = ctx->record_count;
