@@ -130,6 +130,99 @@ cleanup:
     return failed;
 }
 
+static void sav_append_int32(rt_buffer_t *buffer, int32_t value) {
+    buffer_grow(buffer, sizeof(int32_t));
+    memcpy(buffer->bytes + buffer->used, &value, sizeof(int32_t));
+    buffer->used += sizeof(int32_t);
+}
+
+/* Parses a SAV file whose only extension record is a multiple response set
+ * record holding the given text */
+static readstat_error_t parse_sav_with_mr_record(const char *mr_text, size_t mr_len) {
+    rt_buffer_t *buffer = buffer_init();
+    rt_buffer_ctx_t buffer_ctx = { .buffer = buffer };
+    char header[176] = "$FL2";
+    int32_t layout_code = 2, ncases = 0;
+    double bias = 100.0;
+    readstat_error_t error = READSTAT_OK;
+
+    memcpy(&header[64], &layout_code, sizeof(int32_t));
+    memcpy(&header[80], &ncases, sizeof(int32_t));
+    memcpy(&header[84], &bias, sizeof(double));
+    buffer_grow(buffer, sizeof(header));
+    memcpy(buffer->bytes, header, sizeof(header));
+    buffer->used = sizeof(header);
+
+    sav_append_int32(buffer, 7); /* extension record */
+    sav_append_int32(buffer, 7); /* multiple response sets */
+    sav_append_int32(buffer, 1);
+    sav_append_int32(buffer, mr_len);
+    buffer_grow(buffer, mr_len);
+    memcpy(buffer->bytes + buffer->used, mr_text, mr_len);
+    buffer->used += mr_len;
+    sav_append_int32(buffer, 999); /* dictionary termination */
+    sav_append_int32(buffer, 0);
+
+    readstat_parser_t *parser = readstat_parser_init();
+    readstat_set_open_handler(parser, rt_open_handler);
+    readstat_set_close_handler(parser, rt_close_handler);
+    readstat_set_seek_handler(parser, rt_seek_handler);
+    readstat_set_read_handler(parser, rt_read_handler);
+    readstat_set_update_handler(parser, rt_update_handler);
+    readstat_set_io_ctx(parser, &buffer_ctx);
+
+    error = readstat_parse_sav(parser, NULL, NULL);
+
+    readstat_parser_free(parser);
+    buffer_free(buffer);
+    return error;
+}
+
+/* readstat_realloc frees the old block when it refuses a size above its
+ * 16 MiB cap, so a multiple response set record with more sets or more
+ * variables than fit must fail cleanly instead of freeing them twice */
+static int test_sav_mr_sets_too_many(void) {
+    size_t max_malloc_size = 0x1000000;
+    size_t count, i;
+    char *text = NULL;
+    readstat_error_t error = READSTAT_OK;
+    int failed = 0;
+
+    /* One set with too many variables: "$a=C 0 b b b ..." */
+    count = max_malloc_size / sizeof(char *) + 1;
+    if ((text = malloc(7 + 2 * count)) == NULL)
+        return 1;
+    memcpy(text, "$a=C 0 ", 7);
+    for (i=0; i<count; i++) {
+        text[7 + 2*i] = 'b';
+        text[7 + 2*i + 1] = ' ';
+    }
+    error = parse_sav_with_mr_record(text, 7 + 2 * count);
+    if (error != READSTAT_ERROR_MALLOC) {
+        printf("Expected a malloc error for too many MR set variables, got: %s\n",
+                readstat_error_message(error));
+        failed = 1;
+    }
+    free(text);
+
+    /* Too many sets: "$a=C 0 \n" repeated */
+    count = max_malloc_size / sizeof(mr_set_t) + 1;
+    if ((text = malloc(8 * count)) == NULL)
+        return 1;
+    for (i=0; i<count; i++) {
+        memcpy(&text[8*i], "$a=C 0 \n", 8);
+    }
+    error = parse_sav_with_mr_record(text, 8 * count);
+    if (error != READSTAT_ERROR_MALLOC) {
+        printf("Expected a malloc error for too many MR sets, got: %s\n",
+                readstat_error_message(error));
+        failed = 1;
+    }
+    free(text);
+
+    return failed;
+}
+
 static void dump_buffer(rt_buffer_t *buffer, long format) {
     char filename[128];
 #if !defined _MSC_VER
@@ -236,6 +329,9 @@ cleanup:
         return 1;
 
     if (test_write_row_after_end() != 0)
+        return 1;
+
+    if (test_sav_mr_sets_too_many() != 0)
         return 1;
 
     return 0;

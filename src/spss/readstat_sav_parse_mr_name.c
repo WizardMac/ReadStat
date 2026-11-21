@@ -158,7 +158,20 @@ static readstat_error_t parse_mr_line(const char *line, size_t line_len, mr_set_
     if ((retval = mr_convert(&result->label, str, str_len, ctx)) != READSTAT_OK)
         goto cleanup;
 
-    /* Variables: space-separated; some files have zero or one variable */
+    /* Variables: space-separated; some files have zero or one variable.
+     * Count them first and allocate the array once: readstat_realloc frees
+     * the old block when it refuses a size, so growing it one variable at a
+     * time would leave result->subvariables dangling. */
+    size_t subvar_count = 0;
+    for (str = p; str < end; str++) {
+        if (*str != ' ' && (str == p || str[-1] == ' '))
+            subvar_count++;
+    }
+    if (subvar_count &&
+            (result->subvariables = readstat_malloc(subvar_count * sizeof(char *))) == NULL) {
+        retval = READSTAT_ERROR_MALLOC;
+        goto cleanup;
+    }
     while (p < end) {
         if (*p == ' ') {
             p++;
@@ -170,14 +183,6 @@ static readstat_error_t parse_mr_line(const char *line, size_t line_len, mr_set_
         char *subvar = NULL;
         if ((retval = mr_convert(&subvar, str, p - str, ctx)) != READSTAT_OK)
             goto cleanup;
-        char **new_subvariables = readstat_realloc(result->subvariables,
-                sizeof(char *) * (result->num_subvars + 1));
-        if (new_subvariables == NULL) {
-            free(subvar);
-            retval = READSTAT_ERROR_MALLOC;
-            goto cleanup;
-        }
-        result->subvariables = new_subvariables;
         result->subvariables[result->num_subvars++] = subvar;
     }
 
@@ -188,29 +193,53 @@ cleanup:
     return retval;
 }
 
+/* Returns the next line, without its line feed or carriage return, and
+ * advances *pp past it */
+static const char *mr_next_line(const char **pp, const char *end, size_t *line_len) {
+    const char *p = *pp;
+    const char *line = p;
+    while (p < end && *p != '\n' && *p != '\0')
+        p++;
+    *line_len = p - line;
+    if (p < end)
+        p++; /* consume the line feed */
+    if (*line_len && line[*line_len-1] == '\r')
+        (*line_len)--;
+    *pp = p;
+    return line;
+}
+
 readstat_error_t parse_mr_string(const char *data, size_t data_len, mr_set_t **mr_sets, size_t *n_mr_lines, sav_ctx_t *ctx) {
     readstat_error_t retval = READSTAT_OK;
     const char *p = data;
     const char *end = data + data_len;
+    size_t line_len = 0;
+    size_t line_count = 0;
 
+    /* Count the sets and grow *mr_sets once. Copy rather than call
+     * readstat_realloc, which frees the old block when it refuses a size and
+     * would leave *mr_sets, with the sets of an earlier record, dangling. */
     while (p < end) {
-        const char *line = p;
-        while (p < end && *p != '\n' && *p != '\0')
-            p++;
-        size_t line_len = p - line;
-        if (p < end)
-            p++; /* consume the line feed */
-        if (line_len && line[line_len-1] == '\r')
-            line_len--;
+        mr_next_line(&p, end, &line_len);
+        if (line_len)
+            line_count++;
+    }
+    if (line_count == 0)
+        return READSTAT_OK;
+
+    mr_set_t *new_mr_sets = readstat_malloc((*n_mr_lines + line_count) * sizeof(mr_set_t));
+    if (new_mr_sets == NULL)
+        return READSTAT_ERROR_MALLOC;
+    if (*n_mr_lines)
+        memcpy(new_mr_sets, *mr_sets, *n_mr_lines * sizeof(mr_set_t));
+    free(*mr_sets);
+    *mr_sets = new_mr_sets;
+
+    p = data;
+    while (p < end) {
+        const char *line = mr_next_line(&p, end, &line_len);
         if (line_len == 0)
             continue; /* the spec allows any number of line feeds between sets */
-
-        mr_set_t *new_mr_sets = readstat_realloc(*mr_sets, ((*n_mr_lines) + 1) * sizeof(mr_set_t));
-        if (new_mr_sets == NULL) {
-            retval = READSTAT_ERROR_MALLOC;
-            goto cleanup;
-        }
-        *mr_sets = new_mr_sets;
 
         retval = parse_mr_line(line, line_len, &(*mr_sets)[*n_mr_lines], ctx);
         if (retval != READSTAT_OK)
