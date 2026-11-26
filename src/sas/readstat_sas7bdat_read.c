@@ -42,7 +42,6 @@ typedef struct sas7bdat_ctx_s {
 
     int            little_endian;
     int            u64;
-    int            vendor;
     void          *user_ctx;
     readstat_io_t *io;
     int            bswap;
@@ -70,6 +69,7 @@ typedef struct sas7bdat_ctx_s {
     uint64_t        page_header_size;
     uint64_t        subheader_signature_size;
     uint64_t        subheader_pointer_size;
+    int             mix_page_padding;
 
     int            text_blob_count;
     size_t        *text_blob_lengths;
@@ -308,6 +308,8 @@ static readstat_error_t sas7bdat_parse_row_size_subheader(const char *subheader,
     }
     if (ctx->row_limit == 0 || total_row_count_after_skipping < ctx->row_limit)
         ctx->row_limit = total_row_count_after_skipping;
+
+    ctx->mix_page_padding = (unsigned char)subheader[len-13] - 1;
 
 cleanup:
     return retval;
@@ -1224,18 +1226,12 @@ static readstat_error_t sas7bdat_parse_page_pass2(const char *page, size_t page_
         }
 
         if ((page_type & SAS_PAGE_TYPE_MASK) == SAS_PAGE_TYPE_MIX) {
-            /* HACK - this is supposed to obey 8-byte boundaries but
-             * some files created by Stat/Transfer don't. So verify that the
-             * padding is { 0, 0, 0, 0 } or { ' ', ' ', ' ', ' ' } (or that
-             * the file is not from Stat/Transfer) before skipping it */
-            if ((shp-page)%8 == 4 && shp + 4 <= page + page_size &&
-                    (*(uint32_t *)shp == 0x00000000 ||
-                     *(uint32_t *)shp == 0x20202020 ||
-                     ctx->vendor != READSTAT_VENDOR_STAT_TRANSFER)) {
-                data = shp + 4;
-            } else {
-                data = shp;
+            if ((ctx->mix_page_padding != 0 && ctx->mix_page_padding != 4) ||
+                    shp + ctx->mix_page_padding > page + page_size) {
+                retval = READSTAT_ERROR_PARSE;
+                goto cleanup;
             }
+            data = shp + ctx->mix_page_padding;
         }
     }
     if (data) {
@@ -1438,6 +1434,7 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
     ctx->user_ctx = user_ctx;
     ctx->io = parser->io;
     ctx->row_limit = parser->row_limit;
+    ctx->mix_page_padding = -1;
     ctx->moved_page_index = -1;
     if (parser->row_offset > 0)
         ctx->row_offset = parser->row_offset;
@@ -1471,7 +1468,6 @@ readstat_error_t readstat_parse_sas7bdat(readstat_parser_t *parser, const char *
 
     ctx->u64 = hinfo->u64;
     ctx->little_endian = hinfo->little_endian;
-    ctx->vendor = hinfo->vendor;
     ctx->bswap = machine_is_little_endian() ^ hinfo->little_endian;
     ctx->header_size = hinfo->header_size;
     ctx->page_count = hinfo->page_count;

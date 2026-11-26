@@ -36,10 +36,7 @@ typedef struct sas_header_end_s {
 typedef struct sas_header_info_s {
     int      little_endian;
     int      u64;
-    int      vendor;
     int      major_version;
-    int      minor_version;
-    int      revision;
     int      pad1;
     int64_t  page_size;
     int64_t  page_header_size;
@@ -53,11 +50,6 @@ typedef struct sas_header_info_s {
     char     file_label[256];
     char    *encoding;
 } sas_header_info_t;
-
-enum {
-    READSTAT_VENDOR_STAT_TRANSFER,
-    READSTAT_VENDOR_SAS
-};
 
 typedef struct sas_text_ref_s {
     uint16_t    index;
