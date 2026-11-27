@@ -77,7 +77,7 @@ static readstat_error_t txt_parse_delimited(readstat_parser_t *parser,
     readstat_schema_t *schema = ctx->schema;
     readstat_error_t retval = READSTAT_OK;
     readstat_io_t *io = parser->io;
-    int k=0;
+    int64_t k=0;
     
     while (1) {
         for (int j=0; j<schema->entry_count; j++) {
@@ -122,7 +122,7 @@ static readstat_error_t txt_parse_fixed_width(readstat_parser_t *parser,
     readstat_schema_t *schema = ctx->schema;
     readstat_io_t *io = parser->io;
     readstat_error_t retval = READSTAT_OK;
-    int k=0;
+    int64_t k=0;
     while (1) {
         int j=0;
         for (int i=0; i<schema->rows_per_observation; i++) {
